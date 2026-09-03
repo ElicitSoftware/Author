@@ -54,13 +54,17 @@ Survey (respondent) and Admin modules consume.
 ## Constraints
 
 - **License:** PolyForm Noncommercial 1.0.0.
-- **Stack (target implementation; do not deviate without explicit approval):**
-  - Java 21
-  - Quarkus 3.37.x
-  - Vaadin 25.2.x (Flow / server-side UI)
-  - Hibernate ORM with Panache (JPA) — *not* jOOQ
+- **Stack (do not deviate without explicit approval):**
+  - Java 25
+  - Quarkus 3.39.2
+  - Vaadin 25.2.6 (Flow / server-side UI)
+  - Hibernate ORM with Panache (JPA) — *not* jOOQ. Author owns no Flyway
+    migrations of its own; it maps entities onto the tables Survey's
+    `db/migration` already created in the shared `survey` database/schema —
+    it is a pure editor over that schema, not a co-owner of it.
   - PostgreSQL
   - Maven build, Docker deploy
+  - OIDC / Keycloak authorization, matching Admin's setup
 - **Branching:** part of the multi-module Elicit Software platform; database
   schema and message contracts are shared with the Survey and Admin modules.
 - **Compliance:** authored surveys may collect PHI in clinical deployments
