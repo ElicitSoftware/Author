@@ -6,24 +6,27 @@ This project follows the **AI Unified Process (AIUP)**
 code under `src/` is the implementation that AIUP regenerates and refactors
 around them.
 
-> **Status:** This repository currently holds the planning and design docs for
-> the survey **authoring** tool (`survey-authoring-development-plan.md`,
-> `survey-requirements-collection-system.md`, `creating-fhhs-style-surveys.md`).
-> There is no application code yet — the AIUP forward workflow drives it from
-> `docs/vision.md` toward a Quarkus/Vaadin implementation matching the rest of
-> the Elicit platform.
+> **Status:** The Quarkus/Vaadin scaffold exists and boots, wired into the
+> shared platform's database and OIDC conventions (matching `../Survey` and
+> `../Admin`), but has no authoring domain code yet (no entities, no views).
+> The planning docs in the repo root (`survey-authoring-development-plan.md`,
+> `survey-requirements-collection-system.md`, `creating-fhhs-style-surveys.md`)
+> remain useful input for the AIUP forward workflow that will add that code.
 
-## Stack (target implementation)
+## Stack
 
-- Java 21, Quarkus 3.37.x, Maven build
-- Vaadin 25.2.x (Flow, server-side UI)
-- Hibernate ORM with Panache (JPA) — **not jOOQ**
-- PostgreSQL (shares the Elicit survey schema)
+- Java 25, Quarkus 3.39.2, Maven build
+- Vaadin 25.2.6 (Flow, server-side UI)
+- Hibernate ORM with Panache (JPA) — **not jOOQ**. Author owns **no Flyway
+  migrations**; it maps entities onto the tables Survey's `db/migration`
+  already created in the shared `survey` database/schema.
+- PostgreSQL (shared Elicit `survey` schema)
+- OIDC / Keycloak authorization (matches Admin's setup)
 - Docker for deployment
 
-When using the Quarkus Agent MCP tools once code exists, follow those tools'
-instructions (`quarkus_update` / `quarkus_skills` for an existing project,
-`quarkus_create` when scaffolding the app).
+This is now an **existing project** for the Quarkus Agent MCP tools — start
+with `quarkus_update` / `quarkus_skills` per those tools' instructions, not
+`quarkus_create`.
 
 ## AIUP Workflow
 
