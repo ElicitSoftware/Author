@@ -2,6 +2,15 @@
 
 This document provides comprehensive guidance for AI coding assistants (GitHub Copilot, Cursor, ChatGPT, Claude, etc.) when working with the Elicit Survey Platform codebase.
 
+> **Note on versioned entities:** the code examples below (e.g. `Survey`,
+> `Question`) predate the shared schema's Kimball Type 2 versioning of
+> `questions`, `sections`, `steps`, `select_groups`, `select_items`,
+> `relationships`, and their join tables. Examples involving those entities
+> illustrate general Panache/JPA style only — they do not yet reflect the
+> durable key / version / draft / publish columns those tables actually
+> have. See `docs/scd-contract.md` and `docs/vision.md`'s Constraints
+> before modeling real entities for those tables.
+
 ## Quick Reference
 
 ### MCP Servers for Enhanced Context
@@ -295,7 +304,11 @@ public class Survey extends PanacheEntity {
     @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate;
 
-    @OneToMany(mappedBy = "survey", cascade = CascadeType.ALL, orphanRemoval = true)
+    // NOTE: no cascade/orphanRemoval — Question rows are Kimball Type 2
+    // versioned; deleting a Survey (or detaching a Question from this
+    // collection) must never physically delete a historical Question
+    // version. See docs/scd-contract.md.
+    @OneToMany(mappedBy = "survey")
     private List<Question> questions = new ArrayList<>();
 
     // Builder pattern for easy test data creation
@@ -706,6 +719,16 @@ public class SurveyService {
     }
 }
 ```
+
+> The `updateSurvey` example above is only valid for `surveys` itself
+> (Type 1 — not versioned). The eight Type 2 tables (`questions`,
+> `select_groups`, `select_items`, `sections`, `steps`,
+> `sections_questions`, `steps_sections`, `relationships`) must never be
+> updated in place. Their write pattern is "close the current version,
+> insert a new version row under the same durable key" — see
+> `docs/scd-contract.md`. No reusable service for that pattern exists yet
+> anywhere in the Elicit codebase; designing it is part of this project's
+> scope.
 
 ## Error Handling Patterns
 

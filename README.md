@@ -7,14 +7,19 @@ Copyright © 2026 The Regents of the University of Michigan
 Elicit Author is the survey **authoring** module of the
 [Elicit Software](https://github.com/ElicitSoftware/) platform. It lets researchers,
 educators, and other survey designers build survey structure (steps, sections, questions),
-branching logic, dynamic tokens, and dimensional/ontology metadata through a visual interface,
-then publish those definitions into the Elicit PostgreSQL database shared with the
-[Survey](https://github.com/ElicitSoftware/) (respondent) and Admin (operations) modules.
+branching logic, dynamic tokens, and dimensional/ontology metadata through a visual interface.
+
+Structural survey elements (steps, sections, questions, select groups/items, relationships)
+are versioned in the shared schema using a Kimball Type 2 pattern: authors edit a **draft**,
+and **publishing** closes the current version and opens a new one under the same durable key
+— it does not overwrite what past respondents already saw. "Publish" here is a real state
+transition (`is_draft` → published, a new `version` row), not just "save to the database." See
+[`docs/scd-contract.md`](docs/scd-contract.md) for the contract and
+[`docs/vision.md`](docs/vision.md) for the full mission, scope, and constraints that drive this
+project's [AIUP](https://unifiedprocess.ai/) artifacts under [`docs/`](docs/).
 
 Author has no database migrations of its own — it reads and writes the schema that Survey's
-`db/migration` scripts own. See [`docs/vision.md`](docs/vision.md) for the full mission, scope,
-and constraints, which drive this project's [AIUP](https://unifiedprocess.ai/) artifacts under
-[`docs/`](docs/).
+`db/migration` scripts own.
 
 Authentication and authorization are controlled by an OpenID Connect (OIDC) provider — Keycloak
 for local development and testing, though any OIDC-compliant server works in production.
