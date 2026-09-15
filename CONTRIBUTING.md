@@ -2,6 +2,13 @@
 
 Thank you for your interest in contributing to the Elicit Survey Platform! This document provides guidelines and standards for contributing to the project.
 
+> **Note on versioned entities:** several examples and the Domain Knowledge
+> section below predate the shared schema's Kimball Type 2 versioning of
+> structural tables. See `docs/scd-contract.md` and `docs/vision.md`'s
+> Constraints for the current contract before writing code or docs that
+> touch `questions`, `sections`, `steps`, `select_groups`, `select_items`,
+> `relationships`, or their join tables.
+
 ## Table of Contents
 - [Development Methodology](#development-methodology)
 - [Technology Stack](#technology-stack)
@@ -217,6 +224,9 @@ public class SurveyRepository implements PanacheRepository<Survey> {
         return find("LOWER(name) LIKE LOWER(?1)", "%" + searchTerm + "%").list();
     }
 
+    // Illustrative only — NOT the pattern for Kimball Type 2 tables, which
+    // have no boolean "active"/"is_current" column. For those, "current"
+    // means effective_to = '9999-12-31 23:59:59+00'. See docs/scd-contract.md.
     public Optional<Survey> findActiveById(Long id) {
         return find("id = ?1 AND active = true", id).firstResultOptional();
     }
@@ -387,6 +397,9 @@ Use descriptive test names that explain what is being tested:
 - `shouldThrowExceptionWhenNameIsBlank()`
 - `shouldReturnEmptyOptionalWhenSurveyNotFound()`
 - `shouldUpdateQuestionTextWithTokenReplacement()`
+- `shouldCreateDraftQuestionVersionWithRevisedText()` *(for versioned entities — "update" is
+  never in-place; see `docs/scd-contract.md`)*
+- `shouldPublishDraftQuestionVersion()`
 
 ### Running Tests
 
@@ -503,6 +516,15 @@ survey.step.step_instance.section.section_instance.question.question_instance
 Example: 0001-0002-0001-0003-0002-0015-0001
 ```
 
+> **Not the same as SCD "version".** The `_instance` segments above number
+> *repeated* occurrences of a step/section/question within one published
+> structural version (e.g. a repeating "list another diagnosis" section).
+> They are unrelated to a structural element's Kimball Type 2 `version`
+> (which numbers revisions of the element's definition over time). A single
+> Display Key addresses one instance of one specific version of a step,
+> section, or question. Do not use "instance" and "version" interchangeably
+> in UI copy or code.
+
 #### Token System
 Dynamic text replacement for personalized questions:
 - `{S1|default}` - Subject/person identifier
@@ -541,6 +563,15 @@ Renders as: "What is John's age?" (when S1 = "John")
 
 **Responses:**
 - `respondents`, `answers`
+
+> These lists predate the Kimball Type 2 versioning columns now present on
+> `questions`, `select_groups`, `select_items`, `sections`, `steps`,
+> `sections_questions`, `steps_sections`, and `relationships` (durable key,
+> `version`, `effective_from`/`effective_to`, `is_draft`, `published_by`,
+> `published_comment`). See `docs/scd-contract.md` for the current contract.
+> Note also: the "Logic" table list above says `dependencies`; confirm the
+> actual table name (`dependents`, per the Survey schema) at entity-model
+> time.
 
 ## Getting Help
 

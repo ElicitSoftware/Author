@@ -1,0 +1,118 @@
+@startuml Use Cases Overview
+' Source: docs/requirements.md
+left to right direction
+
+actor "Survey Author" as author
+actor "System Administrator" as admin
+actor "Identity Provider\n(Keycloak/OIDC)" as idp
+
+rectangle "Elicit Author" {
+
+    ' Survey & Structural Element Lifecycle (FR-001..FR-009)
+    usecase "UC-001\nCreate Survey" as UC001
+    usecase "UC-002\nEdit Survey Metadata" as UC002
+    usecase "UC-003\nCreate Structural Element Draft" as UC003
+    usecase "UC-004\nEdit Structural Element Draft" as UC004
+    usecase "UC-005\nPublish Structural Element Draft" as UC005
+    usecase "UC-006\nDiscard Structural Element Draft" as UC006
+    usecase "UC-007\nView Structural Element Version History" as UC007
+
+    ' Question Authoring (FR-010..FR-014)
+    usecase "UC-008\nAuthor Question" as UC008
+    usecase "UC-009\nAuthor Token Placeholders in Question Text" as UC009
+    usecase "UC-010\nPreview Token Replacement" as UC010
+    usecase "UC-011\nManage Select Groups and Items" as UC011
+
+    ' Section & Step Organization (FR-015..FR-018)
+    usecase "UC-012\nOrganize Sections into Steps" as UC012
+    usecase "UC-013\nReorder Steps, Sections, and Questions" as UC013
+    usecase "UC-014\nConfigure Repeating Elements" as UC014
+    usecase "UC-015\nRename Step or Section" as UC015
+
+    ' Logic & Relationships (FR-019..FR-022)
+    usecase "UC-016\nCreate Conditional Relationship" as UC016
+    usecase "UC-017\nVisualize Relationship Graph" as UC017
+    usecase "UC-018\nValidate Relationship Consistency" as UC018
+
+    ' Ontology & Metadata (FR-023..FR-026)
+    usecase "UC-019\nAssign Ontology Tag to Question" as UC019
+    usecase "UC-020\nReassign Ontology Tag" as UC020
+    usecase "UC-021\nManage Ontology and Dimension Entries" as UC021
+    usecase "UC-022\nPreview Dimensional Impact" as UC022
+
+    ' Requirements Collection & First-Draft Generation (FR-027..FR-029)
+    usecase "UC-023\nAuthor the Requirements-Collection Meta-Survey" as UC023
+    usecase "UC-024\nGenerate First-Draft Structure from Meta-Survey Answers" as UC024
+    usecase "UC-025\nRefine Generated Draft" as UC025
+
+    ' Preview & Publish (FR-030..FR-031)
+    usecase "UC-026\nPreview Survey as Respondent" as UC026
+    usecase "UC-027\nBatch-Publish Pending Drafts" as UC027
+
+    ' Access & Integration (FR-032..FR-033)
+    usecase "UC-028\nAuthenticate via OIDC" as UC028
+    usecase "UC-029\nRestrict Authoring Access" as UC029
+
+    ' Export & Import (FR-034..FR-035)
+    usecase "UC-030\nExport Survey Definition" as UC030
+    usecase "UC-031\nImport Survey Definition" as UC031
+}
+
+' Survey & Structural Element Lifecycle
+author --> UC001
+author --> UC002
+author --> UC003
+author --> UC004
+author --> UC005
+author --> UC006
+author --> UC007
+
+' Question Authoring
+author --> UC008
+author --> UC009
+author --> UC010
+author --> UC011
+
+' Section & Step Organization
+author --> UC012
+author --> UC013
+author --> UC014
+author --> UC015
+
+' Logic & Relationships
+author --> UC016
+author --> UC017
+author --> UC018
+
+' Ontology & Metadata
+author --> UC019
+author --> UC020
+author --> UC021
+author --> UC022
+
+' Requirements Collection & First-Draft Generation
+author --> UC023
+author --> UC024
+author --> UC025
+
+' Preview & Publish
+author --> UC026
+author --> UC027
+
+' Access & Integration
+author --> UC028
+admin --> UC028
+admin --> UC029
+idp --> UC028
+
+' Export & Import
+author --> UC030
+author --> UC031
+
+' Relationships worth calling out explicitly
+UC023 ..> UC001 : <<include>>
+UC024 ..> UC003 : <<include>>
+UC025 ..> UC004 : <<extend>>
+UC027 ..> UC005 : <<include>>
+
+@enduml
