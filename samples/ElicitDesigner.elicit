@@ -1,0 +1,168 @@
+# ELICIT_SURVEY_EXPORT_V1
+# survey_id: 1
+# survey_key: b3a7c2e4-5d18-4f92-8a60-1c9e3f75d2b4
+# survey_name: ElicitDesigner
+# surveys: 1
+# select_groups: 6
+# select_items: 32
+# steps: 8
+# sections: 12
+# steps_sections: 12
+# questions: 34
+# sections_questions: 34
+# relationships: 8
+# reports: 0
+# post_survey_actions: 0
+# dimensions: 0
+# ontology: 0
+# metadata: 0
+# generated: 2026-09-15T19:00:00-04:00
+# survey_revision: 2026-09-15T19:00:00-04:00
+
+surveys: 1|b3a7c2e4-5d18-4f92-8a60-1c9e3f75d2b4|ElicitDesigner|1|Elicit Survey Designer|A meta-survey: it interviews you about the survey you want to build, and its completed responses are the specification an author turns into a .elicit definition file for import into any Elicit deployment.|0001-0001-0000-0001-0000-0000-0000||elicit-designer|Initial publication
+select_groups: 1|f92334d0-e83b-5331-a545-6449a1340b60|AnswerType|Elicit question types, coded to the engine's type_id|Text|0|||elicit-designer|Initial publication|false
+select_groups: 2|15f17cf8-b63f-5fb4-87fd-4de3e995561d|YesNo|Simple yes/no|Boolean|0|||elicit-designer|Initial publication|false
+select_groups: 3|5acfcd3d-aa46-5fde-bb9d-158f742c3404|RuleOperator|Comparison operators, coded to the engine's operator_id|Text|0|||elicit-designer|Initial publication|false
+select_groups: 4|604ffd95-d24b-5300-b4c5-b37afc99204c|RuleAction|Rule actions, coded to the engine's action_id|Text|0|||elicit-designer|Initial publication|false
+select_groups: 5|e29a46a6-65d2-53b9-9c53-4a207f89327d|Requirement|Whether an answer is mandatory|Text|0|||elicit-designer|Initial publication|false
+select_groups: 6|89ee114a-f2e7-5006-897d-611f0e043c39|DeliveryChannel|How results leave the system|Text|0|||elicit-designer|Initial publication|false
+select_items: 1001|40c2e188-8ad2-531c-b356-6113f51c57ba|1|Short text box|1|8|0|||elicit-designer|Initial publication|false
+select_items: 1002|4ad730f7-6184-5b50-9ef7-929ce89244a8|1|Long text area|2|9|0|||elicit-designer|Initial publication|false
+select_items: 1003|ffb63f7a-0d45-54a1-8a38-54453b03ad2f|1|Whole number|3|5|0|||elicit-designer|Initial publication|false
+select_items: 1004|9762534e-b928-52b3-868d-53b130393e06|1|Decimal number|4|6|0|||elicit-designer|Initial publication|false
+select_items: 1005|292aeedb-8d73-559f-a4f9-3af960b21601|1|Yes / no checkbox|5|1|0|||elicit-designer|Initial publication|false
+select_items: 1006|d4dcbc68-7b3b-503b-accd-6e195e2ee3b0|1|Single choice — dropdown|6|3|0|||elicit-designer|Initial publication|false
+select_items: 1007|c6ce36bb-27d0-5863-b260-72877efe4b37|1|Single choice — radio buttons|7|7|0|||elicit-designer|Initial publication|false
+select_items: 1008|27a0bc50-69e1-5e14-97bb-c199799df24a|1|Multiple choice — checkboxes|8|11|0|||elicit-designer|Initial publication|false
+select_items: 1009|4fdffe48-45aa-59a7-9c1c-b21ad20e012b|1|Multiple choice — dropdown|9|10|0|||elicit-designer|Initial publication|false
+select_items: 1010|f4dac4fd-9db3-571a-aaf8-22403ca83069|1|Date|10|2|0|||elicit-designer|Initial publication|false
+select_items: 1011|9874255d-b4d8-5572-9072-1c73151b9a3a|1|Date and time|11|12|0|||elicit-designer|Initial publication|false
+select_items: 1012|2a4f81af-5c87-5d75-a698-86f92fa273f1|1|Email address|12|13|0|||elicit-designer|Initial publication|false
+select_items: 1013|3a440252-754c-5505-b7bf-2c8b1ebf45c3|1|Password|13|14|0|||elicit-designer|Initial publication|false
+select_items: 1014|ab047e7d-a7e4-582f-8c83-f3f64296ee68|1|Informational text (no answer)|14|4|0|||elicit-designer|Initial publication|false
+select_items: 2001|e716f80c-28a1-5b4f-829d-7b2a11a7261e|2|Yes|1|1|0|||elicit-designer|Initial publication|false
+select_items: 2002|9ca37351-ec46-521f-80e8-752b6210fd63|2|No|2|0|0|||elicit-designer|Initial publication|false
+select_items: 3001|59eb03a3-dfb2-5a82-8adb-3e166d02a116|3|Is checked / is true|1|1|0|||elicit-designer|Initial publication|false
+select_items: 3002|bbf81da9-ab82-5b28-b156-52b648368e9f|3|Is greater than or equal to|2|2|0|||elicit-designer|Initial publication|false
+select_items: 3003|e4d425e9-caf6-5f0a-b4b4-b7ca6fb7280c|3|Is exactly equal to|3|3|0|||elicit-designer|Initial publication|false
+select_items: 3004|ac671a4a-93dc-5feb-ada4-c8101b2ae1e1|3|Is not equal to|4|4|0|||elicit-designer|Initial publication|false
+select_items: 3005|edf900c5-b5ae-5946-a1ba-1397acdfb98a|3|Has been answered at all|5|5|0|||elicit-designer|Initial publication|false
+select_items: 3006|523b3ccd-88f4-59f7-85b4-745097acc9c4|3|Contains the value|6|6|0|||elicit-designer|Initial publication|false
+select_items: 4001|bde866c8-eac8-519f-ba5f-1a846401e7af|4|Show the target|1|1|0|||elicit-designer|Initial publication|false
+select_items: 4002|10066fc3-2ba0-55b6-abdc-d3b9276aceca|4|Repeat the target N times|2|2|0|||elicit-designer|Initial publication|false
+select_items: 4003|1520f668-9376-5e41-a206-0f3bd066e229|4|Replace the target's text|3|3|0|||elicit-designer|Initial publication|false
+select_items: 5001|18db14b5-ee10-5855-a009-c201b793381c|5|Required — cannot continue without it|1|1|0|||elicit-designer|Initial publication|false
+select_items: 5002|736748aa-c8dd-5c58-a949-0ad81d6bbf37|5|Optional|2|0|0|||elicit-designer|Initial publication|false
+select_items: 6001|ae4ba425-933f-560e-9ccc-77ecac099d75|6|PDF report for the respondent|1|PDF|0|||elicit-designer|Initial publication|false
+select_items: 6002|1c1b0da1-e9d3-5501-b115-7873c1d7b9ba|6|PDF report for staff|2|PDF_STAFF|0|||elicit-designer|Initial publication|false
+select_items: 6003|cd325be8-d795-5d03-8aa3-ffa49a7e7f41|6|Webhook / REST callback|3|WEBHOOK|0|||elicit-designer|Initial publication|false
+select_items: 6004|ffb798c7-db8c-574b-ab19-3bf7401165e7|6|Email notification|4|EMAIL|0|||elicit-designer|Initial publication|false
+select_items: 6005|6a273f18-2f2d-5c4d-9d25-bd410612d9a9|6|Nothing — data stays in Elicit|5|NONE|0|||elicit-designer|Initial publication|false
+steps: 1|2e90b091-435e-5fac-acd6-5dae925679a6|1|Welcome||Welcome step|0|||elicit-designer|Initial publication|false
+steps: 2|cc4d77a5-d52a-56a2-8d52-03a69856ff20|2|Survey Identity||Survey Identity step|0|||elicit-designer|Initial publication|false
+steps: 3|b055c84c-1733-5c4e-a985-4b3131c88cf2|3|Structure||Structure step|0|||elicit-designer|Initial publication|false
+steps: 4|b910f8c0-c01d-5c09-a1da-544f30630a34|4|Questions||Questions step|0|||elicit-designer|Initial publication|false
+steps: 5|704ad10d-dd13-5c6c-84f4-7255ba2e70c2|5|Answer Lists||Answer Lists step|0|||elicit-designer|Initial publication|false
+steps: 6|e9f79d6f-0e9e-5f99-968d-c145e393ef70|6|Conditional Logic||Conditional Logic step|0|||elicit-designer|Initial publication|false
+steps: 7|4e7280ad-d345-55fe-8f3b-4578cc0e6197|7|Delivery||Delivery step|0|||elicit-designer|Initial publication|false
+steps: 8|693defd4-d62e-5a71-9d95-d12d40add81f|8|Generate||Generate step|0|||elicit-designer|Initial publication|false
+sections: 1|18f7164e-fece-5450-8c30-f89d81a72714|1|Before You Begin||Before You Begin section|0|||elicit-designer|Initial publication|false
+sections: 2|a9a56304-b147-53c1-96cc-bd61575c32e8|2|Naming and Purpose||Naming and Purpose section|0|||elicit-designer|Initial publication|false
+sections: 3|5c7ab7fd-621e-5f31-b707-d553bbb6cb16|3|How Many Steps||How Many Steps section|0|||elicit-designer|Initial publication|false
+sections: 4|f8f1f587-e456-578e-969a-8e900035041a|4|Describe Each Step||Describe Each Step section|0|||elicit-designer|Initial publication|false
+sections: 5|600cbc61-7e08-5c97-833e-942b493c0ad8|5|How Many Questions||How Many Questions section|0|||elicit-designer|Initial publication|false
+sections: 6|1b808f0d-c4c9-5be4-952e-793273c38b42|6|Describe Each Question||Describe Each Question section|0|||elicit-designer|Initial publication|false
+sections: 7|f9dd0c7f-5590-5d47-96ac-ffd405102608|7|How Many Answer Lists||How Many Answer Lists section|0|||elicit-designer|Initial publication|false
+sections: 8|2e3da747-8d40-55ac-9c7e-9d104f9475e5|8|Describe Each Answer List||Describe Each Answer List section|0|||elicit-designer|Initial publication|false
+sections: 9|ed67617f-9f03-54e4-a0c2-b4e0e24cdcb2|9|Conditional Logic||Conditional Logic section|0|||elicit-designer|Initial publication|false
+sections: 10|51abd422-c053-537c-a791-b4e70159e697|10|Describe Each Rule||Describe Each Rule section|0|||elicit-designer|Initial publication|false
+sections: 11|5380eec0-07ff-5f28-9f7e-72f6e992733f|11|Reports and Follow-up||Reports and Follow-up section|0|||elicit-designer|Initial publication|false
+sections: 12|a958b2a9-ccd8-586c-a87c-678e937f6091|12|Review and Produce||Review and Produce section|0|||elicit-designer|Initial publication|false
+steps_sections: 101|f760fa67-3369-5dfe-ac52-17daaea1c91f|1|1|1|1|0001-0001-0000-0001-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 102|668dec33-b64f-510e-bc4b-868b5fa0cfcb|2|2|2|2|0001-0002-0000-0002-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 103|f3676175-a4a6-5411-a98c-307a13cffa55|3|3|3|3|0001-0003-0000-0003-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 104|88b50a11-ed81-58e7-88cc-41777f2b6843|3|3|4|4|0001-0003-0000-0004-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 105|978e184c-1bc4-5bcc-9914-19e7636f2bec|4|4|5|5|0001-0004-0000-0005-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 106|cc69586d-34bb-5121-989b-a90fe95eaf74|4|4|6|6|0001-0004-0000-0006-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 107|fbf10559-2a06-5467-ad6d-6c044aab9d6e|5|5|7|7|0001-0005-0000-0007-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 108|128f3079-cbfd-505c-a061-d93d65d7d9f3|5|5|8|8|0001-0005-0000-0008-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 109|8ae08025-15d5-586f-b2bb-09a289d687b2|6|6|9|9|0001-0006-0000-0009-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 110|44a4d9c1-cc0c-546c-9587-5e1ef784f2c4|6|6|10|10|0001-0006-0000-0010-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 111|b48de32a-24a5-5edf-b795-a732579b80dd|7|7|11|11|0001-0007-0000-0011-0000-0000-0000|0|||elicit-designer|Initial publication|false
+steps_sections: 112|4162a7eb-9d4c-5770-ac24-d6a7060a974e|8|8|12|12|0001-0008-0000-0012-0000-0000-0000|0|||elicit-designer|Initial publication|false
+questions: 1000|c0cca7ab-6e65-5835-b308-4b22c9ebfef2|4|<h2>Design a new Elicit survey</h2><p>This tool interviews you about the survey you want to build. Answer as much as you can — every answer maps onto one row of the <code>.elicit</code> definition file that gets imported into an Elicit deployment.</p><p>You can stop and resume; nothing is published until an author reviews your answers.</p>|intro||false|||||||||0|||elicit-designer|Initial publication|false
+questions: 1001|d07e6653-1dff-5d69-b864-7181de7dc847|8|Short machine name for the survey (letters and digits, no spaces)|SurveyName|Becomes surveys.name. Must be unique within the deployment.|true|||Use letters and digits only, no spaces.|||LibraryCardReg|||0|||elicit-designer|Initial publication|false
+questions: 1002|a2394b79-44d2-5c9a-a7ad-4f708ef21bde|8|Title respondents will see at the top of every page|SurveyTitle||true||||||Public Library Card Registration|||0|||elicit-designer|Initial publication|false
+questions: 1003|eba1b440-3a83-5934-a7c5-9db3b159f817|9|What is this survey for? Who fills it in, and what happens to the answers?|Purpose||true|||||||||0|||elicit-designer|Initial publication|false
+questions: 1004|3ac410c5-81af-5be5-802d-253fb7dc96ac|13|Email address of the person who owns this survey|OwnerEmail||true|||Enter a valid email address.||||||0|||elicit-designer|Initial publication|false
+questions: 1005|6f0d3411-fd80-5230-9b7d-9b6ad36d2092|8|Where should respondents be sent after they finish? (leave blank for the default thank-you page)|PostSurveyUrl||false||||||https://example.org/thank-you|||0|||elicit-designer|Initial publication|false
+questions: 1006|db2b2c8e-633f-5d6e-aeed-8747ee9e271c|5|How many steps (pages) should the survey have?|StepCount|Each step is one page the respondent moves through.|true|1|20|Enter a whole number between 1 and 20.||||||0|||elicit-designer|Initial publication|false
+questions: 1007|8400a055-a4ab-5a87-bfcd-1e722d129f5f|8|Name of this step, as shown in the progress bar|StepName||true|||||||||0|||elicit-designer|Initial publication|false
+questions: 1008|6678a73c-898d-5026-9e2d-bdbf254aa703|5|How many sections (headed groups of questions) are on this step?|SectionCount||true|1|10|Enter a whole number between 1 and 10.||||||0|||elicit-designer|Initial publication|false
+questions: 1009|3d5d350d-db97-596e-8c75-21b17c4044e5|8|Heading for the first section on this step|SectionHeading||false|||||||||0|||elicit-designer|Initial publication|false
+questions: 1010|8564ecf7-3e2a-5a2c-8e09-673524b28d1e|5|How many questions does the whole survey have?|QuestionCount||true|1|200|Enter a whole number between 1 and 200.||||||0|||elicit-designer|Initial publication|false
+questions: 1011|488ebcc5-df08-58a7-af97-5e4dde08504c|9|Question wording, exactly as the respondent should read it|QuestionText||true|||||||||0|||elicit-designer|Initial publication|false
+questions: 1012|90a0a45f-1f44-5c1c-9808-ed3846142325|3|What kind of answer does this question take?|AnswerType||true||||1|||||0|||elicit-designer|Initial publication|false
+questions: 1013|2d7da426-3635-51aa-af8c-2b5974f04ea1|7|Must this question be answered?|Required||true||||5|||||0|||elicit-designer|Initial publication|false
+questions: 1014|6a7b7815-cae6-574c-8632-76ee68eb4841|8|Short label for exports, reports and column headings|ShortLabel|Becomes questions.short_text — keep it under about 30 characters.|true|||||||||0|||elicit-designer|Initial publication|false
+questions: 1015|28201348-e525-5b5c-a888-46bdd83d2711|8|Which answer list does this question use? (name it from step 5)|AnswerList|Only applies to choice questions.|false|||||||||0|||elicit-designer|Initial publication|false
+questions: 1016|4b5f42a6-2dc7-5697-a605-69211cf1f3f5|8|Optional help text or tooltip shown beside the question|HelpText||false|||||||||0|||elicit-designer|Initial publication|false
+questions: 1017|16304e3d-cda4-5f92-b79a-12c866f68128|8|Message to show when the answer fails validation|ValidationText||false||||||Enter a whole number between 1 and 10.|||0|||elicit-designer|Initial publication|false
+questions: 1018|24fa66dc-5465-5ac9-a058-d972c736837e|5|How many reusable answer lists does the survey need?|ListCount|An answer list is a set of choices shared by one or more questions.|true|0|50|Enter a whole number between 0 and 50.||||||0|||elicit-designer|Initial publication|false
+questions: 1019|b9dfa818-fb58-57e9-a171-3f15687364e3|8|Name of this answer list|ListName||true||||||PreferredContactMethod|||0|||elicit-designer|Initial publication|false
+questions: 1020|fac8f03a-6c67-58ee-82c1-5e3c6b5c4889|9|The options, one per line, written as Label=StoredValue|ListOptions|Example: Email=EMAIL on one line, Phone=PHONE on the next.|true|||||||||0|||elicit-designer|Initial publication|false
+questions: 1021|e6f42f12-8ee0-5fce-a09c-9f1f77d89ad4|1|Does any part of this survey appear, repeat or change based on an earlier answer?|NeedsLogic||false|||||||||0|||elicit-designer|Initial publication|false
+questions: 1022|72f9aa4e-d56c-5edb-a8b7-7ae4ef92bcd0|5|How many such rules are there?|RuleCount||false|1|50|Enter a whole number between 1 and 50.||||||0|||elicit-designer|Initial publication|false
+questions: 1023|5dbf96a3-ba65-5b5a-8b56-d763e1f87a32|8|When this question is answered…  (give its short label)|RuleTrigger||true|||||||||0|||elicit-designer|Initial publication|false
+questions: 1024|5b2c862d-0606-53ce-bd14-c0ca10954922|3|…and the answer…|RuleOperator||true||||3|||||0|||elicit-designer|Initial publication|false
+questions: 1025|2ff2ee7f-4d44-5e64-a3ec-59a1ff750d06|8|…this value…|RuleValue|Leave blank for 'is checked' or 'has been answered at all'.|false|||||||||0|||elicit-designer|Initial publication|false
+questions: 1026|767da59b-0532-56fb-863f-3476b9cff603|3|…then do this:|RuleAction||true||||4|||||0|||elicit-designer|Initial publication|false
+questions: 1027|58bc0d04-c17a-5c2b-80d6-97a04ee0073a|8|…to this question, section or step (give its short label or name)|RuleTarget||true|||||||||0|||elicit-designer|Initial publication|false
+questions: 1028|f649e0f8-8876-5213-94ed-edd349368179|11|How should completed responses be delivered?|DeliveryChannels||false||||6|||||0|||elicit-designer|Initial publication|false
+questions: 1029|650e322f-c5b0-53cc-8aa0-807d22b671c8|8|What should the report be called?|ReportName||false|||||||||0|||elicit-designer|Initial publication|false
+questions: 1030|32a986a0-177a-5968-9352-54b1faf79334|8|Report or webhook endpoint URL|ReportUrl||false||||||http://report-service:8080/report|||0|||elicit-designer|Initial publication|false
+questions: 1031|e0abcd20-816b-53b1-83f6-6ebea384c453|4|<h3>What happens next</h3><p>Your answers become the specification for a <code>.elicit</code> file. An author maps each answer onto the matching record — steps, sections, questions, answer lists and rules — and the finished file is uploaded through <em>Apply Survey Definition</em> in the Admin app.</p>|outro||false|||||||||0|||elicit-designer|Initial publication|false
+questions: 1032|b801b963-10a6-54cc-8af2-e3fe4b6c19da|1|I confirm the details above are complete and ready for review|Confirmed||true|||||||||0|||elicit-designer|Initial publication|false
+questions: 1033|715d3c78-ee9a-5bee-a54c-f8c09efa8275|9|Anything else the author should know before building this survey?|AuthorNotes||false|||||||||0|||elicit-designer|Initial publication|false
+sections_questions: 6000|811271e4-b622-58e9-b12a-d808a7d3f996|1000|1|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6001|c5f3277f-e267-5a64-8938-5bda6cc6198f|1001|2|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6002|e832f242-d699-59e2-92e2-1791fadb592f|1002|2|2|0|||elicit-designer|Initial publication|false
+sections_questions: 6003|bec8c45d-6336-5873-b01b-61d358b95d79|1003|2|3|0|||elicit-designer|Initial publication|false
+sections_questions: 6004|b6fe981e-206f-537d-ba82-c97583830a34|1004|2|4|0|||elicit-designer|Initial publication|false
+sections_questions: 6005|7bcb33b9-0caa-5f8b-ae21-5e5c95685811|1005|2|5|0|||elicit-designer|Initial publication|false
+sections_questions: 6006|8ffd8f51-8294-5073-bab8-c77e237e7dc9|1006|3|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6007|77e9c7c3-66d4-523b-a87c-15a5f7a91635|1007|4|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6008|f67bb0be-35a5-516f-a20c-f10ff9abd322|1008|4|2|0|||elicit-designer|Initial publication|false
+sections_questions: 6009|e638f801-d60c-52e2-81b9-4cbf01a06243|1009|4|3|0|||elicit-designer|Initial publication|false
+sections_questions: 6010|ca69f40a-4c6c-5144-a2b1-1ad342b5addf|1010|5|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6011|acbf05bd-d283-5cd3-9627-4b804680d87f|1011|6|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6012|93401fbc-3585-5e13-b2fe-0d20347d2b84|1012|6|2|0|||elicit-designer|Initial publication|false
+sections_questions: 6013|05162cb3-2f93-5a44-b94d-2a29c59530e0|1013|6|3|0|||elicit-designer|Initial publication|false
+sections_questions: 6014|1df28b0e-ebab-5b5d-b5db-beac29490ea3|1014|6|4|0|||elicit-designer|Initial publication|false
+sections_questions: 6015|2736d4f6-0c32-54c9-88f0-709626e86b7f|1015|6|5|0|||elicit-designer|Initial publication|false
+sections_questions: 6016|21bd7046-f44c-58f9-a9c9-2204df085d64|1016|6|6|0|||elicit-designer|Initial publication|false
+sections_questions: 6017|5a0d2b23-3ea5-5df6-b51d-f164e59cb0e2|1017|6|7|0|||elicit-designer|Initial publication|false
+sections_questions: 6018|f57e6752-ced1-58aa-bcbb-a0e29bd8f5e7|1018|7|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6019|2f81224f-b6fd-5244-8ad9-6537d3b8f427|1019|8|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6020|2a344e7e-01de-5e49-893b-8c5a38f9185b|1020|8|2|0|||elicit-designer|Initial publication|false
+sections_questions: 6021|4d663b12-c572-542b-8f51-82364b3aaddf|1021|9|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6022|2c5a57d7-5943-55b4-be34-32014ff6b68d|1022|9|2|0|||elicit-designer|Initial publication|false
+sections_questions: 6023|a834d7e5-4957-549f-b04d-da2bb4fa593d|1023|10|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6024|6dac6613-419e-5a10-bc37-1340e82c5e2d|1024|10|2|0|||elicit-designer|Initial publication|false
+sections_questions: 6025|c25991f0-fde0-5b8a-8789-7d76b61b0b26|1025|10|3|0|||elicit-designer|Initial publication|false
+sections_questions: 6026|f0e4bc34-990e-5cbf-87e4-a8d58adbeccd|1026|10|4|0|||elicit-designer|Initial publication|false
+sections_questions: 6027|83caddee-d62a-5193-a741-ee54ff33b1d7|1027|10|5|0|||elicit-designer|Initial publication|false
+sections_questions: 6028|89cf2e7f-580a-5195-87e7-3ed6cfe9cbaa|1028|11|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6029|a467b7ba-e5a6-51a3-affb-7f91f8d7c634|1029|11|2|0|||elicit-designer|Initial publication|false
+sections_questions: 6030|0ca8b8d4-e87d-50a8-9f5e-4d30b4f0103c|1030|11|3|0|||elicit-designer|Initial publication|false
+sections_questions: 6031|4c25852d-f404-540d-aadc-4606ac0ffea0|1031|12|1|0|||elicit-designer|Initial publication|false
+sections_questions: 6032|756dcc95-9628-538f-afee-77935c31451a|1032|12|2|0|||elicit-designer|Initial publication|false
+sections_questions: 6033|fece1e00-7e32-5efd-8515-2a696936228a|1033|12|3|0|||elicit-designer|Initial publication|false
+relationships: 1|154dac02-e886-5866-a427-c429e6101f23||6006||104||2|2|Repeat the step description block once per step||1|||0|||elicit-designer|Initial publication|false
+relationships: 2|d58b72fe-b539-57a5-9d71-991fe8ea6ef9||6010||106||2|2|Repeat the question description block once per question||1|||0|||elicit-designer|Initial publication|false
+relationships: 3|6172b3ed-0e3f-5f4a-b3c2-c4c584ec0c03||6018||108||2|2|Repeat the answer-list block once per list||1|||0|||elicit-designer|Initial publication|false
+relationships: 4|73a5b102-b657-559c-9256-8acf5f405e9f||6021|||6022|1|1|Ask for a rule count only when conditional logic is needed|||||0|||elicit-designer|Initial publication|false
+relationships: 5|11920db8-55a8-57b3-acbd-96d3fc4d1d99||6022||110||2|2|Repeat the rule description block once per rule||1|||0|||elicit-designer|Initial publication|false
+relationships: 6|e9cd5857-bf47-5858-8ec8-5eb82b08ea83||6012|||6015|3|1|Ask which answer list to use only for single-choice dropdown questions||3|||0|||elicit-designer|Initial publication|false
+relationships: 7|19b294a3-4baf-5796-b14e-bb6bf9f00d71||6028|||6029|6|1|Ask for a report name only when a PDF report was requested||PDF|||0|||elicit-designer|Initial publication|false
+relationships: 8|d450ada2-7126-50c9-8d21-66b9a4b074dc||6028|||6030|6|1|Ask for an endpoint only when a webhook was requested||WEBHOOK|||0|||elicit-designer|Initial publication|false
