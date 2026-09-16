@@ -54,3 +54,6 @@ nb-configuration.xml
 
 # vite
 vite.generated.ts
+
+# Local docker-compose postgres data
+/postgres/PGDATA
