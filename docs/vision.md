@@ -1,17 +1,20 @@
 # Elicit Author — Vision
 
-> **Draft.** This is the AIUP seed document. Edit freely — `/requirements`,
-> `/entity-model`, and the rest of the AIUP workflow read from here. Existing
-> planning docs in the repo root are useful input:
-> `survey-authoring-development-plan.md`,
-> `survey-requirements-collection-system.md`, `creating-fhhs-style-surveys.md`.
-> **Caveat:** those three docs predate the Survey module's Kimball Type 2
-> versioning schema (see Constraints below, and `docs/scd-contract.md`) and
-> describe authoring as simple mutable-row CRUD with no draft/version/publish
-> lifecycle. Treat them as useful for *what* authors need to do (question
-> banks, branching, metadata, requirements-collection flow), not for *how*
-> writes happen — the draft/publish mechanics below supersede anything they
-> imply about direct in-place edits.
+> This is the AIUP seed document. `/requirements`, `/entity-model`, and the rest of
+> the AIUP workflow read from here. The planning docs in the repo root
+> (`survey-authoring-development-plan.md`, `survey-requirements-collection-system.md`,
+> `creating-fhhs-style-surveys.md`) remain useful for *what* authors need to do
+> (question banks, branching, tokens, metadata, requirements collection). They predate
+> two platform changes that this document reflects and they do not: the Kimball Type 2
+> versioning of the shared schema, and the **`.elicit` definition-file pipeline** that
+> Admin now implements for installing and updating surveys. Where they describe writing
+> straight into a shared production database, this document supersedes them.
+>
+> **Revision note (2026-09-17):** an earlier draft of this vision described Author as
+> the only writer to the shared schema's versioned tables, with an in-database
+> draft → publish lifecycle. That was overtaken by Admin's export / import / update
+> work (Admin UC-013, UC-014, UC-017, UC-018, 2026-09-12..15) and Survey's portable
+> `*_key` identities (2026-09-14). Author's "publish" is exporting a file.
 
 ## Mission
 
@@ -20,76 +23,85 @@ Elicit Author is the survey **authoring** module of the
 researchers, educators, analysts, and other survey creators to build
 sophisticated surveys through visual interfaces — defining steps, sections,
 questions, branching logic, dynamic tokens, and dimensional metadata — and to
-publish those definitions into the shared Elicit survey database that the
-Survey (respondent) and Admin modules consume.
+**export those definitions as `.elicit` files** that any Elicit deployment
+installs or updates through its Admin app.
 
-The shared `survey` schema versions every structural element — steps,
-sections, questions, select groups/items, relationships, and the join tables
-that connect them — using a Kimball Type 2 slowly-changing-dimension pattern:
-each element has a durable key that never changes, an incrementing version
-number, an effective-dated validity window, and an explicit draft/current
-state. Author is the **only** application that writes to these versioned
-tables (Survey and Admin only read them), so a core part of Author's mission
-is giving authors a safe draft → publish workflow instead of letting edits
-silently overwrite what past respondents already saw.
+Author works in its **own** database (a local instance of the shared `survey`
+schema, created by the Survey module's migrations). It never connects to a
+production survey database. The hand-off between authoring and deployment is
+the definition file:
+
+```
+Author  ── edit working copy ── validate ── export survey.elicit ──▶  target site
+                                                                     Admin "Apply Survey Definition"
+                                                                       first time: install (all rows version 0)
+                                                                       later:      update in place, matched by element key
+                                                                                   (new version rows at the target;
+                                                                                    respondents pinned to what they started with)
+```
+
+Because the target side versions and pins on its own, Author does not need a
+draft/publish lifecycle of its own. What it must get right is **identity**:
+every survey and every structural element carries a UUID key
+(`survey_key`, `question_key`, `step_key`, …) that is minted once when the
+element is created and never regenerated, so that a later export of the same
+survey updates the same rows at every site instead of installing a second copy.
 
 ## Target Users
 
 - **Survey authors** — researchers, educators, business analysts, and other
   designers who define question banks, branching logic, and dimensional
-  metadata, then publish surveys.
-- **Survey administrators** — staff (in the Admin app) who operate the surveys
-  authors publish.
+  metadata, then export surveys for deployment.
+- **Survey administrators** — staff (in the Admin app) who apply the exported
+  definitions and operate the surveys.
 - **Respondents** — the eventual audience (in the Survey app) whose experience
   is shaped by what authors build here.
 
 ## Goals
 
 - Provide a visual authoring experience for survey structure (steps, sections,
-  questions) without hand-writing SQL.
+  questions) without hand-writing SQL or definition files.
 - Capture branching logic, relationships, and conditional display rules.
 - Support dynamic text / token requirements in question content.
 - Model dimensional / ontology metadata for downstream analytics.
-- Generate first-draft survey structures (e.g. SQL scripts) from a guided
+- Import an existing `.elicit` definition for further editing, preserving its keys.
+- Validate a definition (dangling references, malformed rules, missing options)
+  before it can be exported.
+- Export definitions in the `ELICIT_SURVEY_EXPORT_V1` format that Admin's
+  apply workflow consumes, stamping who exported it and a release note, and
+  minting the file's `survey_revision`.
+- Express **removals** so they reach deployed sites: a removed element is
+  retired (its validity window closed), exported as retired, and closed at the
+  target by Admin's update — never deleted, so recorded answers survive.
+- Generate first-draft survey structures from a guided
   requirements-collection flow ("survey-to-build-surveys" meta-survey).
-- Provide an explicit **draft → publish lifecycle** for every versioned
-  structural element (steps, sections, questions, select groups, select
-  items, relationships, and their join tables): authors edit a draft, and
-  publishing closes the currently-open version and opens a new version under
-  the same durable key — never an in-place mutation of a published row.
-- Surface **version history** for structural elements: which version is
-  current, the effective date range of past versions, and who published each
-  change and why (`published_by` / `published_comment` are the only audit
-  trail the schema keeps — there is no separate audit-log table).
-- Publish survey definitions into the shared Elicit PostgreSQL schema,
-  respecting that `surveys` itself is not versioned (a Type 1, in-place-edit
-  table) while the eight structural tables above are.
+- Let authors preview a survey as a respondent using the Survey app in the
+  local authoring stack.
 
 ## Scope
 
 **In scope**
-- Visual definition and editing of survey structure and content.
-- Draft/version/publish lifecycle management for steps, sections, questions,
-  select groups, select items, relationships, and their join tables —
-  creating and validating drafts, and publishing them as new durable-key
-  versions in the shared schema (never in-place edits to a published row).
-- Version-history browsing for structural elements (current vs. past
-  versions, effective date ranges, publish attribution/comments).
+- Visual definition and editing of survey structure and content in Author's
+  working database.
 - Branching / conditional logic and dynamic token configuration.
 - Ontology / dimensional metadata authoring, including reassigning a
-  question's ontology tag — understanding that, unlike other structural
-  edits, this is a **retroactive** change (see Constraints).
+  question's ontology tag — with an explicit warning that this is a
+  **retroactive** change at deployed sites (see Constraints).
+- Validation, export, and import of `.elicit` definition files.
+- Removing and restoring structural elements (retire semantics).
 - Requirements collection and first-draft structure generation.
-- Publishing survey definitions to the shared database.
 
 **Out of scope** (handled by sibling modules)
+- Installing or updating a definition at a deployed site → Admin app
+  (`survey-apply`, `POST /api/secured/survey/apply`), which also owns the
+  per-site audit trail (`survey.survey_log`) and the revision-regression guard.
+- Version history of a deployed survey → lives in each site's database.
 - Rendering surveys and recording respondent answers → Survey module.
 - Subject registration, access code generation, invitation email dispatch → Admin app.
 - Cross-survey analytics dashboards → downstream reporting tools.
 - Changing how the reporting schema keys `dim_step`/`dim_section` — those
   dimensions are a stakeholder-approved Type 1 (non-versioned) exception in
-  Survey's reporting ETL; Author does not alter that behavior, only needs to
-  represent it accurately in any UI copy about version history.
+  Survey's reporting ETL; Author only needs to represent it accurately in UI copy.
 
 ## Constraints
 
@@ -97,58 +109,47 @@ silently overwrite what past respondents already saw.
 - **Stack (do not deviate without explicit approval):**
   - Java 25
   - Quarkus 3.39.2
-  - Vaadin 25.2.6 (Flow / server-side UI)
-  - Hibernate ORM with Panache (JPA) — *not* jOOQ. Author owns no Flyway
-    migrations of its own; it maps entities onto the tables Survey's
-    `db/migration` already created in the shared `survey` database/schema —
-    it is a pure editor over that schema, not a co-owner of it.
-  - PostgreSQL
+  - Vaadin 25.2.7 (Flow / server-side UI)
+  - Hibernate ORM with Panache (JPA) — *not* jOOQ.
+  - PostgreSQL. Author runs against **its own** database instance carrying the
+    shared `survey` schema. Author owns no production Flyway migrations; the
+    schema is created by Survey's `db/migration`. (A verbatim, test-only mirror
+    of those scripts may be replayed into a throwaway test database.)
   - Maven build, Docker deploy
-  - OIDC / Keycloak authorization, matching Admin's setup
-- **Branching:** part of the multi-module Elicit Software platform; database
-  schema and message contracts are shared with the Survey and Admin modules.
-- **Versioning model (Kimball Type 2):** `questions`, `select_groups`,
-  `select_items`, `sections`, `steps`, `sections_questions`,
-  `steps_sections`, and `relationships` each carry a durable/business key
-  stable across edits, an integer `version` (0-based), an
-  `effective_from`/`effective_to` half-open validity interval (sentinels
-  `1970-01-01` / `9999-12-31 23:59:59+00`), and `is_draft` /
-  `published_by` / `published_comment` columns. **There is no `is_current`
-  flag** — "current" means `effective_to = '9999-12-31 23:59:59+00'`. Author
-  must use this vocabulary consistently (durable key, version, draft,
-  publish, current) and must not introduce a competing `active`/`is_current`
-  flag convention.
-  - Cross-table references among these tables (join tables, `select_group_id`,
-    etc.) point at the **durable key** plus a `_version` column that is a
-    `CHECK`-pinned existence check equal to `0`, not at a specific versioned
-    row. The current/historical version resolves at query time via the
-    effective-dated interval, not via the foreign key. Author's UI can treat
-    durable ids as the stable identity for wiring the structural graph
-    (relationships, section/question assignments) and only needs to reason
-    about version chains when editing or publishing content.
-  - This `version` concept is distinct from, and must not be conflated with,
-    the pre-existing **Display Key "instance" numbering**
-    (`survey.step.step_instance.section.section_instance.question.question_instance`),
-    which addresses repeated sections/questions within a single structural
-    version, not revisions over time.
-  - `surveys` remains **Type 1** (in-place edits, not versioned).
-    `answers`, `dependents`, and `respondents` are untouched by this scheme;
-    `answers.question_version` pins a respondent's answer to the exact
-    question version shown to them (`answers.question_id` references the
-    physical row, not the durable key).
-  - Two retroactive-editing exceptions are stakeholder-signed-off and must be
-    respected in Author's UI/help copy: (1) renaming a step or section
-    relabels historical reports as well as future ones; (2) reassigning a
-    question's ontology/metadata tag reclassifies historical answers as well
-    as future ones. All other structural edits (question wording,
-    section/step structure, relationships, select options) are
-    **non-retroactive** — respondents keep seeing what was current when they
-    started. Author must not give ontology/metadata tag reassignment or
-    step/section renaming the same "safe, non-retroactive" affordances used
-    for other edits.
-  - Full technical design: `Survey/research/Kimball_type_2.md` in the
-    sibling Survey repository, summarized for authoring purposes in
-    `docs/scd-contract.md` (see below).
+  - OIDC / Keycloak authorization, matching Admin's setup; Author uses its own
+    Keycloak client (`elicit-author`) and role (`elicit_author`).
+- **Definition-file contract:** Author must stay byte-compatible with the
+  `ELICIT_SURVEY_EXPORT_V1` format as implemented by Admin's
+  `SurveyDefinitionExportService` / `SurveyDefinitionImportService` /
+  `SurveyDefinitionUpdateService`. Those classes and Admin's UC-013/014/017/018
+  are the source of truth for the format, not this repository.
+- **Identity:** `survey_key` and every `{entity}_key` are minted once
+  (`UUID.randomUUID()` or a stable UUIDv5 for generated content) and never
+  regenerated; import carries them verbatim. Durable integer ids
+  (`question_id`, …) and surrogate ids are per-database and disposable.
+- **Working-copy model:** in Author's database each element has exactly one
+  row — `version = 0`, `effective_from` = epoch, `effective_to` = the
+  9999-12-31 sentinel while current, or a real close instant once removed.
+  Author never writes `version` and never creates draft rows. (The schema's
+  `is_draft` column is being dropped in Survey V015; Author does not map it.)
+- **Versioning at the target (Kimball Type 2):** the eight structural tables
+  (`questions`, `select_groups`, `select_items`, `sections`, `steps`,
+  `sections_questions`, `steps_sections`, `relationships`) are versioned by
+  Admin's update service at each site; `surveys` is Type 1. The vocabulary is
+  durable key, element key, version, current, retired, revision. There is no
+  `is_current` flag and Author must not introduce one.
+  - This `version` concept is distinct from the **Display Key "instance"
+    numbering** (`survey.step.step_instance.section.section_instance.question.question_instance`),
+    which addresses repeated sections/questions within one definition.
+  - Two retroactive-editing exceptions are stakeholder-signed-off
+    (2026-09-12) and take effect when a site applies the file: (1) renaming a
+    step or section relabels historical reports as well as future ones;
+    (2) reassigning a question's ontology/metadata tag reclassifies historical
+    answers as well as future ones. Author must warn about both at export and
+    must not give them the same "safe" affordances as other edits.
+  - Technical design: `Survey/research/Kimball_type_2.md` (schema mechanics;
+    its in-database Author Tool workflow section is superseded) summarized for
+    authoring purposes in `docs/scd-contract.md`.
 - **Compliance:** authored surveys may collect PHI in clinical deployments
   (e.g., the Family Health History Survey) — design with sensitive data in mind.
 - **Accessibility:** Vaadin components should be used in a way that preserves
@@ -158,4 +159,5 @@ silently overwrite what past respondents already saw.
 
 The [Family Health History Survey (FHHS)](https://github.com/ElicitSoftware/FHHS)
 is the canonical reference deployment of the Elicit platform and a model for the
-kind of survey Author is meant to produce.
+kind of survey Author is meant to produce. `samples/ElicitDesigner.elicit` is a
+worked example of the file Author exists to produce.

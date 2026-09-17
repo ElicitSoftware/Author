@@ -9,17 +9,19 @@ Elicit Author is the survey **authoring** module of the
 educators, and other survey designers build survey structure (steps, sections, questions),
 branching logic, dynamic tokens, and dimensional/ontology metadata through a visual interface.
 
-Structural survey elements (steps, sections, questions, select groups/items, relationships)
-are versioned in the shared schema using a Kimball Type 2 pattern: authors edit a **draft**,
-and **publishing** closes the current version and opens a new one under the same durable key
-— it does not overwrite what past respondents already saw. "Publish" here is a real state
-transition (`is_draft` → published, a new `version` row), not just "save to the database." See
-[`docs/scd-contract.md`](docs/scd-contract.md) for the contract and
-[`docs/vision.md`](docs/vision.md) for the full mission, scope, and constraints that drive this
-project's [AIUP](https://unifiedprocess.ai/) artifacts under [`docs/`](docs/).
+Authors work on **plain working copies** in Author's own database and **export** a survey as an
+`.elicit` definition file (`ELICIT_SURVEY_EXPORT_V1`). A deployed site installs or updates that
+file through the Admin app's *Apply Survey Definition*: the first apply installs it, later
+applies update it in place, matched by the UUID element keys every survey element carries and
+versioned Kimball Type 2 style at the site so past respondents keep what they started with.
+Removing an element in Author retires it (closes its validity window) rather than deleting it, so
+recorded answers at every site survive. See [`docs/scd-contract.md`](docs/scd-contract.md) for the
+contract and [`docs/vision.md`](docs/vision.md) for the mission, scope, and constraints that drive
+this project's [AIUP](https://unifiedprocess.ai/) artifacts under [`docs/`](docs/).
 
-Author has no database migrations of its own — it reads and writes the schema that Survey's
-`db/migration` scripts own.
+Author has no production database migrations of its own — its local database carries the `survey`
+schema that Survey's `db/migration` scripts create. `samples/ElicitDesigner.elicit` is an example of
+the file Author produces.
 
 Authentication and authorization are controlled by an OpenID Connect (OIDC) provider — Keycloak
 for local development and testing, though any OIDC-compliant server works in production.
@@ -27,8 +29,8 @@ for local development and testing, though any OIDC-compliant server works in pro
 ## Stack
 
 - Java 25, Quarkus 3.39.2, Maven build
-- Vaadin 25.2.6 (Flow, server-side UI)
-- Hibernate ORM with Panache (JPA) against the shared `survey` database
+- Vaadin 25.2.7 (Flow, server-side UI)
+- Hibernate ORM with Panache (JPA) against a local `survey` database
 - PostgreSQL
 - OIDC / Keycloak authorization
 - OpenTelemetry tracing, SmallRye Health, Micrometer/Prometheus metrics
@@ -39,10 +41,9 @@ for local development and testing, though any OIDC-compliant server works in pro
 ### Prerequisites
 
 - Java 25
-- A running Postgres instance with the Survey schema, and a running Keycloak (or other OIDC
-  provider) — see the [Survey](https://github.com/ElicitSoftware/) and
-  [FHHS](https://github.com/ElicitSoftware/FHHS) repos for the shared platform's docker-compose
-  setup.
+- Docker. `docker compose up -d` in this repo starts the local authoring stack: Postgres (the
+  Survey app creates the `survey` schema on first boot), Keycloak (realm from
+  `../keycloak/elicit-realm.json`, test user `author` / `author`), Survey, and Admin.
 
 ### Running in dev mode
 
@@ -50,9 +51,9 @@ for local development and testing, though any OIDC-compliant server works in pro
 ./mvnw quarkus:dev
 ```
 
-Dev mode listens on port `8082` (Survey defaults to `8080`, Admin's dev profile uses `8081`) so
-all three apps can run side by side. The Quarkus Dev UI is available at
-<http://localhost:8082/q/dev/>.
+Dev mode listens on port `8084` (Survey `8080`, Admin `8081`, FHHS `8082`, Pedigree `8083` in the
+umbrella stack) so the apps can run side by side. The Quarkus Dev UI is available at
+<http://localhost:8084/q/dev/>.
 
 ### Packaging
 
@@ -75,18 +76,17 @@ Key environment variables (see `src/main/resources/application.properties`):
 
 | Variable | Purpose |
 |---|---|
-| `ELICIT_DB_PASSWORD` | Password for the `author_user` Postgres role |
+| `ELICIT_DB_PASSWORD` | Password for the `survey_user` Postgres role |
 | `OIDC_CLIENT_SECRET` | Client secret for the `elicit-author` OIDC client |
 | `CORS_ALLOWED_ORIGINS` | Allowed CORS origins, if this app is called cross-origin |
 | `LOG_LEVEL` / `ELICIT_LOG_LEVEL` | Root / `com.elicitsoftware.*` log levels |
 
 ## Status
 
-This module is at the scaffolding stage: it builds, boots, and is wired into the shared
-platform's database and OIDC conventions, but does not yet contain authoring domain code
-(entities, views). That follows the AIUP workflow described in [`CLAUDE.md`](CLAUDE.md) —
-`/requirements` → `/entity-model` → `/use-case-spec` — driven from
-[`docs/vision.md`](docs/vision.md).
+Milestone 1 is in progress: branded OIDC shell, entities over the `survey` schema, survey
+list/create/edit, `.elicit` import and export with validation, and a structure navigation tree.
+Element editing forms, logic and metadata editors follow. Work follows the AIUP workflow described
+in [`CLAUDE.md`](CLAUDE.md); use case specs live in [`docs/use_cases/`](docs/use_cases/).
 
 ## Related Guides
 
