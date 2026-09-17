@@ -1,0 +1,39 @@
+# Builds Author and runs whatever tests exist on every pull request and every push to main.
+# This is the gate that enforces the build stays green before code merges — the release
+# workflow (maven.yml) skips tests entirely and only runs at tag-push time, so without this
+# workflow nothing ever builds Author in CI.
+#
+# NOTE: Author currently has no src/test directory. `mvn clean verify` therefore builds and
+# packages but runs no tests, and the jacoco-check gate in pom.xml (LINE >= 0.70) passes
+# vacuously because JaCoCo skips when no execution data file is produced. Once tests are
+# added that gate becomes live and will start enforcing 70% line coverage.
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Build and Test with Maven
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Setup Java 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          architecture: x64
+          cache: 'maven'
+
+      - name: Build and run tests
+        run: mvn -B clean verify
