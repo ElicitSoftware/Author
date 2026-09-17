@@ -7,10 +7,10 @@
 #   3. survey   - the survey application (owns the database schema)
 #   4. admin    - the admin application
 #
-# The Author service itself is NOT started here yet - see the commented-out
-# placeholder at the bottom of this file. Run Author from your IDE / `quarkus dev`
-# (its %dev profile already points at localhost:5452 and localhost:8180) or
-# uncomment the stub once an elicitsoftware/author image is available.
+# The Author service at the bottom of this file runs the elicitsoftware/author
+# image (./buildDockerImage.sh) on 8084. During development run Author from your
+# IDE / `quarkus dev` instead (its %dev profile points at localhost:5452 and
+# localhost:8180) and stop the containerised copy so the port is free.
 #
 # INITIALIZATION
 # The containers initialize the database when they start.
@@ -165,33 +165,35 @@ services:
       - ./keycloak/db:/opt/keycloak/data/h2
 
 # -----------------------------------------------------------------------------
-# Author application - PLACEHOLDER, not started yet.
-# Uncomment this block once an elicitsoftware/author image has been built
-# (./buildDockerImage.sh) to run Author inside the stack instead of from the IDE.
+# Author application (image from ./buildDockerImage.sh). Brand assets come from the
+# umbrella repo's elicit-brand folder, the same mount Admin and Survey use.
 # -----------------------------------------------------------------------------
-#  author:
-#    image: elicitsoftware/author:latest
-#    ports:
-#      # 8082 (Author's %dev port) and 8085 are both free in this stack.
-#      - 8085:8080
-#    healthcheck:
-#        test: ["CMD", "curl", "--head","fsS", "http://localhost:8080/q/health/ready"]
-#        interval: 15s
-#        timeout: 5s
-#        retries: 20
-#        start_period: 60s
-#    environment:
-#      TZ: America/Detroit
-#      # author_user's password in the elicit_db image.
-#      ELICIT_DB_PASSWORD: AUTHORPW
-#      OIDC_CLIENT_SECRET: secret
-#      quarkus.application.name: author
-#      quarkus.oidc.auth-server-url: http://keycloak:8080/realms/elicit/
-#      quarkus.otel.sdk.disabled: true
-#      OTEL_SDK_DISABLED: "true"
-#      quarkus.datasource.jdbc.telemetry: false
-#    depends_on:
-#      db:
-#        condition: service_healthy
-#      survey:
-#        condition: service_healthy
+  author:
+    image: elicitsoftware/author:latest
+    ports:
+      # 8084 is Author's %dev port as well; FHHS owns 8082 and Pedigree 8083 in the umbrella stack.
+      - 8084:8080
+    healthcheck:
+        test: ["CMD", "curl", "--head","fsS", "http://localhost:8080/q/health/ready"]
+        interval: 15s
+        timeout: 5s
+        retries: 20
+        start_period: 60s
+    environment:
+      TZ: America/Detroit
+      brand.file.system.path: /opt/brand
+      # Author connects as survey_user (full DML on every definition table via Survey's grants).
+      ELICIT_DB_PASSWORD: SURVEYPW
+      OIDC_CLIENT_SECRET: secret
+      quarkus.application.name: author
+      quarkus.oidc.auth-server-url: http://keycloak:8080/realms/elicit/
+      quarkus.otel.sdk.disabled: true
+      OTEL_SDK_DISABLED: "true"
+      quarkus.datasource.jdbc.telemetry: false
+    volumes:
+      - ../elicit-brand/:/opt/brand:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      survey:
+        condition: service_healthy
