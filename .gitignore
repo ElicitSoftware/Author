@@ -55,5 +55,12 @@ nb-configuration.xml
 # vite
 vite.generated.ts
 
-# Local docker-compose postgres data
-/postgres/PGDATA
+# Local docker-compose postgres data. The whole directory is ignored rather than kept
+# with a .gitkeep: docker creates the bind-mount source on first `up`, and a pre-existing
+# host-owned file inside it makes Postgres fail its data-directory ownership check
+# ("data directory ... has wrong ownership") on Docker Desktop.
+/postgres/
+
+# Local docker-compose keycloak data (H2); keep the directory, ignore its contents
+/keycloak/db/*
+!/keycloak/db/.gitkeep
