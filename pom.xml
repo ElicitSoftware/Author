@@ -194,6 +194,19 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jacoco</artifactId>
         </dependency>
+        <!-- Test-only: replays a verbatim mirror of Survey's db/migration into the Testcontainers
+             Postgres (src/test/resources/db/schema-mirror, refreshed by scripts/sync-survey-schema.sh).
+             Author owns no production migrations (C-005); nothing Flyway-related ships in the image. -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <repositories>
