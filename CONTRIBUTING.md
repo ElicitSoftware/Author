@@ -567,8 +567,9 @@ Renders as: "What is John's age?" (when S1 = "John")
 > These lists predate the Kimball Type 2 versioning columns now present on
 > `questions`, `select_groups`, `select_items`, `sections`, `steps`,
 > `sections_questions`, `steps_sections`, and `relationships` (durable key,
-> `version`, `effective_from`/`effective_to`, `is_draft`, `published_by`,
-> `published_comment`). See `docs/scd-contract.md` for the current contract.
+> element key `{entity}_key`, `version`, `effective_from`/`effective_to`,
+> `published_by`, `published_comment`). See `docs/scd-contract.md` for the
+> current contract and for why Author treats its rows as plain working copies.
 > Note also: the "Logic" table list above says `dependencies`; confirm the
 > actual table name (`dependents`, per the Survey schema) at entity-model
 > time.
