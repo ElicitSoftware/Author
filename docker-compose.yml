@@ -110,12 +110,19 @@ services:
   db:
     image: elicitsoftware/elicit_db:latest
     # Setup the directories to persist data between starts.
-    # if you need to reset your database you can delete the PGDATA directory and restart the containers
-    # this will cause the database to be recreated.
+    # The cluster lives in ./postgres/pgdata -- ./postgres is the mount and PGDATA below
+    # puts the cluster in a subdirectory of it, which Postgres requires (it refuses to
+    # initialise directly into a mount point it does not own).
+    # If you need to reset your database, delete ./postgres and restart the containers;
+    # this will cause the database to be recreated from the image's
+    # docker-entrypoint-initdb.d scripts. Do not add a .gitkeep or any other file to
+    # ./postgres -- Postgres rejects the data directory it creates underneath a
+    # bind-mount root that already holds host-owned files ("data directory ... has
+    # wrong ownership"). Docker creates the directory itself on first `up`.
     # NOTE: this stack keeps its data inside the Author project (./postgres),
     # separate from the umbrella repo's ./postgresql/PGDATA.
     volumes:
-      - ./postgres/PGDATA:/var/lib/postgresql/data
+      - ./postgres:/var/lib/postgresql/data
     ports:
       - 5452:5432
     environment:
@@ -134,6 +141,16 @@ services:
 # This is a Keycloak server that is used for testing the OIDC integration.
 # The realm export is shared with the rest of the Elicit stack, so it is mounted
 # from the umbrella repo checkout next to this project rather than duplicated here.
+# Only the realm file itself is mounted into the import directory -- mounting the whole
+# ../keycloak directory also exposed exportRealm.sh and the old db/ folder to the importer.
+#
+# Keycloak's own data lives in ./keycloak/db, alongside this stack's ./postgres, so it
+# survives `docker compose down`. start-dev keeps its H2 database under
+# ${KC_HOME}/data/h2 -- the previous ../keycloak/db:/h2 mount pointed at a path Keycloak
+# never writes to, so every recreate started from an empty database and re-imported the
+# realm, silently discarding any change made through the admin console or admin API.
+# With the data persisted, --import-realm's IGNORE_EXISTING strategy leaves the existing
+# realm alone on later starts. To force a clean re-import, delete ./keycloak/db.
   keycloak:
     image: quay.io/keycloak/keycloak:26.2.3
     command: start-dev --import-realm --verbose -Dkeycloak.features=scripts
@@ -144,8 +161,8 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     volumes:
-      - ../keycloak:/opt/keycloak/data/import
-      - ../keycloak/db:/h2
+      - ../keycloak/elicit-realm.json:/opt/keycloak/data/import/elicit-realm.json:ro
+      - ./keycloak/db:/opt/keycloak/data/h2
 
 # -----------------------------------------------------------------------------
 # Author application - PLACEHOLDER, not started yet.
