@@ -1,0 +1,197 @@
+# Local development stack for the Author application.
+#
+# This is a reduced version of the umbrella repo's compose file
+# (../docker-compose.yml). It brings up only what Author needs to run against:
+#   1. db       - postgres database (elicitsoftware/elicit_db)
+#   2. keycloak - OIDC server, imports the shared elicit realm
+#   3. survey   - the survey application (owns the database schema)
+#   4. admin    - the admin application
+#
+# The Author service itself is NOT started here yet - see the commented-out
+# placeholder at the bottom of this file. Run Author from your IDE / `quarkus dev`
+# (its %dev profile already points at localhost:5452 and localhost:8180) or
+# uncomment the stub once an elicitsoftware/author image is available.
+#
+# INITIALIZATION
+# The containers initialize the database when they start.
+# When the Survey container starts it creates the database tables, so the very
+# first `docker compose up -d` needs Survey to come up healthy before Admin is
+# usable. Unlike the full stack, there is no FHHS container here inserting a
+# survey definition and building dimensional views, so the multi-restart dance
+# documented in ../docker-compose.yml is NOT required - a single `up` is enough:
+#
+#   docker compose up -d
+#
+# If you later add a survey-definition container (FHHS, PREMM5, ...) to this
+# file you will need the restart sequence from the umbrella compose file again.
+#
+# URLs once started:
+#   Survey   http://localhost:8080
+#   Admin    http://localhost:8081
+#   Keycloak http://localhost:8180  (admin/admin)
+#   Postgres localhost:5452         (survey/admin)
+
+services:
+  survey:
+    image: elicitsoftware/survey:latest
+    ports:
+      - 8080:8080
+    environment:
+      TZ: America/Detroit
+      # AutoRegister allows for users to type in any token for testing.
+      # The Admin tool is used to create tokens and manage respondents.
+      # Remove this for production, the default is false.
+      token.autoRegister: true
+      brand.file.system.path: /opt/brand
+      quarkus.application.name: survey
+      # OpenTelemetry is disabled: there is no jaeger collector in this reduced
+      # stack, so exporting would just log connection failures every interval.
+      quarkus.otel.sdk.disabled: true
+      OTEL_SDK_DISABLED: "true"
+      quarkus.datasource.jdbc.telemetry: false
+    healthcheck:
+        test: ["CMD", "curl", "--head","fsS", "http://localhost:8080/q/health/ready"]
+        interval: 15s
+        timeout: 5s
+        retries: 20
+        start_period: 60s
+    # volumes:
+      # - ../elicit-brand/:/opt/brand:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  admin:
+    image: elicitsoftware/admin:latest
+    ports:
+      - 8081:8080
+    healthcheck:
+        test: ["CMD", "curl", "--head","fsS", "http://localhost:8080/q/health/ready"]
+        interval: 15s
+        timeout: 5s
+        retries: 20
+        start_period: 60s
+    environment:
+      TZ: America/Detroit
+      quarkus.mailer.from: elicit@localhost
+      # No mailpit in this stack - mock the mailer so outgoing mail is logged
+      # instead of failing against a host that does not exist here.
+      quarkus.mailer.mock: true
+      # quarkus.mailer.host: mailpit
+      # quarkus.mailer.port: 1025
+      # quarkus.mailer.tls: false
+      brand.file.system.path: /opt/brand
+      ELICIT_DB_PASSWORD: SAOWNERPW
+      ELICIT_OWNER_DB_PASSWORD: SURVEYPW
+      OIDC_CLIENT_SECRET: secret
+
+      # DATABASE sources roles from survey.user_roles (managed via the Edit User
+      # screen) instead of relying solely on OIDC/Keycloak. Default is OIDC.
+      # elicit.authorization.mode: DATABASE
+
+      quarkus.application.name: admin
+      # OpenTelemetry disabled - see the note on the survey service.
+      quarkus.otel.sdk.disabled: true
+      OTEL_SDK_DISABLED: "true"
+      quarkus.datasource.jdbc.telemetry: false
+    volumes:
+      # Brand assets live in the umbrella repo alongside this project.
+      - ../elicit-brand/:/opt/brand:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      survey:
+        condition: service_healthy
+
+# Test containers
+# These containers are used for running the application in a development environment.
+# They are not needed for production or will be replaced by non containerized applications.
+## Postgres Database
+  db:
+    image: elicitsoftware/elicit_db:latest
+    # Setup the directories to persist data between starts.
+    # The cluster lives in ./postgres/pgdata -- ./postgres is the mount and PGDATA below
+    # puts the cluster in a subdirectory of it, which Postgres requires (it refuses to
+    # initialise directly into a mount point it does not own).
+    # If you need to reset your database, delete ./postgres and restart the containers;
+    # this will cause the database to be recreated from the image's
+    # docker-entrypoint-initdb.d scripts. Do not add a .gitkeep or any other file to
+    # ./postgres -- Postgres rejects the data directory it creates underneath a
+    # bind-mount root that already holds host-owned files ("data directory ... has
+    # wrong ownership"). Docker creates the directory itself on first `up`.
+    # NOTE: this stack keeps its data inside the Author project (./postgres),
+    # separate from the umbrella repo's ./postgresql/PGDATA.
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    ports:
+      - 5452:5432
+    environment:
+      TZ: "America/Detroit"
+      POSTGRES_USER: "survey"
+      POSTGRES_PASSWORD: "admin"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U survey && psql -U survey -d survey -c 'SELECT 1;'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+# OIDC Server
+# This is a Keycloak server that is used for testing the OIDC integration.
+# The realm export is shared with the rest of the Elicit stack, so it is mounted
+# from the umbrella repo checkout next to this project rather than duplicated here.
+# Only the realm file itself is mounted into the import directory -- mounting the whole
+# ../keycloak directory also exposed exportRealm.sh and the old db/ folder to the importer.
+#
+# Keycloak's own data lives in ./keycloak/db, alongside this stack's ./postgres, so it
+# survives `docker compose down`. start-dev keeps its H2 database under
+# ${KC_HOME}/data/h2 -- the previous ../keycloak/db:/h2 mount pointed at a path Keycloak
+# never writes to, so every recreate started from an empty database and re-imported the
+# realm, silently discarding any change made through the admin console or admin API.
+# With the data persisted, --import-realm's IGNORE_EXISTING strategy leaves the existing
+# realm alone on later starts. To force a clean re-import, delete ./keycloak/db.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2.3
+    command: start-dev --import-realm --verbose -Dkeycloak.features=scripts
+    ports:
+      - "8180:8080"
+    environment:
+      TZ: "America/Detroit"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ../keycloak/elicit-realm.json:/opt/keycloak/data/import/elicit-realm.json:ro
+      - ./keycloak/db:/opt/keycloak/data/h2
+
+# -----------------------------------------------------------------------------
+# Author application - PLACEHOLDER, not started yet.
+# Uncomment this block once an elicitsoftware/author image has been built
+# (./buildDockerImage.sh) to run Author inside the stack instead of from the IDE.
+# -----------------------------------------------------------------------------
+#  author:
+#    image: elicitsoftware/author:latest
+#    ports:
+#      # 8082 (Author's %dev port) and 8085 are both free in this stack.
+#      - 8085:8080
+#    healthcheck:
+#        test: ["CMD", "curl", "--head","fsS", "http://localhost:8080/q/health/ready"]
+#        interval: 15s
+#        timeout: 5s
+#        retries: 20
+#        start_period: 60s
+#    environment:
+#      TZ: America/Detroit
+#      # author_user's password in the elicit_db image.
+#      ELICIT_DB_PASSWORD: AUTHORPW
+#      OIDC_CLIENT_SECRET: secret
+#      quarkus.application.name: author
+#      quarkus.oidc.auth-server-url: http://keycloak:8080/realms/elicit/
+#      quarkus.otel.sdk.disabled: true
+#      OTEL_SDK_DISABLED: "true"
+#      quarkus.datasource.jdbc.telemetry: false
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#      survey:
+#        condition: service_healthy
