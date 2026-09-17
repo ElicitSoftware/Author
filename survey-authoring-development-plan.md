@@ -76,7 +76,7 @@ The system uses a sophisticated **display key system** to manage repeatable elem
 - **Dependencies** - Tracks answer relationships for dynamic behavior
 
 #### Response Management
-- **Respondents** - Tracks survey participants with tokens
+- **Respondents** - Tracks survey participants and their access codes
 - **Answers** - Stores survey responses with rich metadata
 - **Display Keys** - Hierarchical addressing system for survey elements
 
