@@ -84,7 +84,7 @@ silently overwrite what past respondents already saw.
 
 **Out of scope** (handled by sibling modules)
 - Rendering surveys and recording respondent answers → Survey module.
-- Subject registration, token generation, invitation email dispatch → Admin app.
+- Subject registration, access code generation, invitation email dispatch → Admin app.
 - Cross-survey analytics dashboards → downstream reporting tools.
 - Changing how the reporting schema keys `dim_step`/`dim_section` — those
   dimensions are a stakeholder-approved Type 1 (non-versioned) exception in

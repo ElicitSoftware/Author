@@ -141,6 +141,7 @@ a first-draft structure for a *different*, new target survey.
 | C-013 | PHI Compliance                  | Authored surveys may collect PHI in clinical deployments (e.g. FHHS); Author must not expose or export PHI without appropriate safeguards.               | Regulatory  | High     | Open   |
 | C-014 | Browser Support                 | UI must support the latest two versions of Chrome, Firefox, and Safari.                                                                                  | Technical   | Medium   | Open   |
 | C-015 | No Existing Publish Pattern to Reuse | No reusable draft/publish/discard service pattern exists elsewhere in the Elicit codebase; Author must design it from the SQL sketch in `docs/scd-contract.md`, not adopt a shared implementation. | Technical   | Medium   | Open   |
+| C-016 | Token Terminology               | In Author, "token" means only a question-text placeholder (`{TOKEN\|default}`, `survey.relationships.token`). The credential a respondent enters to reach a survey is the **access code** and is issued by the Admin app; Author must not call it a token. | Business    | Medium   | Implemented |
 
 ## Open Items for Review
 
