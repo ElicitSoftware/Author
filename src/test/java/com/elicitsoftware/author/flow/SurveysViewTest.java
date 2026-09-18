@@ -1,0 +1,88 @@
+package com.elicitsoftware.author.flow;
+
+/*-
+ * ***LICENSE_START***
+ * Elicit Author
+ * %%
+ * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * %%
+ * PolyForm Noncommercial License 1.0.0
+ * <https://polyformproject.org/licenses/noncommercial/1.0.0>
+ * ***LICENSE_END***
+ */
+
+import com.elicitsoftware.model.Survey;
+import com.elicitsoftware.test.PostgresTestResource;
+import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.textfield.TextField;
+import io.quarkus.test.TestTransaction;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/** UC-003 / UC-004 through the Surveys view. */
+@QuarkusTest
+@QuarkusTestResource(PostgresTestResource.class)
+class SurveysViewTest extends QuarkusBrowserlessTest {
+
+    @Test
+    @TestSecurity(user = "view.author", roles = {"elicit_author"})
+    void listsFixtureSurveys() {
+        SurveysView view = navigate(SurveysView.class);
+        var names = view.grid.getGenericDataView().getItems().map(s -> s.name).toList();
+        assertTrue(names.contains("AuthorFixture"));
+        assertTrue(names.contains("AuthorFixtureEmpty"));
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "view.author", roles = {"elicit_author"})
+    void newSurveyDialogValidatesAndCreates() {
+        SurveysView view = navigate(SurveysView.class);
+        test(view.newSurvey).click();
+        SurveyMetadataDialog dialog = $(SurveyMetadataDialog.class).single();
+
+        // Empty submit: binder blocks, dialog stays open.
+        test(dialog.save).click();
+        assertTrue(dialog.isOpened(), "required fields block the save");
+        assertTrue(dialog.name.isInvalid());
+
+        test(dialog.name).setValue("UC003 via view");
+        test(dialog.title).setValue("Created through the dialog");
+        test(dialog.save).click();
+
+        assertFalse(dialog.isOpened(), "dialog closes after a successful save");
+        Survey created = Survey.find("name", "UC003 via view").firstResult();
+        assertEquals("view.author", created.publishedBy);
+        assertTrue(view.grid.getGenericDataView().getItems().anyMatch(s -> s.id.equals(created.id)));
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "view.author", roles = {"elicit_author"})
+    void duplicateNameIsShownOnTheNameField() {
+        SurveysView view = navigate(SurveysView.class);
+        test(view.newSurvey).click();
+        SurveyMetadataDialog dialog = $(SurveyMetadataDialog.class).single();
+        test(dialog.name).setValue("AuthorFixture");
+        test(dialog.title).setValue("dup");
+        test(dialog.save).click();
+        assertTrue(dialog.isOpened());
+        TextField name = dialog.name;
+        assertTrue(name.isInvalid(), "UC-003 A2: name already in use");
+    }
+
+    @Test
+    @TestSecurity(user = "view.nobody", roles = {})
+    void requiresAuthorRole() {
+        // UC-002 A1: without elicit_author the route is not reachable; the access checker
+        // reroutes to the access-denied error view instead of rendering SurveysView.
+        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () -> navigate(SurveysView.class));
+    }
+}
