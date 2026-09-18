@@ -65,7 +65,9 @@ class SurveyDefinitionExporterTest {
             keep.set(0, "*");                                           // local source id
             switch (table) {
                 case "surveys" -> { keep.set(3, "*"); keep.set(6, prefixless(f[6])); keep.set(8, "*"); keep.set(9, "*"); }
+                case "select_groups" -> { if (f[4].isEmpty()) keep.set(4, "Text"); }          // import default
                 case "select_items" -> keep.set(2, "*");
+                case "steps", "sections" -> { if (f[4].isEmpty()) keep.set(4, f[3]); }       // dimension_name defaults to name
                 case "steps_sections" -> { keep.set(2, "*"); keep.set(4, "*"); keep.set(6, prefixless(f[6])); }
                 case "questions" -> keep.set(10, "*");
                 case "sections_questions" -> { keep.set(2, "*"); keep.set(3, "*"); }
@@ -102,8 +104,20 @@ class SurveyDefinitionExporterTest {
         assertTrue(exported.startsWith("# " + ElicitFormat.FORMAT_VERSION + "\n"));
         assertTrue(exported.contains("# survey_key: b3a7c2e4-5d18-4f92-8a60-1c9e3f75d2b4\n"));
         assertTrue(exported.contains(ElicitFormat.REVISION_HEADER + " " + result.revision()));
-        assertEquals(147, result.counts().values().stream().mapToInt(Integer::intValue).sum());
-        assertEquals(normalised(original), normalised(exported), "NFR-011 round trip");
+        assertEquals(SurveyDefinitionImporterTest.headerCounts().values().stream().mapToInt(Integer::intValue).sum(),
+                result.counts().values().stream().mapToInt(Integer::intValue).sum(), "every record written back");
+        Map<String, String> expectedRows = normalised(original);
+        Map<String, String> actualRows = normalised(exported);
+        List<String> differences = new ArrayList<>();
+        expectedRows.forEach((key, value) -> {
+            String actual = actualRows.get(key);
+            if (!value.equals(actual)) {
+                differences.add(key + "\n   file: " + value + "\n export: " + actual);
+            }
+        });
+        actualRows.keySet().stream().filter(k -> !expectedRows.containsKey(k)).forEach(k -> differences.add("unexpected " + k));
+        assertTrue(differences.isEmpty(), () -> "NFR-011 round trip, " + differences.size() + " difference(s):\n"
+                + String.join("\n", differences.subList(0, Math.min(8, differences.size()))));
         assertTrue(result.fileName().startsWith("ElicitDesigner_") && result.fileName().endsWith(".elicit"));
         assertFalse(exported.contains("|false\n"), "no trailing is_draft field after V015");
     }

@@ -123,8 +123,10 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
-        getContent().scrollIntoView();
-        syncDrawer(event.getActiveChain().isEmpty() ? null : event.getActiveChain().get(0));
+        if (getContent() != null) {
+            getContent().scrollIntoView();
+        }
+        syncDrawer(event == null || event.getActiveChain().isEmpty() ? null : event.getActiveChain().get(0));
     }
 
     /**

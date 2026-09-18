@@ -45,7 +45,8 @@ class ImportDefinitionViewTest extends QuarkusBrowserlessTest {
         view.handleUpload(sample, "ElicitDesigner.elicit");
 
         String text = find(Paragraph.class, view.result).all().stream().map(Paragraph::getText).reduce("", String::concat);
-        assertTrue(text.contains("147 records imported"), text);
+        int expected = com.elicitsoftware.author.definition.SurveyDefinitionImporterTest.headerCounts().values().stream().mapToInt(Integer::intValue).sum();
+        assertTrue(text.contains(expected + " records imported"), text);
         Button open = find(Button.class, view.result).withText("Open in editor").single();
         assertTrue(open.isEnabled());
         assertEquals(1, Survey.count("name", "ElicitDesigner"));
