@@ -41,6 +41,7 @@ public class StructureNavigationTree extends VerticalLayout {
     private final SurveyStructureQuery query;
     private StructureNode.Kind currentKind;
     private Integer currentDurableId;
+    private Consumer<StructureNode> selectionHandler;
 
     public StructureNavigationTree(int surveyId, SurveyStructureQuery query, Consumer<StructureNode> onSelect) {
         this.surveyId = surveyId;
@@ -73,6 +74,10 @@ public class StructureNavigationTree extends VerticalLayout {
         grid.setSizeFull();
         grid.addSelectionListener(e -> e.getFirstSelectedItem().ifPresent(n -> {
             onSelect.accept(n);
+            if (selectionHandler != null) {
+                selectionHandler.accept(n);
+                return;
+            }
             getUI().ifPresent(ui -> ui.navigate(ElementView.class, new RouteParameters(
                     java.util.Map.of(SurveyEditorView.SURVEY_ID, String.valueOf(surveyId),
                             ElementView.KIND, n.routeKind(), ElementView.DURABLE_ID, String.valueOf(n.durableId())))));
@@ -99,6 +104,11 @@ public class StructureNavigationTree extends VerticalLayout {
     }
 
     /** Called from the layout after navigation so the highlighted row matches the address. */
+    /** Replaces navigation on selection (null restores it); the designer uses it to select on the board. */
+    public void setSelectionHandler(Consumer<StructureNode> handler) {
+        this.selectionHandler = handler;
+    }
+
     public void highlight(StructureNode.Kind kind, Integer durableId) {
         this.currentKind = kind;
         this.currentDurableId = durableId;

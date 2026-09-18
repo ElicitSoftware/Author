@@ -1,0 +1,128 @@
+package com.elicitsoftware.author.flow.designer;
+
+/*-
+ * ***LICENSE_START***
+ * Elicit Author
+ * %%
+ * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * %%
+ * PolyForm Noncommercial License 1.0.0
+ * <https://polyformproject.org/licenses/noncommercial/1.0.0>
+ * ***LICENSE_END***
+ */
+
+import com.elicitsoftware.author.survey.StructureNode;
+import com.vaadin.flow.component.dnd.DragSource;
+import com.vaadin.flow.component.dnd.DropEffect;
+import com.vaadin.flow.component.dnd.DropTarget;
+import com.vaadin.flow.component.dnd.EffectAllowed;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+
+import java.util.List;
+
+/**
+ * One section assignment inside a step lane. Closed by default: the header shows the glyph
+ * (drag handle), name and counts; clicking it opens the card to reveal the question rows with
+ * an insertion zone before each and after the last. The header also accepts drops (append).
+ */
+public class SectionCard extends Div {
+
+    final StructureNode node;
+    final Glyph glyph;
+    final Div header = new Div();
+    final Div body = new Div();
+    final Span name = new Span();
+    final Span questionCount = new Span();
+    final Span mountBadge = new Span();
+    final Icon toggle;
+    final NodeMenu menu;
+    final List<QuestionRow> rows;
+
+    public SectionCard(SurveyDesignerView view, StructureNode node, List<StructureNode> questions,
+                       int indexInLane, int laneSize, int mountedInSteps) {
+        this.node = node;
+        addClassName("designer-card");
+        getElement().setAttribute("data-node-id", "ss-" + node.assignmentId());
+        if (node.retired()) {
+            addClassName("retired");
+        }
+        boolean open = view.isOpen(node);
+        if (open) {
+            addClassName("open");
+        }
+        if (view.isSelected(node)) {
+            getElement().setAttribute("aria-selected", "true");
+        }
+
+        glyph = Glyph.section();
+        DragSource<Glyph> source = DragSource.create(glyph);
+        source.setDragData(node);
+        source.setEffectAllowed(EffectAllowed.MOVE);
+        source.setDraggable(!node.retired());
+        source.addDragStartListener(e -> view.dragStarted());
+        source.addDragEndListener(e -> view.dragEnded());
+
+        toggle = (open ? VaadinIcon.ANGLE_DOWN : VaadinIcon.ANGLE_RIGHT).create();
+        toggle.addClassName("designer-card-toggle");
+        name.setText(node.label());
+        name.addClassName("designer-card-name");
+        questionCount.setText(questions.size() == 1 ? "1 question" : questions.size() + " questions");
+        questionCount.addClassName("designer-badge");
+        mountBadge.setText("in " + mountedInSteps + " steps");
+        mountBadge.addClassName("designer-badge");
+        mountBadge.setTitle("This section is mounted in " + mountedInSteps + " steps; editing it changes all of them");
+        mountBadge.setVisible(mountedInSteps > 1);
+
+        menu = new NodeMenu("Actions for section " + node.label());
+        menu.item("Edit…", () -> view.edit(node), !node.retired());
+        menu.item("Add question", () -> view.addChild(node), !node.retired());
+        menu.item("Copy to step…", () -> view.copyTo(node), !node.retired());
+        menu.item("Also mount in step…", () -> view.mountIn(node), !node.retired());
+        menu.item("Move up", () -> view.move(node, -1), !node.retired() && indexInLane > 0);
+        menu.item("Move down", () -> view.move(node, 1), !node.retired() && indexInLane < laneSize - 1);
+        menu.item("Open details", () -> view.openDetails(node));
+        menu.item("Remove from this step", () -> view.removeAssignment(node), !node.retired());
+
+        header.addClassName("designer-card-header");
+        header.getElement().setAttribute("role", "button");
+        header.getElement().setAttribute("tabindex", "0");
+        header.getElement().setAttribute("aria-expanded", String.valueOf(open));
+        header.getElement().setAttribute("aria-label", "Section " + node.label() + ", " + questionCount.getText()
+                + (node.retired() ? ", removed" : ""));
+        header.add(toggle, glyph, name, questionCount, mountBadge, menu);
+        header.addClickListener(e -> view.toggleAndSelect(node));
+        header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '");
+        DropTarget<Div> headerDrop = DropTarget.create(header);
+        headerDrop.setDropEffect(DropEffect.MOVE);
+        headerDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
+                view.onDrop(data, new DropSpot(node, questions.size(), StructureNode.Kind.QUESTION))));
+
+        body.addClassName("designer-card-body");
+        body.setVisible(open);
+        rows = new java.util.ArrayList<>();
+        for (int i = 0; i < questions.size(); i++) {
+            body.add(new DropZone(new DropSpot(node, i, StructureNode.Kind.QUESTION), view::onDrop));
+            QuestionRow row = new QuestionRow(view, questions.get(i), i, questions.size());
+            rows.add(row);
+            body.add(row);
+        }
+        body.add(new DropZone(new DropSpot(node, questions.size(), StructureNode.Kind.QUESTION), view::onDrop));
+        if (questions.isEmpty()) {
+            Span empty = new Span("No questions yet — drop a question glyph here or use Add question.");
+            empty.addClassName("designer-empty");
+            body.add(empty);
+        }
+        add(header, body);
+    }
+
+    public StructureNode node() {
+        return node;
+    }
+
+    public boolean isOpen() {
+        return body.isVisible();
+    }
+}

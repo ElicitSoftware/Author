@@ -63,6 +63,9 @@ public class ElementService {
     @Inject
     EntityManager em;
 
+    @Inject
+    DisplayOrdering ordering;
+
     // ---- create / update -------------------------------------------------------------------
 
     @Transactional
@@ -298,17 +301,29 @@ public class ElementService {
                         sss.stream().map(ss -> ss.stepsSectionsId).toList(), null, closedAt)
                         .forEach(r -> r.effectiveTo = StructuralElement.SENTINEL);
                 sqs.forEach(sq -> sq.effectiveTo = StructuralElement.SENTINEL);
-                sss.forEach(ss -> ss.effectiveTo = StructuralElement.SENTINEL);
+                // A reopened assignment's key may now belong to a current one: park it, renumber below.
+                sss.forEach(ss -> {
+                    ss.effectiveTo = StructuralElement.SENTINEL;
+                    ss.displayKey = DisplayOrdering.parkedKey(ss);
+                });
             }
             case STEP -> {
                 List<StepsSections> sss = StepsSections.list("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
                 relationshipsClosedAt(surveyId, List.of(), sss.stream().map(ss -> ss.stepsSectionsId).toList(), durableId, closedAt)
                         .forEach(r -> r.effectiveTo = StructuralElement.SENTINEL);
-                sss.forEach(ss -> ss.effectiveTo = StructuralElement.SENTINEL);
+                sss.forEach(ss -> {
+                    ss.effectiveTo = StructuralElement.SENTINEL;
+                    ss.displayKey = DisplayOrdering.parkedKey(ss);
+                });
+                ((Step) element).displayOrder = DisplayOrdering.parkedOrder((Step) element);
             }
             default -> throw new AuthoringException("Unsupported element kind " + kind);
         }
         em.flush();
+        if (kind != StructureNode.Kind.QUESTION) {
+            // UC-016 BR-001: a restored step or section takes the next free position; keys follow.
+            ordering.renumberSurvey(surveyId);
+        }
         return plan;
     }
 
@@ -335,27 +350,27 @@ public class ElementService {
 
     // ---- helpers ---------------------------------------------------------------------------
 
-    private List<SectionsQuestion> currentAssignmentsOfQuestion(int surveyId, int questionId) {
+    List<SectionsQuestion> currentAssignmentsOfQuestion(int surveyId, int questionId) {
         return SectionsQuestion.list("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", surveyId, questionId, StructuralElement.SENTINEL);
     }
 
-    private List<SectionsQuestion> currentQuestionAssignmentsOfSection(int surveyId, int sectionId) {
+    List<SectionsQuestion> currentQuestionAssignmentsOfSection(int surveyId, int sectionId) {
         return SectionsQuestion.list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", surveyId, sectionId, StructuralElement.SENTINEL);
     }
 
-    private List<StepsSections> currentStepAssignmentsOfSection(int surveyId, int sectionId) {
+    List<StepsSections> currentStepAssignmentsOfSection(int surveyId, int sectionId) {
         return StepsSections.list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", surveyId, sectionId, StructuralElement.SENTINEL);
     }
 
-    private List<StepsSections> currentSectionAssignmentsOfStep(int surveyId, int stepId) {
+    List<StepsSections> currentSectionAssignmentsOfStep(int surveyId, int stepId) {
         return StepsSections.list("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3", surveyId, stepId, StructuralElement.SENTINEL);
     }
 
-    private List<Relationship> relationshipsTouching(int surveyId, List<Integer> sqIds, List<Integer> ssIds, Integer stepId) {
+    List<Relationship> relationshipsTouching(int surveyId, List<Integer> sqIds, List<Integer> ssIds, Integer stepId) {
         List<Relationship> out = new ArrayList<>();
         for (Relationship r : Relationship.<Relationship>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
-            boolean hit = (sqIds != null && (sqIds.contains(r.upstreamSqId) || sqIds.contains(r.downstreamSqId)))
-                    || (ssIds != null && ssIds.contains(r.downstreamSsId))
+            boolean hit = has(sqIds, r.upstreamSqId) || has(sqIds, r.downstreamSqId)
+                    || has(ssIds, r.downstreamSsId)
                     || (stepId != null && (stepId.equals(r.upstreamStepId) || stepId.equals(r.downstreamStepId)));
             if (hit) {
                 out.add(r);
@@ -368,14 +383,19 @@ public class ElementService {
     private List<Relationship> relationshipsClosedAt(int surveyId, List<Integer> sqIds, List<Integer> ssIds, Integer stepId, OffsetDateTime closedAt) {
         List<Relationship> out = new ArrayList<>();
         for (Relationship r : Relationship.<Relationship>list("surveyId = ?1 and effectiveTo = ?2", surveyId, closedAt)) {
-            boolean hit = sqIds.contains(r.upstreamSqId) || sqIds.contains(r.downstreamSqId)
-                    || ssIds.contains(r.downstreamSsId)
+            boolean hit = has(sqIds, r.upstreamSqId) || has(sqIds, r.downstreamSqId)
+                    || has(ssIds, r.downstreamSsId)
                     || (stepId != null && (stepId.equals(r.upstreamStepId) || stepId.equals(r.downstreamStepId)));
             if (hit) {
                 out.add(r);
             }
         }
         return out;
+    }
+
+    /** Null-safe membership: a rule's optional references are null, and {@code List.of()} rejects {@code contains(null)}. */
+    private static boolean has(List<Integer> ids, Integer id) {
+        return ids != null && id != null && ids.contains(id);
     }
 
     private Optional<? extends StructuralElement> find(int surveyId, StructureNode.Kind kind, int durableId) {

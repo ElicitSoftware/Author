@@ -38,6 +38,9 @@ public class SurveyService {
     @Inject
     CurrentUser currentUser;
 
+    @Inject
+    RenameLedger renames;
+
     public List<Survey> list() {
         return Survey.listAll(Sort.by("displayOrder"));
     }
@@ -100,6 +103,7 @@ public class SurveyService {
         }
         s.publishedBy = by;
         s.publishedComment = releaseNote == null || releaseNote.isBlank() ? null : releaseNote.trim();
+        renames.clear(id);
         em.flush();
         return s;
     }

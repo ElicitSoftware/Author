@@ -11,6 +11,7 @@ package com.elicitsoftware.author.flow;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.flow.designer.SurveyDesignerView;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.elicitsoftware.author.util.BrandUtil;
@@ -99,6 +100,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         SideNav nav = new SideNav();
         if (identity != null && identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.AUTHOR)) {
             nav.addItem(new SideNavItem("Surveys", SurveysView.class, VaadinIcon.LIST.create()));
+            nav.addItem(new SideNavItem("How surveys work", SurveyModelGuideView.class, VaadinIcon.OPEN_BOOK.create()));
             nav.addItem(new SideNavItem("Import definition", ImportDefinitionView.class, VaadinIcon.UPLOAD.create()));
         }
         nav.addItem(new SideNavItem("Logout", LogoutView.class, VaadinIcon.LOCK.create()));
@@ -133,16 +135,29 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
      * Inside a survey the drawer shows that survey's structure tree with the current element
      * highlighted (UC-006); everywhere else the application navigation.
      */
+    /** The designer calls this whenever its selection changes (UC-006 BR-003 keeps the tree in step). */
+    public void syncWith(SurveyDesignerView designer) {
+        syncDrawer(designer);
+    }
+
     void syncDrawer(Object activeView) {
         Integer surveyId = null;
         StructureNode.Kind kind = null;
         Integer durableId = null;
+        SurveyDesignerView designer = null;
         if (activeView instanceof SurveyEditorView editor && editor.survey != null) {
             surveyId = editor.survey.id;
         } else if (activeView instanceof ElementView element && element.survey != null) {
             surveyId = element.survey.id;
             kind = element.kind;
             durableId = element.durableId;
+        } else if (activeView instanceof SurveyDesignerView d && d.survey() != null) {
+            surveyId = d.survey().id;
+            designer = d;
+            if (d.selected() != null) {
+                kind = d.selected().kind();
+                durableId = d.selected().durableId();
+            }
         }
         if (surveyId == null) {
             if (structureTree != null) {
@@ -155,6 +170,8 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
             structureTree = new StructureNavigationTree(surveyId, structureQuery, n -> { });
             setDrawerContent(structureTree);
         }
+        // On the designer, the tree selects on the board instead of leaving for the details page.
+        structureTree.setSelectionHandler(designer == null ? null : designer::selectFromTree);
         structureTree.highlight(kind, durableId);
     }
 

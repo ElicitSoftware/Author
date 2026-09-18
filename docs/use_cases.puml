@@ -52,6 +52,9 @@ rectangle "Elicit Author" {
 
     ' Preview (FR-030)
     usecase "UC-028\nPreview Survey as Respondent" as UC028
+
+    ' Guidance (FR-034)
+    usecase "UC-029\nExplain the Survey Model" as UC029
 }
 
 ' Access
@@ -101,6 +104,9 @@ author --> UC027
 ' Preview
 author --> UC028
 
+' Guidance
+author --> UC029
+
 ' Relationships worth calling out explicitly
 UC008 ..> UC007 : <<include>>
 UC009 ..> UC007 : <<extend>>
@@ -108,6 +114,10 @@ UC025 ..> UC003 : <<include>>
 UC026 ..> UC003 : <<include>>
 UC027 ..> UC011 : <<extend>>
 UC018 ..> UC007 : <<extend>> retroactive warning
+UC015 ..> UC016 : <<include>> placing renumbers
+UC011 ..> UC015 : <<extend>> question into section
+UC016 ..> UC007 : <<extend>> initial display key
+UC019 ..> UC020 : <<extend>> drag to connect
 UC022 ..> UC007 : <<extend>> retroactive warning
 
 @enduml
