@@ -37,6 +37,7 @@
 
 /* Import component styles */
 @import 'components/branded-header.css';
+@import 'components/structure-navigation.css';
 
 /* Brand Integration Architecture */
 /* These CSS custom properties provide the contract between brands and the application.

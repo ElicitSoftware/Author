@@ -11,6 +11,8 @@ package com.elicitsoftware.author.flow;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.survey.StructureNode;
+import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.elicitsoftware.author.util.BrandUtil;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
@@ -44,7 +46,11 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     @Inject
     BrandUtil brandUtil;
 
+    @Inject
+    SurveyStructureQuery structureQuery;
+
     private Component drawerContent;
+    private StructureNavigationTree structureTree;
 
     public MainLayout() {
         // Default constructor for Vaadin
@@ -118,5 +124,45 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
         getContent().scrollIntoView();
+        syncDrawer(event.getActiveChain().isEmpty() ? null : event.getActiveChain().get(0));
+    }
+
+    /**
+     * Inside a survey the drawer shows that survey's structure tree with the current element
+     * highlighted (UC-006); everywhere else the application navigation.
+     */
+    void syncDrawer(Object activeView) {
+        Integer surveyId = null;
+        StructureNode.Kind kind = null;
+        Integer durableId = null;
+        if (activeView instanceof SurveyEditorView editor && editor.survey != null) {
+            surveyId = editor.survey.id;
+        } else if (activeView instanceof ElementView element && element.survey != null) {
+            surveyId = element.survey.id;
+            kind = element.kind;
+            durableId = element.durableId;
+        }
+        if (surveyId == null) {
+            if (structureTree != null) {
+                structureTree = null;
+                showApplicationNavigation();
+            }
+            return;
+        }
+        if (structureTree == null || structureTree.surveyId() != surveyId) {
+            structureTree = new StructureNavigationTree(surveyId, structureQuery, n -> { });
+            setDrawerContent(structureTree);
+        }
+        structureTree.highlight(kind, durableId);
+    }
+
+    public void refreshStructureTree() {
+        if (structureTree != null) {
+            structureTree.refresh();
+        }
+    }
+
+    StructureNavigationTree structureTree() {
+        return structureTree;
     }
 }
