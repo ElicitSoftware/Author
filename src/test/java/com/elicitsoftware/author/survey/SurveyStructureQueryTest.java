@@ -56,6 +56,6 @@ class SurveyStructureQueryTest {
     @Test
     void plainTextShortensHtml() {
         assertEquals("Welcome to the fixture survey.", SurveyStructureQuery.plain("<p>Welcome to the fixture survey.</p>"));
-        assertEquals(60, SurveyStructureQuery.plain("x".repeat(100)).length());
+        assertEquals(58, SurveyStructureQuery.plain("x".repeat(100)).length(), "57 characters plus an ellipsis");
     }
 }

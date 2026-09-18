@@ -83,7 +83,7 @@ class MainLayoutTest extends QuarkusBrowserlessTest {
     @TestSecurity(user = "mainlayout.author", roles = {"elicit_author"})
     void afterNavigationDoesNotThrow() {
         MainLayout layout = attachLayout();
-        UI.getCurrent().navigate(SurveysView.class);
+        assertDoesNotThrow(() -> UI.getCurrent().navigate(SurveysView.class));
         assertDoesNotThrow(() -> layout.afterNavigation(null));
     }
 }
