@@ -113,7 +113,9 @@ public class DesignerPalette extends HorizontalLayout {
     private void draggable(Glyph glyph, PaletteItem item) {
         DragSource<Glyph> source = DragSource.create(glyph);
         source.setDragData(item);
-        source.setEffectAllowed(EffectAllowed.COPY);
+        // Board targets ask for the MOVE effect. Chromium cancels a drop whose target effect is
+        // outside the source's allowed effects, so a COPY-only palette chip would never land.
+        source.setEffectAllowed(EffectAllowed.COPY_MOVE);
         source.addDragStartListener(e -> onDragStart.run());
         source.addDragEndListener(e -> onDragEnd.run());
         glyph.getElement().setAttribute("aria-roledescription", "draggable palette item");
