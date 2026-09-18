@@ -1,0 +1,106 @@
+package com.elicitsoftware.author.flow.designer;
+
+/*-
+ * ***LICENSE_START***
+ * Elicit Author
+ * %%
+ * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * %%
+ * PolyForm Noncommercial License 1.0.0
+ * <https://polyformproject.org/licenses/noncommercial/1.0.0>
+ * ***LICENSE_END***
+ */
+
+import com.elicitsoftware.author.survey.StructureNode;
+import com.vaadin.flow.component.dnd.DragSource;
+import com.vaadin.flow.component.dnd.DropEffect;
+import com.vaadin.flow.component.dnd.DropTarget;
+import com.vaadin.flow.component.dnd.EffectAllowed;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Span;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * One step as a lane: a header (numbered glyph as drag handle, name, section count, menu) that
+ * also accepts drops (append), and a body of section cards with an insertion zone before each
+ * card and after the last.
+ */
+public class StepLane extends Div {
+
+    final StructureNode node;
+    final Glyph glyph;
+    final Div header = new Div();
+    final Div body = new Div();
+    final H3 name = new H3();
+    final Span sectionCount = new Span();
+    final NodeMenu menu;
+    final List<SectionCard> cards = new ArrayList<>();
+
+    public StepLane(SurveyDesignerView view, StructureNode node, int order, List<StructureNode> sections, int indexInBoard, int boardSize) {
+        this.node = node;
+        addClassName("designer-lane");
+        getElement().setAttribute("data-node-id", "step-" + node.durableId());
+        getElement().setAttribute("role", "group");
+        getElement().setAttribute("aria-label", "Step " + order + ": " + node.label());
+        if (node.retired()) {
+            addClassName("retired");
+        }
+        if (view.isSelected(node)) {
+            getElement().setAttribute("aria-selected", "true");
+        }
+
+        glyph = Glyph.step(order);
+        DragSource<Glyph> source = DragSource.create(glyph);
+        source.setDragData(node);
+        source.setEffectAllowed(EffectAllowed.MOVE);
+        source.setDraggable(!node.retired());
+        source.addDragStartListener(e -> view.dragStarted());
+        source.addDragEndListener(e -> view.dragEnded());
+
+        name.setText(node.label());
+        name.addClassName("designer-lane-name");
+        sectionCount.setText(sections.size() == 1 ? "1 section" : sections.size() + " sections");
+        sectionCount.addClassName("designer-badge");
+
+        menu = new NodeMenu("Actions for step " + node.label());
+        menu.item("Edit…", () -> view.edit(node), !node.retired());
+        menu.item("Add section", () -> view.addChild(node), !node.retired());
+        menu.item("Move left", () -> view.move(node, -1), !node.retired() && indexInBoard > 0);
+        menu.item("Move right", () -> view.move(node, 1), !node.retired() && indexInBoard < boardSize - 1);
+        menu.item("Open details", () -> view.openDetails(node));
+        menu.item("Remove step", () -> view.removeStep(node), !node.retired());
+
+        header.addClassName("designer-lane-header");
+        header.getElement().setAttribute("tabindex", "0");
+        header.add(glyph, name, sectionCount, menu);
+        header.addClickListener(e -> view.select(node));
+        header.getElement().addEventListener("keydown", e -> view.select(node)).setFilter("event.key === 'Enter' || event.key === ' '");
+        DropTarget<Div> headerDrop = DropTarget.create(header);
+        headerDrop.setDropEffect(DropEffect.MOVE);
+        headerDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
+                view.onDrop(data, new DropSpot(node, sections.size(), StructureNode.Kind.SECTION))));
+
+        body.addClassName("designer-lane-body");
+        for (int i = 0; i < sections.size(); i++) {
+            body.add(new DropZone(new DropSpot(node, i, StructureNode.Kind.SECTION), view::onDrop));
+            StructureNode section = sections.get(i);
+            SectionCard card = new SectionCard(view, section, view.childrenOf(section), i, sections.size(), view.mountCount(section));
+            cards.add(card);
+            body.add(card);
+        }
+        body.add(new DropZone(new DropSpot(node, sections.size(), StructureNode.Kind.SECTION), view::onDrop));
+        if (sections.isEmpty()) {
+            Span empty = new Span("No sections yet — drop a section glyph here or use Add section.");
+            empty.addClassName("designer-empty");
+            body.add(empty);
+        }
+        add(header, body);
+    }
+
+    public StructureNode node() {
+        return node;
+    }
+}

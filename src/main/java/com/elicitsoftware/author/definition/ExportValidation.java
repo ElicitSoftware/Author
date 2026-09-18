@@ -21,7 +21,9 @@ import com.elicitsoftware.model.Step;
 import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Survey;
+import com.elicitsoftware.author.survey.RenameLedger;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,7 +42,10 @@ import java.util.function.Function;
 @ApplicationScoped
 public class ExportValidation {
 
-    private static final Set<String> CHOICE_TYPES = Set.of("RADIO", "COMBOBOX", "MULTI_SELECT", "CHECKBOX_GROUP");
+    @Inject
+    RenameLedger renames;
+
+    public static final Set<String> CHOICE_TYPES = Set.of("RADIO", "COMBOBOX", "MULTI_SELECT", "CHECKBOX_GROUP");
 
     public List<ValidationIssue> validate(Survey survey) {
         int sid = survey.id;
@@ -136,6 +141,16 @@ public class ExportValidation {
                 issues.add(ValidationIssue.warning("sections", s.sectionId, "Section '" + s.name + "' has no questions"));
             }
         }
+        if (!stepsSections.isEmpty()) {
+            // UC-016 BR-002: the runtime enters the survey at initial_display_key; it must name a current assignment.
+            Set<String> keys = new HashSet<>();
+            stepsSections.values().forEach(ss -> keys.add(ss.displayKey));
+            if (survey.initialDisplayKey == null || !keys.contains(survey.initialDisplayKey)) {
+                issues.add(ValidationIssue.error("surveys", sid, "The initial display key does not name a current section assignment"));
+            }
+        }
+        // UC-007 step 4 / UC-018 BR-001: renames since the last export are retroactive at deployed sites.
+        renames.since(sid).forEach(r -> issues.add(ValidationIssue.warning(r.table(), r.durableId(), r.message())));
         duplicateOrders(issues, "steps", steps.values().stream().map(s -> Map.entry(s.stepId, "step:" + s.displayOrder)).toList());
         duplicateOrders(issues, "steps_sections", stepsSections.values().stream()
                 .map(ss -> Map.entry(ss.stepsSectionsId, ss.stepId + ":" + ss.sectionDisplayOrder)).toList());

@@ -50,18 +50,17 @@ Roles referenced below:
 
 | ID     | Title                              | User Story                                                                                                                                                                                                        | Priority | Status |
 |--------|------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|--------|
-| FR-015 | Organize Sections into Steps       | As a survey author, I want to assign sections to steps and control their order so that the survey follows the intended navigation flow.                                                                           | High     | Open   |
-| FR-016 | Reorder Steps, Sections, Questions | As a survey author, I want to reorder steps, sections within a step, and questions within a section so that I can control the sequence respondents experience.                                                     | High     | Open   |
+| FR-015 | Organize Sections into Steps       | As a survey author, I want to assign sections to steps and control their order so that the survey follows the intended navigation flow.                                                                           | High     | Implemented |
+| FR-016 | Reorder Steps, Sections, Questions | As a survey author, I want to reorder steps, sections within a step, and questions within a section so that I can control the sequence respondents experience.                                                     | High     | Implemented |
 | FR-017 | Configure Repeating Elements       | As a survey author, I want to mark a step, section, or question as repeatable and define what determines its repetition count so that the survey can dynamically generate the right number of instances.           | Medium   | Open   |
-| FR-018 | Rename Step or Section             | As a survey author, I want to rename a step or section and see an explicit warning (at edit and at export) that the rename relabels historical reports at deployed sites as well as future ones.                   | High     | Open   |
-
+| FR-018 | Rename Step or Section             | As a survey author, I want to rename a step or section and see an explicit warning (at edit and at export) that the rename relabels historical reports at deployed sites as well as future ones.                   | High     | Implemented |
 ### Logic & Relationships
 
 | ID     | Title                             | User Story                                                                                                                                                                                                                  | Priority | Status |
 |--------|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|--------|
-| FR-019 | Create Conditional Relationship   | As a survey author, I want to define a relationship between an upstream question/answer and a downstream step, section, or question using an operator (BOOLEAN, GREATER_THAN, EQUAL, NOT_EQUAL, FIELD_EXIST, CONTAINS) so that I can control conditional survey behavior. | High     | Open   |
-| FR-020 | Configure Relationship Action     | As a survey author, I want to choose the action a relationship triggers (SHOW, REPEAT, TEXT replacement) so that the relationship produces its intended effect on flow or content.                                            | High     | Open   |
-| FR-021 | Visualize Relationship Graph      | As a survey author, I want to see a visual map of how questions, sections, and relationships connect so that I can understand and validate complex conditional logic before exporting.                                       | Medium   | Open   |
+| FR-019 | Create Conditional Relationship   | As a survey author, I want to define a relationship between an upstream question/answer and a downstream step, section, or question using an operator (BOOLEAN, GREATER_THAN, EQUAL, NOT_EQUAL, FIELD_EXIST, CONTAINS) so that I can control conditional survey behavior. | High     | Implemented |
+| FR-020 | Configure Relationship Action     | As a survey author, I want to choose the action a relationship triggers (SHOW, REPEAT, TEXT replacement) so that the relationship produces its intended effect on flow or content.                                            | High     | Implemented |
+| FR-021 | Visualize Relationship Graph      | As a survey author, I want to see a visual map of how questions, sections, and relationships connect so that I can understand and validate complex conditional logic before exporting.                                       | Medium   | Implemented |
 | FR-022 | Validate Relationship Consistency | As a survey author, I want the system to flag relationships that reference removed or missing elements, or that have zero or several downstream targets, so that I can fix broken logic (surfaced through FR-005).             | High     | Open   |
 
 ### Ontology & Metadata
@@ -94,6 +93,11 @@ answers to generate a first-draft structure for a *different*, new survey.
 | FR-030 | Preview Survey as Respondent | As a survey author, I want to preview the survey as a respondent would experience it, using the Survey app in the local authoring stack against Author's working database, so that I can validate flow and content before exporting. | High     | Open   |
 | FR-031 | Browse Survey Structure      | As a survey author, I want a navigation tree of steps → sections → questions beside the editor that highlights the element I am working on and lets me jump to any element, so that I always know where I am in a large survey. | High     | Open   |
 
+### Guidance
+
+| ID     | Title                    | User Story                                                                                                                                                                                                                                     | Priority | Status |
+|--------|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|--------|
+| FR-034 | Explain the Survey Model | As a new survey author, I want an in-app page that explains how a survey is put together (steps, sections, questions, the default path, and the rules that connect them) so that I understand the designer's vocabulary before I use it. | Low      | Implemented |
 ### Access & Integration
 
 | ID     | Title                     | User Story                                                                                                                                                                | Priority | Status |
@@ -116,6 +120,7 @@ answers to generate a first-draft structure for a *different*, new survey.
 | NFR-009 | Export Attribution Completeness    | 100% of exports record `published_by` (and `published_comment` when supplied) on the survey row and in the file, and mint a `survey_revision`.                                                             | Maintainability | High     | Open   |
 | NFR-010 | Deployment Portability             | Author must run identically via Docker across dev, staging, and production with zero environment-specific code paths.                                                                                     | Portability     | Medium   | Open   |
 | NFR-011 | Format Round Trip                  | Importing a `.elicit` file and exporting it again must reproduce every record field-for-field (ignoring remapped local ids, rebased display-key prefixes, and header timestamps), verified by automated test. | Maintainability | High     | Open   |
+| NFR-012 | Keyboard Equivalence               | Every drag-and-drop action in the designer has a keyboard-reachable equivalent (element menu or button), so WCAG 2.1 success criterion 2.1.1 holds without a pointer.                          |
 
 ## Constraints
 
