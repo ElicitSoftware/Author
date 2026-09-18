@@ -350,25 +350,27 @@
     color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
 }
 
-/* Insertion zones: collapsed until a drag starts, then a slim target that lights up on hover. */
+/* Insertion zones keep the same size whether or not a drag is running, so the board never
+   shifts under the pointer once a drag starts; they only light up while dragging (UC-016). */
 .designer-drop-zone {
-    height: 0;
-    margin: 0;
+    flex: none;
+    height: 0.75rem;
+    margin: 1px 0;
     border-radius: var(--lumo-border-radius-s);
-    transition: height 120ms ease, margin 120ms ease;
+    transition: background 120ms ease;
+}
+
+.designer-drop-zone-step {
+    align-self: stretch;
+    width: 0.75rem;
+    min-height: 3rem;
+    height: auto;
+    margin: 0 1px;
 }
 
 .designer-board.dragging .designer-drop-zone {
-    height: 1.25rem;
-    margin: 2px 0;
     outline: 1px dashed var(--brand-primary-50pct, var(--lumo-primary-color-50pct));
-}
-
-.designer-board.dragging .designer-drop-zone-step {
-    align-self: stretch;
-    width: 0.75rem;
-    height: auto;
-    margin: 0 2px;
+    outline-offset: -1px;
 }
 
 .designer-drop-zone.v-drag-over-target {
