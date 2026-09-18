@@ -33,6 +33,30 @@ because `survey_key` is fixed. Its `element_key`s are UUIDv5-derived from stable
 so regenerating produces identical keys and an update matches existing rows instead of
 orphaning them.
 
+## `fhhs_base.elicit`
+
+What comes out of the designer when a researcher uses it to recreate the Family Health
+History Survey. `fhhs_base.answers.md` is the researcher's answer sheet;
+`generate_fhhs_base.py` transcribes it into this file. It is the FHHS *skeleton* only —
+15 steps, 15 sections, 25 mounts, 3 reports and 1 post-survey action — with no questions,
+answer lists, rules or metadata. Open it in Author's **Import definition** and build the
+rest on top of it.
+
+| | |
+|---|---|
+| `survey_key` | `7d4f2a9c-1e6b-5c83-9f47-2b8e6d1a4c55` |
+| Records | 60 — 15 steps, 15 sections, 25 steps_sections, 3 reports, 1 post-survey action |
+
+Where it knowingly differs from the deployed FHHS: the machine name is
+`FamilyHistorySurvey` because the designer forbids spaces; the Thank-you step has a
+section because the designer requires one (FHHS has none); the Proband Cancer step mounts
+its only section at position 1 (FHHS has it at 2); and step and section descriptions are
+blank because the designer does not ask for them.
+
+```bash
+python3 samples/generate_fhhs_base.py [survey_prefix] [output_path]
+```
+
 ## `generate_elicit_designer.py`
 
 Regenerates the file above. Field layouts are asserted against the importer's own

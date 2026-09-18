@@ -1,0 +1,81 @@
+# ELICIT_SURVEY_EXPORT_V1
+# survey_id: 1
+# survey_key: 7d4f2a9c-1e6b-5c83-9f47-2b8e6d1a4c55
+# survey_name: FamilyHistorySurvey
+# surveys: 1
+# select_groups: 0
+# select_items: 0
+# steps: 15
+# sections: 15
+# steps_sections: 25
+# questions: 0
+# sections_questions: 0
+# relationships: 0
+# reports: 3
+# post_survey_actions: 1
+# dimensions: 0
+# ontology: 0
+# metadata: 0
+# generated: 2026-09-17T21:00:00-04:00
+# survey_revision: 2026-09-17T21:00:00-04:00
+
+surveys: 1|7d4f2a9c-1e6b-5c83-9f47-2b8e6d1a4c55|FamilyHistorySurvey|1|Family History|This survey is designed to help you and your healthcare provider better understand your hereditary risk for cancer. By collecting information about your own health and the cancer history of your blood relatives - parents, siblings, children, grandparents, aunts, and uncles - this tool can support decisions about additional testing, personalize treatment, and ultimately improve care for you and your family.|0001-0001-0000-0001-0000-0000-0000||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 1|061abbd9-be9f-579a-8e39-a92a0662e024|1|Welcome|Welcome||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 2|e82384b0-b3a0-5146-aa8b-dc0bafeea44a|2|Demographics|Demographics||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 3|a1456485-f34d-53ba-9818-10cff2960733|3|Proband|Proband||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 4|149b060a-a4ef-54f6-ac27-bd91561e4db4|4|Proband Cancer|Proband Cancer||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 5|8171c8a8-b220-5e58-ba20-ecba9582188d|5|Children|Child||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 6|e5dca018-c720-5444-bcbe-ee8651db47b9|6|Siblings|Sibling||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 7|8bcabc65-170d-5ca9-bb5c-c3523a018282|7|Mother|Mother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 8|e6abbacd-505c-5552-a0ad-145da9ace7b1|8|Maternal Grandmother|Maternal Grandmother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 9|d2b727ae-2a54-5792-a5a1-a86625eddf27|9|Maternal Grandfather|Maternal Grandfather||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 10|f9df74ef-058a-55f9-8271-e8f9cf3bb828|10|Mother's Siblings|Mother's Sibling||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 11|a72ab5c3-4b37-5f4f-b7ed-d01ffadbbbb3|11|Father|Father||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 12|1ed3d6e4-d078-54ce-8866-df83bfcbd051|12|Paternal Grandmother|Paternal Grandmother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 13|4374f8f3-c0f0-58e8-a743-29fc0e726dea|13|Paternal Grandfather|Paternal Grandfather||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 14|584c9f40-f33a-5014-ab6b-2eca04468159|14|Father's Siblings|Father's Sibling||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps: 15|30012b4f-1a9a-5758-bc4b-480db86272e0|15|Thank you|Thank you||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 1|ccbb1e10-2f85-5610-9287-c7c702bd20c7|1|Introduction|Introduction||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 2|0ea9abea-28d0-5ccc-ba06-4ccc4df9c999|2|Demographics|Demographics||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 3|92755eff-8ba0-5a90-aab6-22ad9846596c|3|Proband|Proband||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 4|bd0bff95-4eda-546c-98c5-37b3f88d43f8|4|{CS2's\|Your} Cancers|Cancers||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 5|f221470a-98f6-59a9-8d31-f234522275aa|5|{G1's\|Your} Child {S#} - {S1}|Child||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 6|7a7cdf5a-d44d-549c-902e-8865bd20a498|6|{R1's\|Your} Sibling {S#} - {S1}|Sibling||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 7|c54aeaa9-3c67-5807-bce3-25d771c0601f|7|{G1's\|Your} Mother|Mother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 8|3e798e16-92f4-558f-99d5-9814047065e6|8|{G1's\|Your} Maternal Grandmother|Maternal Grandmother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 9|b1aa9db9-daa9-5f84-b76a-6832929a7049|9|{G1's\|Your} Maternal Grandfather|Maternal Grandfather||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 10|37058c25-97e4-5629-a084-ecf93e807649|10|{G1's\|Your} Mother's Siblings|Mother's Siblings||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 11|2900d4b0-e789-50d9-b71c-3e62f1c54b3c|11|{G1's\|Your} Father|Father||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 12|472996d3-8ea6-5308-95f2-0a15dffca364|12|{G1's\|Your} Paternal Grandmother|Paternal Grandmother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 13|7b90b72a-5eb9-5908-ba3e-6568da1e0d9d|13|{G1's\|Your} Paternal Grandfather|Paternal Grandfather||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 14|89d7c6d9-83ce-54fa-8ccc-24808ede0b58|14|{G1's\|Your} Father's Siblings|Father's Siblings||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 15|ea83f118-cf9a-58c7-9d1f-ebb3b5864ad8|15|Thank you|Thank you||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 101|672a5e3d-4b92-5e3d-a833-68b0f61847ea|1|1|1|1|0001-0001-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 102|572eefe3-c66e-5c80-95df-ad887084670e|2|2|2|1|0001-0002-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 103|80a474ca-bc79-552a-a366-92db0a350598|3|3|3|1|0001-0003-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 104|5b033b9d-a18a-5cf2-863f-4c5d49a18cdc|4|4|4|1|0001-0004-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 105|b7b28ec4-4a11-5dc6-b6b0-22e895672381|5|5|5|1|0001-0005-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 106|f2a490e1-4f67-5140-b9d9-8e23324968c5|5|5|4|2|0001-0005-0000-0002-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 107|76c45eb0-e7dd-5313-8ce1-1a568b2377f6|6|6|6|1|0001-0006-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 108|6ddb7aee-36e9-507e-895a-7af83d9997b9|6|6|4|2|0001-0006-0000-0002-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 109|ae9055c9-89d3-5551-bcc1-654c6b4fdebc|7|7|7|1|0001-0007-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 110|b9610cc4-45ae-5f28-86be-c2af4200c51d|7|7|4|2|0001-0007-0000-0002-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 111|7f92e3f6-fdb8-5783-bef3-40dc4a6a26b6|8|8|8|1|0001-0008-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 112|c0c4706d-6bc1-595e-8927-a94704af8cdd|8|8|4|2|0001-0008-0000-0002-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 113|d8467e4b-f969-547c-96ef-a9fda447a166|9|9|9|1|0001-0009-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 114|32430898-7169-546e-94f1-e6fe40f9d5c1|9|9|4|2|0001-0009-0000-0002-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 115|b77c591a-a55a-593f-a8e0-e54b4c522eec|10|10|10|1|0001-0010-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 116|dcafb64b-e0fd-542c-bbca-885d9051e61d|10|10|4|2|0001-0010-0000-0002-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 117|540b80cf-82be-52a4-a400-c88c96bdd20d|11|11|11|1|0001-0011-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 118|84440e48-e664-5108-bd99-cce1c7454785|11|11|4|2|0001-0011-0000-0002-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 119|ea550abb-a15f-5ce5-b76e-198b1c9292f0|12|12|12|1|0001-0012-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 120|f694bf6f-938e-5bcb-b5bb-c1dd642cacb3|12|12|4|2|0001-0012-0000-0002-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 121|8d7196fd-a0d5-5eca-85d3-1266d756d329|13|13|13|1|0001-0013-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 122|83653495-774e-5d75-a83e-c6c5ed8afbfc|13|13|4|2|0001-0013-0000-0002-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 123|d1304876-24ab-52b2-a637-ae6f4f34f173|14|14|14|1|0001-0014-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 124|764e7b4c-c4b5-5c9d-a84e-259e6375f46d|14|14|4|2|0001-0014-0000-0002-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+steps_sections: 125|ff61869d-d518-5eeb-b446-0e1f499db291|15|15|15|1|0001-0015-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+reports: 1|5b0e8c0e-cb32-55c7-9922-d737554a3b75|Respondent|Respondent|http://host.docker.internal:8082/proband/report|0
+reports: 2|6bb161f9-c527-56b7-92e0-6628a0596d36|Cancer Summary|Cancer Summary|http://host.docker.internal:8082/casummary/report|1
+reports: 3|2f44591d-a405-5881-82cb-c461777ecd55|Family Pedigree|Family Pedigree|http://host.docker.internal:8082/pedigree/report|2
+post_survey_actions: 1|9f119f51-d89d-5910-9e7b-39b2e2f2cf82|Generate Family History Report|Builds the family history PDF and uploads it to the clinic's SFTP server after survey completion|http://host.docker.internal:8082/familyhistory/generate|1
