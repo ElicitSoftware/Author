@@ -52,9 +52,9 @@ ACTION = {"SHOW":1,"REPEAT":2,"TEXT":3}
 # ----------------------------------------------------------------- survey
 add("surveys", 1, SURVEY_KEY, "ElicitDesigner", 1,
     "Elicit Survey Designer",
-    "A meta-survey: it interviews you about the survey you want to build, and its "
-    "completed responses are the specification an author turns into a .elicit "
-    "definition file for import into any Elicit deployment.",
+    "A meta-survey: it interviews you about the steps and sections of the survey you "
+    "want to build, and its completed responses are the skeleton an author turns into "
+    "a .elicit definition file for import into any Elicit deployment.",
     f"{SURVEY_PREFIX}-0001-0000-0001-0000-0000-0000",
     "", "elicit-designer", "Initial publication")
 
@@ -66,45 +66,23 @@ def select_group(gid, name, desc, data_type, items):
     for i, (text, coded) in enumerate(items, start=1):
         add("select_items", gid*1000+i, ek(f"si:{name}:{coded}"), gid, text, i, coded, *SCD)
 
-select_group(1, "AnswerType", "Elicit question types, coded to the engine's type_id", "Text",
-    [("Short text box","8"),("Long text area","9"),("Whole number","5"),("Decimal number","6"),
-     ("Yes / no checkbox","1"),("Single choice — dropdown","3"),("Single choice — radio buttons","7"),
-     ("Multiple choice — checkboxes","11"),("Multiple choice — dropdown","10"),
-     ("Date","2"),("Date and time","12"),("Email address","13"),("Password","14"),
-     ("Informational text (no answer)","4")])
-
-select_group(2, "YesNo", "Simple yes/no", "Boolean", [("Yes","1"),("No","0")])
-
-select_group(3, "RuleOperator", "Comparison operators, coded to the engine's operator_id", "Text",
-    [("Is checked / is true","1"),("Is greater than or equal to","2"),("Is exactly equal to","3"),
-     ("Is not equal to","4"),("Has been answered at all","5"),("Contains the value","6")])
-
-select_group(4, "RuleAction", "Rule actions, coded to the engine's action_id", "Text",
-    [("Show the target","1"),("Repeat the target N times","2"),("Replace the target's text","3")])
-
-select_group(5, "Requirement", "Whether an answer is mandatory", "Text",
-    [("Required — cannot continue without it","1"),("Optional","0")])
-
-select_group(6, "DeliveryChannel", "How results leave the system", "Text",
+select_group(1, "DeliveryChannel", "How results leave the system", "Text",
     [("PDF report for the respondent","PDF"),("PDF report for staff","PDF_STAFF"),
      ("Webhook / REST callback","WEBHOOK"),("Email notification","EMAIL"),
      ("Nothing — data stays in Elicit","NONE")])
 
 # ----------------------------------------------------------------- steps
-STEPS = [(1,"Welcome"),(2,"Survey Identity"),(3,"Structure"),(4,"Questions"),
-         (5,"Answer Lists"),(6,"Conditional Logic"),(7,"Delivery"),(8,"Generate")]
+STEPS = [(1,"Welcome"),(2,"Survey Identity"),(3,"Structure"),(4,"Delivery"),(5,"Generate")]
 for order, name in STEPS:
     add("steps", order, ek(f"step:{name}"), order, name, "", f"{name} step", *SCD)
 
 # ----------------------------------------------------------------- sections
 # (section_display_order is global across the survey, matching the engine's display_key scheme)
 SECTIONS = [
-    (1,1,"Before You Begin"),      (2,2,"Naming and Purpose"),
-    (3,3,"How Many Steps"),        (4,3,"Describe Each Step"),
-    (5,4,"How Many Questions"),    (6,4,"Describe Each Question"),
-    (7,5,"How Many Answer Lists"), (8,5,"Describe Each Answer List"),
-    (9,6,"Conditional Logic"),     (10,6,"Describe Each Rule"),
-    (11,7,"Reports and Follow-up"),(12,8,"Review and Produce"),
+    (1,1,"Before You Begin"),      (2,1,"How a Survey Is Put Together"),
+    (3,2,"Naming and Purpose"),
+    (4,3,"How Many Steps"),        (5,3,"Describe Each Step"),
+    (6,4,"Reports and Follow-up"), (7,5,"Review and Produce"),
 ]
 for order, step_order, name in SECTIONS:
     add("sections", order, ek(f"section:{name}"), order, name, "", f"{name} section", *SCD)
@@ -132,107 +110,152 @@ def question(tag, qtype, text, section, order, *, required="false", short=None, 
     return qid
 
 question("intro", "HTML",
-    "<h2>Design a new Elicit survey</h2><p>This tool interviews you about the survey you "
-    "want to build. Answer as much as you can — every answer maps onto one row of the "
-    "<code>.elicit</code> definition file that gets imported into an Elicit deployment.</p>"
-    "<p>You can stop and resume; nothing is published until an author reviews your answers.</p>",
+    "<h2>Design a new Elicit survey</h2><p>This tool interviews you about the shape of the "
+    "survey you want to build — its steps (pages) and the sections on each one. Every answer "
+    "maps onto one row of the <code>.elicit</code> definition file that gets imported into an "
+    "Elicit deployment.</p><p>The questions themselves, their answer lists and any conditional "
+    "logic are added afterwards by an author. You can stop and resume; nothing is published "
+    "until an author reviews your answers.</p>",
     1, 1)
 
+
+question("anatomy", "HTML",
+    "<h3>How an Elicit survey is put together</h3>"
+    "<p>Every survey is a small hierarchy. Knowing the names helps, because the rest of this "
+    "interview and the author who builds the survey both use them.</p>"
+    "<dl>"
+    "<dt><b>Survey</b></dt><dd>The top-level record with name, title, description, and "
+    "finish URL (Family History Survey, Library Card Registration, etc.).</dd>"
+    "<dt><b>Steps</b></dt><dd>The pages in the progress bar; a step can repeat per person "
+    "(Welcome, Demographics, etc.).</dd>"
+    "<dt><b>Sections</b></dt><dd>Headed groups on a page; one section can be mounted under "
+    "several steps and share its questions (Your Mother, Cancers, etc.).</dd>"
+    "<dt><b>Questions</b></dt><dd>The answer kinds available and the fields each carries "
+    "(\"What is your current age?\", \"Are you the patient?\", etc.).</dd>"
+    "<dt><b>Select groups and select items</b></dt><dd>Reusable answer lists with display "
+    "text and a stored coded value (Yes/No, Male/Female, etc.).</dd>"
+    "<dt><b>Relationships</b></dt><dd>The upstream question, operator, and "
+    "show/repeat/replace-text action (show the current-age question when a relative is "
+    "Alive, repeat the child's-name question once per child, etc.). Replace-text uses "
+    "tokens: \"What is &#123;S1's&#124;your&#125; age?\" reads \"What is Anna's age?\" "
+    "when someone is answering for Anna.</dd>"
+    "<dt><b>Reports and post-survey actions</b></dt><dd>What happens to a finished response "
+    "(Family Pedigree, Cancer Summary, etc.).</dd>"
+    "<dt><b>Ontology, dimensions and metadata</b></dt><dd>Tags that shape the reporting "
+    "layer (Age, Breast Cancer, etc.).</dd>"
+    "</dl>"
+    "<p>This interview asks only for the <b>survey</b>, its <b>steps</b> and <b>sections</b>, "
+    "and how results are delivered. An author adds the questions, answer lists, relationships "
+    "and reporting tags afterwards, using your outline.</p>",
+    2, 1)
+
 # --- Naming and Purpose
+question("identity_intro", "HTML",
+    "<h3>Survey identity</h3>"
+    "<p><b>What this captures.</b> The single <code>surveys</code> record that everything else "
+    "hangs off: the machine name, the title respondents see, a description of its purpose, and "
+    "where respondents go when they finish.</p>"
+    "<p><b>How it is used.</b> The machine name is how administrators find the survey when "
+    "they generate access codes and pull exports, so it must be unique in the deployment. The "
+    "title appears at the top of every page respondents see. The description is shown to "
+    "administrators, not respondents. The owner's email is for the author to reach you with "
+    "questions; it is not stored in the survey.</p>"
+    "<p><b>Why it matters.</b> The name and title are the hardest things to change once "
+    "respondents have been invited, because access codes, emails and exports all refer to "
+    "them. Pick them as if they were permanent.</p>",
+    3, 1)
 question("name", "TEXT", "Short machine name for the survey (letters and digits, no spaces)",
-    2, 1, required="true", short="SurveyName",
+    3, 2, required="true", short="SurveyName",
     tip="Becomes surveys.name. Must be unique within the deployment.",
     validation="Use letters and digits only, no spaces.", placeholder="LibraryCardReg")
 question("title", "TEXT", "Title respondents will see at the top of every page",
-    2, 2, required="true", short="SurveyTitle", placeholder="Public Library Card Registration")
+    3, 3, required="true", short="SurveyTitle", placeholder="Public Library Card Registration")
 question("purpose", "TEXTAREA", "What is this survey for? Who fills it in, and what happens to the answers?",
-    2, 3, required="true", short="Purpose")
+    3, 4, required="true", short="Purpose")
 question("owner_email", "EMAIL", "Email address of the person who owns this survey",
-    2, 4, required="true", short="OwnerEmail", validation="Enter a valid email address.")
+    3, 5, required="true", short="OwnerEmail", validation="Enter a valid email address.")
 question("post_url", "TEXT", "Where should respondents be sent after they finish? (leave blank for the default thank-you page)",
-    2, 5, short="PostSurveyUrl", placeholder="https://example.org/thank-you")
+    3, 6, short="PostSurveyUrl", placeholder="https://example.org/thank-you")
 
 # --- Structure
+question("structure_intro", "HTML",
+    "<h3>Steps and sections</h3>"
+    "<p><b>What this captures.</b> The skeleton of the survey. A <b>step</b> is one page the "
+    "respondent moves through; the progress bar lists the steps by name. A <b>section</b> is a "
+    "headed group of questions on a step. Each step you describe becomes a <code>steps</code> "
+    "record, each heading a <code>sections</code> record, and each pairing a "
+    "<code>steps_sections</code> record.</p>"
+    "<p><b>How it is used.</b> Every question the author adds later is placed in one of these "
+    "sections, so the outline you give here decides where everything lives. The short "
+    "<i>report names</i> become the dimension names the reporting tables and pedigree drawings "
+    "are built from — keep them short, plain and stable. A section can be re-mounted under "
+    "several steps; it then shares its questions between them, which is how one \"Cancers\" "
+    "block can serve a mother, a father and every sibling without being written eight times.</p>"
+    "<p><b>Why it matters.</b> Step and section positions are baked into every stored answer's "
+    "key. Adding a step later is easy; reordering or removing one after respondents have "
+    "started is not. Get the order right here, even if the wording changes.</p>",
+    4, 1)
 question("step_count", "INTEGER", "How many steps (pages) should the survey have?",
-    3, 1, required="true", short="StepCount", minv="1", maxv="20",
+    4, 2, required="true", short="StepCount", minv="1", maxv="20",
     tip="Each step is one page the respondent moves through.",
     validation="Enter a whole number between 1 and 20.")
 question("step_name", "TEXT", "Name of this step, as shown in the progress bar",
-    4, 1, required="true", short="StepName")
-question("step_section_count", "INTEGER", "How many sections (headed groups of questions) are on this step?",
-    4, 2, required="true", short="SectionCount", minv="1", maxv="10",
-    validation="Enter a whole number between 1 and 10.")
-question("section_heading", "TEXT", "Heading for the first section on this step",
-    4, 3, short="SectionHeading")
-
-# --- Questions
-question("question_count", "INTEGER", "How many questions does the whole survey have?",
-    5, 1, required="true", short="QuestionCount", minv="1", maxv="200",
-    validation="Enter a whole number between 1 and 200.")
-question("q_text", "TEXTAREA", "Question wording, exactly as the respondent should read it",
-    6, 1, required="true", short="QuestionText")
-question("q_type", "COMBOBOX", "What kind of answer does this question take?",
-    6, 2, required="true", short="AnswerType", group="AnswerType")
-question("q_required", "RADIO", "Must this question be answered?",
-    6, 3, required="true", short="Required", group="Requirement")
-question("q_short", "TEXT", "Short label for exports, reports and column headings",
-    6, 4, required="true", short="ShortLabel",
-    tip="Becomes questions.short_text — keep it under about 30 characters.")
-question("q_list", "TEXT", "Which answer list does this question use? (name it from step 5)",
-    6, 5, short="AnswerList",
-    tip="Only applies to choice questions.")
-question("q_help", "TEXT", "Optional help text or tooltip shown beside the question",
-    6, 6, short="HelpText")
-question("q_validation", "TEXT", "Message to show when the answer fails validation",
-    6, 7, short="ValidationText", placeholder="Enter a whole number between 1 and 10.")
-
-# --- Answer Lists
-question("list_count", "INTEGER", "How many reusable answer lists does the survey need?",
-    7, 1, required="true", short="ListCount", minv="0", maxv="50",
-    tip="An answer list is a set of choices shared by one or more questions.",
-    validation="Enter a whole number between 0 and 50.")
-question("list_name", "TEXT", "Name of this answer list", 8, 1, required="true", short="ListName",
-    placeholder="PreferredContactMethod")
-question("list_options", "TEXTAREA",
-    "The options, one per line, written as Label=StoredValue",
-    8, 2, required="true", short="ListOptions",
-    tip="Example: Email=EMAIL on one line, Phone=PHONE on the next.")
-
-# --- Conditional Logic
-question("needs_logic", "CHECKBOX", "Does any part of this survey appear, repeat or change based on an earlier answer?",
-    9, 1, short="NeedsLogic")
-question("rule_count", "INTEGER", "How many such rules are there?",
-    9, 2, short="RuleCount", minv="1", maxv="50",
-    validation="Enter a whole number between 1 and 50.")
-question("rule_when", "TEXT", "When this question is answered…  (give its short label)",
-    10, 1, required="true", short="RuleTrigger")
-question("rule_operator", "COMBOBOX", "…and the answer…", 10, 2, required="true",
-    short="RuleOperator", group="RuleOperator")
-question("rule_value", "TEXT", "…this value…", 10, 3, short="RuleValue",
-    tip="Leave blank for 'is checked' or 'has been answered at all'.")
-question("rule_action", "COMBOBOX", "…then do this:", 10, 4, required="true",
-    short="RuleAction", group="RuleAction")
-question("rule_target", "TEXT", "…to this question, section or step (give its short label or name)",
-    10, 5, required="true", short="RuleTarget")
+    5, 1, required="true", short="StepName")
+question("step_report_name", "TEXT", "Short name used for this step in reports and data exports",
+    5, 2, short="StepReportName",
+    tip="Becomes steps.dimension_name. Leave blank to reuse the step name.",
+    placeholder="Mother")
+question("step_sections", "TEXTAREA",
+    "The sections on this step, one per line and in order, written as Heading=ReportName",
+    5, 3, required="true", short="SectionHeadings",
+    tip="Example: Your Mother=Mother on one line. Leave out =ReportName to reuse the heading. "
+        "A step needs at least one section.")
+question("step_reused_sections", "TEXTAREA",
+    "If any of these sections already appear on an earlier step, list their headings here, one per line",
+    5, 4, short="ReusedSections",
+    tip="The same section can sit under several steps and shares its questions between them. "
+        "Write the heading exactly as it appeared on the earlier step.")
 
 # --- Delivery
+question("delivery_intro", "HTML",
+    "<h3>Reports and follow-up</h3>"
+    "<p><b>What this captures.</b> What happens to a completed response. Each report you name "
+    "becomes a <code>reports</code> record; a webhook becomes a <code>post_survey_actions</code> "
+    "record.</p>"
+    "<p><b>How it is used.</b> Reports appear as buttons on the respondent's final page and in "
+    "the Admin app, and are rendered on demand by the service at the URL you give. "
+    "Post-survey actions run automatically the moment a respondent finishes — for example, "
+    "generating a PDF and dropping it on an SFTP server for the clinic. Email notification and "
+    "\"nothing\" need no further detail.</p>"
+    "<p><b>Why it matters.</b> This is the only part of the survey that reaches people other "
+    "than the respondent. If you are unsure, choose \"Nothing\": data stays in Elicit and can "
+    "be exported by an administrator later, whereas a wrong endpoint fails silently at "
+    "completion time.</p>",
+    6, 1)
 question("channels", "CHECKBOX_GROUP", "How should completed responses be delivered?",
-    11, 1, short="DeliveryChannels", group="DeliveryChannel")
-question("report_name", "TEXT", "What should the report be called?", 11, 2, short="ReportName")
-question("report_url", "TEXT", "Report or webhook endpoint URL", 11, 3, short="ReportUrl",
+    6, 2, short="DeliveryChannels", group="DeliveryChannel")
+question("report_name", "TEXT", "What should the report be called?", 6, 3, short="ReportName")
+question("report_url", "TEXT", "Report or webhook endpoint URL", 6, 4, short="ReportUrl",
     placeholder="http://report-service:8080/report")
 
 # --- Review
 question("outro", "HTML",
-    "<h3>What happens next</h3><p>Your answers become the specification for a "
-    "<code>.elicit</code> file. An author maps each answer onto the matching record — "
-    "steps, sections, questions, answer lists and rules — and the finished file is "
-    "uploaded through <em>Apply Survey Definition</em> in the Admin app.</p>",
-    12, 1)
+    "<h3>Review and hand-off</h3>"
+    "<p><b>What this captures.</b> Your confirmation that the outline is complete, plus "
+    "anything the author needs that the earlier questions had no room for.</p>"
+    "<p><b>How it is used.</b> Nothing is built until you confirm. An author then maps each "
+    "answer onto the matching step and section record, adds the questions, answer lists and "
+    "conditional rules, and uploads the finished <code>.elicit</code> file through "
+    "<em>Apply Survey Definition</em> in the Admin app.</p>"
+    "<p><b>Why it matters.</b> The notes box is the right place for things this interview "
+    "cannot express: which steps should repeat per family member, wording that must change "
+    "depending on who is answering, or sections that only appear for some respondents. "
+    "The author reads it before touching anything else.</p>",
+    7, 1)
 question("confirm", "CHECKBOX", "I confirm the details above are complete and ready for review",
-    12, 2, required="true", short="Confirmed")
+    7, 2, required="true", short="Confirmed")
 question("notes", "TEXTAREA", "Anything else the author should know before building this survey?",
-    12, 3, short="AuthorNotes")
+    7, 3, short="AuthorNotes")
 
 # ----------------------------------------------------------------- relationships
 _rel = [1]
@@ -247,21 +270,6 @@ def rel(desc, upstream_tag, operator, action, *, ref="", down_sq=None, down_ss=N
 # Repeat the per-step block once for every step the author asked for.
 rel("Repeat the step description block once per step", "step_count", "GTE", "REPEAT",
     ref="1", down_ss="Describe Each Step")
-# Repeat the per-question block once for every question.
-rel("Repeat the question description block once per question", "question_count", "GTE", "REPEAT",
-    ref="1", down_ss="Describe Each Question")
-# Repeat the per-list block once for every answer list.
-rel("Repeat the answer-list block once per list", "list_count", "GTE", "REPEAT",
-    ref="1", down_ss="Describe Each Answer List")
-# Only ask how many rules there are if the author said logic is needed.
-rel("Ask for a rule count only when conditional logic is needed", "needs_logic", "BOOLEAN",
-    "SHOW", down_sq="rule_count")
-# Repeat the per-rule block once for every rule.
-rel("Repeat the rule description block once per rule", "rule_count", "GTE", "REPEAT",
-    ref="1", down_ss="Describe Each Rule")
-# The choice-list question only matters for choice-typed questions.
-rel("Ask which answer list to use only for single-choice dropdown questions", "q_type",
-    "EQUAL", "SHOW", ref="3", down_sq="q_list")
 # Report name/URL only matter if a report channel was chosen.
 rel("Ask for a report name only when a PDF report was requested", "channels", "CONTAINS",
     "SHOW", ref="PDF", down_sq="report_name")
