@@ -113,9 +113,23 @@ question("intro", "HTML",
     "<h2>Design a new Elicit survey</h2><p>This tool interviews you about the shape of the "
     "survey you want to build — its steps (pages) and the sections on each one. Every answer "
     "maps onto one row of the <code>.elicit</code> definition file that gets imported into an "
-    "Elicit deployment.</p><p>The questions themselves, their answer lists and any conditional "
-    "logic are added afterwards by an author. You can stop and resume; nothing is published "
-    "until an author reviews your answers.</p>",
+    "Elicit deployment.</p>"
+    "<p><b>This interview sets up the structure only.</b> What you produce here is a skeleton: "
+    "the survey's identity, its steps, the sections on each step, and how results are "
+    "delivered. Everything that goes inside that skeleton is added afterwards in the "
+    "<b>Author</b> tool:</p>"
+    "<ul>"
+    "<li>the <b>questions</b> in each section, with their wording, answer type, validation "
+    "and help text;</li>"
+    "<li>the <b>answer lists</b> (select groups and items) those questions draw on;</li>"
+    "<li>the <b>rules</b> — which question is watched, the test applied to its answer "
+    "(equals, is greater than, is checked, has been answered, contains) and the "
+    "<b>action</b> taken: show, repeat, or replace text;</li>"
+    "<li><b>tokens</b> in wording so text changes with earlier answers;</li>"
+    "<li>the reporting <b>tags</b> (ontology and metadata) that shape exports and reports;</li>"
+    "<li><b>preview and testing</b> of the logic before anything is published.</li>"
+    "</ul>"
+    "<p>You can stop and resume; nothing is published until an author reviews your answers.</p>",
     1, 1)
 
 
