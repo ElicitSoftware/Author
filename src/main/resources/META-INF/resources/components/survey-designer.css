@@ -286,6 +286,18 @@
     padding: var(--lumo-space-xs);
 }
 
+.designer-row[draggable="true"],
+.designer-card-header[draggable="true"],
+.designer-lane-header[draggable="true"] {
+    cursor: grab;
+}
+
+.designer-row[draggable="true"]:active,
+.designer-card-header[draggable="true"]:active,
+.designer-lane-header[draggable="true"]:active {
+    cursor: grabbing;
+}
+
 .designer-row {
     display: flex;
     align-items: center;
@@ -347,7 +359,7 @@
 }
 
 .designer-board.dragging .designer-drop-zone {
-    height: 0.75rem;
+    height: 1.25rem;
     margin: 2px 0;
     outline: 1px dashed var(--brand-primary-50pct, var(--lumo-primary-color-50pct));
 }

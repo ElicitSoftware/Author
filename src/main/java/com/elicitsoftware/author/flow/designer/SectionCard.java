@@ -58,12 +58,16 @@ public class SectionCard extends Div {
         }
 
         glyph = Glyph.section();
-        DragSource<Glyph> source = DragSource.create(glyph);
+        // The glyph is the visual handle, but the whole header drags so the gesture cannot miss.
+        DragSource<Div> source = DragSource.create(header);
         source.setDragData(node);
         source.setEffectAllowed(EffectAllowed.MOVE);
         source.setDraggable(!node.retired());
         source.addDragStartListener(e -> view.dragStarted());
         source.addDragEndListener(e -> view.dragEnded());
+        if (!node.retired()) {
+            glyph.getElement().setAttribute("draggable", "true");
+        }
 
         toggle = (open ? VaadinIcon.ANGLE_DOWN : VaadinIcon.ANGLE_RIGHT).create();
         toggle.addClassName("designer-card-toggle");
@@ -102,6 +106,11 @@ public class SectionCard extends Div {
 
         body.addClassName("designer-card-body");
         body.setVisible(open);
+        // Dropping anywhere in the open card's body (not on a row or zone) appends.
+        DropTarget<Div> bodyDrop = DropTarget.create(body);
+        bodyDrop.setDropEffect(DropEffect.MOVE);
+        bodyDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
+                view.onDrop(data, new DropSpot(node, questions.size(), StructureNode.Kind.QUESTION))));
         rows = new java.util.ArrayList<>();
         for (int i = 0; i < questions.size(); i++) {
             body.add(new DropZone(new DropSpot(node, i, StructureNode.Kind.QUESTION), view::onDrop));

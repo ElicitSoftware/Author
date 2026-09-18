@@ -91,14 +91,21 @@ class ElicitRuleArrows extends LitElement {
     super.connectedCallback();
     const board = this.parentElement;
     if (board) {
+      // The board keeps a minimum height, so content can shift without the board resizing:
+      // watch every node too, and re-observe them whenever the board's subtree changes.
       this._resize = new ResizeObserver(this._relayout);
       this._resize.observe(board);
-      this._mutations = new MutationObserver(this._relayout);
+      this._observeNodes();
+      this._mutations = new MutationObserver(() => { this._observeNodes(); this._relayout(); });
       this._mutations.observe(board, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
       board.addEventListener('scroll', this._relayout);
+      board.addEventListener('transitionend', this._relayout);
     }
     window.addEventListener('resize', this._relayout);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(this._relayout);
     this._schedule();
+    setTimeout(this._relayout, 300);
+    setTimeout(this._relayout, 1200);
   }
 
   disconnectedCallback() {
@@ -122,6 +129,12 @@ class ElicitRuleArrows extends LitElement {
       }
       this._schedule();
     }
+  }
+
+  _observeNodes() {
+    const board = this._board();
+    if (!board || !this._resize) return;
+    board.querySelectorAll('[data-node-id]').forEach((el) => this._resize.observe(el));
   }
 
   _schedule() {
