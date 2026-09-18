@@ -53,12 +53,16 @@ public class StepLane extends Div {
         }
 
         glyph = Glyph.step(order);
-        DragSource<Glyph> source = DragSource.create(glyph);
+        // The glyph is the visual handle, but the whole header drags so the gesture cannot miss.
+        DragSource<Div> source = DragSource.create(header);
         source.setDragData(node);
         source.setEffectAllowed(EffectAllowed.MOVE);
         source.setDraggable(!node.retired());
         source.addDragStartListener(e -> view.dragStarted());
         source.addDragEndListener(e -> view.dragEnded());
+        if (!node.retired()) {
+            glyph.getElement().setAttribute("draggable", "true");
+        }
 
         name.setText(node.label());
         name.addClassName("designer-lane-name");
@@ -84,6 +88,11 @@ public class StepLane extends Div {
                 view.onDrop(data, new DropSpot(node, sections.size(), StructureNode.Kind.SECTION))));
 
         body.addClassName("designer-lane-body");
+        // Dropping anywhere in the lane body (not on a card or zone) appends.
+        DropTarget<Div> bodyDrop = DropTarget.create(body);
+        bodyDrop.setDropEffect(DropEffect.MOVE);
+        bodyDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
+                view.onDrop(data, new DropSpot(node, sections.size(), StructureNode.Kind.SECTION))));
         for (int i = 0; i < sections.size(); i++) {
             body.add(new DropZone(new DropSpot(node, i, StructureNode.Kind.SECTION), view::onDrop));
             StructureNode section = sections.get(i);

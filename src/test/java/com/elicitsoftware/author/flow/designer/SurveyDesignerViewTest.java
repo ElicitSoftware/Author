@@ -116,7 +116,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         SurveyDesignerView view = open(s);
         StepLane second = view.lanes.get(1);
 
-        ComponentUtil.fireEvent(second.glyph, new DragStartEvent<>(second.glyph, true));
+        ComponentUtil.fireEvent(second.header, new DragStartEvent<>(second.header, true)); // the whole header drags; the glyph is its handle
         assertTrue(view.board.getClassNames().contains("dragging"), "zones expand while a drag is in progress");
         DropZone target = zone(view, null, 0, StructureNode.Kind.STEP);
         ComponentUtil.fireEvent(target, new DropEvent<>(target, true, "move"));
@@ -139,7 +139,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         SectionCard sectionA = view.lanes.get(0).cards.get(0);
         StructureNode stepTwo = view.lanes.get(1).node();
 
-        ComponentUtil.fireEvent(sectionA.glyph, new DragStartEvent<>(sectionA.glyph, true));
+        ComponentUtil.fireEvent(sectionA.header, new DragStartEvent<>(sectionA.header, true));
         DropZone target = zone(view, stepTwo, 0, StructureNode.Kind.SECTION);
         ComponentUtil.fireEvent(target, new DropEvent<>(target, true, "move"));
 

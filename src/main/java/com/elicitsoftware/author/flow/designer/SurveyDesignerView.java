@@ -174,10 +174,15 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         rebuildBoard();
         updateBreadcrumb();
         syncAddress();
-        mainLayout().ifPresent(layout -> layout.syncWith(this));
+        mainLayout().ifPresent(layout -> {
+            layout.refreshStructureTree(); // the drawer tree reads the same tables; keep it in step (UC-006 BR-003)
+            layout.syncWith(this);
+        });
     }
 
     private void rebuildBoard() {
+        // A drop rebuilds the board, so the dragged element (and its dragend) never comes back.
+        board.removeClassName("dragging");
         board.removeAll();
         lanes.clear();
         List<StructureNode> roots = tree.roots();

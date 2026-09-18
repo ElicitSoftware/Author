@@ -48,12 +48,16 @@ public class QuestionRow extends Div {
         }
 
         glyph = Glyph.question(node.detail());
-        DragSource<Glyph> source = DragSource.create(glyph);
+        // The glyph is the visual handle, but the whole row drags so the gesture cannot miss.
+        DragSource<QuestionRow> source = DragSource.create(this);
         source.setDragData(node);
         source.setEffectAllowed(EffectAllowed.MOVE);
         source.setDraggable(!node.retired());
         source.addDragStartListener(e -> view.dragStarted());
         source.addDragEndListener(e -> view.dragEnded());
+        if (!node.retired()) {
+            glyph.getElement().setAttribute("draggable", "true");
+        }
 
         label.setText(node.label());
         label.addClassName("designer-row-label");
@@ -69,12 +73,19 @@ public class QuestionRow extends Div {
         menu.item("Open details", () -> view.openDetails(node));
         menu.item("Remove from this section", () -> view.removeAssignment(node), !node.retired());
 
-        // UC-019 step 1: a rule glyph dropped on the row starts a rule that reads this question.
-        DropTarget<QuestionRow> ruleDrop = DropTarget.create(this);
-        ruleDrop.setDropEffect(DropEffect.COPY);
-        ruleDrop.addDropListener(e -> e.getDragData().ifPresent(data -> {
-            if (data instanceof PaletteItem item && item.isRule() && !node.retired()) {
+        // The row itself is a drop target: a rule glyph starts a rule that reads this question
+        // (UC-019 step 1); a question glyph or palette question lands *before* this row, so the
+        // natural gesture of dropping onto a row works as well as hitting the thin zone above it.
+        DropTarget<QuestionRow> drop = DropTarget.create(this);
+        drop.setDropEffect(DropEffect.MOVE);
+        drop.addDropListener(e -> e.getDragData().ifPresent(data -> {
+            if (node.retired()) {
+                return;
+            }
+            if (data instanceof PaletteItem item && item.isRule()) {
                 view.startRule(item.action(), node);
+            } else {
+                view.onDrop(data, new DropSpot(node.parent(), indexInSection, StructureNode.Kind.QUESTION));
             }
         }));
 
