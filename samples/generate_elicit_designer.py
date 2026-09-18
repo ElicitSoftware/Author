@@ -2,9 +2,9 @@
 """
 Generates the Elicit Survey Designer meta-survey as a .elicit import file.
 
-Field layouts are taken verbatim from Admin's SurveyDefinitionExportService /
-SurveyDefinitionImportService on feature/author-elicit-workflow.  Required field
-counts are asserted against the importer's own checks so the output cannot drift.
+Field layouts follow the post-Survey-V015 ELICIT_SURVEY_EXPORT_V1 contract (no trailing
+is_draft field), as read by Author's ElicitFormat and Admin's SurveyDefinitionImportService.
+Required field counts are asserted against the reader's own checks so the output cannot drift.
 """
 import uuid, sys
 
@@ -17,11 +17,13 @@ SURVEY_KEY = "b3a7c2e4-5d18-4f92-8a60-1c9e3f75d2b4"
 
 def ek(name): return str(uuid.uuid5(NS, name))
 
-# importer's required field counts (SurveyDefinitionImportService)
+# importer's required field counts (ElicitFormat.REQUIRED_FIELDS in Author, mirrored by Admin).
+# Since Survey V015 the Type 2 records end with published_comment; the old trailing is_draft
+# field is gone (readers still accept it on files written before V015).
 COUNTS = {
-    "surveys": 10, "select_groups": 11, "select_items": 12, "steps": 12,
-    "sections": 12, "steps_sections": 13, "questions": 21,
-    "sections_questions": 11, "relationships": 20,
+    "surveys": 10, "select_groups": 10, "select_items": 11, "steps": 11,
+    "sections": 11, "steps_sections": 12, "questions": 20,
+    "sections_questions": 10, "relationships": 19,
 }
 
 def esc(v):
@@ -36,9 +38,9 @@ def add(table, *fields):
     records[table].append("|".join(esc(f) for f in fields))
 
 # SCD tail shared by every versioned record: version, effective_from, effective_to,
-# published_by, published_comment, is_draft.  The importer does not read these on a
-# create-import (DB defaults apply) but the field count must still be exact.
-SCD = (0, "", "", "elicit-designer", "Initial publication", "false")
+# published_by, published_comment.  The importer does not read these on a create-import
+# (DB defaults apply) but the field count must still be exact.
+SCD = (0, "", "", "elicit-designer", "Initial publication")
 
 # ----------------------------------------------------------------- question types
 QTYPE = {"CHECKBOX":1,"DATE_PICKER":2,"COMBOBOX":3,"HTML":4,"INTEGER":5,"DOUBLE":6,
@@ -279,8 +281,8 @@ for t in ORDER:
     out.append(f"# {t}: {len(records[t])}")
 for t in EMPTY:
     out.append(f"# {t}: 0")
-out += ["# generated: 2026-09-15T19:00:00-04:00",
-        "# survey_revision: 2026-09-15T19:00:00-04:00",
+out += ["# generated: 2026-09-17T19:00:00-04:00",
+        "# survey_revision: 2026-09-17T19:00:00-04:00",
         ""]
 for t in ORDER:
     for line in records[t]:

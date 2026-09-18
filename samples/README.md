@@ -6,11 +6,11 @@ A meta-survey: it interviews an author about the survey they want to build, and 
 completed responses are the specification for a new `.elicit` definition file.
 
 Import it through **Apply Survey Definition** in the Admin app, or
-`POST /secured/survey/apply`.
+`POST /secured/survey/apply`; open it for editing through Author's **Import definition**.
 
 | | |
 |---|---|
-| Format | `ELICIT_SURVEY_EXPORT_V1` |
+| Format | `ELICIT_SURVEY_EXPORT_V1`, post-Survey-V015 layout (no trailing `is_draft` field) |
 | `survey_key` | `b3a7c2e4-5d18-4f92-8a60-1c9e3f75d2b4` |
 | Records | 147 — 8 steps, 12 sections, 34 questions, 6 answer lists (32 items), 8 rules |
 
@@ -34,7 +34,7 @@ orphaning them.
 
 Regenerates the file above. Field layouts are asserted against the importer's own
 required-field counts, so a miscounted record fails at generation rather than on import —
-worth having when `questions` records carry 21 fields and `relationships` 20.
+worth having when `questions` records carry 20 fields and `relationships` 19.
 
 ```bash
 python3 samples/generate_elicit_designer.py [survey_prefix] [output_path]
