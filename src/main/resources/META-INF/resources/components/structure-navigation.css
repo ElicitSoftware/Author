@@ -1,0 +1,40 @@
+/*-
+ * ***LICENSE_START***
+ * Elicit Author
+ * %%
+ * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * %%
+ * PolyForm Noncommercial License 1.0.0
+ * <https://polyformproject.org/licenses/noncommercial/1.0.0>
+ * ***LICENSE_END***
+ */
+
+/*
+ * Structure navigation tree (Author editor drawer). Brand variables only; no Lumo overrides
+ * beyond what the tree needs to read as navigation rather than as a data grid.
+ */
+.structure-navigation {
+    padding: var(--lumo-space-s);
+}
+
+.structure-navigation-tree {
+    border: none;
+    font-size: var(--lumo-font-size-s);
+    --vaadin-grid-tree-toggle-level-offset: 1rem;
+}
+
+.structure-navigation-tree::part(current-element-row) {
+    background: var(--brand-primary-10pct, var(--lumo-primary-color-10pct));
+    font-weight: 600;
+}
+
+.structure-navigation-tree::part(retired-element-row) {
+    color: var(--brand-text-disabled, var(--lumo-disabled-text-color));
+    text-decoration: line-through;
+}
+
+.structure-kind {
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+    font-size: var(--lumo-font-size-xs);
+    text-transform: lowercase;
+}
