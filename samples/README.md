@@ -2,8 +2,10 @@
 
 ## `ElicitDesigner.elicit`
 
-A meta-survey: it interviews an author about the survey they want to build, and its
-completed responses are the specification for a new `.elicit` definition file.
+A meta-survey: it interviews a requester about the steps and sections of the survey they
+want to build, and its completed responses are the skeleton for a new `.elicit` definition
+file. It deliberately stops there — questions, answer lists, conditional rules and the
+ontology/metadata layer are added afterwards by an author with the full picture.
 
 Import it through **Apply Survey Definition** in the Admin app, or
 `POST /secured/survey/apply`; open it for editing through Author's **Import definition**.
@@ -12,18 +14,19 @@ Import it through **Apply Survey Definition** in the Admin app, or
 |---|---|
 | Format | `ELICIT_SURVEY_EXPORT_V1`, post-Survey-V015 layout (no trailing `is_draft` field) |
 | `survey_key` | `b3a7c2e4-5d18-4f92-8a60-1c9e3f75d2b4` |
-| Records | 147 — 8 steps, 12 sections, 34 questions, 6 answer lists (32 items), 8 rules |
+| Records | 71 — 5 steps, 7 sections, 21 questions, 1 answer list (5 items), 3 rules |
 
-It is deliberately self-referential in one respect: the `AnswerType`, `RuleOperator`
-and `RuleAction` lists do not store free text. Their `coded_value`s **are** the engine's
-`type_id`, `operator_id` and `action_id`, so choosing "Single choice — dropdown" stores
-`3` — exactly what the `questions` record needs. Responses transcribe into a definition
-file rather than needing interpretation.
+The per-step block captures what the `steps`, `sections` and `steps_sections` records
+need: the step name, its reporting name (`steps.dimension_name`), every section heading
+in order as `Heading=ReportName` (`sections.name` and `sections.dimension_name`), and
+which of those sections are re-mounted from an earlier step. That last one matters for
+surveys like FHHS, where one "Cancers" section sits under eight different steps and
+shares its questions between them.
 
-The conditional logic uses the engine on itself: step/question/list/rule counts `REPEAT`
-the block that describes each one, and the delivery questions `SHOW` based on which
-channels were ticked. Each count question deliberately sits in the section *before* the
-block it repeats, because a section cannot repeat itself.
+The conditional logic uses the engine on itself: the step count `REPEAT`s the block that
+describes each step, and the delivery questions `SHOW` based on which channels were
+ticked. The count question deliberately sits in the section *before* the block it
+repeats, because a section cannot repeat itself.
 
 Re-uploading the file routes to update-in-place (UC-017) rather than a second install,
 because `survey_key` is fixed. Its `element_key`s are UUIDv5-derived from stable names,
