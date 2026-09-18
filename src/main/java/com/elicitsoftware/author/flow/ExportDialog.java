@@ -69,11 +69,20 @@ public class ExportDialog extends Dialog {
         releaseNote.setWidthFull();
         releaseNote.setMaxLength(4000);
         releaseNote.setPlaceholder("What changed in this revision (recorded on the survey and in the file)");
+        releaseNote.setRequiredIndicatorVisible(true);
+        releaseNote.setErrorMessage("Enter a release note");
 
         export.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         export.setEnabled(errors == 0);
         export.addClickListener(e -> {
             outcome.removeAll();
+            // UC-008 step 3: the note is the export attribution; a stored note is also what marks a
+            // survey as exported (surveys list, purge guard), so it cannot be blank.
+            if (releaseNote.getValue() == null || releaseNote.getValue().isBlank()) {
+                releaseNote.setInvalid(true);
+                return;
+            }
+            releaseNote.setInvalid(false);
             try {
                 Survey stamped = surveyService.stampExport(survey.id, releaseNote.getValue());
                 ExportResult result = exporter.export(stamped);

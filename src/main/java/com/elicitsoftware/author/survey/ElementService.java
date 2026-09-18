@@ -50,6 +50,16 @@ public class ElementService {
         }
     }
 
+    /**
+     * What a restore would bring back with the element (UC-010 step 3) and what stops it: a parent
+     * that is itself still removed (UC-010 step 2 / BR-002).
+     */
+    public record RestorePlan(StructureNode.Kind kind, Integer durableId, String label, List<String> dependents, List<String> blockers) {
+        public boolean blocked() {
+            return !blockers.isEmpty();
+        }
+    }
+
     @Inject
     EntityManager em;
 
@@ -123,7 +133,7 @@ public class ElementService {
                 Question q = question(surveyId, durableId).orElseThrow(() -> new AuthoringException("Question not found"));
                 label = "Question '" + q.shortText + "'";
                 List<SectionsQuestion> sqs = currentAssignmentsOfQuestion(surveyId, durableId);
-                sqs.forEach(sq -> dependents.add("assignment of the question to section " + sq.sectionId));
+                sqs.forEach(sq -> dependents.add("assignment of the question to section " + sectionName(surveyId, sq.sectionId)));
                 relationshipsTouching(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(), null, null)
                         .forEach(r -> dependents.add("rule '" + r.description + "'"));
             }
@@ -131,9 +141,9 @@ public class ElementService {
                 Section s = section(surveyId, durableId).orElseThrow(() -> new AuthoringException("Section not found"));
                 label = "Section '" + s.name + "'";
                 List<StepsSections> sss = currentStepAssignmentsOfSection(surveyId, durableId);
-                sss.forEach(ss -> dependents.add("assignment of the section to step " + ss.stepId));
+                sss.forEach(ss -> dependents.add("assignment of the section to step " + stepName(surveyId, ss.stepId)));
                 List<SectionsQuestion> sqs = currentQuestionAssignmentsOfSection(surveyId, durableId);
-                sqs.forEach(sq -> dependents.add("assignment of question " + sq.questionId + " to the section"));
+                sqs.forEach(sq -> dependents.add("assignment of question " + questionName(surveyId, sq.questionId) + " to the section"));
                 relationshipsTouching(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(),
                         sss.stream().map(ss -> ss.stepsSectionsId).toList(), null)
                         .forEach(r -> dependents.add("rule '" + r.description + "'"));
@@ -142,7 +152,7 @@ public class ElementService {
                 Step st = step(surveyId, durableId).orElseThrow(() -> new AuthoringException("Step not found"));
                 label = "Step '" + st.name + "'";
                 List<StepsSections> sss = currentSectionAssignmentsOfStep(surveyId, durableId);
-                sss.forEach(ss -> dependents.add("assignment of section " + ss.sectionId + " to the step"));
+                sss.forEach(ss -> dependents.add("assignment of section " + sectionName(surveyId, ss.sectionId) + " to the step"));
                 relationshipsTouching(surveyId, List.of(), sss.stream().map(ss -> ss.stepsSectionsId).toList(), durableId)
                         .forEach(r -> dependents.add("rule '" + r.description + "'"));
             }
@@ -209,54 +219,97 @@ public class ElementService {
 
     // ---- restore --------------------------------------------------------------------------
 
+    /** Computes what a restore brings back and what blocks it, without changing anything. */
+    public RestorePlan planRestore(int surveyId, StructureNode.Kind kind, int durableId) {
+        StructuralElement element = find(surveyId, kind, durableId).orElseThrow(() -> new AuthoringException("Element not found"));
+        String label = labelOf(kind, element);
+        List<String> dependents = new ArrayList<>();
+        List<String> blockers = new ArrayList<>();
+        if (element.isCurrent()) {
+            return new RestorePlan(kind, durableId, label, dependents, blockers);
+        }
+        OffsetDateTime closedAt = element.effectiveTo;
+        switch (kind) {
+            case QUESTION -> {
+                List<SectionsQuestion> sqs = SectionsQuestion.list("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
+                for (SectionsQuestion sq : sqs) {
+                    if (section(surveyId, sq.sectionId).map(StructuralElement::isCurrent).orElse(false)) {
+                        dependents.add("assignment of the question to section " + sectionName(surveyId, sq.sectionId));
+                    } else {
+                        blockers.add("section " + sectionName(surveyId, sq.sectionId) + " is removed; restore it first");
+                    }
+                }
+                relationshipsClosedAt(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(), List.of(), null, closedAt)
+                        .forEach(r -> dependents.add("rule '" + r.description + "'"));
+            }
+            case SECTION -> {
+                List<StepsSections> sss = StepsSections.list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
+                for (StepsSections ss : sss) {
+                    if (step(surveyId, ss.stepId).map(StructuralElement::isCurrent).orElse(false)) {
+                        dependents.add("assignment of the section to step " + stepName(surveyId, ss.stepId));
+                    } else {
+                        blockers.add("step " + stepName(surveyId, ss.stepId) + " is removed; restore it first");
+                    }
+                }
+                List<SectionsQuestion> sqs = SectionsQuestion.list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
+                sqs.forEach(sq -> dependents.add("assignment of question " + questionName(surveyId, sq.questionId) + " to the section"));
+                relationshipsClosedAt(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(),
+                        sss.stream().map(ss -> ss.stepsSectionsId).toList(), null, closedAt)
+                        .forEach(r -> dependents.add("rule '" + r.description + "'"));
+            }
+            case STEP -> {
+                List<StepsSections> sss = StepsSections.list("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
+                sss.forEach(ss -> dependents.add("assignment of section " + sectionName(surveyId, ss.sectionId) + " to the step"));
+                relationshipsClosedAt(surveyId, List.of(), sss.stream().map(ss -> ss.stepsSectionsId).toList(), durableId, closedAt)
+                        .forEach(r -> dependents.add("rule '" + r.description + "'"));
+            }
+            default -> throw new AuthoringException("Unsupported element kind " + kind);
+        }
+        return new RestorePlan(kind, durableId, label, dependents, blockers);
+    }
+
     /**
      * UC-010: reopen the element and the dependents retired with it (same closing instant).
-     * Parents must be current (BR-002).
+     * Parents must be current (BR-002); {@link #planRestore} says which are not.
      */
     @Transactional
-    public void restore(int surveyId, StructureNode.Kind kind, int durableId) {
-        StructuralElement element = switch (kind) {
-            case QUESTION -> question(surveyId, durableId).orElse(null);
-            case SECTION -> section(surveyId, durableId).orElse(null);
-            case STEP -> step(surveyId, durableId).orElse(null);
-        };
-        if (element == null) {
-            throw new AuthoringException("Element not found");
+    public RestorePlan restore(int surveyId, StructureNode.Kind kind, int durableId) {
+        RestorePlan plan = planRestore(surveyId, kind, durableId);
+        if (plan.blocked()) {
+            throw new AuthoringException("Cannot restore " + plan.label() + ": " + String.join("; ", plan.blockers()));
         }
+        StructuralElement element = find(surveyId, kind, durableId).orElseThrow(() -> new AuthoringException("Element not found"));
         if (element.isCurrent()) {
-            return;
+            return plan;
         }
         OffsetDateTime closedAt = element.effectiveTo;
         element.effectiveTo = StructuralElement.SENTINEL;
         switch (kind) {
-            case QUESTION -> SectionsQuestion.<SectionsQuestion>list("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt)
-                    .forEach(sq -> {
-                        if (section(surveyId, sq.sectionId).map(StructuralElement::isCurrent).orElse(false)) {
-                            sq.effectiveTo = StructuralElement.SENTINEL;
-                            reopenRelationships(surveyId, sq.sectionsQuestionId, null, closedAt);
-                        } else {
-                            throw new AuthoringException("Restore the section this question belonged to first");
-                        }
-                    });
-            case SECTION -> {
-                StepsSections.<StepsSections>list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt).forEach(ss -> {
-                    if (!step(surveyId, ss.stepId).map(StructuralElement::isCurrent).orElse(false)) {
-                        throw new AuthoringException("Restore the step this section belonged to first");
-                    }
-                    ss.effectiveTo = StructuralElement.SENTINEL;
-                    reopenRelationships(surveyId, null, ss.stepsSectionsId, closedAt);
-                });
-                SectionsQuestion.<SectionsQuestion>list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt).forEach(sq -> {
-                    sq.effectiveTo = StructuralElement.SENTINEL;
-                    reopenRelationships(surveyId, sq.sectionsQuestionId, null, closedAt);
-                });
+            case QUESTION -> {
+                List<SectionsQuestion> sqs = SectionsQuestion.list("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
+                relationshipsClosedAt(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(), List.of(), null, closedAt)
+                        .forEach(r -> r.effectiveTo = StructuralElement.SENTINEL);
+                sqs.forEach(sq -> sq.effectiveTo = StructuralElement.SENTINEL);
             }
-            case STEP -> StepsSections.<StepsSections>list("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt).forEach(ss -> {
-                ss.effectiveTo = StructuralElement.SENTINEL;
-                reopenRelationships(surveyId, null, ss.stepsSectionsId, closedAt);
-            });
+            case SECTION -> {
+                List<StepsSections> sss = StepsSections.list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
+                List<SectionsQuestion> sqs = SectionsQuestion.list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
+                relationshipsClosedAt(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(),
+                        sss.stream().map(ss -> ss.stepsSectionsId).toList(), null, closedAt)
+                        .forEach(r -> r.effectiveTo = StructuralElement.SENTINEL);
+                sqs.forEach(sq -> sq.effectiveTo = StructuralElement.SENTINEL);
+                sss.forEach(ss -> ss.effectiveTo = StructuralElement.SENTINEL);
+            }
+            case STEP -> {
+                List<StepsSections> sss = StepsSections.list("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
+                relationshipsClosedAt(surveyId, List.of(), sss.stream().map(ss -> ss.stepsSectionsId).toList(), durableId, closedAt)
+                        .forEach(r -> r.effectiveTo = StructuralElement.SENTINEL);
+                sss.forEach(ss -> ss.effectiveTo = StructuralElement.SENTINEL);
+            }
+            default -> throw new AuthoringException("Unsupported element kind " + kind);
         }
         em.flush();
+        return plan;
     }
 
     // ---- purge ---------------------------------------------------------------------------
@@ -311,13 +364,47 @@ public class ElementService {
         return out;
     }
 
-    private void reopenRelationships(int surveyId, Integer sqId, Integer ssId, OffsetDateTime closedAt) {
+    /** Rules closed at exactly {@code closedAt} that touch the given assignments or step. */
+    private List<Relationship> relationshipsClosedAt(int surveyId, List<Integer> sqIds, List<Integer> ssIds, Integer stepId, OffsetDateTime closedAt) {
+        List<Relationship> out = new ArrayList<>();
         for (Relationship r : Relationship.<Relationship>list("surveyId = ?1 and effectiveTo = ?2", surveyId, closedAt)) {
-            boolean hit = (sqId != null && (sqId.equals(r.upstreamSqId) || sqId.equals(r.downstreamSqId)))
-                    || (ssId != null && ssId.equals(r.downstreamSsId));
+            boolean hit = sqIds.contains(r.upstreamSqId) || sqIds.contains(r.downstreamSqId)
+                    || ssIds.contains(r.downstreamSsId)
+                    || (stepId != null && (stepId.equals(r.upstreamStepId) || stepId.equals(r.downstreamStepId)));
             if (hit) {
-                r.effectiveTo = StructuralElement.SENTINEL;
+                out.add(r);
             }
         }
+        return out;
+    }
+
+    private Optional<? extends StructuralElement> find(int surveyId, StructureNode.Kind kind, int durableId) {
+        return switch (kind) {
+            case QUESTION -> question(surveyId, durableId);
+            case SECTION -> section(surveyId, durableId);
+            case STEP -> step(surveyId, durableId);
+        };
+    }
+
+    private static String labelOf(StructureNode.Kind kind, StructuralElement element) {
+        return switch (kind) {
+            case QUESTION -> "Question '" + ((Question) element).shortText + "'";
+            case SECTION -> "Section '" + ((Section) element).name + "'";
+            case STEP -> "Step '" + ((Step) element).name + "'";
+        };
+    }
+
+    // Dependents are named for people (UC-009 step 3, UC-010 step 3); the id is the fallback only
+    // when the referenced row is gone.
+    private String sectionName(int surveyId, Integer sectionId) {
+        return section(surveyId, sectionId).map(s -> "'" + s.name + "'").orElse("#" + sectionId);
+    }
+
+    private String stepName(int surveyId, Integer stepId) {
+        return step(surveyId, stepId).map(s -> "'" + s.name + "'").orElse("#" + stepId);
+    }
+
+    private String questionName(int surveyId, Integer questionId) {
+        return question(surveyId, questionId).map(q -> "'" + q.shortText + "'").orElse("#" + questionId);
     }
 }

@@ -14,6 +14,7 @@ package com.elicitsoftware.author.survey;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.Relationship;
+import com.elicitsoftware.model.Section;
 import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.Step;
 import com.elicitsoftware.model.StructuralElement;
@@ -89,6 +90,32 @@ class ElementServiceTest {
         Relationship r = Relationship.find("surveyId", s.id).firstResult();
         assertEquals(after.effectiveTo, r.effectiveTo);
         assertEquals(1, Question.count("questionId", q3.questionId), "still exactly one row");
+    }
+
+    @Test
+    @TestTransaction
+    void plans_nameDependentsAndBlockersForPeople() {
+        Survey s = fixture();
+        Question q3 = q("FixtureQ3");
+        ElementService.RemovalPlan removal = service.planRemoval(s.id, StructureNode.Kind.QUESTION, q3.questionId);
+        assertTrue(removal.dependents().stream().anyMatch(d -> d.contains("section 'Fixture Section")),
+                "UC-009 step 3 names the section, not its id: " + removal.dependents());
+
+        service.remove(s.id, StructureNode.Kind.QUESTION, q3.questionId);
+        em.clear();
+        ElementService.RestorePlan restore = service.planRestore(s.id, StructureNode.Kind.QUESTION, q3.questionId);
+        assertFalse(restore.blocked());
+        assertTrue(restore.dependents().stream().anyMatch(d -> d.contains("section 'Fixture Section")), restore.dependents().toString());
+        assertTrue(restore.dependents().stream().anyMatch(d -> d.startsWith("rule ")), "UC-010 step 3 lists the rules retired with it");
+
+        // Remove the section the question sat in: restoring the question is now blocked by name.
+        Section section = Section.find("name", "Fixture Section B").firstResult();
+        service.remove(s.id, StructureNode.Kind.SECTION, section.sectionId);
+        em.clear();
+        ElementService.RestorePlan blocked = service.planRestore(s.id, StructureNode.Kind.QUESTION, q3.questionId);
+        assertTrue(blocked.blocked());
+        assertTrue(blocked.blockers().get(0).contains("'Fixture Section B'"), blocked.blockers().toString());
+        assertThrows(AuthoringException.class, () -> service.restore(s.id, StructureNode.Kind.QUESTION, q3.questionId));
     }
 
     @Test

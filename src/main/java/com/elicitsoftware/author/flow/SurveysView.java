@@ -51,7 +51,7 @@ public class SurveysView extends VerticalLayout {
         grid.addColumn(s -> s.name).setHeader("Name").setAutoWidth(true).setSortable(true);
         grid.addColumn(s -> s.title).setHeader("Title").setAutoWidth(true).setFlexGrow(1);
         grid.addColumn(s -> s.displayOrder).setHeader("Order").setAutoWidth(true);
-        grid.addColumn(s -> s.publishedBy).setHeader("Last exported by").setAutoWidth(true);
+        grid.addColumn(s -> s.publishedBy).setHeader("Last edited by").setAutoWidth(true);
         grid.addColumn(s -> s.publishedComment).setHeader("Release note").setAutoWidth(true);
         grid.addComponentColumn(s -> {
             Button open = new Button("Open", VaadinIcon.EDIT.create(), e ->

@@ -72,6 +72,9 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver {
     final Button remove = new Button("Remove", VaadinIcon.TRASH.create());
     final Button restore = new Button("Restore", VaadinIcon.ROTATE_LEFT.create());
     final Button back = new Button("Survey overview", VaadinIcon.ARROW_LEFT.create());
+    /** The notice shown after a removal, with its Undo (UC-009 step 6); null until a removal happened. */
+    Notification removalNotice;
+    Button undo;
 
     Survey survey;
     StructureNode.Kind kind;
@@ -83,7 +86,7 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver {
         restore.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         back.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         remove.addClickListener(e -> confirmRemoval());
-        restore.addClickListener(e -> doRestore());
+        restore.addClickListener(e -> confirmRestore());
         back.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
                 new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id)))));
         HorizontalLayout title = new HorizontalLayout(heading, kindBadge);
@@ -195,13 +198,60 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver {
         dialog.addConfirmListener(e -> {
             try {
                 elementService.remove(survey.id, kind, durableId);
-                Notification n = Notification.show(plan.label() + " removed", 5000, Notification.Position.BOTTOM_START);
-                n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                showRemovalNotice(plan.label());
                 reload();
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
         });
+        dialog.open();
+    }
+
+    private void showRemovalNotice(String label) {
+        Notification notice = new Notification();
+        notice.setDuration(8000);
+        notice.setPosition(Notification.Position.BOTTOM_START);
+        notice.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        Button undoButton = new Button("Undo", ev -> {
+            notice.close();
+            doRestore();
+        });
+        undoButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        HorizontalLayout body = new HorizontalLayout(new Span(label + " removed"), undoButton);
+        body.setAlignItems(Alignment.CENTER);
+        notice.add(body);
+        removalNotice = notice;
+        undo = undoButton;
+        notice.open();
+    }
+
+    private void confirmRestore() {
+        ElementService.RestorePlan plan;
+        try {
+            plan = elementService.planRestore(survey.id, kind, durableId);
+        } catch (AuthoringException ae) {
+            error(ae.getMessage());
+            return;
+        }
+        if (plan.blocked()) {
+            error("Cannot restore " + plan.label() + ": " + String.join("; ", plan.blockers()));
+            return;
+        }
+        ConfirmDialog dialog = new ConfirmDialog();
+        dialog.setHeader("Restore " + plan.label() + "?");
+        VerticalLayout body = new VerticalLayout();
+        body.setPadding(false);
+        body.add(new Paragraph("The element reopens in its former position, keeping its element key."));
+        if (!plan.dependents().isEmpty()) {
+            body.add(new Paragraph("Restored together with it:"));
+            UnorderedList list = new UnorderedList();
+            plan.dependents().forEach(d -> list.add(new ListItem(d)));
+            body.add(list);
+        }
+        dialog.add(body);
+        dialog.setCancelable(true);
+        dialog.setConfirmText("Restore");
+        dialog.addConfirmListener(e -> doRestore());
         dialog.open();
     }
 

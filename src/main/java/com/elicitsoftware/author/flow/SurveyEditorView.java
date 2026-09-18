@@ -88,9 +88,10 @@ public class SurveyEditorView extends VerticalLayout implements BeforeEnterObser
         survey = surveyService.find(id).orElseThrow();
         heading.setText(survey.title);
         summary.setText(survey.name + " — key " + survey.surveyKey);
-        attribution.setText(survey.publishedBy == null
-                ? "Never exported."
-                : "Last exported by " + survey.publishedBy + (survey.publishedComment == null ? "" : ": " + survey.publishedComment));
+        // published_by is the last editor until an export stamps it together with a release note.
+        attribution.setText(survey.publishedComment == null
+                ? "Never exported." + (survey.publishedBy == null ? "" : " Last edited by " + survey.publishedBy + ".")
+                : "Last exported by " + survey.publishedBy + ": " + survey.publishedComment);
         issues = validation.validate(survey);
         validationPanel.removeAll();
         validationPanel.add(new H3("Validation"));

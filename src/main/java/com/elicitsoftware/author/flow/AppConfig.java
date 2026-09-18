@@ -145,13 +145,25 @@ public class AppConfig implements AppShellConfigurator {
         // Use inline loading for theme as well to avoid any @import issues
         String brandThemeContent = loadBrandCssContent("theme.css");
         if (brandThemeContent != null) {
-            settings.addInlineWithContents(brandThemeContent, Inline.Wrapping.STYLESHEET);
+            settings.addInlineWithContents(withoutInlinedImports(brandThemeContent), Inline.Wrapping.STYLESHEET);
         } else {
             if (Files.exists(Paths.get(getBrandPath(), "theme.css")) ||
                    Files.exists(Paths.get(getLocalBrandPath(), "theme.css"))) {
                 settings.addLink("stylesheet", "/api/brand/theme.css");
             }
         }
+    }
+
+    /**
+     * Strips the {@code @import} rules for the colour and typography sheets from an inlined theme.
+     * Both sheets are inlined ahead of the theme already; left in, the relative URLs resolve against
+     * the page instead of the brand directory and the browser requests /colors/brand-colors.css and
+     * /typography/brand-typography.css, which nothing serves.
+     */
+    static String withoutInlinedImports(String themeCss) {
+        return themeCss.replaceAll(
+                "(?m)^[ \\t]*@import\\s+(?:url\\(\\s*)?['\"]?\\.?/?(?:colors/brand-colors|typography/brand-typography)\\.css['\"]?\\s*\\)?\\s*;[ \\t]*\\r?\\n?",
+                "");
     }
 
     /**
