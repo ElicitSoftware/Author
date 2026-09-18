@@ -51,6 +51,10 @@ class SurveyEditorViewTest extends QuarkusBrowserlessTest {
         ExportDialog dialog = $(ExportDialog.class).single();
         assertTrue(dialog.isOpened());
         assertTrue(dialog.export.isEnabled(), "no errors on the fixture, export allowed");
+
+        test(dialog.export).click();
+        assertTrue(dialog.releaseNote.isInvalid(), "UC-008 step 3: a release note is required");
+        assertTrue(dialog.outcome.getChildren().findAny().isEmpty(), "nothing exported without a note");
     }
 
     @Test

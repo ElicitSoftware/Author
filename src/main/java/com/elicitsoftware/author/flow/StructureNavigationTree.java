@@ -51,7 +51,9 @@ public class StructureNavigationTree extends VerticalLayout {
         addClassName("structure-navigation");
 
         grid.setDataProvider(provider);
-        grid.addHierarchyColumn(StructureNode::label).setHeader("Survey structure").setFlexGrow(1);
+        // Display order is the whole point of the tree (UC-006 step 2): a sortable header would let a
+        // click re-sort it alphabetically.
+        grid.addHierarchyColumn(StructureNode::label).setHeader("Survey structure").setFlexGrow(1).setSortable(false);
         grid.addComponentColumn(n -> {
             Span badge = new Span(n.kind() == StructureNode.Kind.QUESTION ? n.detail() : n.kind().name().toLowerCase());
             badge.addClassName("structure-kind");

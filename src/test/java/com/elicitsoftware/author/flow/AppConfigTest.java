@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * AppConfig.configurePage() is AppShellConfigurator's single public entry point, and it takes
@@ -113,5 +114,21 @@ class AppConfigTest {
         AppConfig config = configFor(external, root.resolve("no-local"));
 
         assertDoesNotThrow(() -> config.configurePage(new AppShellSettings()));
+    }
+
+    // The colour and typography sheets are inlined ahead of the theme, so the theme's own
+    // @import lines for them must go: inlined, their relative URLs resolve against the page and
+    // the browser asks for /colors/brand-colors.css, which nothing serves.
+    @Test
+    void withoutInlinedImports_dropsOnlyTheBrandSheetImports() {
+        String theme = "@import url('./colors/brand-colors.css');\n"
+                + "@import url(\"typography/brand-typography.css\");\n"
+                + "@import url('https://fonts.googleapis.com/css2?family=Inter');\n"
+                + "html { --lumo-primary-color: var(--brand-primary); }\n";
+
+        String stripped = AppConfig.withoutInlinedImports(theme);
+
+        assertEquals("@import url('https://fonts.googleapis.com/css2?family=Inter');\n"
+                + "html { --lumo-primary-color: var(--brand-primary); }\n", stripped);
     }
 }
