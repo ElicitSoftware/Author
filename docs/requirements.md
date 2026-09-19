@@ -107,6 +107,12 @@ answers to generate a first-draft structure for a *different*, new survey.
 | FR-032 | Authenticate via OIDC     | As a survey author, I want to log in using the platform's OIDC/Keycloak provider so that I use the same identity as the Admin and Survey apps.                             | High     | Open   |
 | FR-033 | Restrict Authoring Access | As a system administrator, I want authoring functions restricted to users holding the `elicit_author` role (granted explicitly; not implied by `elicit_admin`) so that unauthorized users cannot alter survey definitions. | High     | Open   |
 
+### Branding
+
+| ID     | Title                     | User Story                                                                                                                                                                | Priority | Status      |
+|--------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------|
+| FR-037 | Brand the Authoring Interface | As a system administrator, I want Author to display the deployment's brand — logo, display name, and theme — from a mounted brand directory, resolved through a fixed fallback order (external mount, then a local directory, then the brand embedded in the application) and served only from within the brand root, so that Author matches the Survey and Admin apps at a site and never serves a file from outside the brand directory. | Medium | Implemented |
+
 ## Non-Functional Requirements
 
 | ID      | Title                              | Requirement                                                                                                                                                                                                | Category        | Priority | Status |
