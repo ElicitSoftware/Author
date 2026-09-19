@@ -20,6 +20,8 @@ import com.elicitsoftware.author.security.AuthorRoles;
 import com.elicitsoftware.author.survey.DesignerService;
 import com.elicitsoftware.author.survey.ElementService;
 import com.elicitsoftware.author.survey.RelationshipQuery;
+import com.elicitsoftware.author.survey.ReportingService;
+import com.elicitsoftware.author.flow.reporting.ElementTagsDialog;
 import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyService;
@@ -92,6 +94,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     @Inject
     RelationshipQuery relationshipQuery;
+
+    @Inject
+    ReportingService reporting;
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
@@ -496,6 +501,14 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 error(ae.getMessage());
             }
         }).open();
+    }
+
+    /** UC-021 step 1: the reporting tags a question or section carries, editable in place. */
+    public void reportingTags(StructureNode node) {
+        if (node.kind() == StructureNode.Kind.STEP) {
+            return;
+        }
+        new ElementTagsDialog(reporting, survey, node, this::load).open();
     }
 
     public void openDetails(StructureNode node) {

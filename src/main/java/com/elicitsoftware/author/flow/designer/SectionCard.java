@@ -85,6 +85,7 @@ public class SectionCard extends Div {
         menu.item("Add question", () -> view.addChild(node), !node.retired());
         menu.item("Copy to step…", () -> view.copyTo(node), !node.retired());
         menu.item("Also mount in step…", () -> view.mountIn(node), !node.retired());
+        menu.item("Reporting tags…", () -> view.reportingTags(node), !node.retired());
         menu.item("Move up", () -> view.move(node, -1), !node.retired() && indexInLane > 0);
         menu.item("Move down", () -> view.move(node, 1), !node.retired() && indexInLane < laneSize - 1);
         menu.item("Open details", () -> view.openDetails(node));

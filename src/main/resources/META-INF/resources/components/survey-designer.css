@@ -533,3 +533,21 @@ elicit-rule-arrows {
     border-radius: var(--lumo-border-radius-m);
     font-size: var(--lumo-font-size-s);
 }
+
+/* ---- Reporting tags (UC-021..UC-024) ------------------------------------------------------ */
+
+.reporting-preview {
+    display: block;
+    margin-top: var(--lumo-space-s);
+    font-size: var(--lumo-font-size-s);
+    color: var(--lumo-secondary-text-color);
+    font-family: var(--lumo-font-family);
+}
+
+.reporting-impact {
+    margin-top: var(--lumo-space-m);
+}
+
+.reporting-impact > span {
+    font-weight: 600;
+}

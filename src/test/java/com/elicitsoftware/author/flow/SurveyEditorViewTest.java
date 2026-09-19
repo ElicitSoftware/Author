@@ -67,6 +67,15 @@ class SurveyEditorViewTest extends QuarkusBrowserlessTest {
 
     @Test
     @TestSecurity(user = "editor.author", roles = {"elicit_author"})
+    void reportingButtonOpensTheReportingPage() {
+        SurveyEditorView view = open("AuthorFixture");
+        test(view.reporting).click();
+        com.elicitsoftware.author.flow.reporting.ReportingView reporting = $(com.elicitsoftware.author.flow.reporting.ReportingView.class).single();
+        assertEquals(view.survey.id, reporting.survey.id, "UC-023 step 1: the survey's Reporting page");
+    }
+
+    @Test
+    @TestSecurity(user = "editor.author", roles = {"elicit_author"})
     void unknownSurveyShowsNotFound() {
         org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
                 () -> navigate(SurveyEditorView.class, Map.of(SurveyEditorView.SURVEY_ID, "999999")));

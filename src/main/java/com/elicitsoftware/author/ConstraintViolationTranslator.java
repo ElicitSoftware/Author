@@ -31,7 +31,10 @@ public final class ConstraintViolationTranslator {
             Map.entry("sections_survey_display_order_un", new String[]{"displayOrder", "Another section already has this position"}),
             Map.entry("select_groups_name_un", new String[]{"name", "Another list in this survey already uses this name"}),
             Map.entry("select_items_display_text_un", new String[]{"displayText", "This list already has an option with that text"}),
-            Map.entry("steps_sections_display_key_un", new String[]{"displayKey", "Another assignment already uses this display key"})
+            Map.entry("steps_sections_display_key_un", new String[]{"displayKey", "Another assignment already uses this display key"}),
+            Map.entry("dimensions_un", new String[]{"dimension", "A dimension with this name already exists"}),
+            Map.entry("ontology_un", new String[]{"tag", "A tag with this name already exists in this survey's namespace"}),
+            Map.entry("metadata_un", new String[]{null, "This element already carries this tag with the same value"})
     );
 
     private ConstraintViolationTranslator() {

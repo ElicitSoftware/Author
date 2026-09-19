@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * UC-029: the survey model explained in the designer's own vocabulary. Six ideas in a fixed
+ * UC-029: the survey model explained in the designer's own vocabulary. Seven ideas in a fixed
  * order (BR-002 rules read as a sentence), each headed by the glyph the board uses for it
  * (BR-001 one vocabulary), all stated in text so the diagram is optional (BR-003).
  */
@@ -100,6 +100,14 @@ public class SurveyModelGuideView extends VerticalLayout {
                         + "palette to create an element, drag it within its container to reorder, or drag it into "
                         + "another container to copy it there. Drag a rule glyph onto a question to start a rule, then "
                         + "drag the arrowhead onto the target. Everything a drag can do, the element's menu can do too."));
+
+        section(VaadinIcon.TABLE.create(), "Reporting tags",
+                new Paragraph("A reporting tag names a column of the report a site builds from the answers. Tag a question and "
+                        + "its answers fill that column; tag a section as it appears in a step with a fixed value, and every "
+                        + "respondent who reaches it is classified by that value. Tags that share a dimension share one table of "
+                        + "values. Open a survey's Reporting page, or the 'Reporting tags…' item on a question or section, to "
+                        + "manage them. Changing or removing an assigned tag is retroactive: answers already recorded at deployed "
+                        + "sites are reclassified."));
 
         section(VaadinIcon.LINK.create(), "Identity and publishing",
                 new Paragraph("Every element gets a key the moment it is created and keeps it for life. Removing an "

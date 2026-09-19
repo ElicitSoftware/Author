@@ -22,6 +22,8 @@ import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.author.survey.RenameLedger;
+import com.elicitsoftware.author.survey.ReportingChangeLedger;
+import com.elicitsoftware.author.survey.ReportingService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -44,6 +46,12 @@ public class ExportValidation {
 
     @Inject
     RenameLedger renames;
+
+    @Inject
+    ReportingService reporting;
+
+    @Inject
+    ReportingChangeLedger reportingChanges;
 
     public static final Set<String> CHOICE_TYPES = Set.of("RADIO", "COMBOBOX", "MULTI_SELECT", "CHECKBOX_GROUP");
 
@@ -151,6 +159,10 @@ public class ExportValidation {
         }
         // UC-007 step 4 / UC-018 BR-001: renames since the last export are retroactive at deployed sites.
         renames.since(sid).forEach(r -> issues.add(ValidationIssue.warning(r.table(), r.durableId(), r.message())));
+        // UC-022 BR-001: tag changes since the last export are retroactive at deployed sites too.
+        reportingChanges.since(sid).forEach(c -> issues.add(ValidationIssue.warning(c.kind(), c.durableId(), c.message())));
+        // UC-024 BR-002: a name the site's ETL would reject blocks the export; the rest are warnings.
+        issues.addAll(reporting.impact(sid).problems());
         duplicateOrders(issues, "steps", steps.values().stream().map(s -> Map.entry(s.stepId, "step:" + s.displayOrder)).toList());
         duplicateOrders(issues, "steps_sections", stepsSections.values().stream()
                 .map(ss -> Map.entry(ss.stepsSectionsId, ss.stepId + ":" + ss.sectionDisplayOrder)).toList());

@@ -44,12 +44,12 @@
 1. The system records nothing.
 2. Use case ends.
 
-### A3: Tables without element keys
+### A3: Tables Author does not model
 
-**Trigger:** Author's schema does not yet provide element keys for reports, post-survey actions, dimensions, ontology or metadata (step 5)  
+**Trigger:** The survey has no reporting tags, or the format carries tables Author does not yet model (reports, post-survey actions) (step 5)  
 **Flow:**
 
-1. The system writes those tables with a record count of zero and notes it in the result.
+1. The system writes those tables with a record count of zero; dimensions, ontology and metadata records are written whenever the survey carries reporting tags (UC-021, UC-023).
 2. Use case continues at step 6.
 
 ### A4: File cannot be produced

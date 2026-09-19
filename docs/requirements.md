@@ -69,10 +69,10 @@ Roles referenced below:
 
 | ID     | Title                               | User Story                                                                                                                                                                                                        | Priority | Status |
 |--------|-------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|--------|
-| FR-023 | Assign Ontology Tag to Question     | As a survey author, I want to tag a question with an ontology entry so that its answers are captured in the corresponding dimensional reporting table.                                                            | High     | Open   |
-| FR-024 | Reassign Ontology Tag               | As a survey author, I want to change a question's ontology tag and see an explicit warning (at edit and at export) that the change reclassifies historical answers at deployed sites as well as future ones.        | High     | Open   |
-| FR-025 | Create Ontology & Dimension Entries | As a survey author, I want to define new ontology tags and their target dimension so that questions I'm authoring can be linked to the reporting structure they need.                                              | Medium   | Open   |
-| FR-026 | Preview Dimensional Impact          | As a survey author, I want to preview which dimension table an ontology tag maps to (existing or newly created) so that I understand the reporting consequence of a metadata assignment before exporting.           | Low      | Open   |
+| FR-023 | Assign Ontology Tag to Question     | As a survey author, I want to tag a question with an ontology entry so that its answers are captured in the corresponding dimensional reporting table.                                                            | High     | Implemented |
+| FR-024 | Reassign Ontology Tag               | As a survey author, I want to change a question's ontology tag and see an explicit warning (at edit and at export) that the change reclassifies historical answers at deployed sites as well as future ones.        | High     | Implemented |
+| FR-025 | Create Ontology & Dimension Entries | As a survey author, I want to define new ontology tags and their target dimension so that questions I'm authoring can be linked to the reporting structure they need.                                              | Medium   | Implemented |
+| FR-026 | Preview Dimensional Impact          | As a survey author, I want to preview which dimension table an ontology tag maps to (existing or newly created) so that I understand the reporting consequence of a metadata assignment before exporting.           | Low      | Implemented |
 
 ### Requirements Collection & First-Draft Generation
 
@@ -157,9 +157,13 @@ answers to generate a first-draft structure for a *different*, new survey.
 
 ## Open Items for Review
 
-- **Type 1 element keys.** Admin's export/update expect `report_key`, `post_survey_action_key`,
-  `dimension_key`, `ontology_key`, `metadata_key`; no Survey migration creates them yet. Until Survey
-  `V015` lands, Author exports those five tables with zero records. Tracked as a Survey-repo task.
+- **Type 1 element keys.** Survey `V015` added `report_key`, `post_survey_action_key`,
+  `dimension_key`, `ontology_key` and `metadata_key`. Author maps and exports the last three (the
+  reporting-tag tables); `reports` and `post_survey_actions` are still exported with zero records
+  until they are modelled.
+- **Ontology namespace.** `ontology.name` is a namespace the reporting ETL never reads;
+  `(name, tag)` is unique across a database. Author writes the survey's name at tag creation and
+  never rewrites it, so a later survey rename leaves earlier tags under the old namespace.
 - **`is_draft` column.** Being dropped from the schema (Survey V015) and from the file format (Admin);
   Author never maps it.
 - **Retire semantics in Admin.** Admin's update currently "never deletes" and does not close rows that
