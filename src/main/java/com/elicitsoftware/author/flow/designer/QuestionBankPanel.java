@@ -40,9 +40,13 @@ public class QuestionBankPanel extends VerticalLayout {
         final Span label = new Span();
         final Span uses = new Span();
         final NodeMenu menu;
+        /** Lower-cased short text, question text and type, what the drawer search matches against. */
+        final String searchText;
 
-        Row(SurveyDesignerView view, StructureNode node, int placements) {
+        Row(SurveyDesignerView view, StructureNode node, int placements, String questionText) {
             this.node = node;
+            this.searchText = (node.label() + " " + (questionText == null ? "" : questionText.replaceAll("<[^>]+>", " ")) + " "
+                    + (node.detail() == null ? "" : node.detail())).toLowerCase(java.util.Locale.ROOT);
             addClassName("designer-panel-row");
             glyph = Glyph.question(node.detail());
             glyph.getElement().setAttribute("draggable", "true");
@@ -76,8 +80,11 @@ public class QuestionBankPanel extends VerticalLayout {
         add(rows);
     }
 
+    final Span empty = new Span();
+    private String query = "";
+
     /** One row per question durable id; placements counted over the current tree. */
-    void refresh(SurveyDesignerView view, List<StructureNode> all) {
+    void refresh(SurveyDesignerView view, List<StructureNode> all, Map<Integer, String> textByQuestionId) {
         rows.removeAll();
         items.clear();
         Map<Integer, StructureNode> first = new LinkedHashMap<>();
@@ -90,14 +97,32 @@ public class QuestionBankPanel extends VerticalLayout {
             placements.merge(n.durableId(), 1, Integer::sum);
         }
         for (StructureNode n : first.values()) {
-            Row row = new Row(view, n, placements.get(n.durableId()));
+            Row row = new Row(view, n, placements.get(n.durableId()), textByQuestionId.get(n.durableId()));
             items.add(row);
             rows.add(row);
         }
-        if (first.isEmpty()) {
-            Span none = new Span("No questions yet. Questions you add appear here and can be reused in other sections.");
-            none.addClassName("designer-empty-hint");
-            rows.add(none);
+        empty.addClassName("designer-empty-hint");
+        rows.add(empty);
+        filter(query);
+    }
+
+    /** Drawer search: show only the questions whose name, text or type contain {@code q}; returns the match count. */
+    int filter(String q) {
+        query = q == null ? "" : q.trim().toLowerCase(java.util.Locale.ROOT);
+        int shown = 0;
+        for (Row r : items) {
+            boolean hit = query.isEmpty() || r.searchText.contains(query);
+            r.setVisible(hit);
+            if (hit) {
+                shown++;
+            }
         }
+        if (items.isEmpty()) {
+            empty.setText("No questions yet. Questions you add appear here and can be reused in other sections.");
+        } else if (shown == 0) {
+            empty.setText("No question matches '" + q.trim() + "'.");
+        }
+        empty.setVisible(items.isEmpty() || shown == 0);
+        return shown;
     }
 }

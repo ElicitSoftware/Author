@@ -535,16 +535,16 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             return;
         }
         java.util.Map<Integer, Long> users = new java.util.HashMap<>();
-        for (StructureNode n : tree.all()) {
-            if (n.kind() == StructureNode.Kind.QUESTION && !n.retired()) {
-                Question q = designer.currentQuestion(survey.id, n.durableId());
-                if (q.selectGroupId != null) {
-                    users.merge(q.selectGroupId, 1L, Long::sum);
-                }
+        java.util.Map<Integer, String> texts = new java.util.HashMap<>();
+        for (Question q : Question.<Question>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) {
+            texts.put(q.questionId, q.text);
+            if (q.selectGroupId != null) {
+                users.merge(q.selectGroupId, 1L, Long::sum);
             }
         }
-        toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users);
-        toolbox.questions.refresh(this, tree.all());
+        toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users, listService.optionTexts(survey.id));
+        toolbox.questions.refresh(this, tree.all(), texts);
+        toolbox.applySearch();
     }
 
     // ---- lists (UC-014) ------------------------------------------------------------------------

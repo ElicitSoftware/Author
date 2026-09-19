@@ -69,6 +69,12 @@ public class ListService {
         return Question.count("surveyId = ?1 and selectGroupId = ?2 and effectiveTo = ?3", surveyId, selectGroupId, StructuralElement.SENTINEL);
     }
 
+    /** Option display texts per list, for the panel's search. */
+    public Map<Integer, List<String>> optionTexts(int surveyId) {
+        return SelectItem.<SelectItem>list("surveyId = ?1 and effectiveTo = ?2 order by displayOrder", surveyId, StructuralElement.SENTINEL).stream()
+                .collect(Collectors.groupingBy(i -> i.selectGroupId, Collectors.mapping(i -> i.displayText == null ? "" : i.displayText, Collectors.toList())));
+    }
+
     /** Option counts per list, for the panel. */
     public Map<Integer, Long> optionCounts(int surveyId) {
         return SelectItem.<SelectItem>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL).stream()
