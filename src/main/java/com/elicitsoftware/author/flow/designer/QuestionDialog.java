@@ -15,6 +15,7 @@ import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.definition.ExportValidation;
 import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.QuestionType;
+import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.SelectGroup;
 import com.elicitsoftware.model.StructuralElement;
 import com.vaadin.flow.component.Component;
@@ -53,12 +54,15 @@ import com.vaadin.flow.data.binder.ValidationException;
 import io.quarkus.panache.common.Sort;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -92,8 +96,11 @@ public class QuestionDialog extends Dialog {
             TextFieldVariant.LUMO_HELPER_ABOVE_FIELD.getVariantName(),
             RadioGroupVariant.LUMO_VERTICAL.getVariantName());
 
+    private static final Pattern TOKEN = Pattern.compile("\\{([^{}|]+)(?:\\|([^{}]*))?}");
+
     private final Binder<Question> binder = new Binder<>(Question.class);
     private final Div preview = new Div();
+    private final Map<String, String> tokenSamples = new HashMap<>();
     private final Map<String, HasValidation> fieldsByProperty;
 
     public QuestionDialog(int surveyId, Question existing, QuestionType presetType, Function<Question, Question> persist, Consumer<Question> onSaved) {
@@ -101,6 +108,14 @@ public class QuestionDialog extends Dialog {
         setHeaderTitle(creating ? "New question" : "Edit question");
         setModal(true);
         setWidth("48rem");
+
+        // Token -> sample answer, from the survey's TEXT rules, so the preview can show substitution.
+        for (Relationship r : Relationship.<Relationship>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
+            if (r.actionType != null && "TEXT".equals(r.actionType.name)
+                    && r.token != null && !r.token.isBlank() && r.sample != null && !r.sample.isBlank()) {
+                tokenSamples.put(r.token.trim(), r.sample);
+            }
+        }
 
         List<QuestionType> types = QuestionType.listAll(Sort.by("name"));
         questionType.setItems(types);
@@ -229,7 +244,7 @@ public class QuestionDialog extends Dialog {
         if ("HTML".equalsIgnoreCase(t.name)) {
             // HTML questions have no input; the respondent sees the text rendered as HTML.
             String content = text.getValue() == null || text.getValue().isBlank()
-                    ? "<em>HTML content preview</em>" : text.getValue();
+                    ? "<em>HTML content preview</em>" : substituteTokens(text.getValue());
             try {
                 preview.add(new Html("<div class=\"question-preview-html\">" + content + "</div>"));
             } catch (RuntimeException invalid) {
@@ -240,6 +255,7 @@ public class QuestionDialog extends Dialog {
         Component field = previewField(t.name);
         String label = shortText.getValue() != null && !shortText.getValue().isBlank()
                 ? shortText.getValue() : (text.getValue() == null ? "" : text.getValue());
+        label = substituteTokens(label);
         if (field instanceof HasLabel hl) {
             hl.setLabel(label);
         }
@@ -292,6 +308,23 @@ public class QuestionDialog extends Dialog {
             }
             default -> new TextField();
         };
+    }
+
+    /** Replace {TOKEN} / {TOKEN|default} with a rule's sample answer, then its default, in the preview. */
+    private String substituteTokens(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        Matcher m = TOKEN.matcher(text);
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            String tok = m.group(1).trim();
+            String def = m.group(2);
+            String replacement = tokenSamples.getOrDefault(tok, def != null ? def : m.group());
+            m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+        }
+        m.appendTail(sb);
+        return sb.toString();
     }
 
     /** The known variant names present in a stored value (space- or comma-separated), for the dropdown. */
