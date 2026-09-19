@@ -14,7 +14,6 @@ package com.elicitsoftware.author.flow;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
@@ -41,6 +40,8 @@ public class StructureNavigationTree extends VerticalLayout {
     private final SurveyStructureQuery query;
     private StructureNode.Kind currentKind;
     private Integer currentDurableId;
+    private Consumer<StructureNode> selectionHandler;
+    private boolean suppressSelection;
 
     public StructureNavigationTree(int surveyId, SurveyStructureQuery query, Consumer<StructureNode> onSelect) {
         this.surveyId = surveyId;
@@ -54,11 +55,6 @@ public class StructureNavigationTree extends VerticalLayout {
         // Display order is the whole point of the tree (UC-006 step 2): a sortable header would let a
         // click re-sort it alphabetically.
         grid.addHierarchyColumn(StructureNode::label).setHeader("Survey structure").setFlexGrow(1).setSortable(false);
-        grid.addComponentColumn(n -> {
-            Span badge = new Span(n.kind() == StructureNode.Kind.QUESTION ? n.detail() : n.kind().name().toLowerCase());
-            badge.addClassName("structure-kind");
-            return badge;
-        }).setAutoWidth(true).setFlexGrow(0);
         grid.setPartNameGenerator(n -> {
             StringBuilder parts = new StringBuilder();
             if (isCurrent(n)) {
@@ -72,7 +68,14 @@ public class StructureNavigationTree extends VerticalLayout {
         grid.addClassName("structure-navigation-tree");
         grid.setSizeFull();
         grid.addSelectionListener(e -> e.getFirstSelectedItem().ifPresent(n -> {
+            if (suppressSelection) {
+                return; // a programmatic selection mirroring the board; don't echo it back
+            }
             onSelect.accept(n);
+            if (selectionHandler != null) {
+                selectionHandler.accept(n);
+                return;
+            }
             getUI().ifPresent(ui -> ui.navigate(ElementView.class, new RouteParameters(
                     java.util.Map.of(SurveyEditorView.SURVEY_ID, String.valueOf(surveyId),
                             ElementView.KIND, n.routeKind(), ElementView.DURABLE_ID, String.valueOf(n.durableId())))));
@@ -99,10 +102,48 @@ public class StructureNavigationTree extends VerticalLayout {
     }
 
     /** Called from the layout after navigation so the highlighted row matches the address. */
+    /** Replaces navigation on selection (null restores it); the designer uses it to select on the board. */
+    public void setSelectionHandler(Consumer<StructureNode> handler) {
+        this.selectionHandler = handler;
+    }
+
     public void highlight(StructureNode.Kind kind, Integer durableId) {
         this.currentKind = kind;
         this.currentDurableId = durableId;
         provider.refreshAll();
+        // Mirror the board's selection into the tree: select the row and scroll to it if off-screen.
+        StructureNode target = findNode(kind, durableId);
+        suppressSelection = true;
+        try {
+            if (target != null) {
+                grid.select(target);
+                grid.scrollToItem(target);
+            } else {
+                grid.deselectAll();
+            }
+        } finally {
+            suppressSelection = false;
+        }
+    }
+
+    private StructureNode findNode(StructureNode.Kind kind, Integer durableId) {
+        if (kind == null || durableId == null) {
+            return null;
+        }
+        return findIn(data.getRootItems(), kind, durableId);
+    }
+
+    private StructureNode findIn(java.util.List<StructureNode> items, StructureNode.Kind kind, Integer durableId) {
+        for (StructureNode n : items) {
+            if (n.kind() == kind && Objects.equals(n.durableId(), durableId)) {
+                return n;
+            }
+            StructureNode child = findIn(data.getChildren(n), kind, durableId);
+            if (child != null) {
+                return child;
+            }
+        }
+        return null;
     }
 
     boolean isCurrent(StructureNode n) {

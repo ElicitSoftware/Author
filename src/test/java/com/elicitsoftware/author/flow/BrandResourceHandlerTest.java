@@ -31,6 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * under src/main/resources/META-INF/brand/ -- no test-only fixture needed. Tier 2 (a hardcoded
  * relative ./brand/ directory) is not exercised: it isn't configurable and creating files
  * relative to the process's working directory during a test would be an unwanted side effect.
+ *
+ * Traceability: UC-030 (Brand the Authoring Interface) — BR-003 serve only from within the brand root, A3 embedded fallback.
  */
 class BrandResourceHandlerTest {
 

@@ -96,7 +96,8 @@ services:
       quarkus.datasource.jdbc.telemetry: false
     volumes:
       # Brand assets live in the umbrella repo alongside this project.
-      - ../elicit-brand/:/opt/brand:ro
+#      - ../elicit-brand/:/opt/brand:roles
+      - ../../Elicit_Campsites/um-brand/:/opt/brand:roles
     depends_on:
       db:
         condition: service_healthy

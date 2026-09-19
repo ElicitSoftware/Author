@@ -1,0 +1,535 @@
+/*-
+ * ***LICENSE_START***
+ * Elicit Author
+ * %%
+ * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * %%
+ * PolyForm Noncommercial License 1.0.0
+ * <https://polyformproject.org/licenses/noncommercial/1.0.0>
+ * ***LICENSE_END***
+ */
+
+/*
+ * Survey designer vocabulary: the glyphs that identify steps, sections, questions and rules
+ * on the board, in the palette and on the guide page (UC-029). Brand variables only.
+ */
+
+/* ---- Glyphs ------------------------------------------------------------------------ */
+
+.elicit-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--lumo-space-xs);
+    min-width: 1.75rem;
+    height: 1.75rem;
+    padding: 0 var(--lumo-space-xs);
+    border-radius: var(--lumo-border-radius-m);
+    border: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
+    background: var(--brand-surface, var(--lumo-base-color));
+    color: var(--brand-text-primary, var(--lumo-body-text-color));
+    font-size: var(--lumo-font-size-s);
+    font-weight: 600;
+    line-height: 1;
+    box-sizing: border-box;
+    flex: none;
+}
+
+.elicit-glyph vaadin-icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+.elicit-glyph-step {
+    background: var(--brand-primary, var(--lumo-primary-color));
+    border-color: var(--brand-primary, var(--lumo-primary-color));
+    color: var(--brand-text-on-primary, var(--lumo-primary-contrast-color));
+}
+
+.elicit-glyph-section {
+    background: var(--brand-primary-10pct, var(--lumo-primary-color-10pct));
+    border-color: var(--brand-primary-50pct, var(--lumo-primary-color-50pct));
+    color: var(--brand-primary-text, var(--lumo-primary-text-color));
+}
+
+.elicit-glyph-question {
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+.elicit-glyph-rule-show,
+.elicit-glyph-rule-repeat,
+.elicit-glyph-rule-text {
+    border-radius: 50%;
+    width: 1.75rem;
+    padding: 0;
+    background: var(--brand-accent, var(--brand-warning, var(--lumo-warning-color)));
+    border-color: var(--brand-accent, var(--brand-warning, var(--lumo-warning-color)));
+    color: var(--brand-text-on-accent, var(--lumo-primary-contrast-color));
+}
+
+.elicit-glyph-rule-text {
+    font-family: var(--lumo-font-family);
+    font-size: var(--lumo-font-size-xs);
+    letter-spacing: -0.05em;
+}
+
+.elicit-glyph[draggable="true"] {
+    cursor: grab;
+}
+
+.elicit-glyph[draggable="true"]:active,
+.elicit-glyph.v-dragged {
+    cursor: grabbing;
+    opacity: 0.6;
+}
+
+/* ---- Guide page (UC-029) ------------------------------------------------------------ */
+
+.survey-guide {
+    max-width: 52rem;
+}
+
+.survey-guide h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--lumo-space-s);
+    margin-top: var(--lumo-space-l);
+}
+
+.survey-guide-diagram {
+    width: 100%;
+    max-width: 44rem;
+    margin: var(--lumo-space-m) 0;
+    color: var(--brand-text-primary, var(--lumo-body-text-color));
+    --guide-step: var(--brand-primary, var(--lumo-primary-color));
+    --guide-step-text: var(--brand-text-on-primary, var(--lumo-primary-contrast-color));
+    --guide-section: var(--brand-primary-10pct, var(--lumo-primary-color-10pct));
+    --guide-border: var(--brand-border, var(--lumo-contrast-30pct));
+    --guide-surface: var(--brand-surface, var(--lumo-base-color));
+    --guide-rule: var(--brand-accent, var(--brand-warning, var(--lumo-warning-color)));
+    --guide-muted: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+.survey-guide-diagram svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.survey-guide-rule {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-xs) var(--lumo-space-s);
+    border: 1px dashed var(--brand-border, var(--lumo-contrast-30pct));
+    border-radius: var(--lumo-border-radius-m);
+    font-family: var(--lumo-font-family);
+    font-size: var(--lumo-font-size-s);
+}
+
+.survey-guide-rule .rule-arrow {
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+.survey-guide-legend {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: var(--lumo-space-m);
+    row-gap: var(--lumo-space-s);
+    align-items: center;
+    margin: var(--lumo-space-m) 0;
+}
+
+.survey-guide-actions {
+    display: flex;
+    gap: var(--lumo-space-s);
+    flex-wrap: wrap;
+    margin-top: var(--lumo-space-l);
+}
+
+/* ---- Designer board (UC-011, UC-015, UC-016) ------------------------------------------- */
+
+.designer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumo-space-s);
+    padding: var(--lumo-space-m);
+    box-sizing: border-box;
+    min-height: 100%;
+}
+
+.designer-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--lumo-space-xs);
+    font-size: var(--lumo-font-size-s);
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+.designer-crumb-current {
+    font-weight: 600;
+    color: var(--brand-text-primary, var(--lumo-body-text-color));
+}
+
+.designer-toolbar {
+    flex-wrap: wrap;
+    gap: var(--lumo-space-m);
+}
+
+/* ---- Tools palette, in the drawer above the structure tree (Visual Paradigm's shape panel) -- */
+
+.designer-drawer {
+    height: 100%;
+}
+
+/* Info icon suffix on an edit control: hover it (or the field) for the explanation. */
+.field-info {
+    width: var(--lumo-icon-size-s);
+    height: var(--lumo-icon-size-s);
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+    cursor: help;
+}
+
+/* Live question preview in the edit dialog. */
+.question-preview-box {
+    margin-top: var(--lumo-space-m);
+}
+
+.question-preview-box > span:first-child {
+    font-size: var(--lumo-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+.question-preview {
+    margin-top: var(--lumo-space-xs);
+    padding: var(--lumo-space-m);
+    border: 1px dashed var(--brand-border, var(--lumo-contrast-20pct));
+    border-radius: var(--lumo-border-radius-m);
+    background: var(--brand-background, var(--lumo-contrast-5pct));
+}
+
+/* Tablet-minimum guard (drawer-resizer.js injects the element): below tablet width, cover the
+   app with a notice instead of letting the authoring UI reflow into an unusable phone layout. */
+.small-screen-notice {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .small-screen-notice {
+        display: flex;
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: var(--brand-surface, var(--lumo-base-color));
+    }
+
+    .small-screen-notice-card {
+        max-width: 22rem;
+        text-align: center;
+        color: var(--brand-text-primary, var(--lumo-body-text-color));
+    }
+
+    .drawer-resizer {
+        display: none !important;
+    }
+}
+
+/* Mouse-draggable drawer resize handle (drawer-resizer.js), fixed at the drawer's right edge. */
+.drawer-resizer {
+    position: fixed;
+    width: 6px;
+    cursor: col-resize;
+    z-index: 5;
+    background: transparent;
+    transition: background 120ms ease;
+}
+
+.drawer-resizer:hover,
+.drawer-resizer:active {
+    background: var(--brand-primary-50pct, var(--lumo-primary-color-50pct));
+}
+
+.designer-palette {
+    padding: var(--lumo-space-s);
+    gap: var(--lumo-space-xs);
+}
+
+/* All the tools in one card. */
+.designer-palette-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumo-space-s);
+    padding: var(--lumo-space-s);
+    border: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
+    border-radius: var(--lumo-border-radius-m);
+    background: var(--brand-surface, var(--lumo-base-color));
+}
+
+.designer-palette-row {
+    display: flex;
+    align-items: center;
+    gap: var(--lumo-space-s);
+}
+
+.designer-palette-row .designer-palette-label {
+    flex: 0 0 4.5rem;
+}
+
+.designer-palette-chips {
+    flex-wrap: wrap;
+}
+
+.designer-palette-label {
+    font-size: var(--lumo-font-size-xs);
+    font-weight: 600;
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.designer-guide-link {
+    font-size: var(--lumo-font-size-s);
+    padding-top: var(--lumo-space-xs);
+}
+
+.designer-board {
+    /* Steps are the fixed left spine; content is content-sized and left-aligned, and the LEFT gutter
+       is where the rule arrows run (steps never move, so arrows curve out to their left). */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-s) var(--lumo-space-xs) var(--lumo-space-l) 7rem;
+    min-height: 20rem;
+}
+
+/* A step is a flow-chart box: content-sized (as wide as its title when closed, as wide as its
+   widest open section/question when open), never full width. */
+.designer-lane {
+    display: flex;
+    flex-direction: column;
+    width: max-content;
+    min-width: 12rem;
+    max-width: 60rem;
+    border: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
+    border-radius: var(--lumo-border-radius-l);
+    background: var(--brand-background, var(--lumo-contrast-5pct));
+}
+
+.designer-lane[aria-selected="true"] {
+    outline: 2px solid var(--brand-primary, var(--lumo-primary-color));
+}
+
+.designer-lane-header {
+    display: flex;
+    align-items: center;
+    gap: var(--lumo-space-s);
+    padding: var(--lumo-space-s);
+    border-radius: var(--lumo-border-radius-l);
+    background: var(--brand-primary-10pct, var(--lumo-primary-color-10pct));
+    cursor: pointer;
+}
+
+.designer-lane.open .designer-lane-header {
+    border-radius: var(--lumo-border-radius-l) var(--lumo-border-radius-l) 0 0;
+    border-bottom: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
+}
+
+.designer-lane-name {
+    margin: 0;
+    font-size: var(--lumo-font-size-m);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Children indent to the centre; the wide LEFT padding is the gutter where a rule between two
+   children (e.g. two sections in a step) routes, so the arrow stays inside the box on the left. */
+.designer-lane-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-xs) var(--lumo-space-xs) var(--lumo-space-xs) 3rem;
+}
+
+.designer-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--brand-primary-50pct, var(--lumo-primary-color-50pct));
+    border-radius: var(--lumo-border-radius-m);
+    background: var(--brand-surface, var(--lumo-base-color));
+}
+
+.designer-card[aria-selected="true"] {
+    outline: 2px solid var(--brand-primary, var(--lumo-primary-color));
+}
+
+.designer-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-xs) var(--lumo-space-s);
+    cursor: pointer;
+    background: var(--brand-primary-10pct, var(--lumo-primary-color-10pct));
+    border-radius: var(--lumo-border-radius-m);
+}
+
+.designer-card.open .designer-card-header {
+    border-radius: var(--lumo-border-radius-m) var(--lumo-border-radius-m) 0 0;
+}
+
+.designer-card-toggle {
+    width: 1rem;
+    height: 1rem;
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+.designer-card-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.designer-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-xs) var(--lumo-space-xs) var(--lumo-space-xs) 3rem;
+}
+
+.designer-row[draggable="true"],
+.designer-card-header[draggable="true"],
+.designer-lane-header[draggable="true"] {
+    cursor: grab;
+}
+
+.designer-row[draggable="true"]:active,
+.designer-card-header[draggable="true"]:active,
+.designer-lane-header[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* A question is a leaf flow-chart box. */
+.designer-row {
+    display: flex;
+    align-items: center;
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-xs) var(--lumo-space-s);
+    border: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
+    border-radius: var(--lumo-border-radius-m);
+    background: var(--brand-background, var(--lumo-contrast-5pct));
+    cursor: pointer;
+}
+
+.designer-row:hover,
+.designer-row:focus-visible {
+    background: var(--brand-hover, var(--lumo-contrast-10pct));
+}
+
+.designer-row[aria-selected="true"] {
+    outline: 2px solid var(--brand-primary, var(--lumo-primary-color));
+}
+
+.designer-row-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--lumo-font-size-s);
+}
+
+.designer-badge {
+    font-size: var(--lumo-font-size-xs);
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+    white-space: nowrap;
+}
+
+.designer-node-menu {
+    margin-inline-start: auto;
+}
+
+.designer .retired,
+.designer .retired .designer-row-label,
+.designer .retired .designer-card-name,
+.designer .retired .designer-lane-name {
+    color: var(--brand-text-disabled, var(--lumo-disabled-text-color));
+    text-decoration: line-through;
+}
+
+.designer-empty,
+.designer-empty-board {
+    padding: var(--lumo-space-s);
+    font-size: var(--lumo-font-size-s);
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+/* Insertion zones keep the same size whether or not a drag is running, so the board never
+   shifts under the pointer once a drag starts; they only light up while dragging (UC-016). */
+.designer-drop-zone {
+    flex: none;
+    height: 0.75rem;
+    margin: 1px 0;
+    border-radius: var(--lumo-border-radius-s);
+    transition: background 120ms ease;
+}
+
+.designer-drop-zone-step {
+    height: 1rem;
+}
+
+.designer-board.dragging .designer-drop-zone {
+    outline: 1px dashed var(--brand-primary-50pct, var(--lumo-primary-color-50pct));
+    outline-offset: -1px;
+}
+
+.designer-drop-zone.v-drag-over-target {
+    background: var(--brand-primary, var(--lumo-primary-color));
+    outline: none;
+}
+
+.designer-lane-header.v-drag-over-target,
+.designer-card-header.v-drag-over-target {
+    box-shadow: inset 0 0 0 2px var(--brand-primary, var(--lumo-primary-color));
+}
+
+.rename-warning {
+    margin-top: var(--lumo-space-s);
+    padding: var(--lumo-space-s);
+    border-radius: var(--lumo-border-radius-m);
+    background: var(--brand-warning-10pct, var(--lumo-warning-color-10pct));
+    color: var(--brand-warning-text, var(--lumo-warning-text-color));
+    font-size: var(--lumo-font-size-s);
+}
+
+/* ---- Rule arrows (UC-019, UC-020) --------------------------------------------------------- */
+
+elicit-rule-arrows {
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.rule-sentence {
+    padding: var(--lumo-space-s);
+    margin-bottom: var(--lumo-space-s);
+    border: 1px dashed var(--brand-border, var(--lumo-contrast-30pct));
+    border-radius: var(--lumo-border-radius-m);
+    font-size: var(--lumo-font-size-s);
+}

@@ -72,6 +72,7 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver {
     final Button remove = new Button("Remove", VaadinIcon.TRASH.create());
     final Button restore = new Button("Restore", VaadinIcon.ROTATE_LEFT.create());
     final Button back = new Button("Survey overview", VaadinIcon.ARROW_LEFT.create());
+    final Button openInDesigner = new Button("Open in designer", VaadinIcon.SITEMAP.create());
     /** The notice shown after a removal, with its Undo (UC-009 step 6); null until a removal happened. */
     Notification removalNotice;
     Button undo;
@@ -91,7 +92,12 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver {
                 new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id)))));
         HorizontalLayout title = new HorizontalLayout(heading, kindBadge);
         title.setAlignItems(Alignment.BASELINE);
-        add(back, title, facts, new HorizontalLayout(remove, restore));
+        openInDesigner.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(
+                com.elicitsoftware.author.flow.designer.SurveyDesignerView.class,
+                new com.vaadin.flow.router.RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id)),
+                com.vaadin.flow.router.QueryParameters.of(com.elicitsoftware.author.flow.designer.SurveyDesignerView.SELECT,
+                        kind.name().toLowerCase() + ":" + durableId))));
+        add(back, title, facts, new HorizontalLayout(openInDesigner, remove, restore));
     }
 
     @Override
