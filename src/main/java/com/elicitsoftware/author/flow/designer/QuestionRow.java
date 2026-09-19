@@ -33,6 +33,8 @@ public class QuestionRow extends Div {
     final Span type = new Span();
     final NodeMenu menu;
 
+    final Span tagBadge = new Span();
+
     public QuestionRow(SurveyDesignerView view, StructureNode node, int indexInSection, int sectionSize) {
         this.node = node;
         addClassName("designer-row");
@@ -63,6 +65,7 @@ public class QuestionRow extends Div {
         label.addClassName("designer-row-label");
         type.setText(node.detail() == null ? "" : node.detail().toLowerCase());
         type.addClassName("structure-kind");
+        TagBadge.fill(tagBadge, view.tagsOf(node));
 
         menu = new NodeMenu("Actions for question " + node.label());
         menu.item("Edit…", () -> view.edit(node), !node.retired());
@@ -90,7 +93,7 @@ public class QuestionRow extends Div {
             }
         }));
 
-        add(glyph, label, type, menu);
+        add(glyph, label, type, tagBadge, menu);
         // Single click selects; double click opens the edit screen. The distinction is made on the
         // client (a debounced single vs. an immediate double) and delivered as two custom events, so
         // the single-click rebuild never detaches the row mid-gesture and breaks the double click.

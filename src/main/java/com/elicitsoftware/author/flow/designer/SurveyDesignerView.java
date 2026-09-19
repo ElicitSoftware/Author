@@ -116,6 +116,8 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     final Button addStep = new Button("Add step", VaadinIcon.PLUS.create());
     final List<StepLane> lanes = new ArrayList<>();
     DesignerPalette palette;
+    /** Reporting-tag labels per board node ("ss-"/"sq-" + assignment id), rebuilt with the board (UC-021). */
+    final Map<String, List<String>> tagLabels = new java.util.HashMap<>();
 
     public SurveyDesignerView() {
         addClassName("designer");
@@ -198,6 +200,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         board.removeClassName("dragging");
         board.removeAll();
         lanes.clear();
+        collectTagLabels();
         List<StructureNode> roots = tree.roots();
         for (int i = 0; i < roots.size(); i++) {
             board.add(new DropZone(new DropSpot(null, i, StructureNode.Kind.STEP), this::onDrop));
@@ -501,6 +504,41 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 error(ae.getMessage());
             }
         }).open();
+    }
+
+    /** The reporting tags shown as a badge on a row or card: "Tag" or "Tag = value". */
+    public List<String> tagsOf(StructureNode node) {
+        return tagLabels.getOrDefault(badgeKey(node), List.of());
+    }
+
+    private static String badgeKey(StructureNode node) {
+        return (node.kind() == StructureNode.Kind.SECTION ? "ss-" : "sq-") + node.assignmentId();
+    }
+
+    /** One query per render: a question-wide tag lands on every placement of the question. */
+    private void collectTagLabels() {
+        tagLabels.clear();
+        if (survey == null || tree == null) {
+            return;
+        }
+        List<StructureNode> all = tree.all();
+        for (ReportingService.Assignment a : reporting.assignments(survey.id)) {
+            com.elicitsoftware.model.Metadata m = a.metadata();
+            if (m.ontology == null || m.elementRef() == null) {
+                continue;
+            }
+            String label = m.ontology.tag + (m.value == null ? "" : " = " + m.value);
+            for (StructureNode n : all) {
+                boolean hit = switch (m.elementRef()) {
+                    case QUESTION -> n.kind() == StructureNode.Kind.QUESTION && Objects.equals(n.durableId(), m.questionId);
+                    case SECTIONS_QUESTION -> n.kind() == StructureNode.Kind.QUESTION && Objects.equals(n.assignmentId(), m.sectionsQuestionId);
+                    case STEPS_SECTIONS -> n.kind() == StructureNode.Kind.SECTION && Objects.equals(n.assignmentId(), m.stepsSectionsId);
+                };
+                if (hit) {
+                    tagLabels.computeIfAbsent(badgeKey(n), k -> new ArrayList<>()).add(label);
+                }
+            }
+        }
     }
 
     /** UC-021 step 1: the reporting tags a question or section carries, editable in place. */
