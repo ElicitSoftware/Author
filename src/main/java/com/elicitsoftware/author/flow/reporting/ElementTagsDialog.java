@@ -52,7 +52,7 @@ public class ElementTagsDialog extends Dialog {
         this.onChanged = onChanged;
         setHeaderTitle("Reporting tags — " + node.label());
         setModal(true);
-        setWidth("44rem");
+        setWidth("56rem");
 
         grid.addColumn(a -> a.metadata().ontology == null ? "" : a.metadata().ontology.tag).setHeader("Tag").setAutoWidth(true);
         grid.addColumn(Assignment::scopeLabel).setHeader("Applies to").setAutoWidth(true);

@@ -88,6 +88,8 @@ public class QuestionRow extends Div {
             }
             if (data instanceof PaletteItem item && item.isRule()) {
                 view.startRule(item.action(), node);
+            } else if (data instanceof PaletteList list) {
+                view.useList(node, list);
             } else {
                 view.onDrop(data, new DropSpot(node.parent(), indexInSection, StructureNode.Kind.QUESTION));
             }

@@ -99,7 +99,9 @@ public class SurveyModelGuideView extends VerticalLayout {
                         + "is its handle: drag a glyph from the "
                         + "palette to create an element, drag it within its container to reorder, or drag it into "
                         + "another container to copy it there. Drag a rule glyph onto a question to start a rule, then "
-                        + "drag the arrowhead onto the target. Everything a drag can do, the element's menu can do too."));
+                        + "drag the arrowhead onto the target. Everything a drag can do, the element's menu can do too. The "
+                        + "drawer's Lists panel holds the lists of options for choice questions (drag a list onto a "
+                        + "question), and its Questions panel holds every question once, ready to be dragged into another section."));
 
         section(VaadinIcon.TABLE.create(), "Reporting tags",
                 new Paragraph("A reporting tag names a column of the report a site builds from the answers. Tag a question and "

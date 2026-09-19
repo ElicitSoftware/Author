@@ -51,6 +51,13 @@ import java.nio.file.Paths;
 // supported Vaadin 25 mechanism; CSS @import of the theme is an anti-pattern.
 @StyleSheet(Lumo.STYLESHEET)
 @StyleSheet(Lumo.UTILITY_STYLESHEET)
+// Component stylesheets are registered here rather than @import-ed from styles.css: Vaadin
+// appends a content hash (?v-c=...) only to the URLs it registers, so an @import-ed file kept
+// being served from the browser cache after a redeploy changed it. Order: components first,
+// then styles.css so its application overrides still win the cascade.
+@StyleSheet("context://components/branded-header.css")
+@StyleSheet("context://components/structure-navigation.css")
+@StyleSheet("context://components/survey-designer.css")
 @StyleSheet("context://styles.css")
 @ApplicationScoped
 @Startup

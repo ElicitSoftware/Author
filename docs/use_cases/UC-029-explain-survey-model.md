@@ -21,7 +21,7 @@
    2. Containers nest — a survey holds steps, a step holds sections, a section holds questions; what each is for the respondent and for the author.
    3. Order is the default path — steps, sections and questions run in display order unless a rule says otherwise.
    4. Rules are the arrows — a rule reads one upstream question's answer, compares it with an operator and a reference value, and performs an action on one downstream target: SHOW, REPEAT or TEXT.
-   5. The designer draws all of this — each element is a box that opens in place to reveal its children (steps, then their sections, then their questions), arrows are rules, and every element has a glyph that is also its drag handle.
+   5. The designer draws all of this — each element is a box that opens in place to reveal its children (steps, then their sections, then their questions), arrows are rules, and every element has a glyph that is also its drag handle; the drawer's Lists and Questions panels hold the lists of options and the reusable questions (UC-014, UC-011 A6).
    6. Reporting tags — a tag names a column of the site's report; tagging a question reports its answers, tagging a section in a step with a fixed value classifies everyone who reaches it, and changing an assigned tag is retroactive (UC-021..UC-024).
    7. Identity and publishing — every element's key is minted once, removal retires, and publishing exports a `.elicit` file that Admin applies.
 3. The system shows a legend of the glyphs and an example rule written as "Question (operator) value → (Action) target".
