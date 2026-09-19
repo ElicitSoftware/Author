@@ -314,6 +314,107 @@
     min-height: 20rem;
 }
 
+/* The board and, to its right, the preview pane. The board keeps its content width; the pane takes
+   what is left and drops below the board when the window is too narrow for both. */
+.designer-split {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--lumo-space-l);
+    min-width: 0;
+}
+
+.designer-split > .designer-board {
+    flex: 0 0 auto;
+}
+
+/* ---- Preview pane: the selected section as the Survey app shows it to a respondent ---------- */
+
+.designer-preview {
+    flex: 1 1 22rem;
+    min-width: 18rem;
+    max-width: 44rem;
+    position: sticky;
+    top: var(--lumo-space-m);
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-m);
+    box-sizing: border-box;
+    border: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
+    border-radius: var(--lumo-border-radius-l);
+    background: var(--brand-surface, var(--lumo-base-color));
+}
+
+.designer-preview-heading {
+    font-size: var(--lumo-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+.designer-preview-hint,
+.designer-preview-caption,
+.designer-preview-note {
+    font-size: var(--lumo-font-size-s);
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+.designer-preview-pages {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumo-space-m);
+    margin-top: var(--lumo-space-s);
+}
+
+/* Each page is drawn as the respondent's card: dashed, like the question dialog's preview. */
+.designer-preview-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-m);
+    border: 1px dashed var(--brand-border, var(--lumo-contrast-20pct));
+    border-radius: var(--lumo-border-radius-m);
+    background: var(--brand-background, var(--lumo-contrast-5pct));
+}
+
+.designer-preview-title {
+    margin: 0 0 var(--lumo-space-xs) 0;
+    font-size: var(--lumo-font-size-l);
+    color: var(--brand-text-primary, var(--lumo-body-text-color));
+}
+
+/* A question block is selectable like a board row: click selects, the selected one is outlined. */
+.designer-preview-question {
+    padding: var(--lumo-space-xs);
+    margin: 0 calc(-1 * var(--lumo-space-xs));
+    border-radius: var(--lumo-border-radius-m);
+    cursor: pointer;
+}
+
+.designer-preview-question:hover {
+    background: var(--brand-primary-10pct, var(--lumo-primary-color-10pct));
+}
+
+.designer-preview-question[aria-selected="true"] {
+    outline: 2px solid var(--brand-primary, var(--lumo-primary-color));
+}
+
+.designer-preview-field {
+    width: 100%;
+}
+
+.designer-preview-question .question-preview-html {
+    font-size: var(--lumo-font-size-m);
+    color: var(--brand-text-primary, var(--lumo-body-text-color));
+}
+
+.designer-preview-note {
+    display: block;
+    font-style: italic;
+}
+
 /* A step is a flow-chart box: content-sized (as wide as its title when closed, as wide as its
    widest open section/question when open), never full width. */
 .designer-lane {

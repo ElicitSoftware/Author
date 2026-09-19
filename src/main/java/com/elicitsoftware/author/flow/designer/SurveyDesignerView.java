@@ -116,6 +116,10 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     final Div board = new Div();
     final Checkbox showRemoved = new Checkbox("Show removed");
     final Checkbox showRules = new Checkbox("Show rules", true);
+    final Checkbox showPreview = new Checkbox("Show preview", true);
+    /** The board and, beside it, the respondent's view of the selection (the right-hand pane). */
+    final Div split = new Div();
+    final SectionPreview preview = new SectionPreview();
     final RuleArrowsOverlay overlay = new RuleArrowsOverlay();
     final Button overview = new Button("Overview", VaadinIcon.ARROW_LEFT.create());
     final Button addStep = new Button("Add step", VaadinIcon.PLUS.create());
@@ -132,6 +136,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         board.addClassName("designer-board");
         showRemoved.addValueChangeListener(e -> load());
         showRules.addValueChangeListener(e -> render());
+        showPreview.addValueChangeListener(e -> {
+            preview.setVisible(Boolean.TRUE.equals(e.getValue()));
+            refreshPreview(currentQuestions());
+        });
+        split.addClassName("designer-split");
+        split.add(board, preview);
         overlay.addConnectRequestedListener(e -> connectRequested(e.sourceAnchor(), e.targetAnchor(), e.action()));
         overlay.addEdgeSelectedListener(e -> editRule(e.edgeId()));
         overlay.addEdgeRepointedListener(e -> repoint(e.edgeId(), e.end(), e.targetAnchor()));
@@ -157,11 +167,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             toolbox = new DesignerToolbox(this, palette);
             // The palette (add-tools + rule glyphs) now lives in the drawer, placed there by
             // MainLayout.syncWith; the in-view bar keeps only the back link and the view toggles.
-            HorizontalLayout toolbar = new HorizontalLayout(overview, addStep, showRules, showRemoved);
+            HorizontalLayout toolbar = new HorizontalLayout(overview, addStep, showRules, showRemoved, showPreview);
             toolbar.addClassName("designer-toolbar");
             toolbar.setAlignItems(HorizontalLayout.Alignment.CENTER);
             toolbar.setWidthFull();
-            add(breadcrumb, toolbar, board);
+            add(breadcrumb, toolbar, split);
         }
         List<String> select = event.getLocation().getQueryParameters().getParameters().getOrDefault(SELECT, List.of());
         tree = structureQuery.tree(survey.id, Boolean.TRUE.equals(showRemoved.getValue()));
@@ -199,7 +209,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     private void render() {
         rebuildBoard();
-        refreshToolbox();
+        Map<Integer, Question> questions = currentQuestions();
+        refreshToolbox(questions);
+        refreshPreview(questions);
         updateBreadcrumb();
         syncAddress();
         mainLayout().ifPresent(layout -> {
@@ -529,14 +541,26 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }).open();
     }
 
+    /** The survey's current questions by durable id, read once per render for the panels and the preview. */
+    private Map<Integer, Question> currentQuestions() {
+        Map<Integer, Question> out = new java.util.LinkedHashMap<>();
+        if (survey == null) {
+            return out;
+        }
+        for (Question q : Question.<Question>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) {
+            out.put(q.questionId, q);
+        }
+        return out;
+    }
+
     /** The Lists and Questions panels read the same tables as the board; keep them in step. */
-    private void refreshToolbox() {
+    private void refreshToolbox(Map<Integer, Question> questions) {
         if (toolbox == null || survey == null || tree == null) {
             return;
         }
         java.util.Map<Integer, Long> users = new java.util.HashMap<>();
         java.util.Map<Integer, String> texts = new java.util.HashMap<>();
-        for (Question q : Question.<Question>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) {
+        for (Question q : questions.values()) {
             texts.put(q.questionId, q.text);
             if (q.selectGroupId != null) {
                 users.merge(q.selectGroupId, 1L, Long::sum);
@@ -544,6 +568,20 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
         toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users, listService.optionTexts(survey.id));
         toolbox.questions.refresh(this, tree.all(), texts);
+    }
+
+    /** The right-hand pane: the selection as a respondent sees it, rebuilt with the board. */
+    private void refreshPreview(Map<Integer, Question> questions) {
+        if (survey == null || tree == null || !preview.isVisible()) {
+            return;
+        }
+        Set<String> ruleShown = new HashSet<>();
+        for (RelationshipQuery.RuleEdge edge : relationshipQuery.edges(survey.id, false)) {
+            if ("SHOW".equals(edge.action())) {
+                ruleShown.add(edge.target());
+            }
+        }
+        preview.show(this, selected, questions, listService.optionTexts(survey.id), PreviewFields.tokenSamples(survey.id), ruleShown);
     }
 
     // ---- lists (UC-014) ------------------------------------------------------------------------
