@@ -172,21 +172,36 @@ class ElicitRuleArrows extends LitElement {
     let edges = [];
     try { edges = JSON.parse(this.edges || '[]'); } catch (e) { edges = []; }
     const lines = [];
+    let maxCx = 0;
     for (const e of edges) {
       const s = this._resolve(e.source, e.sourceFallbacks);
       const t = this._resolve(e.target, e.targetFallbacks);
       if (!s || !t) continue;
-      // Steps stack vertically, so every arrow leaves and arrives on the right edge and runs in the board's right gutter.
-      lines.push({ edge: e, from: this._point(s, 'right'), to: this._point(t, 'right') });
+      // Both ends collapse into the same box: the rule is entirely inside a closed container, so it is
+      // out of context — draw nothing. It reappears once that container is opened and the ends separate.
+      if (s === t) continue;
+      // Route in a channel local to these two boxes (just right of them), so a within-section rule stays
+      // by its section and only inter-step rules reach the board's right edge.
+      const from = this._point(s, 'right');
+      const to = this._point(t, 'right');
+      const cx = Math.max(from.x, to.x) + 14;
+      maxCx = Math.max(maxCx, cx);
+      lines.push({ edge: e, from, to, cx });
     }
     this._lines = lines;
-    this._size = { w: board.scrollWidth, h: board.scrollHeight };
+    // Size the SVG so the channels, arrow glyphs and labels are never clipped.
+    this._size = { w: Math.max(board.scrollWidth, maxCx + 200), h: board.scrollHeight };
   }
 
+  /** Route an edge out to its local channel and back, so it never crosses a box. */
+  _channelPath(from, to, cx) {
+    return `M${from.x},${from.y} C${cx},${from.y} ${cx},${to.y} ${to.x},${to.y}`;
+  }
+
+  /** A simple curve, used only for the pending arrow that follows the pointer. */
   _path(from, to) {
-    // Bulge into the right gutter; longer vertical spans bulge further so parallel rules stay apart.
-    const dx = Math.min(150, Math.max(48, Math.abs(to.y - from.y) / 3));
-    return `M${from.x},${from.y} C${from.x + dx},${from.y} ${to.x + dx},${to.y} ${to.x},${to.y}`;
+    const dx = Math.max(40, Math.abs(to.x - from.x) / 2);
+    return `M${from.x},${from.y} C${from.x + dx},${from.y} ${to.x - dx},${to.y} ${to.x},${to.y}`;
   }
 
   _startTracking() {
@@ -289,14 +304,18 @@ class ElicitRuleArrows extends LitElement {
     const id = e.relationshipId ?? e.id;
     let from = l.from;
     let to = l.to;
-    if (dragged && String(dragged.edgeId) === String(id) && this._pointer) {
+    const beingDragged = dragged && String(dragged.edgeId) === String(id) && this._pointer;
+    if (beingDragged) {
       if (dragged.end === 'SOURCE') from = { x: this._pointer.x, y: this._pointer.y };
       else to = { x: this._pointer.x, y: this._pointer.y };
     }
-    const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+    // The glyph and label sit on the arrow's local channel (its bulge), clear of the boxes.
+    const mid = beingDragged
+      ? { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
+      : { x: l.cx, y: (from.y + to.y) / 2 };
     const selected = String(id) === String(this.selectedEdgeId);
     const cls = `edge ${e.retired ? 'retired' : ''} ${selected ? 'selected' : ''}`;
-    const d = this._path(from, to);
+    const d = beingDragged ? this._path(from, to) : this._channelPath(from, to, l.cx);
     return svg`<g class="${cls}" data-edge-id="${id}">
       <path class="line" d="${d}" marker-end="url(#head)"></path>
       <path class="hit" d="${d}" @click=${() => this._emit('edge-selected', { edgeId: id })}></path>
@@ -306,9 +325,9 @@ class ElicitRuleArrows extends LitElement {
          @pointerdown=${(ev) => this._grabEnd(ev, id, 'TARGET')}>
         <circle r="11"></circle>
         <text>${GLYPH[e.action] || '?'}</text>
-        <title>${e.action} rule: ${e.label}${e.description ? ' — ' + e.description : ''}</title>
+        <title>${e.label}${e.condition ? ' — when ' + e.condition : ''}${e.description ? ' (' + e.description + ')' : ''}</title>
       </g>
-      <text class="label" x="${mid.x}" y="${mid.y + 24}">${e.label}</text>
+      <text class="label" style="text-anchor:start" x="${mid.x + 16}" y="${mid.y + 4}">${e.label}</text>
     </g>`;
   }
 }

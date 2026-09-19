@@ -73,9 +73,10 @@ class RuleServiceTest {
         assertEquals("sq-" + assignmentOf("FixtureQ3").sectionsQuestionId, e.source(), "UC-020 BR-002: anchored on the question assignment");
         assertEquals("sq-" + assignmentOf("FixtureQ4").sectionsQuestionId, e.target());
         assertEquals("SHOW", e.action());
-        assertEquals("= Y", e.label(), "UC-019 BR-003: (operator) value");
-        assertEquals(1, e.sourceFallbacks().size(), "UC-020 step 3: the card holding the row, for closed cards");
-        assertTrue(e.sourceFallbacks().get(0).startsWith("ss-"));
+        assertEquals("= Y", e.condition(), "UC-019 BR-003: (operator) value in the condition");
+        assertTrue(e.label().startsWith("Show "), "the label reads the action and target: " + e.label());
+        assertTrue(e.sourceFallbacks().get(0).startsWith("ss-"), "UC-020 step 3: the card holding the row comes first, for closed cards");
+        assertTrue(e.sourceFallbacks().stream().anyMatch(f -> f.startsWith("step-")), "then its step, for a collapsed step: " + e.sourceFallbacks());
     }
 
     @Test
@@ -94,8 +95,8 @@ class RuleServiceTest {
         draft.referenceValue = "0";
         Relationship created = rules.create(s.id, draft);
         assertNotNull(created.relationshipKey, "UC-019 step 6: key minted once");
-        assertEquals("> 0", RelationshipQuery.label(created));
-        assertEquals("> 0", created.description, "description defaults to the sentence");
+        assertEquals("> 0", RelationshipQuery.condition(created));
+        assertEquals("> 0", created.description, "description defaults to the condition");
 
         assertEquals(2, query.edges(s.id, false).size());
         assertTrue(query.edges(s.id, false).stream().anyMatch(e -> e.target().equals("ss-" + sectionC) && e.action().equals("REPEAT")));
@@ -137,7 +138,8 @@ class RuleServiceTest {
         draft.token = " NAME ";
         Relationship created = rules.create(s.id, draft);
         assertEquals("NAME", created.token);
-        assertEquals("exists {NAME}", RelationshipQuery.label(created));
+        assertEquals("exists {NAME}", RelationshipQuery.condition(created));
+        assertEquals("Replace {NAME}", RelationshipQuery.label(created, "ignored"), "TEXT reads Replace {token}");
     }
 
     @Test

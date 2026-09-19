@@ -14,7 +14,6 @@ package com.elicitsoftware.author.flow;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
@@ -55,11 +54,6 @@ public class StructureNavigationTree extends VerticalLayout {
         // Display order is the whole point of the tree (UC-006 step 2): a sortable header would let a
         // click re-sort it alphabetically.
         grid.addHierarchyColumn(StructureNode::label).setHeader("Survey structure").setFlexGrow(1).setSortable(false);
-        grid.addComponentColumn(n -> {
-            Span badge = new Span(n.kind() == StructureNode.Kind.QUESTION ? n.detail() : n.kind().name().toLowerCase());
-            badge.addClassName("structure-kind");
-            return badge;
-        }).setAutoWidth(true).setFlexGrow(0);
         grid.setPartNameGenerator(n -> {
             StringBuilder parts = new StringBuilder();
             if (isCurrent(n)) {

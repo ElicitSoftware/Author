@@ -82,7 +82,7 @@ public class DesignerPalette extends VerticalLayout {
                 row("Question", chips(questionSlot)),
                 questionTypePicker,
                 row("Rule", chips(showRuleChip, repeatRuleChip, textRuleChip)));
-        add(card, guide);
+        add(guide, card);
     }
 
     public QuestionType selectedQuestionType() {

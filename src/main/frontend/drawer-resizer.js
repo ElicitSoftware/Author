@@ -21,6 +21,23 @@ window.__initDrawerResizer = function (appLayout) {
   if (!appLayout || appLayout.__resizerInstalled) return;
   appLayout.__resizerInstalled = true;
 
+  // Elicit Author is a desktop/tablet authoring tool; below tablet width show a full-screen notice
+  // (styled and toggled by the .small-screen-notice media query) instead of a cramped, unusable UI.
+  if (!document.querySelector('.small-screen-notice')) {
+    const notice = document.createElement('div');
+    notice.className = 'small-screen-notice';
+    const card = document.createElement('div');
+    card.className = 'small-screen-notice-card';
+    const h = document.createElement('h2');
+    h.textContent = 'A bigger screen is needed';
+    const p = document.createElement('p');
+    p.textContent = 'Elicit Author is built for designing surveys on a tablet or larger screen. Please switch to a wider device.';
+    card.appendChild(h);
+    card.appendChild(p);
+    notice.appendChild(card);
+    document.body.appendChild(notice);
+  }
+
   const KEY = 'elicit-author-drawer-width';
   const MIN = 220;
   const MAX = 680;

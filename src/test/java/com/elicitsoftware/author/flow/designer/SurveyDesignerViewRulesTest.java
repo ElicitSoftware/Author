@@ -55,7 +55,8 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         SurveyDesignerView view = open(fixture());
         assertTrue(view.showRules.getValue(), "UC-020 step 1: rules are shown by default");
         String edges = view.overlay.edges();
-        assertTrue(edges.contains("\"action\":\"SHOW\"") && edges.contains("\"label\":\"= Y\""), edges);
+        assertTrue(edges.contains("\"action\":\"SHOW\"") && edges.contains("\"condition\":\"= Y\""), edges);
+        assertTrue(edges.contains("\"label\":\"Show "), "the label reads the action and target: " + edges);
         assertTrue(edges.contains("\"sourceFallbacks\":[\"ss-"), "UC-020 step 3: closed cards receive the arrow: " + edges);
 
         view.showRules.setValue(false);
