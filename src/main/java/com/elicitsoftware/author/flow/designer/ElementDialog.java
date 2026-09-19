@@ -73,6 +73,10 @@ public class ElementDialog<T> extends Dialog {
         dimensionName.setHelperText("Reporting dimension; defaults to the name. Changing it is a reporting change, not a rename.");
         description.setMaxLength(2000);
 
+        FieldHelp.help(name, "The " + what + "'s name. Shown to respondents and used as the report label; renaming it is retroactive.");
+        FieldHelp.help(dimensionName, "The name this " + what + " reports under. Defaults to the name; change it to relabel reports without renaming.");
+        FieldHelp.help(description, "An optional note for authors. It is not shown to respondents.");
+
         binder.forField(name).asRequired("Name is required").bind(getName::apply, setName::accept);
         binder.forField(dimensionName).bind(getDimension::apply, setDimension::accept);
         binder.forField(description).bind(getDescription::apply, setDescription::accept);

@@ -125,6 +125,17 @@ public class RelationshipDialog extends Dialog {
         target.setWidthFull();
         refreshTargets();
 
+        FieldHelp.help(upstream, "The question whose answer this rule checks.");
+        FieldHelp.help(operator, "How the answer is compared to the value — equals, greater than, contains, or just whether an answer exists.");
+        FieldHelp.help(referenceValue, "The value the answer is compared against. Leave empty for operators that only test whether an answer exists.");
+        FieldHelp.help(action, "What the rule does when it matches: SHOW reveals the target, REPEAT instantiates it once per the answer, TEXT substitutes the answer into the target's text.");
+        FieldHelp.help(targetKind, "Whether the rule acts on a whole step, a section, or a single question.");
+        FieldHelp.help(target, "The element the action applies to.");
+        FieldHelp.help(token, "For a TEXT rule: the placeholder written as {TOKEN} in the target's text that the answer replaces.");
+        FieldHelp.help(description, "An optional note for authors. It is not shown to respondents.");
+        FieldHelp.help(defaultUpstreamValue, "The value to assume for the upstream answer when the respondent has not answered it yet.");
+        FieldHelp.help(overrideUpstreamValue, "A fixed value to use for the upstream answer instead of the respondent's actual answer.");
+
         fieldsByProperty = Map.of("upstreamSqId", upstream, "operatorType", operator, "actionType", action,
                 "downstream", target, "token", token, "upstreamStepId", upstream);
 

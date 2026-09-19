@@ -118,6 +118,19 @@ public class QuestionDialog extends Dialog {
         variant.setItems(VARIANTS);
         variant.setHelperText("Vaadin theme variants applied to the field");
 
+        FieldHelp.help(questionType, "The kind of input the respondent uses to answer.");
+        FieldHelp.help(shortText, "A short machine-friendly name, shown in the tree and on the board.");
+        FieldHelp.help(text, "The question as the respondent sees it. May contain {TOKEN} placeholders that TEXT rules fill in.");
+        FieldHelp.help(toolTip, "Help text shown to the respondent when they hover the field.");
+        FieldHelp.help(required, "The respondent must answer this before continuing.");
+        FieldHelp.help(minValue, "The smallest number the respondent may enter.");
+        FieldHelp.help(maxValue, "The largest number the respondent may enter.");
+        FieldHelp.help(selectGroup, "The list of choices the respondent picks from.");
+        FieldHelp.help(mask, "A pattern that constrains what the respondent can type.");
+        FieldHelp.help(placeholder, "Faint example text shown in the empty field.");
+        FieldHelp.help(defaultValue, "The value the field starts with.");
+        FieldHelp.help(variant, "Visual style variants applied to the field: alignment, size, or layout.");
+
         List<SelectGroup> groups = SelectGroup.list("surveyId = ?1 and effectiveTo = ?2 order by name", surveyId, StructuralElement.SENTINEL);
         selectGroup.setItems(groups);
         selectGroup.setItemLabelGenerator(g -> g.name);
