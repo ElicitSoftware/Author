@@ -21,6 +21,8 @@ import com.elicitsoftware.author.survey.DesignerService;
 import com.elicitsoftware.author.survey.ElementService;
 import com.elicitsoftware.author.survey.RelationshipQuery;
 import com.elicitsoftware.author.survey.ReportingService;
+import com.elicitsoftware.author.survey.ListService;
+import com.elicitsoftware.model.SelectGroup;
 import com.elicitsoftware.author.flow.reporting.ElementTagsDialog;
 import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
@@ -98,6 +100,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     @Inject
     ReportingService reporting;
 
+    @Inject
+    ListService listService;
+
     private static final ObjectMapper JSON = new ObjectMapper();
 
     Survey survey;
@@ -116,6 +121,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     final Button addStep = new Button("Add step", VaadinIcon.PLUS.create());
     final List<StepLane> lanes = new ArrayList<>();
     DesignerPalette palette;
+    DesignerToolbox toolbox;
     /** Reporting-tag labels per board node ("ss-"/"sq-" + assignment id), rebuilt with the board (UC-021). */
     final Map<String, List<String>> tagLabels = new java.util.HashMap<>();
 
@@ -148,6 +154,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         survey = found.get();
         if (palette == null) {
             palette = new DesignerPalette(this::dragStarted, this::dragEnded);
+            toolbox = new DesignerToolbox(this, palette);
             // The palette (add-tools + rule glyphs) now lives in the drawer, placed there by
             // MainLayout.syncWith; the in-view bar keeps only the back link and the view toggles.
             HorizontalLayout toolbar = new HorizontalLayout(overview, addStep, showRules, showRemoved);
@@ -178,6 +185,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         return palette;
     }
 
+    /** The drawer toolbox: palette, lists and questions panels above the tree. */
+    public DesignerToolbox toolbox() {
+        return toolbox;
+    }
+
     void load() {
         tree = structureQuery.tree(survey.id, Boolean.TRUE.equals(showRemoved.getValue()));
         selected = selected == null ? null : find(selected.kind(), selected.durableId(), selected.assignmentId());
@@ -187,6 +199,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     private void render() {
         rebuildBoard();
+        refreshToolbox();
         updateBreadcrumb();
         syncAddress();
         mainLayout().ifPresent(layout -> {
@@ -392,6 +405,16 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                     case SECTION -> createSectionAt(spot.container(), spot.index());
                     case QUESTION -> createQuestionAt(spot.container(), spot.index(), typeNamed(item.questionType()));
                 }
+            } else if (data instanceof BankQuestion bank) {
+                // UC-011 A6: a question from the drawer's Questions panel, reused in the target section.
+                if (spot.accepts() != StructureNode.Kind.QUESTION || spot.container() == null) {
+                    return;
+                }
+                designer.assignQuestionInto(survey.id, bank.questionId(), spot.container().durableId(), spot.index());
+                open(spot.container());
+                load();
+                select(find(StructureNode.Kind.QUESTION, bank.questionId(), null));
+                success("Added question '" + bank.label() + "' to section '" + spot.container().label() + "'");
             } else if (data instanceof StructureNode node) {
                 if (node.kind() != spot.accepts() || node.retired()) {
                     return;
@@ -440,7 +463,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 case SECTION -> ElementDialog.section(designer.currentSection(survey.id, node.durableId()),
                         e -> designer.rename(survey.id, e), saved -> load()).open();
                 case QUESTION -> new QuestionDialog(survey.id, designer.currentQuestion(survey.id, node.durableId()), null,
-                        q -> designer.update(survey.id, q), saved -> load()).open();
+                        q -> designer.update(survey.id, q), saved -> load(), listService).open();
             }
         } catch (AuthoringException ae) {
             error(ae.getMessage());
@@ -500,6 +523,80 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 designer.mountSection(survey.id, section.durableId(), step.durableId(), childrenOf(step).size());
                 load();
                 success("Section '" + section.label() + "' is now also in step '" + step.label() + "'");
+            } catch (AuthoringException ae) {
+                error(ae.getMessage());
+            }
+        }).open();
+    }
+
+    /** The Lists and Questions panels read the same tables as the board; keep them in step. */
+    private void refreshToolbox() {
+        if (toolbox == null || survey == null || tree == null) {
+            return;
+        }
+        java.util.Map<Integer, Long> users = new java.util.HashMap<>();
+        for (StructureNode n : tree.all()) {
+            if (n.kind() == StructureNode.Kind.QUESTION && !n.retired()) {
+                Question q = designer.currentQuestion(survey.id, n.durableId());
+                if (q.selectGroupId != null) {
+                    users.merge(q.selectGroupId, 1L, Long::sum);
+                }
+            }
+        }
+        toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users);
+        toolbox.questions.refresh(this, tree.all());
+    }
+
+    // ---- lists (UC-014) ------------------------------------------------------------------------
+
+    /** UC-014 step 6: a list dropped on a question row becomes its options. */
+    public void useList(StructureNode question, PaletteList list) {
+        if (question.kind() != StructureNode.Kind.QUESTION || question.retired()) {
+            return;
+        }
+        try {
+            designer.assignList(survey.id, question.durableId(), list.selectGroupId());
+            load();
+            select(find(StructureNode.Kind.QUESTION, question.durableId(), question.assignmentId()));
+            success("Question '" + question.label() + "' now offers the list '" + list.name() + "'");
+        } catch (AuthoringException ae) {
+            error(ae.getMessage());
+        }
+    }
+
+    public void newList() {
+        new SelectGroupDialog(listService, survey.id, null, saved -> load()).open();
+    }
+
+    public void editList(SelectGroup group) {
+        try {
+            new SelectGroupDialog(listService, survey.id, listService.list(survey.id, group.selectGroupId), saved -> load()).open();
+        } catch (AuthoringException ae) {
+            error(ae.getMessage());
+        }
+    }
+
+    /** UC-014 A2. */
+    public void removeList(SelectGroup group) {
+        new ConfirmDialog("Remove list", "Remove the list '" + group.name + "' and its options?", "Remove", e -> {
+            try {
+                listService.remove(survey.id, group.selectGroupId);
+                load();
+                success("Removed list '" + group.name + "'");
+            } catch (AuthoringException ae) {
+                error(ae.getMessage());
+            }
+        }, "Cancel", e -> { }).open();
+    }
+
+    /** UC-011 A6, keyboard route: reuse a bank question in a section chosen from a picker. */
+    public void addBankQuestionTo(StructureNode question) {
+        new PickerDialog<>("Add question '" + question.label() + "'", "To section", sectionsDistinct(), this::sectionPath, section -> {
+            try {
+                designer.assignQuestionInto(survey.id, question.durableId(), section.durableId(), childrenOf(section).size());
+                open(section);
+                load();
+                success("Added question '" + question.label() + "' to section '" + section.label() + "'");
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
@@ -761,7 +858,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             open(section);
             load();
             select(find(StructureNode.Kind.QUESTION, saved.questionId, null));
-        }).open();
+        }, listService).open();
     }
 
     // ---- helpers ---------------------------------------------------------------------------

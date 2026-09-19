@@ -11,7 +11,6 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
-import com.elicitsoftware.author.flow.SurveyModelGuideView;
 import com.elicitsoftware.model.QuestionType;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -21,7 +20,6 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.RouterLink;
 import io.quarkus.panache.common.Sort;
 
 import java.util.List;
@@ -72,9 +70,6 @@ public class DesignerPalette extends VerticalLayout {
         draggable(repeatRuleChip, PaletteItem.rule("REPEAT"));
         draggable(textRuleChip, PaletteItem.rule("TEXT"));
 
-        RouterLink guide = new RouterLink("How surveys work", SurveyModelGuideView.class);
-        guide.addClassName("designer-guide-link");
-
         Div card = new Div();
         card.addClassName("designer-palette-card");
         card.add(row("Step", chips(stepChip)),
@@ -82,7 +77,7 @@ public class DesignerPalette extends VerticalLayout {
                 row("Question", chips(questionSlot)),
                 questionTypePicker,
                 row("Rule", chips(showRuleChip, repeatRuleChip, textRuleChip)));
-        add(guide, card);
+        add(card);
     }
 
     public QuestionType selectedQuestionType() {

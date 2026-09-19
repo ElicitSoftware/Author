@@ -53,7 +53,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
 
     private Component drawerContent;
     private StructureNavigationTree structureTree;
-    private com.elicitsoftware.author.flow.designer.DesignerPalette drawerPalette;
+    private com.elicitsoftware.author.flow.designer.DesignerToolbox drawerPalette;
 
     public MainLayout() {
         // Default constructor for Vaadin
@@ -126,7 +126,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     }
 
     /** Designer drawer: the tools palette fixed above the scrolling structure tree. */
-    private void installDesignerDrawer(com.elicitsoftware.author.flow.designer.DesignerPalette palette) {
+    private void installDesignerDrawer(com.elicitsoftware.author.flow.designer.DesignerToolbox palette) {
         Scroller treeScroller = new Scroller(structureTree);
         treeScroller.addClassName("drawer-scroller");
         treeScroller.setWidthFull();
@@ -201,8 +201,8 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         }
         // The designer drawer carries the tools palette above the tree; other views show the tree alone.
         // Rebuild the drawer only when the tree changed or the active designer's palette changed.
-        if (designer != null && (treeRebuilt || drawerPalette != designer.palette())) {
-            installDesignerDrawer(designer.palette());
+        if (designer != null && (treeRebuilt || drawerPalette != designer.toolbox())) {
+            installDesignerDrawer(designer.toolbox());
         } else if (designer == null && (treeRebuilt || drawerPalette != null)) {
             drawerPalette = null;
             setDrawerContent(structureTree);

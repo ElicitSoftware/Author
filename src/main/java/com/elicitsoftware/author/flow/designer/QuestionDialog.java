@@ -80,6 +80,7 @@ public class QuestionDialog extends Dialog {
     final IntegerField maxValue = new IntegerField("Maximum");
     final TextField validationText = new TextField("Validation message");
     final ComboBox<SelectGroup> selectGroup = new ComboBox<>("List of options");
+    final Button newList = new Button("New list…");
     final TextField mask = new TextField("Input mask");
     final TextField placeholder = new TextField("Placeholder");
     final TextField defaultValue = new TextField("Default value");
@@ -102,8 +103,16 @@ public class QuestionDialog extends Dialog {
     private final Div preview = new Div();
     private final Map<String, String> tokenSamples = new HashMap<>();
     private final Map<String, HasValidation> fieldsByProperty;
+    private final com.elicitsoftware.author.survey.ListService lists;
 
     public QuestionDialog(int surveyId, Question existing, QuestionType presetType, Function<Question, Question> persist, Consumer<Question> onSaved) {
+        this(surveyId, existing, presetType, persist, onSaved, null);
+    }
+
+    /** @param lists when given, a "New list…" shortcut next to the list picker creates one in place (UC-014). */
+    public QuestionDialog(int surveyId, Question existing, QuestionType presetType, Function<Question, Question> persist, Consumer<Question> onSaved,
+                          com.elicitsoftware.author.survey.ListService lists) {
+        this.lists = lists;
         boolean creating = existing == null;
         setHeaderTitle(creating ? "New question" : "Edit question");
         setModal(true);
@@ -146,10 +155,18 @@ public class QuestionDialog extends Dialog {
         FieldHelp.help(defaultValue, "The value the field starts with.");
         FieldHelp.help(variant, "Visual style variants applied to the field: alignment, size, or layout.");
 
-        List<SelectGroup> groups = SelectGroup.list("surveyId = ?1 and effectiveTo = ?2 order by name", surveyId, StructuralElement.SENTINEL);
+        List<SelectGroup> groups = new java.util.ArrayList<>(
+                SelectGroup.<SelectGroup>list("surveyId = ?1 and effectiveTo = ?2 order by name", surveyId, StructuralElement.SENTINEL));
         selectGroup.setItems(groups);
         selectGroup.setItemLabelGenerator(g -> g.name);
         selectGroup.setClearButtonVisible(true);
+        newList.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        newList.addClickListener(e -> new SelectGroupDialog(lists, surveyId, null, created -> {
+            groups.add(created);
+            groups.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+            selectGroup.setItems(groups);
+            selectGroup.setValue(created);
+        }).open());
 
         binder.forField(questionType).asRequired("Choose a question type").bind(q -> q.questionType, (q, v) -> q.questionType = v);
         binder.forField(text).asRequired("A question needs its text").bind(q -> q.text, (q, v) -> q.text = v);
@@ -194,7 +211,11 @@ public class QuestionDialog extends Dialog {
         questionType.addValueChangeListener(e -> updateChoiceFields());
         updateChoiceFields();
 
-        FormLayout form = new FormLayout(questionType, shortText, text, toolTip, required, selectGroup,
+        com.vaadin.flow.component.orderedlayout.HorizontalLayout listRow = new com.vaadin.flow.component.orderedlayout.HorizontalLayout(selectGroup, newList);
+        listRow.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.END);
+        listRow.setWidthFull();
+        listRow.expand(selectGroup);
+        FormLayout form = new FormLayout(questionType, shortText, text, toolTip, required, listRow,
                 minValue, maxValue, validationText, mask, placeholder, defaultValue, variant);
         form.setColspan(text, 2);
 
@@ -348,6 +369,7 @@ public class QuestionDialog extends Dialog {
         boolean datey = "DATE_PICKER".equals(name) || "DATETIME".equals(name);
 
         selectGroup.setVisible(choice);
+        newList.setVisible(choice && lists != null);
         selectGroup.setRequiredIndicatorVisible(choice);
         minValue.setVisible(numeric);
         maxValue.setVisible(numeric);

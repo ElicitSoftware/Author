@@ -19,6 +19,7 @@ import com.elicitsoftware.author.survey.DisplayOrdering;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.model.Step;
 import com.elicitsoftware.model.StructuralElement;
+import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
@@ -215,6 +216,53 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
             assertNotNull(row.menu.find(label), "NFR-012: question menu has " + label);
         }
         assertFalse(row.menu.find("Move up").isEnabled(), "first question cannot move up");
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void drawerToolboxHasCollapsiblePanelsWithListsAndQuestions() {
+        SurveyDesignerView view = open(fixture());
+        DesignerToolbox toolbox = view.toolbox();
+        assertEquals(List.of("Controls", "Lists", "Questions"),
+                List.of(toolbox.controlsPanel.getSummaryText(), toolbox.listsPanel.getSummaryText(), toolbox.questionsPanel.getSummaryText()));
+        assertTrue(toolbox.controlsPanel.isOpened(), "the palette stays open by default");
+        assertEquals(1, toolbox.lists.items.size(), "UC-014 step 1: the fixture's one list");
+        assertEquals("FixtureYesNo", toolbox.lists.items.get(0).group().name);
+        assertFalse(toolbox.lists.items.get(0).menu.find("Remove").isEnabled(), "UC-014 A2: in use by FixtureQ3");
+        assertEquals(5, toolbox.questions.items.size(), "UC-011 A6: every current question once");
+        assertNotNull(toolbox.questions.items.get(0).menu.find("Add to section…"), "NFR-012: keyboard route");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void droppingAListOnAChoiceQuestionAssignsItAndOnATextQuestionIsRefused() {
+        Survey s = fixture();
+        SurveyDesignerView view = open(s);
+        view.toggleAndSelect(view.lanes.get(0).cards.get(1).node());
+        QuestionRow q3 = view.lanes.get(0).cards.get(1).rows.get(0); // RADIO
+        ListPanel.Row list = view.toolbox().lists.items.get(0);
+        view.useList(q3.node(), new PaletteList(list.group().selectGroupId, list.group().name));
+        assertEquals(list.group().selectGroupId, Question.<Question>find("shortText", "FixtureQ3").firstResult().selectGroupId, "UC-014 step 7");
+        view.toggleAndSelect(view.lanes.get(0).cards.get(0).node());
+        QuestionRow q2 = view.lanes.get(0).cards.get(0).rows.get(1); // TEXT
+        view.useList(q2.node(), new PaletteList(list.group().selectGroupId, list.group().name));
+        assertNull(Question.<Question>find("shortText", "FixtureQ2").firstResult().selectGroupId, "UC-014 A3: refused, nothing changed");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void droppingABankQuestionIntoACardReusesIt() {
+        Survey s = fixture();
+        SurveyDesignerView view = open(s);
+        StructureNode sectionC = view.lanes.get(1).cards.get(0).node();
+        QuestionBankPanel.Row q2 = view.toolbox().questions.items.stream().filter(r -> r.node().label().equals("FixtureQ2")).findFirst().orElseThrow();
+        view.onDrop(new BankQuestion(q2.node().durableId(), q2.node().label(), q2.node().detail()),
+                new DropSpot(sectionC, 0, StructureNode.Kind.QUESTION));
+        List<String> labels = view.childrenOf(view.lanes.get(1).cards.get(0).node()).stream().map(StructureNode::label).toList();
+        assertEquals(List.of("FixtureQ2", "FixtureQ5"), labels, "UC-011 A6: the same question, placed first in Section C");
+        assertEquals("in 2 sections", view.toolbox().questions.items.stream().filter(r -> r.node().label().equals("FixtureQ2")).findFirst().orElseThrow().uses.getText());
     }
 
     @Test
