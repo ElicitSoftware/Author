@@ -30,6 +30,7 @@ class ElicitRuleArrows extends LitElement {
   static properties = {
     edges: { type: String },
     selectedEdgeId: { type: String, attribute: 'selected-edge-id' },
+    selectedAnchor: { type: String, attribute: 'selected-anchor' },
     pendingSource: { type: String, attribute: 'pending-source' },
     pendingAction: { type: String, attribute: 'pending-action' },
     _lines: { state: true },
@@ -54,6 +55,10 @@ class ElicitRuleArrows extends LitElement {
     }
     .edge.retired path.line { stroke-dasharray: 6 4; opacity: 0.6; }
     .edge.selected path.line { stroke-width: 3.5; }
+    /* When an element is selected, fade the rules that don't touch it and hide their labels. */
+    .edge.focus-dim { opacity: 0.1; }
+    .edge.focus-dim .label { display: none; }
+    .edge.focus-dim .hit { pointer-events: none; }
     .edge .hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
     .glyph { pointer-events: all; cursor: grab; }
     .glyph circle {
@@ -74,6 +79,7 @@ class ElicitRuleArrows extends LitElement {
     super();
     this.edges = '[]';
     this.selectedEdgeId = '';
+    this.selectedAnchor = '';
     this.pendingSource = '';
     this.pendingAction = '';
     this._lines = [];
@@ -118,7 +124,7 @@ class ElicitRuleArrows extends LitElement {
   }
 
   updated(changed) {
-    if (changed.has('edges')) this._schedule();
+    if (changed.has('edges') || changed.has('selectedAnchor')) this._schedule();
     if (changed.has('pendingSource')) {
       if (this.pendingSource) {
         this._drag = { pending: true };
@@ -186,7 +192,11 @@ class ElicitRuleArrows extends LitElement {
       const to = this._point(t, 'right');
       const cx = Math.max(from.x, to.x) + 14;
       maxCx = Math.max(maxCx, cx);
-      lines.push({ edge: e, from, to, cx });
+      const sel = this.selectedAnchor;
+      const active = !!sel && (e.source === sel || e.target === sel
+        || (e.sourceFallbacks || []).includes(sel) || (e.targetFallbacks || []).includes(sel)
+        || s.getAttribute('data-node-id') === sel || t.getAttribute('data-node-id') === sel);
+      lines.push({ edge: e, from, to, cx, active });
     }
     this._lines = lines;
     // Size the SVG so the channels, arrow glyphs and labels are never clipped.
@@ -314,7 +324,8 @@ class ElicitRuleArrows extends LitElement {
       ? { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
       : { x: l.cx, y: (from.y + to.y) / 2 };
     const selected = String(id) === String(this.selectedEdgeId);
-    const cls = `edge ${e.retired ? 'retired' : ''} ${selected ? 'selected' : ''}`;
+    const dim = this.selectedAnchor && !l.active;
+    const cls = `edge ${e.retired ? 'retired' : ''} ${selected ? 'selected' : ''} ${dim ? 'focus-dim' : ''}`;
     const d = beingDragged ? this._path(from, to) : this._channelPath(from, to, l.cx);
     return svg`<g class="${cls}" data-edge-id="${id}">
       <path class="line" d="${d}" marker-end="url(#head)"></path>

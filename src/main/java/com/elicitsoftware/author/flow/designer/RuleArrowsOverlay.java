@@ -45,6 +45,11 @@ public class RuleArrowsOverlay extends Component {
         getElement().setProperty("selectedEdgeId", relationshipId == null ? "" : String.valueOf(relationshipId));
     }
 
+    /** The board's selected node anchor (step-/ss-/sq-id); the overlay focuses the rules touching it. */
+    public void setSelectedAnchor(String anchor) {
+        getElement().setProperty("selectedAnchor", anchor == null ? "" : anchor);
+    }
+
     /** UC-019 step 2: a rule glyph landed on {@code sourceAnchor}; the client draws the dangling arrow. */
     public void setPending(String sourceAnchor, String action) {
         getElement().setProperty("pendingAction", action == null ? "" : action);

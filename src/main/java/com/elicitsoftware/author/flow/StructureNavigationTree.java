@@ -41,6 +41,7 @@ public class StructureNavigationTree extends VerticalLayout {
     private StructureNode.Kind currentKind;
     private Integer currentDurableId;
     private Consumer<StructureNode> selectionHandler;
+    private boolean suppressSelection;
 
     public StructureNavigationTree(int surveyId, SurveyStructureQuery query, Consumer<StructureNode> onSelect) {
         this.surveyId = surveyId;
@@ -67,6 +68,9 @@ public class StructureNavigationTree extends VerticalLayout {
         grid.addClassName("structure-navigation-tree");
         grid.setSizeFull();
         grid.addSelectionListener(e -> e.getFirstSelectedItem().ifPresent(n -> {
+            if (suppressSelection) {
+                return; // a programmatic selection mirroring the board; don't echo it back
+            }
             onSelect.accept(n);
             if (selectionHandler != null) {
                 selectionHandler.accept(n);
@@ -107,6 +111,39 @@ public class StructureNavigationTree extends VerticalLayout {
         this.currentKind = kind;
         this.currentDurableId = durableId;
         provider.refreshAll();
+        // Mirror the board's selection into the tree: select the row and scroll to it if off-screen.
+        StructureNode target = findNode(kind, durableId);
+        suppressSelection = true;
+        try {
+            if (target != null) {
+                grid.select(target);
+                grid.scrollToItem(target);
+            } else {
+                grid.deselectAll();
+            }
+        } finally {
+            suppressSelection = false;
+        }
+    }
+
+    private StructureNode findNode(StructureNode.Kind kind, Integer durableId) {
+        if (kind == null || durableId == null) {
+            return null;
+        }
+        return findIn(data.getRootItems(), kind, durableId);
+    }
+
+    private StructureNode findIn(java.util.List<StructureNode> items, StructureNode.Kind kind, Integer durableId) {
+        for (StructureNode n : items) {
+            if (n.kind() == kind && Objects.equals(n.durableId(), durableId)) {
+                return n;
+            }
+            StructureNode child = findIn(data.getChildren(n), kind, durableId);
+            if (child != null) {
+                return child;
+            }
+        }
+        return null;
     }
 
     boolean isCurrent(StructureNode n) {

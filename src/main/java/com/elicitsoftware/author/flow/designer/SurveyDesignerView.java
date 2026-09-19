@@ -198,6 +198,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
         board.add(new DropZone(new DropSpot(null, roots.size(), StructureNode.Kind.STEP), this::onDrop));
         overlay.setEdges(Boolean.TRUE.equals(showRules.getValue()) ? edgesJson() : "[]");
+        overlay.setSelectedAnchor(anchorOf(selected));
         board.add(overlay);
         if (roots.isEmpty()) {
             Div empty = new Div(new Span("This survey has no steps yet. Drag the Step glyph here or use Add step. "),
@@ -283,6 +284,18 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 openNodes.add(key);
             }
         }
+    }
+
+    /** The overlay anchor id for a node: step-/ss-/sq- as the board tags its boxes. */
+    private static String anchorOf(StructureNode node) {
+        if (node == null) {
+            return "";
+        }
+        return switch (node.kind()) {
+            case STEP -> "step-" + node.durableId();
+            case SECTION -> "ss-" + node.assignmentId();
+            case QUESTION -> "sq-" + node.assignmentId();
+        };
     }
 
     /** Mark a collapsible node (step or section) expanded so a new or moved child is visible. */
