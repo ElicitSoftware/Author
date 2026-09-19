@@ -178,7 +178,6 @@ class ElicitRuleArrows extends LitElement {
     let edges = [];
     try { edges = JSON.parse(this.edges || '[]'); } catch (e) { edges = []; }
     const lines = [];
-    let maxCx = 0;
     for (const e of edges) {
       const s = this._resolve(e.source, e.sourceFallbacks);
       const t = this._resolve(e.target, e.targetFallbacks);
@@ -186,12 +185,12 @@ class ElicitRuleArrows extends LitElement {
       // Both ends collapse into the same box: the rule is entirely inside a closed container, so it is
       // out of context — draw nothing. It reappears once that container is opened and the ends separate.
       if (s === t) continue;
-      // Route in a channel local to these two boxes (just right of them), so a within-section rule stays
-      // by its section and only inter-step rules reach the board's right edge.
-      const from = this._point(s, 'right');
-      const to = this._point(t, 'right');
-      const cx = Math.max(from.x, to.x) + 14;
-      maxCx = Math.max(maxCx, cx);
+      // Steps are the fixed left spine, so arrows leave and arrive on the boxes' LEFT edge and route in
+      // a channel just to their left: inter-step rules run in the board's left gutter, and a within-step
+      // rule runs in the indent gutter to the left of its sections.
+      const from = this._point(s, 'left');
+      const to = this._point(t, 'left');
+      const cx = Math.min(from.x, to.x) - 14;
       const sel = this.selectedAnchor;
       const active = !!sel && (e.source === sel || e.target === sel
         || (e.sourceFallbacks || []).includes(sel) || (e.targetFallbacks || []).includes(sel)
@@ -199,8 +198,7 @@ class ElicitRuleArrows extends LitElement {
       lines.push({ edge: e, from, to, cx, active });
     }
     this._lines = lines;
-    // Size the SVG so the channels, arrow glyphs and labels are never clipped.
-    this._size = { w: Math.max(board.scrollWidth, maxCx + 200), h: board.scrollHeight };
+    this._size = { w: board.scrollWidth, h: board.scrollHeight };
   }
 
   /** Route an edge out to its local channel and back, so it never crosses a box. */
@@ -305,7 +303,7 @@ class ElicitRuleArrows extends LitElement {
 
   _pendingLine() {
     const src = this._resolve(this.pendingSource, []);
-    const from = src ? this._point(src, 'right') : this._pointer;
+    const from = src ? this._point(src, 'left') : this._pointer;
     return { from, to: { x: this._pointer.x, y: this._pointer.y } };
   }
 
@@ -338,7 +336,7 @@ class ElicitRuleArrows extends LitElement {
         <text>${GLYPH[e.action] || '?'}</text>
         <title>${e.label}${e.condition ? ' — when ' + e.condition : ''}${e.description ? ' (' + e.description + ')' : ''}</title>
       </g>
-      <text class="label" style="text-anchor:start" x="${mid.x + 16}" y="${mid.y + 4}">${e.label}</text>
+      <text class="label" style="text-anchor:start" x="2" y="${mid.y - 8}">${e.label}</text>
     </g>`;
   }
 }
