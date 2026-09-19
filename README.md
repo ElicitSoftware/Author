@@ -41,9 +41,10 @@ for local development and testing, though any OIDC-compliant server works in pro
 ### Prerequisites
 
 - Java 25
-- Docker. `docker compose up -d` in this repo starts the local authoring stack: Postgres (the
-  Survey app creates the `survey` schema on first boot), Keycloak (realm from
-  `../keycloak/elicit-realm.json`, test user `author` / `author`), Survey, and Admin.
+- Docker. The umbrella repo's `docker-compose.yml` (one level up) runs the support services
+  Author needs: Postgres with a dedicated `author` database next to the site's `survey`
+  database, Keycloak (realm from `../keycloak/elicit-realm.json`, test user `author` /
+  `author`), and the `author-survey` preview instance. Author has no compose file of its own.
 
 ### Running in dev mode
 

@@ -34,9 +34,9 @@ and expresses removals as retirements (`effective_to` closed). See
   Survey's `db/migration` creates. Tests replay a verbatim mirror of those
   scripts (`src/test/resources/db/schema-mirror`, refreshed by
   `scripts/sync-survey-schema.sh`) into a Testcontainers Postgres.
-- PostgreSQL — Author's **own** database instance carrying the `survey` schema
-  (local stack in `docker-compose.yml`), never a deployed site's database.
-  Connects as `survey_user`.
+- PostgreSQL — Author's **own** database carrying the `survey` schema (the
+  `author` database in the umbrella repo's compose stack), never a deployed
+  site's database. Connects as `survey_user`.
 - OIDC / Keycloak authorization (matches Admin's setup); client
   `elicit-author`, role `elicit_author` (not implied by `elicit_admin`).
   Dev port **8084**.
