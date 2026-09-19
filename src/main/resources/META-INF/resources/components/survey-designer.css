@@ -184,6 +184,14 @@
     height: 100%;
 }
 
+/* Info icon suffix on an edit control: hover it (or the field) for the explanation. */
+.field-info {
+    width: var(--lumo-icon-size-s);
+    height: var(--lumo-icon-size-s);
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+    cursor: help;
+}
+
 /* Live question preview in the edit dialog. */
 .question-preview-box {
     margin-top: var(--lumo-space-m);
