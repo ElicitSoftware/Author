@@ -229,6 +229,42 @@ class DesignerServiceTest {
 
     @Test
     @TestTransaction
+    void retireSectionAssignment_lastMount_restoreBringsTheMountBack() {
+        Survey s = fixture();
+        Step one = step("Fixture Step One");
+        StepsSections first = ordering.currentLane(s.id, one.stepId).get(0);
+        int sectionId = first.sectionId;
+        service.retireSectionAssignment(s.id, first.stepsSectionsId);
+        em.clear();
+
+        // UC-010: restoring the section brings the mount retired with it back too.
+        elements.restore(s.id, StructureNode.Kind.SECTION, sectionId);
+        em.clear();
+        assertEquals(1, elements.currentStepAssignmentsOfSection(s.id, sectionId).size(),
+                "the last mount was closed at the same instant as the section, so restore reopens it");
+    }
+
+    @Test
+    @TestTransaction
+    void retireQuestionAssignment_lastAssignment_restoreBringsTheAssignmentBack() {
+        Survey s = fixture();
+        Question q3 = question("FixtureQ3");
+        SectionsQuestion sq = elements.currentAssignmentsOfQuestion(s.id, q3.questionId).get(0);
+        service.retireQuestionAssignment(s.id, sq.sectionsQuestionId);
+        em.clear();
+        assertTrue(elements.currentAssignmentsOfQuestion(s.id, q3.questionId).isEmpty());
+
+        // UC-010: restoring the question brings the assignment and the rule retired with it back.
+        elements.restore(s.id, StructureNode.Kind.QUESTION, q3.questionId);
+        em.clear();
+        assertEquals(1, elements.currentAssignmentsOfQuestion(s.id, q3.questionId).size(),
+                "the assignment was closed at the same instant as the question, so restore reopens it");
+        Relationship r = Relationship.find("surveyId", s.id).firstResult();
+        assertFalse(r.isRetired(), "the rule reading from the assignment comes back with it");
+    }
+
+    @Test
+    @TestTransaction
     void retireSectionAssignment_lastMountRetiresTheSection() {
         Survey s = fixture();
         Step one = step("Fixture Step One");

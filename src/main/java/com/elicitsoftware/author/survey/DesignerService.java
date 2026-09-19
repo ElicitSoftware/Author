@@ -153,12 +153,15 @@ public class DesignerService {
                 surveyId, stepsSectionsId, StructuralElement.SENTINEL).firstResultOptional()
                 .orElseThrow(() -> new AuthoringException("Section assignment not found"));
         Step step = currentStep(surveyId, ss.stepId);
-        OffsetDateTime now = OffsetDateTime.now();
-        elements.relationshipsTouching(surveyId, List.of(), List.of(stepsSectionsId), null).forEach(r -> r.effectiveTo = now);
-        ss.effectiveTo = now;
-        em.flush();
-        if (elements.currentStepAssignmentsOfSection(surveyId, ss.sectionId).isEmpty()) {
+        if (elements.currentStepAssignmentsOfSection(surveyId, ss.sectionId).size() == 1) {
+            // Last mount: retire the section with its assignments and rules at one instant, so that
+            // UC-010 restore of the section brings this mount back with it.
             elements.remove(surveyId, StructureNode.Kind.SECTION, ss.sectionId);
+        } else {
+            OffsetDateTime now = OffsetDateTime.now();
+            elements.relationshipsTouching(surveyId, List.of(), List.of(stepsSectionsId), null).forEach(r -> r.effectiveTo = now);
+            ss.effectiveTo = now;
+            em.flush();
         }
         ordering.renumberLane(surveyId, step, ordering.currentLane(surveyId, step.stepId));
     }
@@ -169,12 +172,15 @@ public class DesignerService {
         SectionsQuestion sq = SectionsQuestion.<SectionsQuestion>find("surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3",
                 surveyId, sectionsQuestionId, StructuralElement.SENTINEL).firstResultOptional()
                 .orElseThrow(() -> new AuthoringException("Question assignment not found"));
-        OffsetDateTime now = OffsetDateTime.now();
-        elements.relationshipsTouching(surveyId, List.of(sectionsQuestionId), List.of(), null).forEach(r -> r.effectiveTo = now);
-        sq.effectiveTo = now;
-        em.flush();
-        if (elements.currentAssignmentsOfQuestion(surveyId, sq.questionId).isEmpty()) {
+        if (elements.currentAssignmentsOfQuestion(surveyId, sq.questionId).size() == 1) {
+            // Last assignment: retire the question with its assignment and rules at one instant, so
+            // that UC-010 restore of the question brings the assignment back with it.
             elements.remove(surveyId, StructureNode.Kind.QUESTION, sq.questionId);
+        } else {
+            OffsetDateTime now = OffsetDateTime.now();
+            elements.relationshipsTouching(surveyId, List.of(sectionsQuestionId), List.of(), null).forEach(r -> r.effectiveTo = now);
+            sq.effectiveTo = now;
+            em.flush();
         }
         ordering.renumberSection(ordering.currentQuestions(surveyId, sq.sectionId));
     }
