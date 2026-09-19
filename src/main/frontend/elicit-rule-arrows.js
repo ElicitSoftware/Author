@@ -176,15 +176,17 @@ class ElicitRuleArrows extends LitElement {
       const s = this._resolve(e.source, e.sourceFallbacks);
       const t = this._resolve(e.target, e.targetFallbacks);
       if (!s || !t) continue;
-      lines.push({ edge: e, from: this._point(s, 'right'), to: this._point(t, 'left') });
+      // Steps stack vertically, so every arrow leaves and arrives on the right edge and runs in the board's right gutter.
+      lines.push({ edge: e, from: this._point(s, 'right'), to: this._point(t, 'right') });
     }
     this._lines = lines;
     this._size = { w: board.scrollWidth, h: board.scrollHeight };
   }
 
   _path(from, to) {
-    const dx = Math.max(40, Math.abs(to.x - from.x) / 2);
-    return `M${from.x},${from.y} C${from.x + dx},${from.y} ${to.x - dx},${to.y} ${to.x},${to.y}`;
+    // Bulge into the right gutter; longer vertical spans bulge further so parallel rules stay apart.
+    const dx = Math.min(150, Math.max(48, Math.abs(to.y - from.y) / 3));
+    return `M${from.x},${from.y} C${from.x + dx},${from.y} ${to.x + dx},${to.y} ${to.x},${to.y}`;
   }
 
   _startTracking() {

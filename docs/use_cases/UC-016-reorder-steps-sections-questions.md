@@ -25,7 +25,7 @@
 
 ### A1: Keyboard path
 
-**Trigger:** The author chooses Move up / Move down (sections, questions) or Move left / Move right (steps) from the element's menu (step 1)  
+**Trigger:** The author chooses Move up / Move down from the element's menu (step 1)  
 **Flow:**
 
 1. The system moves the element one position in that direction.

@@ -196,8 +196,8 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     void everyDragHasAMenuEquivalent() {
         SurveyDesignerView view = open(fixture());
         StepLane lane = view.lanes.get(0);
-        assertNotNull(lane.menu.find("Move right"), "NFR-012: steps reorder from the menu");
-        assertFalse(lane.menu.find("Move left").isEnabled(), "first step cannot move left");
+        assertNotNull(lane.menu.find("Move down"), "NFR-012: steps reorder from the menu");
+        assertFalse(lane.menu.find("Move up").isEnabled(), "first step cannot move up");
         SectionCard card = lane.cards.get(0);
         for (String label : List.of("Edit…", "Add question", "Copy to step…", "Also mount in step…", "Move down", "Open details", "Remove from this step")) {
             assertNotNull(card.menu.find(label), "NFR-012: section menu has " + label);
