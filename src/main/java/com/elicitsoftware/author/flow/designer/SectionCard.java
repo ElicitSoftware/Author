@@ -37,6 +37,7 @@ public class SectionCard extends Div {
     final Span name = new Span();
     final Span questionCount = new Span();
     final Span mountBadge = new Span();
+    final Span tagBadge = new Span();
     final Icon toggle;
     final NodeMenu menu;
     final List<QuestionRow> rows;
@@ -79,12 +80,14 @@ public class SectionCard extends Div {
         mountBadge.addClassName("designer-badge");
         mountBadge.setTitle("This section is mounted in " + mountedInSteps + " steps; editing it changes all of them");
         mountBadge.setVisible(mountedInSteps > 1);
+        TagBadge.fill(tagBadge, view.tagsOf(node));
 
         menu = new NodeMenu("Actions for section " + node.label());
         menu.item("Edit…", () -> view.edit(node), !node.retired());
         menu.item("Add question", () -> view.addChild(node), !node.retired());
         menu.item("Copy to step…", () -> view.copyTo(node), !node.retired());
         menu.item("Also mount in step…", () -> view.mountIn(node), !node.retired());
+        menu.item("Reporting tags…", () -> view.reportingTags(node), !node.retired());
         menu.item("Move up", () -> view.move(node, -1), !node.retired() && indexInLane > 0);
         menu.item("Move down", () -> view.move(node, 1), !node.retired() && indexInLane < laneSize - 1);
         menu.item("Open details", () -> view.openDetails(node));
@@ -96,8 +99,20 @@ public class SectionCard extends Div {
         header.getElement().setAttribute("aria-expanded", String.valueOf(open));
         header.getElement().setAttribute("aria-label", "Section " + node.label() + ", " + questionCount.getText()
                 + (node.retired() ? ", removed" : ""));
-        header.add(toggle, glyph, name, questionCount, mountBadge, menu);
-        header.addClickListener(e -> view.toggleAndSelect(node));
+        header.add(toggle, glyph, name, questionCount, mountBadge, tagBadge, menu);
+        // Single click toggles and selects; double click edits (UC-018 step 1). Told apart on the
+        // client, as QuestionRow does: a debounced single vs. an immediate double, so the board
+        // rebuild after a single click never detaches the header mid-gesture and eats the double.
+        header.getElement().executeJs(
+                "let t;"
+                        + "this.addEventListener('click', function(){ clearTimeout(t); t = setTimeout(function(){ this.dispatchEvent(new CustomEvent('header-toggle')); }.bind(this), 220); });"
+                        + "this.addEventListener('dblclick', function(){ clearTimeout(t); this.dispatchEvent(new CustomEvent('header-edit')); });");
+        header.getElement().addEventListener("header-toggle", e -> view.toggleAndSelect(node));
+        header.getElement().addEventListener("header-edit", e -> {
+            if (!node.retired()) {
+                view.edit(node);
+            }
+        });
         header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '");
         DropTarget<Div> headerDrop = DropTarget.create(header);
         headerDrop.setDropEffect(DropEffect.MOVE);

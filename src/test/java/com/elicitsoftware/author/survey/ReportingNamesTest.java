@@ -1,0 +1,75 @@
+package com.elicitsoftware.author.survey;
+
+/*-
+ * ***LICENSE_START***
+ * Elicit Author
+ * %%
+ * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * %%
+ * PolyForm Noncommercial License 1.0.0
+ * <https://polyformproject.org/licenses/noncommercial/1.0.0>
+ * ***LICENSE_END***
+ */
+
+import com.elicitsoftware.model.Dimension;
+import com.elicitsoftware.model.Ontology;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/** UC-024 BR-001: the names Author previews are the names Survey's ETL derives. */
+class ReportingNamesTest {
+
+    private static Ontology tag(String tag, String dimension) {
+        Ontology o = new Ontology();
+        o.tag = tag;
+        if (dimension != null) {
+            o.dimension = new Dimension();
+            o.dimension.name = dimension;
+        }
+        return o;
+    }
+
+    @Test
+    void tagOnADimensionSharesTheDimensionTable() {
+        Ontology o = tag("Breast Cancer Age", "age");
+        assertEquals("dim_age", ReportingNames.dimTable(o), "UC-024 BR-001: dim_<lower(dimension)>");
+        assertEquals("breast_cancer_age_key", ReportingNames.factColumn(o.tag), "spaces become underscores");
+    }
+
+    @Test
+    void tagWithoutADimensionNamesItsOwnTable() {
+        Ontology o = tag("Vital Status", null);
+        assertEquals("dim_vital_status", ReportingNames.dimTable(o));
+        assertEquals("vital_status_key", ReportingNames.factColumn(o.tag));
+    }
+
+    @Test
+    void hyphensAreDroppedFromTheColumnButKeptInAnOwnTableName() {
+        assertEquals("bladdercancer_key", ReportingNames.factColumn("Bladder-Cancer"), "ETL: replace(tag,'-','')");
+        assertEquals("dim_bladder-cancer", ReportingNames.dimTableForTag("Bladder-Cancer"), "ETL keeps the hyphen in the table name");
+        assertTrue(ReportingNames.identifierProblem(ReportingNames.dimTableForTag("Bladder-Cancer")).isPresent(),
+                "UC-023 BR-003: a hyphenated own-table tag would fail the site's build");
+        assertTrue(ReportingNames.identifierProblem(ReportingNames.dimTableForDimension("cancer")).isEmpty());
+    }
+
+    @Test
+    void identifiersLongerThanPostgresAllowsAreProblems() {
+        String tag = "x".repeat(64);
+        assertTrue(ReportingNames.identifierProblem(ReportingNames.factColumn(tag)).orElse("").contains("63"),
+                "UC-024 BR-002: 63 characters is the PostgreSQL limit");
+        assertTrue(ReportingNames.identifierProblem("").isPresent());
+        assertTrue(ReportingNames.identifierProblem("dim_ok_1").isEmpty());
+    }
+
+    @Test
+    void characterRules() {
+        assertTrue(ReportingNames.TAG_CHARS.matcher("Kidney renal cell Cancer").matches());
+        assertTrue(ReportingNames.TAG_CHARS.matcher("Non-Melanoma Skin Cancer").matches());
+        assertTrue(!ReportingNames.TAG_CHARS.matcher("Age (years)").matches(), "parentheses are not allowed");
+        assertTrue(!ReportingNames.TAG_CHARS.matcher(" Age").matches(), "must start with a letter or digit");
+        assertTrue(ReportingNames.DIMENSION_CHARS.matcher("multiple_cancers").matches());
+        assertTrue(!ReportingNames.DIMENSION_CHARS.matcher("multiple cancers").matches(), "UC-023 BR-003: no spaces in a dimension");
+    }
+}

@@ -41,9 +41,10 @@ for local development and testing, though any OIDC-compliant server works in pro
 ### Prerequisites
 
 - Java 25
-- Docker. `docker compose up -d` in this repo starts the local authoring stack: Postgres (the
-  Survey app creates the `survey` schema on first boot), Keycloak (realm from
-  `../keycloak/elicit-realm.json`, test user `author` / `author`), Survey, and Admin.
+- Docker. The umbrella repo's `docker-compose.yml` (one level up) runs the support services
+  Author needs: Postgres with a dedicated `author` database next to the site's `survey`
+  database, Keycloak (realm from `../keycloak/elicit-realm.json`, test user `author` /
+  `author`), and the `author-survey` preview instance. Author has no compose file of its own.
 
 ### Running in dev mode
 
@@ -89,7 +90,10 @@ Milestone 2 adds the **designer** (`survey/{id}/design`): a flow-chart board whe
 sections are collapsible cards and questions are rows, each with a glyph that is its drag handle —
 drag from the palette to create, within a container to reorder, into another container to copy;
 every drag has a menu equivalent. A guide page (`guide`, "How surveys work") explains the model.
-Rules drawn as arrows between elements, and the metadata editors, follow. Work follows the AIUP workflow described
+Rules are drawn as arrows between elements, and the survey's **Reporting** page
+(`survey/{id}/reporting`) manages the reporting tags, dimensions and assignments that drive the
+site's dimensional reporting schema, with a preview of the tables and columns they produce; the
+same tags are reachable from a question's or section's menu on the board. Work follows the AIUP workflow described
 in [`CLAUDE.md`](CLAUDE.md); use case specs live in [`docs/use_cases/`](docs/use_cases/).
 
 ## Related Guides

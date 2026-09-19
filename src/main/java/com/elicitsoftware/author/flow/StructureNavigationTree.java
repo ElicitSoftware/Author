@@ -48,7 +48,9 @@ public class StructureNavigationTree extends VerticalLayout {
         this.query = query;
         setPadding(false);
         setSpacing(false);
-        setSizeFull();
+        // Width only: the tree grows to its rows so the drawer scrolls as one surface (palette,
+        // lists, questions and tree together) instead of the grid scrolling inside a fixed box.
+        setWidthFull();
         addClassName("structure-navigation");
 
         grid.setDataProvider(provider);
@@ -66,7 +68,8 @@ public class StructureNavigationTree extends VerticalLayout {
             return parts.isEmpty() ? null : parts.toString().trim();
         });
         grid.addClassName("structure-navigation-tree");
-        grid.setSizeFull();
+        grid.setWidthFull();
+        grid.setAllRowsVisible(true);
         grid.addSelectionListener(e -> e.getFirstSelectedItem().ifPresent(n -> {
             if (suppressSelection) {
                 return; // a programmatic selection mirroring the board; don't echo it back

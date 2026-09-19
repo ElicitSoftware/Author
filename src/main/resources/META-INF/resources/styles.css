@@ -36,9 +36,9 @@
 /* This avoids build-time dependency issues while maintaining runtime flexibility */
 
 /* Import component styles */
-@import 'components/branded-header.css';
-@import 'components/structure-navigation.css';
-@import 'components/survey-designer.css';
+/* Component stylesheets (components/*.css) are registered with @StyleSheet on AppConfig so
+   each URL carries Vaadin's content hash; an @import here would be cached by the browser
+   across redeploys. */
 
 /* Brand Integration Architecture */
 /* These CSS custom properties provide the contract between brands and the application.

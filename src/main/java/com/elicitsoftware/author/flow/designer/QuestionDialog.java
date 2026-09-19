@@ -15,36 +15,22 @@ import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.definition.ExportValidation;
 import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.QuestionType;
-import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.SelectGroup;
 import com.elicitsoftware.model.StructuralElement;
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Html;
-import com.vaadin.flow.component.HasLabel;
-import com.vaadin.flow.component.checkbox.CheckboxGroup;
-import com.vaadin.flow.component.HasPlaceholder;
 import com.vaadin.flow.component.HasValidation;
-import com.vaadin.flow.component.HasValueAndElement;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.ComboBoxVariant;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
-import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.shared.HasTooltip;
-import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.radiobutton.RadioGroupVariant;
-import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.NumberField;
-import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.textfield.TextFieldVariant;
@@ -54,15 +40,12 @@ import com.vaadin.flow.data.binder.ValidationException;
 import io.quarkus.panache.common.Sort;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -80,6 +63,7 @@ public class QuestionDialog extends Dialog {
     final IntegerField maxValue = new IntegerField("Maximum");
     final TextField validationText = new TextField("Validation message");
     final ComboBox<SelectGroup> selectGroup = new ComboBox<>("List of options");
+    final Button newList = new Button("New list…");
     final TextField mask = new TextField("Input mask");
     final TextField placeholder = new TextField("Placeholder");
     final TextField defaultValue = new TextField("Default value");
@@ -96,26 +80,27 @@ public class QuestionDialog extends Dialog {
             TextFieldVariant.LUMO_HELPER_ABOVE_FIELD.getVariantName(),
             RadioGroupVariant.LUMO_VERTICAL.getVariantName());
 
-    private static final Pattern TOKEN = Pattern.compile("\\{([^{}|]+)(?:\\|([^{}]*))?}");
-
     private final Binder<Question> binder = new Binder<>(Question.class);
     private final Div preview = new Div();
-    private final Map<String, String> tokenSamples = new HashMap<>();
+    private final Map<String, String> tokenSamples;
     private final Map<String, HasValidation> fieldsByProperty;
+    private final com.elicitsoftware.author.survey.ListService lists;
 
     public QuestionDialog(int surveyId, Question existing, QuestionType presetType, Function<Question, Question> persist, Consumer<Question> onSaved) {
+        this(surveyId, existing, presetType, persist, onSaved, null);
+    }
+
+    /** @param lists when given, a "New list…" shortcut next to the list picker creates one in place (UC-014). */
+    public QuestionDialog(int surveyId, Question existing, QuestionType presetType, Function<Question, Question> persist, Consumer<Question> onSaved,
+                          com.elicitsoftware.author.survey.ListService lists) {
+        this.lists = lists;
         boolean creating = existing == null;
         setHeaderTitle(creating ? "New question" : "Edit question");
         setModal(true);
         setWidth("48rem");
 
         // Token -> sample answer, from the survey's TEXT rules, so the preview can show substitution.
-        for (Relationship r : Relationship.<Relationship>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
-            if (r.actionType != null && "TEXT".equals(r.actionType.name)
-                    && r.token != null && !r.token.isBlank() && r.sample != null && !r.sample.isBlank()) {
-                tokenSamples.put(r.token.trim(), r.sample);
-            }
-        }
+        tokenSamples = PreviewFields.tokenSamples(surveyId);
 
         List<QuestionType> types = QuestionType.listAll(Sort.by("name"));
         questionType.setItems(types);
@@ -146,10 +131,18 @@ public class QuestionDialog extends Dialog {
         FieldHelp.help(defaultValue, "The value the field starts with.");
         FieldHelp.help(variant, "Visual style variants applied to the field: alignment, size, or layout.");
 
-        List<SelectGroup> groups = SelectGroup.list("surveyId = ?1 and effectiveTo = ?2 order by name", surveyId, StructuralElement.SENTINEL);
+        List<SelectGroup> groups = new java.util.ArrayList<>(
+                SelectGroup.<SelectGroup>list("surveyId = ?1 and effectiveTo = ?2 order by name", surveyId, StructuralElement.SENTINEL));
         selectGroup.setItems(groups);
         selectGroup.setItemLabelGenerator(g -> g.name);
         selectGroup.setClearButtonVisible(true);
+        newList.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        newList.addClickListener(e -> new SelectGroupDialog(lists, surveyId, null, created -> {
+            groups.add(created);
+            groups.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+            selectGroup.setItems(groups);
+            selectGroup.setValue(created);
+        }).open());
 
         binder.forField(questionType).asRequired("Choose a question type").bind(q -> q.questionType, (q, v) -> q.questionType = v);
         binder.forField(text).asRequired("A question needs its text").bind(q -> q.text, (q, v) -> q.text = v);
@@ -194,7 +187,11 @@ public class QuestionDialog extends Dialog {
         questionType.addValueChangeListener(e -> updateChoiceFields());
         updateChoiceFields();
 
-        FormLayout form = new FormLayout(questionType, shortText, text, toolTip, required, selectGroup,
+        com.vaadin.flow.component.orderedlayout.HorizontalLayout listRow = new com.vaadin.flow.component.orderedlayout.HorizontalLayout(selectGroup, newList);
+        listRow.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.END);
+        listRow.setWidthFull();
+        listRow.expand(selectGroup);
+        FormLayout form = new FormLayout(questionType, shortText, text, toolTip, required, listRow,
                 minValue, maxValue, validationText, mask, placeholder, defaultValue, variant);
         form.setColspan(text, 2);
 
@@ -242,89 +239,19 @@ public class QuestionDialog extends Dialog {
             return;
         }
         if ("HTML".equalsIgnoreCase(t.name)) {
-            // HTML questions have no input; the respondent sees the text rendered as HTML.
-            String content = text.getValue() == null || text.getValue().isBlank()
-                    ? "<em>HTML content preview</em>" : substituteTokens(text.getValue());
-            try {
-                preview.add(new Html("<div class=\"question-preview-html\">" + content + "</div>"));
-            } catch (RuntimeException invalid) {
-                preview.add(new Span("Enter valid HTML to preview it."));
-            }
+            String content = text.getValue() == null || text.getValue().isBlank() ? null : substituteTokens(text.getValue());
+            preview.add(PreviewFields.html(content));
             return;
         }
-        Component field = previewField(t.name);
         String label = shortText.getValue() != null && !shortText.getValue().isBlank()
                 ? shortText.getValue() : (text.getValue() == null ? "" : text.getValue());
-        label = substituteTokens(label);
-        if (field instanceof HasLabel hl) {
-            hl.setLabel(label);
-        }
-        if (field instanceof HasPlaceholder hp && placeholder.getValue() != null && !placeholder.getValue().isBlank()) {
-            hp.setPlaceholder(placeholder.getValue());
-        }
-        if (field instanceof HasValueAndElement<?, ?> hv) {
-            hv.setRequiredIndicatorVisible(Boolean.TRUE.equals(required.getValue()));
-        }
-        if (field instanceof HasTooltip ht && toolTip.getValue() != null && !toolTip.getValue().isBlank()) {
-            ht.setTooltipText(toolTip.getValue());
-        }
-        for (String v : variant.getValue()) {
-            field.getElement().getThemeList().add(v);
-        }
-        preview.add(field);
-    }
-
-    private static Component previewField(String typeName) {
-        String name = typeName == null ? "" : typeName.toUpperCase();
-        List<String> options = List.of("Option A", "Option B", "Option C");
-        return switch (name) {
-            case "TEXTAREA" -> new TextArea();
-            case "INTEGER" -> new IntegerField();
-            case "DOUBLE" -> new NumberField();
-            case "EMAIL" -> new EmailField();
-            case "PASSWORD" -> new PasswordField();
-            case "DATE_PICKER" -> new DatePicker();
-            case "DATETIME" -> new DateTimePicker();
-            case "CHECKBOX" -> new Checkbox();
-            case "RADIO" -> {
-                RadioButtonGroup<String> group = new RadioButtonGroup<>();
-                group.setItems(options);
-                yield group;
-            }
-            case "CHECKBOX_GROUP" -> {
-                CheckboxGroup<String> group = new CheckboxGroup<>();
-                group.setItems(options);
-                yield group;
-            }
-            case "COMBOBOX" -> {
-                ComboBox<String> combo = new ComboBox<>();
-                combo.setItems(options);
-                yield combo;
-            }
-            case "MULTI_SELECT" -> {
-                MultiSelectComboBox<String> combo = new MultiSelectComboBox<>();
-                combo.setItems(options);
-                yield combo;
-            }
-            default -> new TextField();
-        };
+        preview.add(PreviewFields.field(t.name, substituteTokens(label), placeholder.getValue(), toolTip.getValue(),
+                Boolean.TRUE.equals(required.getValue()), variant.getValue(), List.of()));
     }
 
     /** Replace {TOKEN} / {TOKEN|default} with a rule's sample answer, then its default, in the preview. */
     private String substituteTokens(String text) {
-        if (text == null || text.isEmpty()) {
-            return "";
-        }
-        Matcher m = TOKEN.matcher(text);
-        StringBuilder sb = new StringBuilder();
-        while (m.find()) {
-            String tok = m.group(1).trim();
-            String def = m.group(2);
-            String replacement = tokenSamples.getOrDefault(tok, def != null ? def : m.group());
-            m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
-        }
-        m.appendTail(sb);
-        return sb.toString();
+        return PreviewFields.substituteTokens(text, tokenSamples);
     }
 
     /** The known variant names present in a stored value (space- or comma-separated), for the dropdown. */
@@ -348,6 +275,7 @@ public class QuestionDialog extends Dialog {
         boolean datey = "DATE_PICKER".equals(name) || "DATETIME".equals(name);
 
         selectGroup.setVisible(choice);
+        newList.setVisible(choice && lists != null);
         selectGroup.setRequiredIndicatorVisible(choice);
         minValue.setVisible(numeric);
         maxValue.setVisible(numeric);

@@ -315,32 +315,35 @@ A conditional-logic rule connecting an upstream question's answer to a downstrea
 
 ### DIMENSION
 
-A named reporting dimension category (e.g. "Age", "Cancer Type") that ontology tags map onto; a platform-wide vocabulary table, not survey-scoped. Admin's import reuses dimensions by `name`. Gains `dimension_key` (UUID element key) in Survey `V015`.
+A named reporting dimension category (e.g. "age", "cancer") that ontology tags map onto; a platform-wide vocabulary table, not survey-scoped. Admin's import reuses dimensions by `name`. The name becomes the reporting table `surveyreport.dim_<lower(name)>`, so it must be identifier-safe (letters, digits, underscores).
 
-| Attribute | Description                    | Data Type | Length/Precision | Validation Rules      |
-|-----------|----------------------------------|-----------|-------------------|-------------------------|
-| id        | Unique identifier                | Integer   | 10                | Primary Key, Sequence   |
-| name      | Dimension name                   | String    | 50                | Not Null, Unique        |
+| Attribute     | Description                                              | Data Type | Length/Precision | Validation Rules                                   |
+|---------------|----------------------------------------------------------|-----------|-------------------|----------------------------------------------------|
+| id            | Unique identifier                                        | Integer   | 10                | Primary Key, Sequence                              |
+| dimension_key | Element key, minted once (Survey `V015`)                 | UUID      | 36                | Not Null, Unique, Immutable (C-017)                |
+| name          | Dimension name; `dim_<lower(name)>` must be ≤ 63 chars   | String    | 50                | Not Null, Unique, `^[A-Za-z0-9_]+$`                |
 
 ### ONTOLOGY
 
-A named tag, scoped to a survey, that links survey elements to a reporting dimension. Admin's import reuses ontology rows by `(name, tag)`. Gains `ontology_key` (UUID element key) in Survey `V015`.
+A named tag, scoped to a survey, that links survey elements to a reporting dimension. Admin's import reuses ontology rows by `(name, tag)`. The tag names the report column `fact_sections.<lower(replace(replace(tag,' ','_'),'-',''))>_key`; with a dimension its values share `dim_<dimension>`, without one it gets its own table `dim_<lower(replace(tag,' ','_'))>` (so a hyphen is refused when there is no dimension).
 
-| Attribute | Description                                          | Data Type | Length/Precision | Validation Rules                        |
-|-----------|--------------------------------------------------------|-----------|-------------------|--------------------------------------------|
-| id        | Unique identifier                                       | Integer   | 10                | Primary Key, Sequence                      |
-| survey_id | Survey this ontology tag belongs to                     | Integer   | 10                | Not Null, Foreign Key (surveys.id)         |
-| name      | Ontology entry name                                     | String    | 255               | Not Null, Unique with tag                  |
-| tag       | Tag value applied to survey elements                    | String    | 255               | Not Null, Unique with name                 |
-| dimension | Reporting dimension this tag maps to                    | Integer   | 10                | Optional, Foreign Key (dimensions.id)      |
+| Attribute    | Description                                                     | Data Type | Length/Precision | Validation Rules                                            |
+|--------------|-----------------------------------------------------------------|-----------|-------------------|-------------------------------------------------------------|
+| id           | Unique identifier                                               | Integer   | 10                | Primary Key, Sequence                                       |
+| survey_id    | Survey this ontology tag belongs to                             | Integer   | 10                | Not Null, Foreign Key (surveys.id)                          |
+| ontology_key | Element key, minted once (Survey `V015`)                        | UUID      | 36                | Not Null, Unique, Immutable (C-017)                         |
+| name         | Namespace; Author writes the survey's name (never read by ETL)  | String    | 255               | Not Null, Unique with tag                                   |
+| tag          | Tag applied to survey elements                                  | String    | 255               | Not Null, Unique with name, `^[A-Za-z0-9][A-Za-z0-9 -]*$`   |
+| dimension    | Reporting dimension this tag maps to                            | Integer   | 10                | Optional, Foreign Key (dimensions.id)                       |
 
 ### METADATA
 
-A link between one structural element (a step/section assignment, a question, or a section/question assignment) and an ontology tag, driving dimensional reporting. Not itself versioned — its element references are durable keys, so one metadata row automatically covers every version of the referenced entity. Gains `metadata_key` (UUID element key) in Survey `V015`.
+A link between one structural element (a step/section assignment, a question, or a section/question assignment) and an ontology tag, driving dimensional reporting. Not itself versioned — its element references are durable keys, so one metadata row automatically covers every version of the referenced entity. A null `value` means the respondent's answer is the reported value; a constant is reported whenever the tagged element is answered.
 
 | Attribute             | Description                                                                                | Data Type | Length/Precision | Validation Rules                                                          |
 |------------------------|-----------------------------------------------------------------------------------------------|-----------|-------------------|--------------------------------------------------------------------------|
 | id                    | Unique identifier                                                                            | Integer   | 10                | Primary Key, Sequence                                                     |
+| metadata_key          | Element key, minted once (Survey `V015`)                                                     | UUID      | 36                | Not Null, Unique, Immutable (C-017)                                       |
 | survey_id             | Survey this metadata assignment belongs to                                                   | Integer   | 10                | Not Null, Foreign Key (surveys.id)                                        |
 | steps_sections_id     | Durable key of the tagged step/section assignment, if this metadata tags one                 | Integer   | 10                | Optional                                                                  |
 | question_id           | Durable key of the tagged question, if this metadata tags one                                | Integer   | 10                | Optional                                                                  |
@@ -348,7 +351,7 @@ A link between one structural element (a step/section assignment, a question, or
 | ontology_id           | Ontology tag this metadata assigns                                                           | Integer   | 10                | Not Null, Foreign Key (ontology.id)                                      |
 | value                 | Value recorded for this metadata assignment                                                  | String    | 255               | Optional                                                                  |
 
-**Constraints:** `(steps_sections_id, question_id, sections_question_id, ontology_id, value)` is unique. Exactly one of `steps_sections_id`, `question_id`, `sections_question_id` must be set. Reassigning a question's ontology tag is a stakeholder-approved retroactive exception — it reclassifies historical answers as well as future ones.
+**Constraints:** `(steps_sections_id, question_id, sections_question_id, ontology_id, value)` is unique. Exactly one of `steps_sections_id`, `question_id`, `sections_question_id` must be set — the schema's check constraint does not enforce this (NULL arithmetic), so `ReportingService` does. Reassigning a question's ontology tag is a stakeholder-approved retroactive exception — it reclassifies historical answers as well as future ones.
 
 ## Excluded from This Model
 

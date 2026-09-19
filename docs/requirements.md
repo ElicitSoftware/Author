@@ -44,7 +44,7 @@ Roles referenced below:
 | FR-011 | Configure Question Validation              | As a survey author, I want to configure a question's required flag, min/max values, validation text, mask, placeholder, default value, tooltip, and presentation variant so that respondent input is properly constrained, guided, and styled — showing only the settings the chosen type uses (e.g. HTML has no input mask). | High     | Implemented |
 | FR-012 | Author Token Placeholders in Question Text | As a survey author, I want to insert token placeholders (e.g. `{TOKEN|default}`) into question text so that the rendered question can be personalized per respondent.                                                            | Medium   | Open   |
 | FR-013 | Preview Token Replacement                  | As a survey author, I want the question editor's preview to substitute a Text rule's sample answer for its token (e.g. sample "Bob" renders "Hello {PName}" as "Hello Bob") so that I can validate wording and grammar before exporting. | Medium   | Implemented |
-| FR-014 | Manage Select Groups and Items             | As a survey author, I want to create and order select groups and their select items (coded value, display text, display order) so that choice-based questions have the options respondents will see.                             | High     | Open   |
+| FR-014 | Manage Select Groups and Items             | As a survey author, I want to create and order select groups and their select items (coded value, display text, display order) so that choice-based questions have the options respondents will see.                             | High     | Implemented |
 | FR-035 | Preview Question Rendering                 | As a survey author, I want the question editor to show a live preview of the respondent's field for the selected type and presentation variants (with its label, placeholder, required indicator, and tooltip; HTML rendered as HTML) so that I can see how the question will appear before exporting. | Medium   | Implemented |
 | FR-036 | Record a Text Rule Sample Answer           | As a survey author, I want to give a Text rule's token an example answer so that the question preview can show the substituted text; the sample is authoring-only and is not written to the export. | Low | Implemented |
 
@@ -69,10 +69,10 @@ Roles referenced below:
 
 | ID     | Title                               | User Story                                                                                                                                                                                                        | Priority | Status |
 |--------|-------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|--------|
-| FR-023 | Assign Ontology Tag to Question     | As a survey author, I want to tag a question with an ontology entry so that its answers are captured in the corresponding dimensional reporting table.                                                            | High     | Open   |
-| FR-024 | Reassign Ontology Tag               | As a survey author, I want to change a question's ontology tag and see an explicit warning (at edit and at export) that the change reclassifies historical answers at deployed sites as well as future ones.        | High     | Open   |
-| FR-025 | Create Ontology & Dimension Entries | As a survey author, I want to define new ontology tags and their target dimension so that questions I'm authoring can be linked to the reporting structure they need.                                              | Medium   | Open   |
-| FR-026 | Preview Dimensional Impact          | As a survey author, I want to preview which dimension table an ontology tag maps to (existing or newly created) so that I understand the reporting consequence of a metadata assignment before exporting.           | Low      | Open   |
+| FR-023 | Assign Ontology Tag to Question     | As a survey author, I want to tag a question with an ontology entry so that its answers are captured in the corresponding dimensional reporting table.                                                            | High     | Implemented |
+| FR-024 | Reassign Ontology Tag               | As a survey author, I want to change a question's ontology tag and see an explicit warning (at edit and at export) that the change reclassifies historical answers at deployed sites as well as future ones.        | High     | Implemented |
+| FR-025 | Create Ontology & Dimension Entries | As a survey author, I want to define new ontology tags and their target dimension so that questions I'm authoring can be linked to the reporting structure they need.                                              | Medium   | Implemented |
+| FR-026 | Preview Dimensional Impact          | As a survey author, I want to preview which dimension table an ontology tag maps to (existing or newly created) so that I understand the reporting consequence of a metadata assignment before exporting.           | Low      | Implemented |
 
 ### Requirements Collection & First-Draft Generation
 
@@ -93,6 +93,7 @@ answers to generate a first-draft structure for a *different*, new survey.
 | ID     | Title                        | User Story                                                                                                                                                                                                        | Priority | Status |
 |--------|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|--------|
 | FR-030 | Preview Survey as Respondent | As a survey author, I want to preview the survey as a respondent would experience it, using the Survey app in the local authoring stack against Author's working database, so that I can validate flow and content before exporting. | High     | Open   |
+| FR-038 | Preview the Selection on the Designer | As a survey author, I want the designer to show, beside the board, the selected section as a respondent sees it (the section name as the page title, each question's field with its text, options, placeholder, required indicator and tooltip, HTML rendered; a selected question highlighted; a step shown as its pages), so that I can check wording and layout without leaving the board. | Medium   | Implemented |
 | FR-031 | Browse Survey Structure      | As a survey author, I want a navigation tree of steps → sections → questions beside the editor that highlights the element I am working on and lets me jump to any element, so that I always know where I am in a large survey. | High     | Open   |
 
 ### Guidance
@@ -157,9 +158,13 @@ answers to generate a first-draft structure for a *different*, new survey.
 
 ## Open Items for Review
 
-- **Type 1 element keys.** Admin's export/update expect `report_key`, `post_survey_action_key`,
-  `dimension_key`, `ontology_key`, `metadata_key`; no Survey migration creates them yet. Until Survey
-  `V015` lands, Author exports those five tables with zero records. Tracked as a Survey-repo task.
+- **Type 1 element keys.** Survey `V015` added `report_key`, `post_survey_action_key`,
+  `dimension_key`, `ontology_key` and `metadata_key`. Author maps and exports the last three (the
+  reporting-tag tables); `reports` and `post_survey_actions` are still exported with zero records
+  until they are modelled.
+- **Ontology namespace.** `ontology.name` is a namespace the reporting ETL never reads;
+  `(name, tag)` is unique across a database. Author writes the survey's name at tag creation and
+  never rewrites it, so a later survey rename leaves earlier tags under the old namespace.
 - **`is_draft` column.** Being dropped from the schema (Survey V015) and from the file format (Admin);
   Author never maps it.
 - **Retire semantics in Admin.** Admin's update currently "never deletes" and does not close rows that
