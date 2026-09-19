@@ -184,6 +184,56 @@
     height: 100%;
 }
 
+/* Live question preview in the edit dialog. */
+.question-preview-box {
+    margin-top: var(--lumo-space-m);
+}
+
+.question-preview-box > span:first-child {
+    font-size: var(--lumo-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+.question-preview {
+    margin-top: var(--lumo-space-xs);
+    padding: var(--lumo-space-m);
+    border: 1px dashed var(--brand-border, var(--lumo-contrast-20pct));
+    border-radius: var(--lumo-border-radius-m);
+    background: var(--brand-background, var(--lumo-contrast-5pct));
+}
+
+/* Tablet-minimum guard (drawer-resizer.js injects the element): below tablet width, cover the
+   app with a notice instead of letting the authoring UI reflow into an unusable phone layout. */
+.small-screen-notice {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .small-screen-notice {
+        display: flex;
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: var(--brand-surface, var(--lumo-base-color));
+    }
+
+    .small-screen-notice-card {
+        max-width: 22rem;
+        text-align: center;
+        color: var(--brand-text-primary, var(--lumo-body-text-color));
+    }
+
+    .drawer-resizer {
+        display: none !important;
+    }
+}
+
 /* Mouse-draggable drawer resize handle (drawer-resizer.js), fixed at the drawer's right edge. */
 .drawer-resizer {
     position: fixed;
@@ -296,12 +346,13 @@
     white-space: nowrap;
 }
 
-/* Children indent under the parent box and reveal on expand. */
+/* Children indent under the parent box; the wide right padding is the gutter where a rule between
+   two children (e.g. two sections in a step) routes, so the arrow stays inside the box border. */
 .designer-lane-body {
     display: flex;
     flex-direction: column;
     gap: var(--lumo-space-xs);
-    padding: var(--lumo-space-xs) var(--lumo-space-xs) var(--lumo-space-xs) var(--lumo-space-m);
+    padding: var(--lumo-space-xs) 2.75rem var(--lumo-space-xs) var(--lumo-space-m);
 }
 
 .designer-card {
@@ -349,7 +400,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--lumo-space-xs);
-    padding: var(--lumo-space-xs) var(--lumo-space-xs) var(--lumo-space-xs) var(--lumo-space-m);
+    padding: var(--lumo-space-xs) 2.75rem var(--lumo-space-xs) var(--lumo-space-m);
 }
 
 .designer-row[draggable="true"],

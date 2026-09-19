@@ -17,26 +17,49 @@ import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.SelectGroup;
 import com.elicitsoftware.model.StructuralElement;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Html;
+import com.vaadin.flow.component.HasLabel;
+import com.vaadin.flow.component.checkbox.CheckboxGroup;
+import com.vaadin.flow.component.HasPlaceholder;
 import com.vaadin.flow.component.HasValidation;
+import com.vaadin.flow.component.HasValueAndElement;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.ComboBoxVariant;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.shared.HasTooltip;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
+import com.vaadin.flow.component.radiobutton.RadioGroupVariant;
+import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.textfield.TextFieldVariant;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import io.quarkus.panache.common.Sort;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * UC-011: a question's type, text and validation. The select group is required for choice types
@@ -56,11 +79,21 @@ public class QuestionDialog extends Dialog {
     final TextField mask = new TextField("Input mask");
     final TextField placeholder = new TextField("Placeholder");
     final TextField defaultValue = new TextField("Default value");
-    final TextField variant = new TextField("Variant");
+    final MultiSelectComboBox<String> variant = new MultiSelectComboBox<>("Variant");
     final Button save = new Button("Save");
     final Button cancel = new Button("Cancel");
 
+    /** Vaadin theme-variant names the Survey app honours on a question's input field. */
+    static final List<String> VARIANTS = List.of(
+            TextFieldVariant.LUMO_SMALL.getVariantName(),
+            ComboBoxVariant.LUMO_ALIGN_LEFT.getVariantName(),
+            TextFieldVariant.LUMO_ALIGN_CENTER.getVariantName(),
+            TextFieldVariant.LUMO_ALIGN_RIGHT.getVariantName(),
+            TextFieldVariant.LUMO_HELPER_ABOVE_FIELD.getVariantName(),
+            RadioGroupVariant.LUMO_VERTICAL.getVariantName());
+
     private final Binder<Question> binder = new Binder<>(Question.class);
+    private final Div preview = new Div();
     private final Map<String, HasValidation> fieldsByProperty;
 
     public QuestionDialog(int surveyId, Question existing, QuestionType presetType, Function<Question, Question> persist, Consumer<Question> onSaved) {
@@ -82,7 +115,8 @@ public class QuestionDialog extends Dialog {
         mask.setMaxLength(255);
         placeholder.setMaxLength(255);
         defaultValue.setMaxLength(255);
-        variant.setMaxLength(255);
+        variant.setItems(VARIANTS);
+        variant.setHelperText("Vaadin theme variants applied to the field");
 
         List<SelectGroup> groups = SelectGroup.list("surveyId = ?1 and effectiveTo = ?2 order by name", surveyId, StructuralElement.SENTINEL);
         selectGroup.setItems(groups);
@@ -103,7 +137,8 @@ public class QuestionDialog extends Dialog {
         binder.forField(mask).bind(q -> q.mask, (q, v) -> q.mask = v);
         binder.forField(placeholder).bind(q -> q.placeholder, (q, v) -> q.placeholder = v);
         binder.forField(defaultValue).bind(q -> q.defaultValue, (q, v) -> q.defaultValue = v);
-        binder.forField(variant).bind(q -> q.variant, (q, v) -> q.variant = v);
+        binder.forField(variant).bind(q -> parseVariants(q.variant),
+                (q, v) -> q.variant = v == null || v.isEmpty() ? null : String.join(" ", v));
         fieldsByProperty = Map.of("questionType", questionType, "text", text, "shortText", shortText, "minValue", minValue,
                 "maxValue", maxValue, "selectGroupId", selectGroup);
 
@@ -134,7 +169,19 @@ public class QuestionDialog extends Dialog {
         FormLayout form = new FormLayout(questionType, shortText, text, toolTip, required, selectGroup,
                 minValue, maxValue, validationText, mask, placeholder, defaultValue, variant);
         form.setColspan(text, 2);
-        add(form);
+
+        // Live preview of the respondent's field, so the author sees what the type and variants do.
+        Div previewBox = new Div(new Span("Preview"), preview);
+        previewBox.addClassName("question-preview-box");
+        add(form, previewBox);
+        questionType.addValueChangeListener(e -> rebuildPreview());
+        variant.addValueChangeListener(e -> rebuildPreview());
+        shortText.addValueChangeListener(e -> rebuildPreview());
+        text.addValueChangeListener(e -> rebuildPreview());
+        toolTip.addValueChangeListener(e -> rebuildPreview());
+        placeholder.addValueChangeListener(e -> rebuildPreview());
+        required.addValueChangeListener(e -> rebuildPreview());
+        rebuildPreview();
 
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         save.addClickListener(e -> {
@@ -157,15 +204,114 @@ public class QuestionDialog extends Dialog {
         getFooter().add(cancel, save);
     }
 
-    /** UC-011 BR-002: choice types need a list; other types never show one. */
+    /** Rebuild the live field preview from the current type, label, placeholder and theme variants. */
+    void rebuildPreview() {
+        preview.removeAll();
+        preview.addClassName("question-preview");
+        QuestionType t = questionType.getValue();
+        if (t == null) {
+            preview.add(new Span("Choose a type to preview the field."));
+            return;
+        }
+        if ("HTML".equalsIgnoreCase(t.name)) {
+            // HTML questions have no input; the respondent sees the text rendered as HTML.
+            String content = text.getValue() == null || text.getValue().isBlank()
+                    ? "<em>HTML content preview</em>" : text.getValue();
+            try {
+                preview.add(new Html("<div class=\"question-preview-html\">" + content + "</div>"));
+            } catch (RuntimeException invalid) {
+                preview.add(new Span("Enter valid HTML to preview it."));
+            }
+            return;
+        }
+        Component field = previewField(t.name);
+        String label = shortText.getValue() != null && !shortText.getValue().isBlank()
+                ? shortText.getValue() : (text.getValue() == null ? "" : text.getValue());
+        if (field instanceof HasLabel hl) {
+            hl.setLabel(label);
+        }
+        if (field instanceof HasPlaceholder hp && placeholder.getValue() != null && !placeholder.getValue().isBlank()) {
+            hp.setPlaceholder(placeholder.getValue());
+        }
+        if (field instanceof HasValueAndElement<?, ?> hv) {
+            hv.setRequiredIndicatorVisible(Boolean.TRUE.equals(required.getValue()));
+        }
+        if (field instanceof HasTooltip ht && toolTip.getValue() != null && !toolTip.getValue().isBlank()) {
+            ht.setTooltipText(toolTip.getValue());
+        }
+        for (String v : variant.getValue()) {
+            field.getElement().getThemeList().add(v);
+        }
+        preview.add(field);
+    }
+
+    private static Component previewField(String typeName) {
+        String name = typeName == null ? "" : typeName.toUpperCase();
+        List<String> options = List.of("Option A", "Option B", "Option C");
+        return switch (name) {
+            case "TEXTAREA" -> new TextArea();
+            case "INTEGER" -> new IntegerField();
+            case "DOUBLE" -> new NumberField();
+            case "EMAIL" -> new EmailField();
+            case "PASSWORD" -> new PasswordField();
+            case "DATE_PICKER" -> new DatePicker();
+            case "DATETIME" -> new DateTimePicker();
+            case "CHECKBOX" -> new Checkbox();
+            case "RADIO" -> {
+                RadioButtonGroup<String> group = new RadioButtonGroup<>();
+                group.setItems(options);
+                yield group;
+            }
+            case "CHECKBOX_GROUP" -> {
+                CheckboxGroup<String> group = new CheckboxGroup<>();
+                group.setItems(options);
+                yield group;
+            }
+            case "COMBOBOX" -> {
+                ComboBox<String> combo = new ComboBox<>();
+                combo.setItems(options);
+                yield combo;
+            }
+            case "MULTI_SELECT" -> {
+                MultiSelectComboBox<String> combo = new MultiSelectComboBox<>();
+                combo.setItems(options);
+                yield combo;
+            }
+            default -> new TextField();
+        };
+    }
+
+    /** The known variant names present in a stored value (space- or comma-separated), for the dropdown. */
+    static Set<String> parseVariants(String stored) {
+        if (stored == null || stored.isBlank()) {
+            return Set.of();
+        }
+        Set<String> tokens = Arrays.stream(stored.trim().split("[\\s,]+")).collect(Collectors.toSet());
+        return VARIANTS.stream().filter(tokens::contains).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /** Show only the settings the selected type actually uses (UC-011 BR-002; e.g. HTML has no mask). */
     void updateChoiceFields() {
         QuestionType t = questionType.getValue();
+        String name = t == null ? "" : t.name.toUpperCase();
+        boolean html = "HTML".equals(name);
         boolean choice = t != null && ExportValidation.CHOICE_TYPES.contains(t.name);
+        boolean numeric = "INTEGER".equals(name) || "DOUBLE".equals(name);
+        boolean checkboxSingle = "CHECKBOX".equals(name);
+        boolean textLike = "TEXT".equals(name) || "TEXTAREA".equals(name) || "EMAIL".equals(name) || "PASSWORD".equals(name);
+        boolean datey = "DATE_PICKER".equals(name) || "DATETIME".equals(name);
+
         selectGroup.setVisible(choice);
         selectGroup.setRequiredIndicatorVisible(choice);
-        boolean numeric = t != null && ("INTEGER".equals(t.name) || "DOUBLE".equals(t.name));
         minValue.setVisible(numeric);
         maxValue.setVisible(numeric);
+        mask.setVisible(textLike);
+        placeholder.setVisible(textLike || datey || "COMBOBOX".equals(name) || "MULTI_SELECT".equals(name));
+        validationText.setVisible(!html && !checkboxSingle);
+        defaultValue.setVisible(textLike || numeric || datey);
+        toolTip.setVisible(!html);
+        required.setVisible(!html);
+        variant.setVisible(!html);
     }
 
     private void showError(AuthoringException ae) {

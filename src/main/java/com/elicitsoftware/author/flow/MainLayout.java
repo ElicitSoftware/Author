@@ -129,11 +129,13 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     private void installDesignerDrawer(com.elicitsoftware.author.flow.designer.DesignerPalette palette) {
         Scroller treeScroller = new Scroller(structureTree);
         treeScroller.addClassName("drawer-scroller");
+        treeScroller.setWidthFull();
         com.vaadin.flow.component.orderedlayout.VerticalLayout drawer =
                 new com.vaadin.flow.component.orderedlayout.VerticalLayout(palette, treeScroller);
         drawer.setPadding(false);
         drawer.setSpacing(false);
         drawer.setSizeFull();
+        drawer.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.STRETCH);
         drawer.addClassName("designer-drawer");
         drawer.setFlexGrow(1, treeScroller);
         replaceDrawer(drawer);

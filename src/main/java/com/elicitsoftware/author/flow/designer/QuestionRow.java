@@ -90,7 +90,19 @@ public class QuestionRow extends Div {
         }));
 
         add(glyph, label, type, menu);
-        addClickListener(e -> view.select(node));
+        // Single click selects; double click opens the edit screen. The distinction is made on the
+        // client (a debounced single vs. an immediate double) and delivered as two custom events, so
+        // the single-click rebuild never detaches the row mid-gesture and breaks the double click.
+        getElement().executeJs(
+                "let t;"
+                        + "this.addEventListener('click', function(){ clearTimeout(t); t = setTimeout(function(){ this.dispatchEvent(new CustomEvent('row-select')); }.bind(this), 220); });"
+                        + "this.addEventListener('dblclick', function(){ clearTimeout(t); this.dispatchEvent(new CustomEvent('row-edit')); });");
+        getElement().addEventListener("row-select", e -> view.select(node));
+        getElement().addEventListener("row-edit", e -> {
+            if (!node.retired()) {
+                view.edit(node);
+            }
+        });
         getElement().addEventListener("keydown", e -> view.select(node)).setFilter("event.key === 'Enter' || event.key === ' '");
     }
 

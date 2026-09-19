@@ -183,7 +183,7 @@ public class RuleService {
             throw new AuthoringException("The rule's upstream step is removed or missing", "upstreamStepId");
         }
         if (r.description == null || r.description.isBlank()) {
-            r.description = RelationshipQuery.label(r);
+            r.description = RelationshipQuery.condition(r);
         }
     }
 

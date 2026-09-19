@@ -331,6 +331,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         render();
     }
 
+
     /** From the drawer tree: the tree's nodes are equal by value to the board's. */
     public void selectFromTree(StructureNode node) {
         select(find(node.kind(), node.durableId(), node.assignmentId()));
