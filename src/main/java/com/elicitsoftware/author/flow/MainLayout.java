@@ -39,6 +39,7 @@ import jakarta.inject.Inject;
  * may replace it with the structure tree (UC-006) via {@link #setDrawerContent(Component)}.
  */
 @PermitAll
+@com.vaadin.flow.component.dependency.JsModule("./drawer-resizer.js")
 public class MainLayout extends AppLayout implements AfterNavigationListener {
 
     @Inject
@@ -52,6 +53,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
 
     private Component drawerContent;
     private StructureNavigationTree structureTree;
+    private com.elicitsoftware.author.flow.designer.DesignerPalette drawerPalette;
 
     public MainLayout() {
         // Default constructor for Vaadin
@@ -109,18 +111,40 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
 
     /** Replaces the drawer content (used by the survey editor to show the structure tree). */
     public void setDrawerContent(Component content) {
+        Scroller scroller = new Scroller(content);
+        scroller.addClassName("drawer-scroller");
+        replaceDrawer(scroller);
+    }
+
+    /** Swaps the whole drawer body for an already-composed component (no extra Scroller wrap). */
+    private void replaceDrawer(Component content) {
         if (drawerContent != null) {
             remove(drawerContent);
         }
-        Scroller scroller = new Scroller(content);
-        scroller.addClassName("drawer-scroller");
-        drawerContent = scroller;
-        addToDrawer(scroller);
+        drawerContent = content;
+        addToDrawer(content);
+    }
+
+    /** Designer drawer: the tools palette fixed above the scrolling structure tree. */
+    private void installDesignerDrawer(com.elicitsoftware.author.flow.designer.DesignerPalette palette) {
+        Scroller treeScroller = new Scroller(structureTree);
+        treeScroller.addClassName("drawer-scroller");
+        com.vaadin.flow.component.orderedlayout.VerticalLayout drawer =
+                new com.vaadin.flow.component.orderedlayout.VerticalLayout(palette, treeScroller);
+        drawer.setPadding(false);
+        drawer.setSpacing(false);
+        drawer.setSizeFull();
+        drawer.addClassName("designer-drawer");
+        drawer.setFlexGrow(1, treeScroller);
+        replaceDrawer(drawer);
+        drawerPalette = palette;
     }
 
     @Override
     protected void onAttach(AttachEvent attachEvent) {
         getUI().ifPresent(ui -> ui.addAfterNavigationListener(this));
+        // Install the mouse-draggable drawer resize handle (drawer-resizer.js) on this app-layout.
+        getElement().executeJs("window.__initDrawerResizer && window.__initDrawerResizer(this)");
     }
 
     @Override
@@ -162,12 +186,21 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         if (surveyId == null) {
             if (structureTree != null) {
                 structureTree = null;
+                drawerPalette = null;
                 showApplicationNavigation();
             }
             return;
         }
-        if (structureTree == null || structureTree.surveyId() != surveyId) {
+        boolean treeRebuilt = structureTree == null || structureTree.surveyId() != surveyId;
+        if (treeRebuilt) {
             structureTree = new StructureNavigationTree(surveyId, structureQuery, n -> { });
+        }
+        // The designer drawer carries the tools palette above the tree; other views show the tree alone.
+        // Rebuild the drawer only when the tree changed or the active designer's palette changed.
+        if (designer != null && (treeRebuilt || drawerPalette != designer.palette())) {
+            installDesignerDrawer(designer.palette());
+        } else if (designer == null && (treeRebuilt || drawerPalette != null)) {
+            drawerPalette = null;
             setDrawerContent(structureTree);
         }
         // On the designer, the tree selects on the board instead of leaving for the details page.

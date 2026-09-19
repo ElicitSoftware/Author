@@ -98,7 +98,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     Survey survey;
     SurveyStructureQuery.Tree tree;
     StructureNode selected;
-    final Set<Integer> openCards = new HashSet<>();
+    // Open (expanded) step and section nodes, keyed by kind so a step id and an assignment id
+    // of the same number never collide. Steps have a null assignmentId, so they key on the step id.
+    final Set<String> openNodes = new HashSet<>();
 
     final Div breadcrumb = new Div();
     final Div board = new Div();
@@ -134,13 +136,10 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
         survey = found.get();
         if (palette == null) {
-            palette = new DesignerPalette(this::dragStarted, this::dragEnded,
-                    () -> createStepAt(tree.roots().size()),
-                    () -> containerForNewSection().ifPresentOrElse(step -> createSectionAt(step, childrenOf(step).size()),
-                            () -> info("Select a step first")),
-                    type -> containerForNewQuestion().ifPresentOrElse(section -> createQuestionAt(section, childrenOf(section).size(), type),
-                            () -> info("Select a section first")));
-            HorizontalLayout toolbar = new HorizontalLayout(overview, palette, showRules, showRemoved);
+            palette = new DesignerPalette(this::dragStarted, this::dragEnded);
+            // The palette (add-tools + rule glyphs) now lives in the drawer, placed there by
+            // MainLayout.syncWith; the in-view bar keeps only the back link and the view toggles.
+            HorizontalLayout toolbar = new HorizontalLayout(overview, showRules, showRemoved);
             toolbar.addClassName("designer-toolbar");
             toolbar.setAlignItems(HorizontalLayout.Alignment.CENTER);
             toolbar.setWidthFull();
@@ -161,6 +160,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     public StructureNode selected() {
         return selected;
+    }
+
+    /** The tools palette, placed in the drawer by {@link MainLayout} (built in {@code beforeEnter}). */
+    public DesignerPalette palette() {
+        return palette;
     }
 
     void load() {
@@ -274,10 +278,28 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     private void openAncestors(StructureNode node) {
         for (StructureNode n = node; n != null; n = n.parent()) {
-            if (n.kind() == StructureNode.Kind.SECTION) {
-                openCards.add(n.assignmentId());
+            String key = openKey(n);
+            if (key != null) {
+                openNodes.add(key);
             }
         }
+    }
+
+    /** Mark a collapsible node (step or section) expanded so a new or moved child is visible. */
+    void open(StructureNode node) {
+        String key = node == null ? null : openKey(node);
+        if (key != null) {
+            openNodes.add(key);
+        }
+    }
+
+    /** Expansion key for a collapsible node (step or section); null for questions and leaves. */
+    private static String openKey(StructureNode node) {
+        return switch (node.kind()) {
+            case STEP -> "step-" + node.durableId();
+            case SECTION -> "ss-" + node.assignmentId();
+            default -> null;
+        };
     }
 
     // ---- queries used by the components ------------------------------------------------------
@@ -291,8 +313,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 && Objects.equals(n.durableId(), section.durableId())).count();
     }
 
-    public boolean isOpen(StructureNode section) {
-        return openCards.contains(section.assignmentId());
+    public boolean isOpen(StructureNode node) {
+        String key = openKey(node);
+        return key != null && openNodes.contains(key);
     }
 
     public boolean isSelected(StructureNode node) {
@@ -313,12 +336,13 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         select(find(node.kind(), node.durableId(), node.assignmentId()));
     }
 
-    public void toggleAndSelect(StructureNode section) {
-        if (!openCards.remove(section.assignmentId())) {
-            openCards.add(section.assignmentId());
+    public void toggleAndSelect(StructureNode node) {
+        String key = openKey(node);
+        if (key != null && !openNodes.remove(key)) {
+            openNodes.add(key);
         }
-        selected = section;
-        openAncestors(section.parent());
+        selected = node;
+        openAncestors(node.parent());
         render();
     }
 
@@ -369,7 +393,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                             afterChange(node, "Moved question '" + node.label() + "'");
                         } else {
                             designer.assignQuestionInto(survey.id, node.durableId(), spot.container().durableId(), spot.index());
-                            openCards.add(spot.container().assignmentId());
+                            open(spot.container());
                             load();
                             select(find(StructureNode.Kind.QUESTION, node.durableId(), null));
                             success("Copied question '" + node.label() + "' into section '" + spot.container().label() + "'");
@@ -432,7 +456,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             case QUESTION -> new PickerDialog<>("Copy question '" + node.label() + "'", "Into section", sectionsDistinct(), this::sectionPath, section -> {
                 try {
                     designer.assignQuestionInto(survey.id, node.durableId(), section.durableId(), childrenOf(section).size());
-                    openCards.add(section.assignmentId());
+                    open(section);
                     load();
                     success("Copied question '" + node.label() + "' into section '" + section.label() + "'");
                 } catch (AuthoringException ae) {
@@ -611,7 +635,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             load();
             StructureNode node = find(StructureNode.Kind.SECTION, saved.sectionId, null);
             if (node != null) {
-                openCards.add(node.assignmentId());
+                open(node);
             }
             select(node);
         }).open();
@@ -619,28 +643,10 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     void createQuestionAt(StructureNode section, int index, QuestionType type) {
         new QuestionDialog(survey.id, null, type, draft -> designer.createQuestionIn(survey.id, section.durableId(), draft, index), saved -> {
-            openCards.add(section.assignmentId());
+            open(section);
             load();
             select(find(StructureNode.Kind.QUESTION, saved.questionId, null));
         }).open();
-    }
-
-    private Optional<StructureNode> containerForNewSection() {
-        for (StructureNode n = selected; n != null; n = n.parent()) {
-            if (n.kind() == StructureNode.Kind.STEP) {
-                return Optional.of(n);
-            }
-        }
-        return tree.roots().size() == 1 ? Optional.of(tree.roots().get(0)) : Optional.empty();
-    }
-
-    private Optional<StructureNode> containerForNewQuestion() {
-        for (StructureNode n = selected; n != null; n = n.parent()) {
-            if (n.kind() == StructureNode.Kind.SECTION) {
-                return Optional.of(n);
-            }
-        }
-        return Optional.empty();
     }
 
     // ---- helpers ---------------------------------------------------------------------------

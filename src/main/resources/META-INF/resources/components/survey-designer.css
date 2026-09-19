@@ -178,36 +178,90 @@
     gap: var(--lumo-space-m);
 }
 
+/* ---- Tools palette, in the drawer above the structure tree (Visual Paradigm's shape panel) -- */
+
+.designer-drawer {
+    height: 100%;
+}
+
+/* Mouse-draggable drawer resize handle (drawer-resizer.js), fixed at the drawer's right edge. */
+.drawer-resizer {
+    position: fixed;
+    width: 6px;
+    cursor: col-resize;
+    z-index: 5;
+    background: transparent;
+    transition: background 120ms ease;
+}
+
+.drawer-resizer:hover,
+.drawer-resizer:active {
+    background: var(--brand-primary-50pct, var(--lumo-primary-color-50pct));
+}
+
 .designer-palette {
-    flex-wrap: wrap;
-    padding: var(--lumo-space-xs) var(--lumo-space-s);
+    padding: var(--lumo-space-s);
+    gap: var(--lumo-space-xs);
+}
+
+/* All the tools in one card. */
+.designer-palette-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumo-space-s);
+    padding: var(--lumo-space-s);
     border: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
     border-radius: var(--lumo-border-radius-m);
     background: var(--brand-surface, var(--lumo-base-color));
 }
 
+.designer-palette-row {
+    display: flex;
+    align-items: center;
+    gap: var(--lumo-space-s);
+}
+
+.designer-palette-row .designer-palette-label {
+    flex: 0 0 4.5rem;
+}
+
+.designer-palette-chips {
+    flex-wrap: wrap;
+}
+
 .designer-palette-label {
     font-size: var(--lumo-font-size-xs);
+    font-weight: 600;
     color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
+.designer-guide-link {
+    font-size: var(--lumo-font-size-s);
+    padding-top: var(--lumo-space-xs);
+}
+
 .designer-board {
-    /* Steps stack top to bottom in display order; the right-hand gutter is where rule arrows run. */
+    /* Steps stack top to bottom; boxes are content-sized and left-aligned like a flow chart, and
+       the right-hand gutter is where the rule arrows run. */
     position: relative;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
     gap: var(--lumo-space-xs);
     padding: var(--lumo-space-s) 7rem var(--lumo-space-l) var(--lumo-space-xs);
     min-height: 20rem;
 }
 
+/* A step is a flow-chart box: content-sized (as wide as its title when closed, as wide as its
+   widest open section/question when open), never full width. */
 .designer-lane {
-    flex: none;
     display: flex;
     flex-direction: column;
+    width: max-content;
+    min-width: 12rem;
+    max-width: 60rem;
     border: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
     border-radius: var(--lumo-border-radius-l);
     background: var(--brand-background, var(--lumo-contrast-5pct));
@@ -222,8 +276,14 @@
     align-items: center;
     gap: var(--lumo-space-s);
     padding: var(--lumo-space-s);
-    border-bottom: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
+    border-radius: var(--lumo-border-radius-l);
+    background: var(--brand-primary-10pct, var(--lumo-primary-color-10pct));
     cursor: pointer;
+}
+
+.designer-lane.open .designer-lane-header {
+    border-radius: var(--lumo-border-radius-l) var(--lumo-border-radius-l) 0 0;
+    border-bottom: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
 }
 
 .designer-lane-name {
@@ -236,13 +296,17 @@
     white-space: nowrap;
 }
 
+/* Children indent under the parent box and reveal on expand. */
 .designer-lane-body {
     display: flex;
     flex-direction: column;
-    padding: var(--lumo-space-xs);
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-xs) var(--lumo-space-xs) var(--lumo-space-xs) var(--lumo-space-m);
 }
 
 .designer-card {
+    display: flex;
+    flex-direction: column;
     border: 1px solid var(--brand-primary-50pct, var(--lumo-primary-color-50pct));
     border-radius: var(--lumo-border-radius-m);
     background: var(--brand-surface, var(--lumo-base-color));
@@ -284,7 +348,8 @@
 .designer-card-body {
     display: flex;
     flex-direction: column;
-    padding: var(--lumo-space-xs);
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-xs) var(--lumo-space-xs) var(--lumo-space-xs) var(--lumo-space-m);
 }
 
 .designer-row[draggable="true"],
@@ -299,18 +364,21 @@
     cursor: grabbing;
 }
 
+/* A question is a leaf flow-chart box. */
 .designer-row {
     display: flex;
     align-items: center;
     gap: var(--lumo-space-xs);
-    padding: var(--lumo-space-xs);
-    border-radius: var(--lumo-border-radius-s);
+    padding: var(--lumo-space-xs) var(--lumo-space-s);
+    border: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
+    border-radius: var(--lumo-border-radius-m);
+    background: var(--brand-background, var(--lumo-contrast-5pct));
     cursor: pointer;
 }
 
 .designer-row:hover,
 .designer-row:focus-visible {
-    background: var(--brand-hover, var(--lumo-contrast-5pct));
+    background: var(--brand-hover, var(--lumo-contrast-10pct));
 }
 
 .designer-row[aria-selected="true"] {
