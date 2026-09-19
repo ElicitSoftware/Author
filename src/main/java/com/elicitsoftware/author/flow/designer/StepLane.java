@@ -19,6 +19,8 @@ import com.vaadin.flow.component.dnd.EffectAllowed;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +38,7 @@ public class StepLane extends Div {
     final Div body = new Div();
     final H3 name = new H3();
     final Span sectionCount = new Span();
+    final Icon toggle;
     final NodeMenu menu;
     final List<SectionCard> cards = new ArrayList<>();
 
@@ -47,6 +50,10 @@ public class StepLane extends Div {
         getElement().setAttribute("aria-label", "Step " + order + ": " + node.label());
         if (node.retired()) {
             addClassName("retired");
+        }
+        boolean open = view.isOpen(node);
+        if (open) {
+            addClassName("open");
         }
         if (view.isSelected(node)) {
             getElement().setAttribute("aria-selected", "true");
@@ -64,6 +71,8 @@ public class StepLane extends Div {
             glyph.getElement().setAttribute("draggable", "true");
         }
 
+        toggle = (open ? VaadinIcon.ANGLE_DOWN : VaadinIcon.ANGLE_RIGHT).create();
+        toggle.addClassName("designer-card-toggle");
         name.setText(node.label());
         name.addClassName("designer-lane-name");
         sectionCount.setText(sections.size() == 1 ? "1 section" : sections.size() + " sections");
@@ -78,16 +87,21 @@ public class StepLane extends Div {
         menu.item("Remove step", () -> view.removeStep(node), !node.retired());
 
         header.addClassName("designer-lane-header");
+        header.getElement().setAttribute("role", "button");
         header.getElement().setAttribute("tabindex", "0");
-        header.add(glyph, name, sectionCount, menu);
-        header.addClickListener(e -> view.select(node));
-        header.getElement().addEventListener("keydown", e -> view.select(node)).setFilter("event.key === 'Enter' || event.key === ' '");
+        header.getElement().setAttribute("aria-expanded", String.valueOf(open));
+        header.getElement().setAttribute("aria-label", "Step " + order + ": " + node.label() + ", " + sectionCount.getText()
+                + (node.retired() ? ", removed" : ""));
+        header.add(toggle, glyph, name, sectionCount, menu);
+        header.addClickListener(e -> view.toggleAndSelect(node));
+        header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '");
         DropTarget<Div> headerDrop = DropTarget.create(header);
         headerDrop.setDropEffect(DropEffect.MOVE);
         headerDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
                 view.onDrop(data, new DropSpot(node, sections.size(), StructureNode.Kind.SECTION))));
 
         body.addClassName("designer-lane-body");
+        body.setVisible(open);
         // Dropping anywhere in the lane body (not on a card or zone) appends.
         DropTarget<Div> bodyDrop = DropTarget.create(body);
         bodyDrop.setDropEffect(DropEffect.MOVE);
@@ -111,5 +125,9 @@ public class StepLane extends Div {
 
     public StructureNode node() {
         return node;
+    }
+
+    public boolean isOpen() {
+        return body.isVisible();
     }
 }

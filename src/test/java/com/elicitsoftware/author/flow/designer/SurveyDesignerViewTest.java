@@ -76,6 +76,11 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
 
         assertEquals(2, view.lanes.size(), "UC-006/UC-016: one lane per step in display order");
         assertEquals("Fixture Step One", view.lanes.get(0).node().label());
+        assertTrue(view.lanes.stream().noneMatch(StepLane::isOpen), "steps start collapsed");
+        // Expand both steps so their sections (and section-level insertion zones) render.
+        view.toggleAndSelect(view.lanes.get(0).node());
+        view.toggleAndSelect(view.lanes.get(1).node());
+
         StepLane first = view.lanes.get(0);
         assertEquals(2, first.cards.size());
         assertTrue(first.cards.stream().noneMatch(SectionCard::isOpen), "cards start closed");
@@ -136,6 +141,8 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     void droppingASectionIntoAnotherLaneCopiesIt() {
         Survey s = fixture();
         SurveyDesignerView view = open(s);
+        // Expand Step Two so its section-level insertion zone is rendered (drop target).
+        view.toggleAndSelect(view.lanes.get(1).node());
         SectionCard sectionA = view.lanes.get(0).cards.get(0);
         StructureNode stepTwo = view.lanes.get(1).node();
 
