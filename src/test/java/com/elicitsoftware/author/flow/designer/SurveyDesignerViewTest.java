@@ -23,6 +23,7 @@ import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dnd.DragStartEvent;
@@ -231,6 +232,25 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         assertFalse(toolbox.lists.items.get(0).menu.find("Remove").isEnabled(), "UC-014 A2: in use by FixtureQ3");
         assertEquals(5, toolbox.questions.items.size(), "UC-011 A6: every current question once");
         assertNotNull(toolbox.questions.items.get(0).menu.find("Add to section…"), "NFR-012: keyboard route");
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void drawerSearchFiltersListsAndQuestionsByNameTextAndOptions() {
+        SurveyDesignerView view = open(fixture());
+        DesignerToolbox toolbox = view.toolbox();
+        test(toolbox.search).setValue("children");
+        List<String> shown = toolbox.questions.items.stream().filter(Component::isVisible).map(r -> r.node().label()).toList();
+        assertEquals(List.of("FixtureQ3", "FixtureQ4"), shown, "matches the question text, not only the short name");
+        assertEquals("Questions (2)", toolbox.questionsPanel.getSummaryText());
+        assertTrue(toolbox.questionsPanel.isOpened(), "a search with matches opens the panel");
+        assertEquals("Lists (0)", toolbox.listsPanel.getSummaryText());
+        assertTrue(toolbox.lists.empty.isVisible(), "no list matches: the hint says so");
+        test(toolbox.search).setValue("yes");
+        assertEquals(1, toolbox.lists.items.stream().filter(Component::isVisible).count(), "matches an option text of FixtureYesNo");
+        test(toolbox.search).setValue("");
+        assertEquals(5, toolbox.questions.items.stream().filter(Component::isVisible).count(), "cleared: everything back");
+        assertEquals("Questions", toolbox.questionsPanel.getSummaryText());
     }
 
     @Test

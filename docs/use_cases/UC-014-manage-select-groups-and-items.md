@@ -16,7 +16,7 @@
 
 ## Main Success Scenario
 
-1. The author opens the Lists panel in the designer drawer, which lists the survey's current lists with their option counts.
+1. The author opens the Lists panel in the designer drawer, which lists the survey's current lists with their option counts; the drawer's search box narrows the Lists and Questions panels by name, description, option text and question text as the author types.
 2. The author chooses New list…
 3. The system opens the list dialog: name, description, data type, and the options table (display text, coded value) with Add, Move up, Move down and Remove.
 4. The author names the list and adds its options in the order respondents should see them.

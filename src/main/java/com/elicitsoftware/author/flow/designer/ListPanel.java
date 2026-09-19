@@ -44,9 +44,13 @@ public class ListPanel extends VerticalLayout {
         final Span label = new Span();
         final Span count = new Span();
         final NodeMenu menu;
+        /** Lower-cased name, description and option texts, what the drawer search matches against. */
+        final String searchText;
 
-        Row(SurveyDesignerView view, SelectGroup group, long options, long users) {
+        Row(SurveyDesignerView view, SelectGroup group, long options, long users, List<String> optionTexts) {
             this.group = group;
+            this.searchText = (group.name + " " + (group.description == null ? "" : group.description) + " "
+                    + String.join(" ", optionTexts)).toLowerCase(java.util.Locale.ROOT);
             addClassName("designer-panel-row");
             glyph.add(new Icon(VaadinIcon.LIST));
             glyph.addClassName("designer-panel-glyph");
@@ -83,18 +87,41 @@ public class ListPanel extends VerticalLayout {
         add(rows, newList);
     }
 
-    void refresh(SurveyDesignerView view, List<SelectGroup> lists, Map<Integer, Long> optionCounts, Map<Integer, Long> users) {
+    final Span empty = new Span();
+    private String query = "";
+
+    void refresh(SurveyDesignerView view, List<SelectGroup> lists, Map<Integer, Long> optionCounts, Map<Integer, Long> users,
+                 Map<Integer, List<String>> optionTexts) {
         rows.removeAll();
         items.clear();
         for (SelectGroup g : lists) {
-            Row row = new Row(view, g, optionCounts.getOrDefault(g.selectGroupId, 0L), users.getOrDefault(g.selectGroupId, 0L));
+            Row row = new Row(view, g, optionCounts.getOrDefault(g.selectGroupId, 0L), users.getOrDefault(g.selectGroupId, 0L),
+                    optionTexts.getOrDefault(g.selectGroupId, List.of()));
             items.add(row);
             rows.add(row);
         }
-        if (lists.isEmpty()) {
-            Span none = new Span("No lists yet. A choice question (radio, combo box, multi-select, checkbox group) needs one.");
-            none.addClassName("designer-empty-hint");
-            rows.add(none);
+        empty.addClassName("designer-empty-hint");
+        rows.add(empty);
+        filter(query);
+    }
+
+    /** Drawer search: show only the lists whose name, description or options contain {@code q}; returns the match count. */
+    int filter(String q) {
+        query = q == null ? "" : q.trim().toLowerCase(java.util.Locale.ROOT);
+        int shown = 0;
+        for (Row r : items) {
+            boolean hit = query.isEmpty() || r.searchText.contains(query);
+            r.setVisible(hit);
+            if (hit) {
+                shown++;
+            }
         }
+        if (items.isEmpty()) {
+            empty.setText("No lists yet. A choice question (radio, combo box, multi-select, checkbox group) needs one.");
+        } else if (shown == 0) {
+            empty.setText("No list matches '" + q.trim() + "'.");
+        }
+        empty.setVisible(items.isEmpty() || shown == 0);
+        return shown;
     }
 }
