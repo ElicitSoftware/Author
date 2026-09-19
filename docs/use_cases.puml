@@ -55,6 +55,9 @@ rectangle "Elicit Author" {
 
     ' Guidance (FR-034)
     usecase "UC-029\nExplain the Survey Model" as UC029
+
+    ' Branding (FR-037)
+    usecase "UC-030\nBrand the Authoring Interface" as UC030
 }
 
 ' Access
@@ -106,6 +109,9 @@ author --> UC028
 
 ' Guidance
 author --> UC029
+
+' Branding
+admin --> UC030
 
 ' Relationships worth calling out explicitly
 UC008 ..> UC007 : <<include>>

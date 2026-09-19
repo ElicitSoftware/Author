@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * BrandUtil.brandFileSystemPath is package-private and settable directly from a test in the
  * same package, so the filesystem-mounted-brand path can be exercised with a real @TempDir
  * instead of the actual /brand mount point used in production.
+ *
+ * Traceability: UC-030 (Brand the Authoring Interface) — BR-001 fallback order, BR-002 default brand.
  */
 class BrandUtilTest {
 

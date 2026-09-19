@@ -32,6 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * without metadata) runs without throwing. brandFileSystemPath/brandLocalPath are
  * package-private @ConfigProperty fields, settable directly; init() (also package-private)
  * must be called manually since there's no CDI container running @PostConstruct here.
+ *
+ * Traceability: UC-030 (Brand the Authoring Interface) — main scenario applies the brand to the app shell, A1/A2 fallbacks.
  */
 class AppConfigTest {
 
