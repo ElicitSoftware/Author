@@ -126,7 +126,7 @@ public class RelationshipQuery {
         return new ArrayList<>(fallbacks);
     }
 
-    /** The arrow label reads what the rule does: "Show <target>", "Repeat <target>", "Replace {TOKEN}". */
+    /** The arrow label reads what the rule does: {@code "Show <target>"}, {@code "Repeat <target>"}, {@code "Replace {TOKEN}"}. */
     public static String label(Relationship r, String targetName) {
         String name = targetName == null || targetName.isBlank() ? "target" : targetName;
         String action = r.actionType == null ? "" : r.actionType.name;
