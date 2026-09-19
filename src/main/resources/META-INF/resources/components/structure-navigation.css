@@ -15,10 +15,19 @@
  */
 .structure-navigation {
     padding: var(--lumo-space-s);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* The tree fills the drawer width (and the scroller that holds it). */
+.drawer-scroller,
+.drawer-scroller > * {
+    width: 100%;
 }
 
 .structure-navigation-tree {
     border: none;
+    width: 100%;
     font-size: var(--lumo-font-size-s);
     --vaadin-grid-tree-toggle-level-offset: 1rem;
 }

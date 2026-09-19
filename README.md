@@ -83,9 +83,13 @@ Key environment variables (see `src/main/resources/application.properties`):
 
 ## Status
 
-Milestone 1 is in progress: branded OIDC shell, entities over the `survey` schema, survey
+Milestone 1 delivered the branded OIDC shell, entities over the `survey` schema, survey
 list/create/edit, `.elicit` import and export with validation, and a structure navigation tree.
-Element editing forms, logic and metadata editors follow. Work follows the AIUP workflow described
+Milestone 2 adds the **designer** (`survey/{id}/design`): a flow-chart board where steps are lanes,
+sections are collapsible cards and questions are rows, each with a glyph that is its drag handle —
+drag from the palette to create, within a container to reorder, into another container to copy;
+every drag has a menu equivalent. A guide page (`guide`, "How surveys work") explains the model.
+Rules drawn as arrows between elements, and the metadata editors, follow. Work follows the AIUP workflow described
 in [`CLAUDE.md`](CLAUDE.md); use case specs live in [`docs/use_cases/`](docs/use_cases/).
 
 ## Related Guides

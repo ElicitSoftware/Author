@@ -65,7 +65,7 @@ BEGIN
           LPAD(v_survey_id::text, 4, '0') || '-0001-0000-0002-0000-0000-0000', gen_random_uuid());
   INSERT INTO survey.steps_sections(id, survey_id, step_id, step_display_order, section_id, section_display_order, display_key, steps_sections_key)
   VALUES (NEXTVAL('survey.steps_sections_seq'), v_survey_id, v_step2_id, 2, v_sec3_id, 1,
-          LPAD(v_survey_id::text, 4, '0') || '-0002-0000-0003-0000-0000-0000', gen_random_uuid());
+          LPAD(v_survey_id::text, 4, '0') || '-0002-0000-0001-0000-0000-0000', gen_random_uuid());
 
   INSERT INTO survey.select_groups(id, survey_id, name, description, data_type, select_group_key)
   VALUES (NEXTVAL('survey.select_groups_seq'), v_survey_id, 'FixtureYesNo', 'Yes / No', 'Text', gen_random_uuid())
