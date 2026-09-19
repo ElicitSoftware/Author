@@ -180,8 +180,10 @@
 
 /* ---- Tools palette, in the drawer above the structure tree (Visual Paradigm's shape panel) -- */
 
+/* The whole drawer (palette, lists, questions, tree) is one scrolling surface. */
 .designer-drawer {
     height: 100%;
+    overflow: auto;
 }
 
 /* Info icon suffix on an edit control: hover it (or the field) for the explanation. */

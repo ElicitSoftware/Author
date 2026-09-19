@@ -125,20 +125,19 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         addToDrawer(content);
     }
 
-    /** Designer drawer: the tools palette fixed above the scrolling structure tree. */
+    /** Designer drawer: the tools palette above the structure tree, scrolling together as one surface. */
     private void installDesignerDrawer(com.elicitsoftware.author.flow.designer.DesignerToolbox palette) {
-        Scroller treeScroller = new Scroller(structureTree);
-        treeScroller.addClassName("drawer-scroller");
-        treeScroller.setWidthFull();
         com.vaadin.flow.component.orderedlayout.VerticalLayout drawer =
-                new com.vaadin.flow.component.orderedlayout.VerticalLayout(palette, treeScroller);
+                new com.vaadin.flow.component.orderedlayout.VerticalLayout(palette, structureTree);
         drawer.setPadding(false);
         drawer.setSpacing(false);
-        drawer.setSizeFull();
+        drawer.setWidthFull();
         drawer.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.STRETCH);
-        drawer.addClassName("designer-drawer");
-        drawer.setFlexGrow(1, treeScroller);
-        replaceDrawer(drawer);
+        Scroller scroller = new Scroller(drawer);
+        scroller.addClassName("drawer-scroller");
+        scroller.addClassName("designer-drawer");
+        scroller.setSizeFull();
+        replaceDrawer(scroller);
         drawerPalette = palette;
     }
 
