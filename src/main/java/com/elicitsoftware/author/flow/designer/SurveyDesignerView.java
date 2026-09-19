@@ -108,6 +108,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     final Checkbox showRules = new Checkbox("Show rules", true);
     final RuleArrowsOverlay overlay = new RuleArrowsOverlay();
     final Button overview = new Button("Overview", VaadinIcon.ARROW_LEFT.create());
+    final Button addStep = new Button("Add step", VaadinIcon.PLUS.create());
     final List<StepLane> lanes = new ArrayList<>();
     DesignerPalette palette;
 
@@ -124,6 +125,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         overview.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
         overview.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
                 new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id)))));
+        // Keyboard-reachable way to add a step (NFR-012): the palette glyph is drag-only.
+        addStep.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        addStep.addClickListener(e -> addStepFromSelection());
     }
 
     @Override
@@ -139,7 +143,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             palette = new DesignerPalette(this::dragStarted, this::dragEnded);
             // The palette (add-tools + rule glyphs) now lives in the drawer, placed there by
             // MainLayout.syncWith; the in-view bar keeps only the back link and the view toggles.
-            HorizontalLayout toolbar = new HorizontalLayout(overview, showRules, showRemoved);
+            HorizontalLayout toolbar = new HorizontalLayout(overview, addStep, showRules, showRemoved);
             toolbar.addClassName("designer-toolbar");
             toolbar.setAlignItems(HorizontalLayout.Alignment.CENTER);
             toolbar.setWidthFull();
@@ -663,6 +667,31 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             load();
             select(find(StructureNode.Kind.STEP, saved.stepId, null));
         }).open();
+    }
+
+    /** NFR-012 keyboard path: add a step immediately after the given one. */
+    public void addStepAfter(StructureNode step) {
+        int i = indexIn(tree.roots(), step);
+        createStepAt(i < 0 ? tree.roots().size() : i + 1);
+    }
+
+    /** The "Add step" button: after the selected step (or the step holding the selection), else at the end. */
+    public void addStepFromSelection() {
+        StructureNode step = stepOf(selected);
+        if (step != null) {
+            addStepAfter(step);
+        } else {
+            createStepAt(tree.roots().size());
+        }
+    }
+
+    private static StructureNode stepOf(StructureNode node) {
+        for (StructureNode n = node; n != null; n = n.parent()) {
+            if (n.kind() == StructureNode.Kind.STEP) {
+                return n;
+            }
+        }
+        return null;
     }
 
     void createSectionAt(StructureNode step, int index) {

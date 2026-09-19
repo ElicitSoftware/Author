@@ -80,6 +80,7 @@ public class StepLane extends Div {
 
         menu = new NodeMenu("Actions for step " + node.label());
         menu.item("Edit…", () -> view.edit(node), !node.retired());
+        menu.item("Add step after", () -> view.addStepAfter(node), !node.retired());
         menu.item("Add section", () -> view.addChild(node), !node.retired());
         menu.item("Move up", () -> view.move(node, -1), !node.retired() && indexInBoard > 0);
         menu.item("Move down", () -> view.move(node, 1), !node.retired() && indexInBoard < boardSize - 1);
