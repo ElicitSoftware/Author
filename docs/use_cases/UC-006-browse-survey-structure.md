@@ -6,7 +6,7 @@
 **Use Case Name:** Browse Survey Structure  
 **Primary Actor:** Survey Author  
 **Goal:** See the whole survey as a navigable tree of steps, sections and questions, always knowing which element is selected, so that large surveys stay orientable while editing.  
-**Status:** Draft  
+**Status:** Implemented  
 **Requirements:** [FR-031, NFR-001](../requirements.md)
 
 ## Preconditions
@@ -21,7 +21,7 @@
 3. The system shows the survey summary in the main area, with the validation panel (UC-007) and the Export action (UC-008).
 4. The author expands a step and selects a question.
 5. The system highlights the selected element in the tree and shows its details in the main area, including its type, order and a short form of its element key.
-6. The author navigates to other elements, or uses the browser's back and forward, and the highlighted tree row always matches the element shown.
+6. The author navigates to other elements, or uses the browser's back and forward, and the highlighted tree row always matches the element shown. On the designer, selection is mirrored both ways: selecting a box on the board selects the matching tree row and scrolls the tree to it, and selecting a tree row selects that element on the board.
 7. The author leaves the survey, and the system restores the application navigation drawer.
 
 ## Alternative Flows
@@ -82,3 +82,7 @@ Steps, sections and questions appear in the order respondents would meet them, u
 ### BR-003: Selection is addressable
 
 Every element the tree can show has its own address within the survey, so the highlighted row is derived from the address, not from click history.
+
+### BR-004: On the designer the tree and board share a selection
+
+While the designer is open, the drawer holds the tools palette above the structure tree and is resizable. Selecting an element on the board selects and scrolls to its tree row, and selecting a tree row selects that element on the board, so the two views always agree.

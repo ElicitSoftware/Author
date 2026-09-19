@@ -6,8 +6,8 @@
 **Use Case Name:** Create Conditional Relationship  
 **Primary Actor:** Survey Author  
 **Goal:** Connect an upstream question's answer to a downstream step, section or question with an operator, a reference value and an action (Show, Repeat or Text), by drawing the rule on the designer board or from a question's menu.  
-**Status:** Draft  
-**Requirements:** [FR-019, FR-020, FR-022, NFR-007, NFR-012](../requirements.md)
+**Status:** Implemented  
+**Requirements:** [FR-019, FR-020, FR-022, FR-036, NFR-007, NFR-012](../requirements.md)
 
 ## Preconditions
 
@@ -20,8 +20,8 @@
 2. The system attaches a dangling arrow to that row, its action glyph at the midpoint, and follows the pointer.
 3. The author drops the arrowhead on the target: a step lane header, a section card header or a question row.
 4. The system opens the rule dialog with the upstream question, the action and the downstream target filled in.
-5. The author chooses the operator, enters the reference value (and, for Text, the token name) and an optional description, and saves.
-6. The system creates the rule with a key minted once, draws the arrow "Question (operator) value → (Action) target", and refreshes validation.
+5. The author chooses the operator, enters the reference value (and, for Text, the token name and an example answer for the preview) and an optional description, and saves.
+6. The system creates the rule with a key minted once, draws the arrow labelled by its action and target (UC-020 BR-004), and refreshes validation.
 
 ## Alternative Flows
 
@@ -92,3 +92,7 @@ Upstream question, operator, reference value, action, target — the order the r
 ### BR-004: Rules on one target are all required
 
 The runtime applies a target's rules with AND; the board draws them as separate arrows converging on the target.
+
+### BR-005: A Text rule may carry a sample answer
+
+A Text rule may record an example answer for its token. It is authoring-only — it drives the question preview's token substitution (UC-011 BR-004) and is never written to the export — so removing or changing it never affects a deployed site.

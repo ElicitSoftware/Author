@@ -6,8 +6,8 @@
 **Use Case Name:** Author Question  
 **Primary Actor:** Survey Author  
 **Goal:** Create a question of a supported type inside a section, or edit an existing one, with its text, validation and choice list, from the designer board.  
-**Status:** Draft  
-**Requirements:** [FR-010, FR-011, FR-014, NFR-007, NFR-012](../requirements.md)
+**Status:** Implemented  
+**Requirements:** [FR-010, FR-011, FR-013, FR-014, FR-035, FR-036, NFR-007, NFR-012](../requirements.md)
 
 ## Preconditions
 
@@ -17,7 +17,7 @@
 ## Main Success Scenario
 
 1. The author drags a question glyph of the wanted type from the palette and drops it between two rows of an open section card (or chooses Add question on the card).
-2. The system opens the question dialog with the type preselected: question text, short text, tooltip, required, minimum and maximum, validation text, mask, placeholder, default value, variant, and — for choice types — the select group.
+2. The system opens the question dialog with the type preselected: question text, short text, tooltip, required, minimum and maximum, validation text, mask, placeholder, default value, presentation variant, and — for choice types — the select group. Each control carries an information icon explaining it, only the settings the chosen type uses are shown (for example HTML has no input mask), and a live preview shows the respondent's field for the type and variants, updating as the author edits.
 3. The author fills in the text and saves.
 4. The system creates the question with a key minted once, assigns it to the section at the drop position, renumbers the section's questions, and refreshes the board and tree with the new row selected.
 
@@ -33,7 +33,7 @@
 
 ### A2: Edit an existing question
 
-**Trigger:** The author chooses Edit… on a row (step 1)  
+**Trigger:** The author chooses Edit… on a row, or double-clicks the row (step 1)  
 **Flow:**
 
 1. The system opens the dialog with the question's current values.
@@ -88,3 +88,7 @@ RADIO, COMBOBOX, MULTI_SELECT and CHECKBOX_GROUP questions must reference a curr
 ### BR-003: Rules bind to assignments
 
 A rule reads or targets a question *in a section*; copying the question elsewhere does not carry its rules.
+
+### BR-004: The editor shows only what the type uses, and previews it
+
+The dialog reveals only the settings the selected type supports (numeric bounds for numbers, a select group for choice types, no input mask for HTML, and so on), and the live preview renders the actual respondent field for that type and its presentation variants. In the preview, a `{TOKEN}` in the text is replaced by the sample answer of the Text rule that fills it (UC-019 BR-005), falling back to the token's default.
