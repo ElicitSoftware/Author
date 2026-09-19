@@ -600,11 +600,32 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             info("This rule no longer exists");
             return;
         }
+        // Clicking a rule glyph shifts focus to the rule's target, then opens the rule editor.
+        StructureNode target = targetNode(rule.get());
+        if (target != null) {
+            select(target);
+        }
         overlay.setSelectedEdgeId(relationshipId);
         new RelationshipDialog(survey.id, tree, rules, rule.get(), null, saved -> ruleSaved(saved), () -> {
             overlay.setSelectedEdgeId(null);
             load();
         }).open();
+    }
+
+    /** The downstream element a rule points at, resolved to a board node. */
+    private StructureNode targetNode(Relationship r) {
+        if (r.downstreamStepId != null) {
+            return find(StructureNode.Kind.STEP, r.downstreamStepId, null);
+        }
+        if (r.downstreamSsId != null) {
+            return tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.SECTION
+                    && Objects.equals(n.assignmentId(), r.downstreamSsId)).findFirst().orElse(null);
+        }
+        if (r.downstreamSqId != null) {
+            return tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION
+                    && Objects.equals(n.assignmentId(), r.downstreamSqId)).findFirst().orElse(null);
+        }
+        return null;
     }
 
     void repoint(int relationshipId, String end, String targetAnchor) {

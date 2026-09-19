@@ -55,6 +55,7 @@ public class RelationshipDialog extends Dialog {
     final RadioButtonGroup<String> targetKind = new RadioButtonGroup<>("Target");
     final ComboBox<StructureNode> target = new ComboBox<>("Target element");
     final TextField token = new TextField("Token");
+    final TextField sample = new TextField("Sample value");
     final TextField description = new TextField("Description");
     final TextField defaultUpstreamValue = new TextField("Default upstream value");
     final TextField overrideUpstreamValue = new TextField("Override upstream value");
@@ -113,6 +114,8 @@ public class RelationshipDialog extends Dialog {
         referenceValue.setMaxLength(255);
         token.setMaxLength(10);
         token.setHelperText("Replaced in the target's text at {TOKEN|default}");
+        sample.setMaxLength(255);
+        sample.setHelperText("Example answer for the preview");
         description.setMaxLength(255);
         defaultUpstreamValue.setMaxLength(255);
         overrideUpstreamValue.setMaxLength(255);
@@ -132,6 +135,7 @@ public class RelationshipDialog extends Dialog {
         FieldHelp.help(targetKind, "Whether the rule acts on a whole step, a section, or a single question.");
         FieldHelp.help(target, "The element the action applies to.");
         FieldHelp.help(token, "For a TEXT rule: the placeholder written as {TOKEN} in the target's text that the answer replaces.");
+        FieldHelp.help(sample, "An example answer for the token, shown in the preview: sample \"Bob\" previews \"Hello {PName}\" as \"Hello Bob\".");
         FieldHelp.help(description, "An optional note for authors. It is not shown to respondents.");
         FieldHelp.help(defaultUpstreamValue, "The value to assume for the upstream answer when the respondent has not answered it yet.");
         FieldHelp.help(overrideUpstreamValue, "A fixed value to use for the upstream answer instead of the respondent's actual answer.");
@@ -146,6 +150,7 @@ public class RelationshipDialog extends Dialog {
             action.setValue(seed.actionType);
             referenceValue.setValue(seed.referenceValue == null ? "" : seed.referenceValue);
             token.setValue(seed.token == null ? "" : seed.token);
+            sample.setValue(seed.sample == null ? "" : seed.sample);
             description.setValue(seed.description == null ? "" : seed.description);
             defaultUpstreamValue.setValue(seed.defaultUpstreamValue == null ? "" : seed.defaultUpstreamValue);
             overrideUpstreamValue.setValue(seed.overrideUpstreamValue == null ? "" : seed.overrideUpstreamValue);
@@ -171,7 +176,7 @@ public class RelationshipDialog extends Dialog {
 
         sentence.addClassName("rule-sentence");
         sentence.getElement().setAttribute("aria-live", "polite");
-        FormLayout form = new FormLayout(upstream, operator, referenceValue, action, token, targetKind, target, description);
+        FormLayout form = new FormLayout(upstream, operator, referenceValue, action, token, sample, targetKind, target, description);
         form.setColspan(upstream, 2);
         form.setColspan(target, 2);
         form.setColspan(description, 2);
@@ -191,6 +196,7 @@ public class RelationshipDialog extends Dialog {
             bean.actionType = action.getValue();
             bean.referenceValue = blankToNull(referenceValue.getValue());
             bean.token = blankToNull(token.getValue());
+            bean.sample = blankToNull(sample.getValue());
             bean.description = blankToNull(description.getValue());
             bean.defaultUpstreamValue = blankToNull(defaultUpstreamValue.getValue());
             bean.overrideUpstreamValue = blankToNull(overrideUpstreamValue.getValue());
@@ -270,6 +276,7 @@ public class RelationshipDialog extends Dialog {
         boolean text = a != null && "TEXT".equals(a.name);
         token.setVisible(text);
         token.setRequiredIndicatorVisible(text);
+        sample.setVisible(text);
         boolean repeat = a != null && "REPEAT".equals(a.name);
         targetKind.setItemEnabledProvider(k -> !(repeat && "Step".equals(k)));
     }
