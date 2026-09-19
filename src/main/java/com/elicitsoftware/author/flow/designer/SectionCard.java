@@ -37,6 +37,7 @@ public class SectionCard extends Div {
     final Span name = new Span();
     final Span questionCount = new Span();
     final Span mountBadge = new Span();
+    final Span tagBadge = new Span();
     final Icon toggle;
     final NodeMenu menu;
     final List<QuestionRow> rows;
@@ -79,6 +80,7 @@ public class SectionCard extends Div {
         mountBadge.addClassName("designer-badge");
         mountBadge.setTitle("This section is mounted in " + mountedInSteps + " steps; editing it changes all of them");
         mountBadge.setVisible(mountedInSteps > 1);
+        TagBadge.fill(tagBadge, view.tagsOf(node));
 
         menu = new NodeMenu("Actions for section " + node.label());
         menu.item("Edit…", () -> view.edit(node), !node.retired());
@@ -97,7 +99,7 @@ public class SectionCard extends Div {
         header.getElement().setAttribute("aria-expanded", String.valueOf(open));
         header.getElement().setAttribute("aria-label", "Section " + node.label() + ", " + questionCount.getText()
                 + (node.retired() ? ", removed" : ""));
-        header.add(toggle, glyph, name, questionCount, mountBadge, menu);
+        header.add(toggle, glyph, name, questionCount, mountBadge, tagBadge, menu);
         header.addClickListener(e -> view.toggleAndSelect(node));
         header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '");
         DropTarget<Div> headerDrop = DropTarget.create(header);

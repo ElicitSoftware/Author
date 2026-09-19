@@ -57,6 +57,15 @@
 2. If the target section already holds the question, the system refuses and explains.
 3. Use case continues at step 4.
 
+### A6: Reuse a question from the Questions panel
+
+**Trigger:** The author drags a question from the drawer's Questions panel into a card, or chooses Add to section… on it (step 1)  
+**Flow:**
+
+1. The system assigns the existing question to the target section at the drop position, exactly as A4 does for a row dragged across cards.
+2. If the target section already holds the question, the system refuses and explains.
+3. Use case continues at step 4.
+
 ### A5: Remove a question from a section
 
 **Trigger:** The author chooses Remove from this section on a row (step 1)  

@@ -219,6 +219,22 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
 
     @Test
     @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void taggedRowsAndCardsShowTheirTagBadge() {
+        SurveyDesignerView view = open(fixture());
+        StepLane lane = view.lanes.get(0);
+        SectionCard sectionA = lane.cards.get(0);
+        SectionCard sectionB = lane.cards.get(1);
+        assertFalse(sectionA.tagBadge.isVisible(), "UC-021: an untagged section carries no badge");
+        assertTrue(sectionB.tagBadge.isVisible());
+        assertEquals("Gender = Female", TagBadge.text(sectionB.tagBadge), "UC-021 BR-003: a fixed value reads 'Tag = value'");
+        view.toggleAndSelect(sectionB.node());
+        SectionCard openB = view.lanes.get(0).cards.get(1);
+        assertEquals("Has Children", TagBadge.text(openB.rows.get(0).tagBadge), "tag scoped to this section only");
+        assertEquals("Age", TagBadge.text(openB.rows.get(1).tagBadge), "question-wide tag shows on its placement");
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
     void reportingTagsMenuOpensTheElementsTagList() {
         SurveyDesignerView view = open(fixture());
         SectionCard sectionB = view.lanes.get(0).cards.get(1);

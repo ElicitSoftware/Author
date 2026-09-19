@@ -551,3 +551,18 @@ elicit-rule-arrows {
 .reporting-impact > span {
     font-weight: 600;
 }
+
+.designer-tag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    max-width: 18rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--brand-primary, var(--lumo-primary-text-color));
+}
+
+.designer-tag-badge-icon {
+    width: 0.9em;
+    height: 0.9em;
+}

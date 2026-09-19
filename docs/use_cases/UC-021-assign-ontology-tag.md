@@ -63,6 +63,7 @@
 ### Success Postconditions
 
 - A metadata row names the element by durable id and the tag; the next export carries it and the site's ETL fills the tag's column from it.
+- The board marks the element with a tag badge ("Tag", or "Tag = value" for a fixed value); a question-wide tag appears on every placement of the question.
 
 ### Failure Postconditions
 
