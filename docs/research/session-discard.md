@@ -150,7 +150,7 @@ Not added to `requirements.md` or `use_cases.puml`; for the maintainer to paste.
 
 | ID     | Title                              | User Story                                                                                                                                                                                                                    | Priority | Status |
 |--------|------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|--------|
-| FR-039 | Discard Unsaved Session Changes    | As a survey author, I want to set a checkpoint on a survey (taken automatically at every export) and later discard every change made since it — edits restored in place by element key, removals reopened, never-exported additions deleted — after seeing a count of what will be lost, so that I can abandon an editing session without exporting and without Author keeping versions. | Medium   | Proposed |
+| FR-040 | Discard Unsaved Session Changes    | As a survey author, I want to set a checkpoint on a survey (taken automatically at every export) and later discard every change made since it — edits restored in place by element key, removals reopened, never-exported additions deleted — after seeing a count of what will be lost, so that I can abandon an editing session without exporting and without Author keeping versions. | Medium   | Proposed |
 
 ### UC-032 Discard Unsaved Session Changes
 
@@ -164,7 +164,7 @@ Not added to `requirements.md` or `use_cases.puml`; for the maintainer to paste.
 **Primary Actor:** Survey Author
 **Goal:** Return a survey to the state captured at its checkpoint — the last export or an explicit checkpoint — so that an editing session can be abandoned without exporting.
 **Status:** Proposed
-**Requirements:** [FR-039, FR-007, FR-008, C-015, C-017, C-018, C-019, NFR-011](../requirements.md)
+**Requirements:** [FR-040, FR-007, FR-008, C-015, C-017, C-018, C-019, NFR-011](../requirements.md)
 
 ## Preconditions
 

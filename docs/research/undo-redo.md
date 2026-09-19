@@ -150,7 +150,7 @@ Not added to `requirements.md` or `use_cases.puml`; paste from here.
 Functional (Section & Step Organization table):
 
 ```
-| FR-038 | Undo and Redo Designer Edits | As a survey author, I want to undo my last designer edits (create, rename, edit, move, copy, mount, remove, restore, rule, list and reporting-tag changes) and redo them, so that a slip is corrected in one keystroke without hunting for the element; undo retires and restores rows rather than deleting or re-creating them, so element keys are unchanged (C-017, C-019), and the export stamp is not undoable. | Medium | Proposed |
+| FR-039 | Undo and Redo Designer Edits | As a survey author, I want to undo my last designer edits (create, rename, edit, move, copy, mount, remove, restore, rule, list and reporting-tag changes) and redo them, so that a slip is corrected in one keystroke without hunting for the element; undo retires and restores rows rather than deleting or re-creating them, so element keys are unchanged (C-017, C-019), and the export stamp is not undoable. | Medium | Proposed |
 ```
 
 Non-functional (Usability):
@@ -171,7 +171,7 @@ Non-functional (Usability):
 **Primary Actor:** Survey Author
 **Goal:** Reverse the most recent designer edit, or reapply one just reversed, so that a mistake is corrected in place without changing any element's identity.
 **Status:** Proposed
-**Requirements:** [FR-038, NFR-012, NFR-014, C-017, C-019](../requirements.md)
+**Requirements:** [FR-039, NFR-012, NFR-014, C-017, C-019](../requirements.md)
 
 ## Preconditions
 
