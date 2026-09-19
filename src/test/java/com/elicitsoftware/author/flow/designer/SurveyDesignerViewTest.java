@@ -25,7 +25,10 @@ import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.dnd.DragStartEvent;
 import com.vaadin.flow.component.dnd.DropEvent;
 import io.quarkus.test.TestTransaction;
@@ -198,6 +201,44 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         test(dialog.name).setValue("Fixture Step One");
         assertFalse(dialog.renameWarningShown(), "back to the stored name: no warning");
         test(dialog.cancel).click();
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void selectingASectionPreviewsItAsARespondentSeesIt() {
+        SurveyDesignerView view = open(fixture());
+        assertTrue(view.preview.isVisible(), "the preview pane is on by default");
+        assertTrue(view.preview.titles().isEmpty(), "nothing selected: nothing previewed");
+        assertTrue(view.preview.hint.getText().startsWith("Select a step"), view.preview.hint.getText());
+
+        view.toggleAndSelect(view.lanes.get(0).node()); // Fixture Step One: Section A, Section B
+        assertEquals(List.of("Fixture Section A", "Fixture Section B"), view.preview.titles(),
+                "a step previews its sections as the pages the respondent walks through");
+        assertEquals(4, view.preview.blocks().size(), "every current question of the step, in order");
+
+        SectionCard sectionA = view.lanes.get(0).cards.get(0);
+        view.toggleAndSelect(sectionA.node());
+        assertEquals(List.of("Fixture Section A"), view.preview.titles(), "the section name is the page title");
+        List<SectionPreview.Block> blocks = view.preview.blocks();
+        assertEquals(2, blocks.size());
+        assertTrue(blocks.get(0).field() instanceof Html, "FixtureQ1 is HTML: rendered, not an input");
+        TextField name = (TextField) blocks.get(1).field();
+        assertEquals("What is your name?", name.getLabel(), "the respondent reads the full text, not the short name");
+        assertTrue(name.isRequiredIndicatorVisible(), "FixtureQ2 is required");
+        assertTrue(blocks.stream().noneMatch(b -> "true".equals(b.box().getElement().getAttribute("aria-selected"))));
+
+        view.select(view.lanes.get(0).cards.get(0).rows.get(1).node());
+        blocks = view.preview.blocks();
+        assertEquals(List.of("Fixture Section A"), view.preview.titles(), "a question previews its section");
+        assertEquals("true", blocks.get(1).box().getElement().getAttribute("aria-selected"), "with that question highlighted");
+
+        view.toggleAndSelect(view.lanes.get(0).cards.get(1).node()); // Section B: FixtureQ3 radio on FixtureYesNo
+        @SuppressWarnings("unchecked")
+        RadioButtonGroup<String> children = (RadioButtonGroup<String>) view.preview.blocks().get(0).field();
+        assertEquals(List.of("Yes", "No"), children.getListDataView().getItems().toList(), "choice fields carry the real list options");
+
+        view.showPreview.setValue(false);
+        assertFalse(view.preview.isVisible(), "the pane can be hidden to give the board the whole width");
     }
 
     @Test
