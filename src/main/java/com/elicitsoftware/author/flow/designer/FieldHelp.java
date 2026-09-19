@@ -27,13 +27,13 @@ import com.vaadin.flow.component.shared.Tooltip;
  * field's tooltip, and — where the field has a free suffix slot — a small info icon is shown as a
  * hover affordance next to it.
  */
-final class FieldHelp {
+public final class FieldHelp {
 
     private FieldHelp() {
     }
 
     /** Explain a control: set its tooltip and, for plain text fields, show an info icon suffix. */
-    static void help(Component field, String text) {
+    public static void help(Component field, String text) {
         if (field instanceof HasTooltip tooltip) {
             tooltip.setTooltipText(text);
         }

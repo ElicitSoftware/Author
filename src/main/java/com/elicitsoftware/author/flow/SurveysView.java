@@ -63,6 +63,10 @@ public class SurveysView extends VerticalLayout {
             edit.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
             return new HorizontalLayout(open, edit);
         }).setHeader("").setAutoWidth(true);
+        // A double click on a row goes straight to the designer; Open keeps the overview one click away.
+        grid.addItemDoubleClickListener(e -> getUI().ifPresent(ui -> ui.navigate(
+                com.elicitsoftware.author.flow.designer.SurveyDesignerView.class,
+                new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(e.getItem().id)))));
         grid.setSizeFull();
         add(toolbar, grid);
     }

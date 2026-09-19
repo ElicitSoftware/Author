@@ -50,13 +50,13 @@
 1. The system rejects the file, explaining that it predates stable identities and cannot be matched across deployments, and suggests re-exporting it from its source.
 2. Use case ends.
 
-### A4: Unsupported record types
+### A4: Shared reporting vocabulary already present
 
-**Trigger:** The file carries reports, post-survey actions, dimensions, ontology or metadata records while Author's schema has no element keys for those tables (step 2)  
+**Trigger:** The file carries dimensions or ontology records that already exist in Author's database (step 2)  
 **Flow:**
 
-1. The system rejects the file before writing anything and states which record types are not yet supported.
-2. Use case ends.
+1. The system reuses the existing dimension (matched by name) or ontology tag (matched by namespace and tag) instead of inserting a duplicate, and remaps the file's metadata records onto the reused rows.
+2. Use case continues at step 3.
 
 ### A5: Malformed or dangling record
 

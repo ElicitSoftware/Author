@@ -20,10 +20,19 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
-/** A survey-scoped tag that maps survey elements onto a reporting dimension ({@code survey.ontology}). */
+import java.util.UUID;
+
+/**
+ * A survey-scoped reporting tag ({@code survey.ontology}). The tag names a column of the site's
+ * {@code surveyreport.fact_sections}; with a {@link Dimension} its values share that dimension's
+ * table, without one it gets a table of its own (UC-023). {@code name} is a namespace — Author
+ * writes the survey's name — that the ETL never reads; {@code (name, tag)} is unique across the
+ * database. Type 1: {@code ontology_key} is minted once.
+ */
 @Entity
 @Table(name = "ontology", schema = "survey")
 public class Ontology extends PanacheEntityBase {
@@ -37,6 +46,9 @@ public class Ontology extends PanacheEntityBase {
     @Column(name = "survey_id", nullable = false)
     public Integer surveyId;
 
+    @Column(name = "ontology_key", nullable = false, updatable = false)
+    public UUID ontologyKey;
+
     @Column(name = "name", nullable = false, length = 255)
     public String name;
 
@@ -46,4 +58,11 @@ public class Ontology extends PanacheEntityBase {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "dimension")
     public Dimension dimension;
+
+    @PrePersist
+    void ensureKey() {
+        if (ontologyKey == null) {
+            ontologyKey = UUID.randomUUID();
+        }
+    }
 }

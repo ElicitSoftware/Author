@@ -47,3 +47,13 @@
     font-size: var(--lumo-font-size-xs);
     text-transform: lowercase;
 }
+
+/* "Show removed" sits above the tree; match the tree's text size instead of the default field size. */
+.structure-navigation vaadin-checkbox {
+    font-size: var(--lumo-font-size-s);
+    --vaadin-checkbox-size: 1rem;
+}
+
+.structure-navigation vaadin-checkbox::part(label) {
+    font-size: var(--lumo-font-size-s);
+}

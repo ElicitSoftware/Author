@@ -16,7 +16,7 @@
 
 ## Main Success Scenario
 
-1. The author chooses Edit… on a lane or card (or double-clicks its title).
+1. The author chooses Edit… on a lane or card, or double-clicks its header (a single click only opens and selects it).
 2. The system opens the dialog with the current name, dimension name and description.
 3. The author changes the name.
 4. The system shows a warning that renaming is retroactive: reports already produced at deployed sites will show the new name; Save stays disabled until the author acknowledges the warning.

@@ -91,6 +91,11 @@ class ElicitRuleArrows extends LitElement {
     this._onMove = (e) => this._pointerMove(e);
     this._onUp = (e) => this._pointerUp(e);
     this._onKey = (e) => { if (e.key === 'Escape') this._cancel(); };
+    // While an arrow is being drawn the pointer usually starts over a question row, which is a
+    // native drag source: without this the browser would begin a drag (and fire pointercancel
+    // instead of pointerup), so the arrow could never be released on its target (UC-019 step 3).
+    this._onDragStart = (e) => { if (this._drag) e.preventDefault(); };
+    this._onCancel = (e) => this._pointerUp(e);
   }
 
   connectedCallback() {
@@ -112,6 +117,11 @@ class ElicitRuleArrows extends LitElement {
     this._schedule();
     setTimeout(this._relayout, 300);
     setTimeout(this._relayout, 1200);
+    // Re-attached after a board rebuild while a rule was still pending: keep following the pointer.
+    if (this.pendingSource && !this._drag) {
+      this._drag = { pending: true };
+      this._startTracking();
+    }
   }
 
   disconnectedCallback() {
@@ -215,12 +225,16 @@ class ElicitRuleArrows extends LitElement {
   _startTracking() {
     document.addEventListener('pointermove', this._onMove);
     document.addEventListener('pointerup', this._onUp);
+    document.addEventListener('pointercancel', this._onCancel);
+    document.addEventListener('dragstart', this._onDragStart, true);
     document.addEventListener('keydown', this._onKey);
   }
 
   _stopTracking() {
     document.removeEventListener('pointermove', this._onMove);
     document.removeEventListener('pointerup', this._onUp);
+    document.removeEventListener('pointercancel', this._onCancel);
+    document.removeEventListener('dragstart', this._onDragStart, true);
     document.removeEventListener('keydown', this._onKey);
   }
 

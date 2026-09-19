@@ -266,6 +266,20 @@ public class DesignerService {
         return flushTranslated(section);
     }
 
+    /** UC-014 steps 6-7 / BR-001: give a choice question its list of options. */
+    @Transactional
+    public Question assignList(int surveyId, int questionId, int selectGroupId) {
+        Question question = currentQuestion(surveyId, questionId);
+        String type = question.questionType == null ? "" : question.questionType.name;
+        if (!com.elicitsoftware.author.definition.ExportValidation.CHOICE_TYPES.contains(type)) {
+            throw new AuthoringException("A " + (type.isEmpty() ? "question of this type" : type + " question") + " does not take a list of options");
+        }
+        elements.selectGroup(surveyId, selectGroupId).filter(StructuralElement::isCurrent)
+                .orElseThrow(() -> new AuthoringException("The list no longer exists"));
+        question.selectGroupId = selectGroupId;
+        return flushTranslated(question);
+    }
+
     /** UC-011 A2: edit a question in place (same key, same durable id). */
     @Transactional
     public Question update(int surveyId, Question edited) {

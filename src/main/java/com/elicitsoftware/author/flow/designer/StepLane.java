@@ -94,7 +94,19 @@ public class StepLane extends Div {
         header.getElement().setAttribute("aria-label", "Step " + order + ": " + node.label() + ", " + sectionCount.getText()
                 + (node.retired() ? ", removed" : ""));
         header.add(toggle, glyph, name, sectionCount, menu);
-        header.addClickListener(e -> view.toggleAndSelect(node));
+        // Single click toggles and selects; double click edits (UC-018 step 1). Told apart on the
+        // client, as QuestionRow does: a debounced single vs. an immediate double, so the board
+        // rebuild after a single click never detaches the header mid-gesture and eats the double.
+        header.getElement().executeJs(
+                "let t;"
+                        + "this.addEventListener('click', function(){ clearTimeout(t); t = setTimeout(function(){ this.dispatchEvent(new CustomEvent('header-toggle')); }.bind(this), 220); });"
+                        + "this.addEventListener('dblclick', function(){ clearTimeout(t); this.dispatchEvent(new CustomEvent('header-edit')); });");
+        header.getElement().addEventListener("header-toggle", e -> view.toggleAndSelect(node));
+        header.getElement().addEventListener("header-edit", e -> {
+            if (!node.retired()) {
+                view.edit(node);
+            }
+        });
         header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '");
         DropTarget<Div> headerDrop = DropTarget.create(header);
         headerDrop.setDropEffect(DropEffect.MOVE);

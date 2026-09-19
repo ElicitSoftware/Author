@@ -46,7 +46,9 @@ class SurveyModelGuideViewTest extends QuarkusBrowserlessTest {
                 "Order is the default path",
                 "Rules are the arrows",
                 "The designer draws all of this",
-                "Identity and publishing"), titles, "UC-029 step 2: the six ideas, in this order");
+                "Designing a survey",
+                "Reporting tags",
+                "Identity and publishing"), titles, "UC-029 step 2: the eight ideas, in this order");
 
         assertFalse(view.diagram.getAlt().orElse("").isBlank(), "UC-029 BR-003: the diagram has an accessible description");
         assertTrue(view.getChildren().anyMatch(c -> c.getClassNames().contains("survey-guide-legend")), "UC-029 step 3: glyph legend");

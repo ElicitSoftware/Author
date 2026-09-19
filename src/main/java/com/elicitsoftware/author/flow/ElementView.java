@@ -14,6 +14,8 @@ package com.elicitsoftware.author.flow;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.security.AuthorRoles;
 import com.elicitsoftware.author.survey.ElementService;
+import com.elicitsoftware.author.survey.ReportingNames;
+import com.elicitsoftware.author.survey.ReportingService;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.model.Question;
@@ -65,6 +67,9 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver {
 
     @Inject
     ElementService elementService;
+
+    @Inject
+    ReportingService reporting;
 
     final H2 heading = new H2();
     final Span kindBadge = new Span();
@@ -157,6 +162,22 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver {
                 fact("Default value", q.defaultValue);
                 fact("Variant", q.variant);
             }
+        }
+        if (kind != StructureNode.Kind.STEP) {
+            // UC-021: the tags this element carries, with the report column each one fills.
+            StringBuilder tags = new StringBuilder();
+            for (ReportingService.Assignment a : reporting.assignmentsFor(survey.id, kind, durableId)) {
+                if (a.metadata().ontology == null) {
+                    continue;
+                }
+                if (!tags.isEmpty()) {
+                    tags.append("; ");
+                }
+                tags.append(a.metadata().ontology.tag).append(" → ").append(ReportingNames.factColumn(a.metadata().ontology.tag))
+                        .append(" (").append(a.scopeLabel().toLowerCase(Locale.ROOT))
+                        .append(a.metadata().value == null ? "" : ", value '" + a.metadata().value + "'").append(")");
+            }
+            fact("Reporting tags", tags.isEmpty() ? null : tags.toString());
         }
         fact("Element key", element.getElementKey());
         fact("Durable id", element.getDurableId());

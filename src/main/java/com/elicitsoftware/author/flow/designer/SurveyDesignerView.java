@@ -20,6 +20,10 @@ import com.elicitsoftware.author.security.AuthorRoles;
 import com.elicitsoftware.author.survey.DesignerService;
 import com.elicitsoftware.author.survey.ElementService;
 import com.elicitsoftware.author.survey.RelationshipQuery;
+import com.elicitsoftware.author.survey.ReportingService;
+import com.elicitsoftware.author.survey.ListService;
+import com.elicitsoftware.model.SelectGroup;
+import com.elicitsoftware.author.flow.reporting.ElementTagsDialog;
 import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyService;
@@ -93,6 +97,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     @Inject
     RelationshipQuery relationshipQuery;
 
+    @Inject
+    ReportingService reporting;
+
+    @Inject
+    ListService listService;
+
     private static final ObjectMapper JSON = new ObjectMapper();
 
     Survey survey;
@@ -106,11 +116,18 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     final Div board = new Div();
     final Checkbox showRemoved = new Checkbox("Show removed");
     final Checkbox showRules = new Checkbox("Show rules", true);
+    final Checkbox showPreview = new Checkbox("Show preview", true);
+    /** The board and, beside it, the respondent's view of the selection (the right-hand pane). */
+    final Div split = new Div();
+    final SectionPreview preview = new SectionPreview();
     final RuleArrowsOverlay overlay = new RuleArrowsOverlay();
     final Button overview = new Button("Overview", VaadinIcon.ARROW_LEFT.create());
     final Button addStep = new Button("Add step", VaadinIcon.PLUS.create());
     final List<StepLane> lanes = new ArrayList<>();
     DesignerPalette palette;
+    DesignerToolbox toolbox;
+    /** Reporting-tag labels per board node ("ss-"/"sq-" + assignment id), rebuilt with the board (UC-021). */
+    final Map<String, List<String>> tagLabels = new java.util.HashMap<>();
 
     public SurveyDesignerView() {
         addClassName("designer");
@@ -119,6 +136,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         board.addClassName("designer-board");
         showRemoved.addValueChangeListener(e -> load());
         showRules.addValueChangeListener(e -> render());
+        showPreview.addValueChangeListener(e -> {
+            preview.setVisible(Boolean.TRUE.equals(e.getValue()));
+            refreshPreview(currentQuestions());
+        });
+        split.addClassName("designer-split");
+        split.add(board, preview);
         overlay.addConnectRequestedListener(e -> connectRequested(e.sourceAnchor(), e.targetAnchor(), e.action()));
         overlay.addEdgeSelectedListener(e -> editRule(e.edgeId()));
         overlay.addEdgeRepointedListener(e -> repoint(e.edgeId(), e.end(), e.targetAnchor()));
@@ -141,13 +164,14 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         survey = found.get();
         if (palette == null) {
             palette = new DesignerPalette(this::dragStarted, this::dragEnded);
+            toolbox = new DesignerToolbox(this, palette);
             // The palette (add-tools + rule glyphs) now lives in the drawer, placed there by
             // MainLayout.syncWith; the in-view bar keeps only the back link and the view toggles.
-            HorizontalLayout toolbar = new HorizontalLayout(overview, addStep, showRules, showRemoved);
+            HorizontalLayout toolbar = new HorizontalLayout(overview, addStep, showRules, showRemoved, showPreview);
             toolbar.addClassName("designer-toolbar");
             toolbar.setAlignItems(HorizontalLayout.Alignment.CENTER);
             toolbar.setWidthFull();
-            add(breadcrumb, toolbar, board);
+            add(breadcrumb, toolbar, split);
         }
         List<String> select = event.getLocation().getQueryParameters().getParameters().getOrDefault(SELECT, List.of());
         tree = structureQuery.tree(survey.id, Boolean.TRUE.equals(showRemoved.getValue()));
@@ -171,6 +195,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         return palette;
     }
 
+    /** The drawer toolbox: palette, lists and questions panels above the tree. */
+    public DesignerToolbox toolbox() {
+        return toolbox;
+    }
+
     void load() {
         tree = structureQuery.tree(survey.id, Boolean.TRUE.equals(showRemoved.getValue()));
         selected = selected == null ? null : find(selected.kind(), selected.durableId(), selected.assignmentId());
@@ -180,6 +209,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     private void render() {
         rebuildBoard();
+        Map<Integer, Question> questions = currentQuestions();
+        refreshToolbox(questions);
+        refreshPreview(questions);
         updateBreadcrumb();
         syncAddress();
         mainLayout().ifPresent(layout -> {
@@ -193,6 +225,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         board.removeClassName("dragging");
         board.removeAll();
         lanes.clear();
+        collectTagLabels();
         List<StructureNode> roots = tree.roots();
         for (int i = 0; i < roots.size(); i++) {
             board.add(new DropZone(new DropSpot(null, i, StructureNode.Kind.STEP), this::onDrop));
@@ -384,6 +417,16 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                     case SECTION -> createSectionAt(spot.container(), spot.index());
                     case QUESTION -> createQuestionAt(spot.container(), spot.index(), typeNamed(item.questionType()));
                 }
+            } else if (data instanceof BankQuestion bank) {
+                // UC-011 A6: a question from the drawer's Questions panel, reused in the target section.
+                if (spot.accepts() != StructureNode.Kind.QUESTION || spot.container() == null) {
+                    return;
+                }
+                designer.assignQuestionInto(survey.id, bank.questionId(), spot.container().durableId(), spot.index());
+                open(spot.container());
+                load();
+                select(find(StructureNode.Kind.QUESTION, bank.questionId(), null));
+                success("Added question '" + bank.label() + "' to section '" + spot.container().label() + "'");
             } else if (data instanceof StructureNode node) {
                 if (node.kind() != spot.accepts() || node.retired()) {
                     return;
@@ -432,7 +475,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 case SECTION -> ElementDialog.section(designer.currentSection(survey.id, node.durableId()),
                         e -> designer.rename(survey.id, e), saved -> load()).open();
                 case QUESTION -> new QuestionDialog(survey.id, designer.currentQuestion(survey.id, node.durableId()), null,
-                        q -> designer.update(survey.id, q), saved -> load()).open();
+                        q -> designer.update(survey.id, q), saved -> load(), listService).open();
             }
         } catch (AuthoringException ae) {
             error(ae.getMessage());
@@ -496,6 +539,148 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 error(ae.getMessage());
             }
         }).open();
+    }
+
+    /** The survey's current questions by durable id, read once per render for the panels and the preview. */
+    private Map<Integer, Question> currentQuestions() {
+        Map<Integer, Question> out = new java.util.LinkedHashMap<>();
+        if (survey == null) {
+            return out;
+        }
+        for (Question q : Question.<Question>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) {
+            out.put(q.questionId, q);
+        }
+        return out;
+    }
+
+    /** The Lists and Questions panels read the same tables as the board; keep them in step. */
+    private void refreshToolbox(Map<Integer, Question> questions) {
+        if (toolbox == null || survey == null || tree == null) {
+            return;
+        }
+        java.util.Map<Integer, Long> users = new java.util.HashMap<>();
+        java.util.Map<Integer, String> texts = new java.util.HashMap<>();
+        for (Question q : questions.values()) {
+            texts.put(q.questionId, q.text);
+            if (q.selectGroupId != null) {
+                users.merge(q.selectGroupId, 1L, Long::sum);
+            }
+        }
+        toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users, listService.optionTexts(survey.id));
+        toolbox.questions.refresh(this, tree.all(), texts);
+    }
+
+    /** The right-hand pane: the selection as a respondent sees it, rebuilt with the board. */
+    private void refreshPreview(Map<Integer, Question> questions) {
+        if (survey == null || tree == null || !preview.isVisible()) {
+            return;
+        }
+        Set<String> ruleShown = new HashSet<>();
+        for (RelationshipQuery.RuleEdge edge : relationshipQuery.edges(survey.id, false)) {
+            if ("SHOW".equals(edge.action())) {
+                ruleShown.add(edge.target());
+            }
+        }
+        preview.show(this, selected, questions, listService.optionTexts(survey.id), PreviewFields.tokenSamples(survey.id), ruleShown);
+    }
+
+    // ---- lists (UC-014) ------------------------------------------------------------------------
+
+    /** UC-014 step 6: a list dropped on a question row becomes its options. */
+    public void useList(StructureNode question, PaletteList list) {
+        if (question.kind() != StructureNode.Kind.QUESTION || question.retired()) {
+            return;
+        }
+        try {
+            designer.assignList(survey.id, question.durableId(), list.selectGroupId());
+            load();
+            select(find(StructureNode.Kind.QUESTION, question.durableId(), question.assignmentId()));
+            success("Question '" + question.label() + "' now offers the list '" + list.name() + "'");
+        } catch (AuthoringException ae) {
+            error(ae.getMessage());
+        }
+    }
+
+    public void newList() {
+        new SelectGroupDialog(listService, survey.id, null, saved -> load()).open();
+    }
+
+    public void editList(SelectGroup group) {
+        try {
+            new SelectGroupDialog(listService, survey.id, listService.list(survey.id, group.selectGroupId), saved -> load()).open();
+        } catch (AuthoringException ae) {
+            error(ae.getMessage());
+        }
+    }
+
+    /** UC-014 A2. */
+    public void removeList(SelectGroup group) {
+        new ConfirmDialog("Remove list", "Remove the list '" + group.name + "' and its options?", "Remove", e -> {
+            try {
+                listService.remove(survey.id, group.selectGroupId);
+                load();
+                success("Removed list '" + group.name + "'");
+            } catch (AuthoringException ae) {
+                error(ae.getMessage());
+            }
+        }, "Cancel", e -> { }).open();
+    }
+
+    /** UC-011 A6, keyboard route: reuse a bank question in a section chosen from a picker. */
+    public void addBankQuestionTo(StructureNode question) {
+        new PickerDialog<>("Add question '" + question.label() + "'", "To section", sectionsDistinct(), this::sectionPath, section -> {
+            try {
+                designer.assignQuestionInto(survey.id, question.durableId(), section.durableId(), childrenOf(section).size());
+                open(section);
+                load();
+                success("Added question '" + question.label() + "' to section '" + section.label() + "'");
+            } catch (AuthoringException ae) {
+                error(ae.getMessage());
+            }
+        }).open();
+    }
+
+    /** The reporting tags shown as a badge on a row or card: "Tag" or "Tag = value". */
+    public List<String> tagsOf(StructureNode node) {
+        return tagLabels.getOrDefault(badgeKey(node), List.of());
+    }
+
+    private static String badgeKey(StructureNode node) {
+        return (node.kind() == StructureNode.Kind.SECTION ? "ss-" : "sq-") + node.assignmentId();
+    }
+
+    /** One query per render: a question-wide tag lands on every placement of the question. */
+    private void collectTagLabels() {
+        tagLabels.clear();
+        if (survey == null || tree == null) {
+            return;
+        }
+        List<StructureNode> all = tree.all();
+        for (ReportingService.Assignment a : reporting.assignments(survey.id)) {
+            com.elicitsoftware.model.Metadata m = a.metadata();
+            if (m.ontology == null || m.elementRef() == null) {
+                continue;
+            }
+            String label = m.ontology.tag + (m.value == null ? "" : " = " + m.value);
+            for (StructureNode n : all) {
+                boolean hit = switch (m.elementRef()) {
+                    case QUESTION -> n.kind() == StructureNode.Kind.QUESTION && Objects.equals(n.durableId(), m.questionId);
+                    case SECTIONS_QUESTION -> n.kind() == StructureNode.Kind.QUESTION && Objects.equals(n.assignmentId(), m.sectionsQuestionId);
+                    case STEPS_SECTIONS -> n.kind() == StructureNode.Kind.SECTION && Objects.equals(n.assignmentId(), m.stepsSectionsId);
+                };
+                if (hit) {
+                    tagLabels.computeIfAbsent(badgeKey(n), k -> new ArrayList<>()).add(label);
+                }
+            }
+        }
+    }
+
+    /** UC-021 step 1: the reporting tags a question or section carries, editable in place. */
+    public void reportingTags(StructureNode node) {
+        if (node.kind() == StructureNode.Kind.STEP) {
+            return;
+        }
+        new ElementTagsDialog(reporting, survey, node, this::load).open();
     }
 
     public void openDetails(StructureNode node) {
@@ -710,7 +895,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             open(section);
             load();
             select(find(StructureNode.Kind.QUESTION, saved.questionId, null));
-        }).open();
+        }, listService).open();
     }
 
     // ---- helpers ---------------------------------------------------------------------------
