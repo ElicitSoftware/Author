@@ -22,6 +22,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.textfield.TextFieldVariant;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
 import java.util.ArrayList;
@@ -107,6 +108,7 @@ public class ListPanel extends VerticalLayout {
         f.setValueChangeMode(ValueChangeMode.LAZY);
         f.setWidthFull();
         f.setAriaLabel(ariaLabel);
+        f.addThemeVariants(TextFieldVariant.LUMO_SMALL);
         f.addClassName("designer-search");
         return f;
     }
