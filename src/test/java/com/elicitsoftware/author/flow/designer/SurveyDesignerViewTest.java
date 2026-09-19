@@ -236,19 +236,22 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
 
     @Test
     @TestSecurity(user = "designer.author", roles = {"elicit_author"})
-    void drawerSearchFiltersListsAndQuestionsByNameTextAndOptions() {
+    void panelSearchesFilterOnlyTheirOwnPanel() {
         SurveyDesignerView view = open(fixture());
         DesignerToolbox toolbox = view.toolbox();
-        test(toolbox.search).setValue("children");
+        test(toolbox.questions.search).setValue("children");
         List<String> shown = toolbox.questions.items.stream().filter(Component::isVisible).map(r -> r.node().label()).toList();
         assertEquals(List.of("FixtureQ3", "FixtureQ4"), shown, "matches the question text, not only the short name");
         assertEquals("Questions (2)", toolbox.questionsPanel.getSummaryText());
-        assertTrue(toolbox.questionsPanel.isOpened(), "a search with matches opens the panel");
-        assertEquals("Lists (0)", toolbox.listsPanel.getSummaryText());
-        assertTrue(toolbox.lists.empty.isVisible(), "no list matches: the hint says so");
-        test(toolbox.search).setValue("yes");
+        assertEquals("Lists", toolbox.listsPanel.getSummaryText(), "the Lists panel is untouched by the Questions search");
+        assertEquals(1, toolbox.lists.items.stream().filter(Component::isVisible).count());
+        test(toolbox.lists.search).setValue("yes");
         assertEquals(1, toolbox.lists.items.stream().filter(Component::isVisible).count(), "matches an option text of FixtureYesNo");
-        test(toolbox.search).setValue("");
+        assertEquals("Lists (1)", toolbox.listsPanel.getSummaryText());
+        test(toolbox.lists.search).setValue("zzz");
+        assertTrue(toolbox.lists.empty.isVisible(), "no list matches: the hint says so");
+        assertEquals("Lists (0)", toolbox.listsPanel.getSummaryText());
+        test(toolbox.questions.search).setValue("");
         assertEquals(5, toolbox.questions.items.stream().filter(Component::isVisible).count(), "cleared: everything back");
         assertEquals("Questions", toolbox.questionsPanel.getSummaryText());
     }

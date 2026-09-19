@@ -59,7 +59,7 @@
 
 ### A6: Reuse a question from the Questions panel
 
-**Trigger:** The author drags a question from the drawer's Questions panel (narrowed with the drawer's search box if needed) into a card, or chooses Add to section… on it (step 1)  
+**Trigger:** The author drags a question from the drawer's Questions panel (narrowed with the panel's own search box if needed) into a card, or chooses Add to section… on it (step 1)  
 **Flow:**
 
 1. The system assigns the existing question to the target section at the drop position, exactly as A4 does for a row dragged across cards.

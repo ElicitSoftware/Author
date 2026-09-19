@@ -52,8 +52,14 @@ public class RuleArrowsOverlay extends Component {
 
     /** UC-019 step 2: a rule glyph landed on {@code sourceAnchor}; the client draws the dangling arrow. */
     public void setPending(String sourceAnchor, String action) {
-        getElement().setProperty("pendingAction", action == null ? "" : action);
-        getElement().setProperty("pendingSource", sourceAnchor == null ? "" : sourceAnchor);
+        String a = action == null ? "" : action;
+        String s = sourceAnchor == null ? "" : sourceAnchor;
+        getElement().setProperty("pendingAction", a);
+        getElement().setProperty("pendingSource", s);
+        // The client clears pendingSource on its own after a miss or Escape, which the server
+        // never hears about; a plain setProperty with the same value would then send nothing
+        // and a second attempt on the same question would show no arrow. Push it explicitly.
+        getElement().executeJs("this.pendingAction = $0; this.pendingSource = $1;", a, s);
     }
 
     public String pendingSource() {

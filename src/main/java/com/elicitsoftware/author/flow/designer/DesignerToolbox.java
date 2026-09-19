@@ -14,10 +14,7 @@ package com.elicitsoftware.author.flow.designer;
 import com.elicitsoftware.author.flow.SurveyModelGuideView;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.details.DetailsVariant;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.RouterLink;
 
 /**
@@ -27,8 +24,6 @@ import com.vaadin.flow.router.RouterLink;
 public class DesignerToolbox extends VerticalLayout {
 
     final RouterLink guide = new RouterLink("How surveys work", SurveyModelGuideView.class);
-    /** Filters the Lists and Questions panels by name, text and options as the author types. */
-    final TextField search = new TextField();
     final DesignerPalette palette;
     final ListPanel lists;
     final QuestionBankPanel questions;
@@ -45,35 +40,13 @@ public class DesignerToolbox extends VerticalLayout {
         setSpacing(false);
         setAlignItems(Alignment.STRETCH);
         guide.addClassName("designer-guide-link");
-        search.setPlaceholder("Search lists and questions");
-        search.setPrefixComponent(VaadinIcon.SEARCH.create());
-        search.setClearButtonVisible(true);
-        search.setValueChangeMode(ValueChangeMode.LAZY);
-        search.setWidthFull();
-        search.setAriaLabel("Search lists and questions by name, text or option");
-        search.addClassName("designer-search");
-        search.addValueChangeListener(e -> applySearch());
         controlsPanel = panel("Controls", palette, true);
         listsPanel = panel("Lists", lists, false);
         questionsPanel = panel("Questions", questions, false);
-        add(guide, search, controlsPanel, listsPanel, questionsPanel);
-    }
-
-    /** Filter both panels; a search with matches opens the panels that hold them. */
-    void applySearch() {
-        String q = search.getValue() == null ? "" : search.getValue().trim();
-        int listHits = lists.filter(q);
-        int questionHits = questions.filter(q);
-        listsPanel.setSummaryText(q.isEmpty() ? "Lists" : "Lists (" + listHits + ")");
-        questionsPanel.setSummaryText(q.isEmpty() ? "Questions" : "Questions (" + questionHits + ")");
-        if (!q.isEmpty()) {
-            if (listHits > 0) {
-                listsPanel.setOpened(true);
-            }
-            if (questionHits > 0) {
-                questionsPanel.setOpened(true);
-            }
-        }
+        // Each panel filters itself; the title shows the match count while a search is active.
+        lists.onFiltered((q, hits) -> listsPanel.setSummaryText(q.isEmpty() ? "Lists" : "Lists (" + hits + ")"));
+        questions.onFiltered((q, hits) -> questionsPanel.setSummaryText(q.isEmpty() ? "Questions" : "Questions (" + hits + ")"));
+        add(guide, controlsPanel, listsPanel, questionsPanel);
     }
 
     public DesignerPalette palette() {
