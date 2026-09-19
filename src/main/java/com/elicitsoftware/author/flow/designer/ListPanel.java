@@ -21,6 +21,8 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.value.ValueChangeMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +36,11 @@ import java.util.Map;
 public class ListPanel extends VerticalLayout {
 
     final Button newList = new Button("New list…", VaadinIcon.PLUS.create());
+    /** Filters the lists by name, description and option text; scoped to this panel. */
+    final TextField search = searchField("Search lists", "Search lists by name, description or option text");
     final Div rows = new Div();
     final List<Row> items = new ArrayList<>();
+    private java.util.function.BiConsumer<String, Integer> filtered = (q, n) -> { };
 
     /** One list in the panel. */
     public final class Row extends Div {
@@ -84,7 +89,26 @@ public class ListPanel extends VerticalLayout {
         newList.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
         newList.addClickListener(e -> view.newList());
         rows.addClassName("designer-panel-rows");
-        add(rows, newList);
+        search.addValueChangeListener(e -> filter(e.getValue()));
+        add(search, rows, newList);
+    }
+
+    /** Called after every filter with the query and the number of visible rows (the panel title shows it). */
+    void onFiltered(java.util.function.BiConsumer<String, Integer> listener) {
+        filtered = listener;
+    }
+
+    /** The panel's own search box: filters this panel only, as the author types. */
+    static TextField searchField(String placeholder, String ariaLabel) {
+        TextField f = new TextField();
+        f.setPlaceholder(placeholder);
+        f.setPrefixComponent(VaadinIcon.SEARCH.create());
+        f.setClearButtonVisible(true);
+        f.setValueChangeMode(ValueChangeMode.LAZY);
+        f.setWidthFull();
+        f.setAriaLabel(ariaLabel);
+        f.addClassName("designer-search");
+        return f;
     }
 
     final Span empty = new Span();
@@ -122,6 +146,7 @@ public class ListPanel extends VerticalLayout {
             empty.setText("No list matches '" + q.trim() + "'.");
         }
         empty.setVisible(items.isEmpty() || shown == 0);
+        filtered.accept(query, shown);
         return shown;
     }
 }

@@ -544,7 +544,6 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
         toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users, listService.optionTexts(survey.id));
         toolbox.questions.refresh(this, tree.all(), texts);
-        toolbox.applySearch();
     }
 
     // ---- lists (UC-014) ------------------------------------------------------------------------

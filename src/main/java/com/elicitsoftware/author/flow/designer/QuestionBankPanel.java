@@ -17,6 +17,7 @@ import com.vaadin.flow.component.dnd.EffectAllowed;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -30,8 +31,11 @@ import java.util.Map;
  */
 public class QuestionBankPanel extends VerticalLayout {
 
+    /** Filters the questions by short name, question text and type; scoped to this panel. */
+    final TextField search = ListPanel.searchField("Search questions", "Search questions by name, text or type");
     final Div rows = new Div();
     final List<Row> items = new ArrayList<>();
+    private java.util.function.BiConsumer<String, Integer> filtered = (q, n) -> { };
 
     /** One question in the panel. */
     public final class Row extends Div {
@@ -77,7 +81,13 @@ public class QuestionBankPanel extends VerticalLayout {
         setSpacing(false);
         setAlignItems(Alignment.STRETCH);
         rows.addClassName("designer-panel-rows");
-        add(rows);
+        search.addValueChangeListener(e -> filter(e.getValue()));
+        add(search, rows);
+    }
+
+    /** Called after every filter with the query and the number of visible rows (the panel title shows it). */
+    void onFiltered(java.util.function.BiConsumer<String, Integer> listener) {
+        filtered = listener;
     }
 
     final Span empty = new Span();
@@ -123,6 +133,7 @@ public class QuestionBankPanel extends VerticalLayout {
             empty.setText("No question matches '" + q.trim() + "'.");
         }
         empty.setVisible(items.isEmpty() || shown == 0);
+        filtered.accept(query, shown);
         return shown;
     }
 }

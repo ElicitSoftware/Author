@@ -435,9 +435,11 @@
     cursor: pointer;
 }
 
+/* A light tint of the primary colour, not --brand-hover: brands define that as a solid menu
+   colour (UM: dark blue) that would swallow the row's dark label, type and tag badge. */
 .designer-row:hover,
 .designer-row:focus-visible {
-    background: var(--brand-hover, var(--lumo-contrast-10pct));
+    background: var(--brand-primary-10pct, var(--lumo-primary-color-10pct));
 }
 
 .designer-row[aria-selected="true"] {
