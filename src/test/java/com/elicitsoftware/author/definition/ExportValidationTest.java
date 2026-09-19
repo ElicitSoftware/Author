@@ -69,6 +69,33 @@ class ExportValidationTest {
 
     @Test
     @TestTransaction
+    void tagOnARetiredQuestionAssignmentIsAWarning() {
+        Survey s = fixture();
+        em.createNativeQuery("UPDATE survey.sections_questions sq SET effective_to = now() FROM survey.questions q "
+                        + "WHERE sq.question_id = q.question_id AND q.short_text = 'FixtureQ3' AND sq.survey_id = ?1")
+                .setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "metadata".equals(i.kind())
+                && i.message().contains("removed or missing")), "UC-024 step 3: " + issues);
+    }
+
+    @Test
+    @TestTransaction
+    void tagNameTheSiteWouldRejectIsAnError() {
+        Survey s = fixture();
+        em.createNativeQuery("UPDATE survey.ontology SET tag = 'Has Children!' WHERE survey_id = ?1 AND tag = 'Has Children'")
+                .setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "ontology".equals(i.kind())
+                && i.message().contains("reporting build would fail")), "UC-024 BR-002: " + issues);
+    }
+
+    @Test
+    @TestTransaction
     void choiceQuestionWithoutOptionsIsAnError() {
         Survey s = fixture();
         em.createNativeQuery("UPDATE survey.select_items SET effective_to = now() WHERE survey_id = ?1")

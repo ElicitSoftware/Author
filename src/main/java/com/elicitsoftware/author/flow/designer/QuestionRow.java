@@ -70,6 +70,7 @@ public class QuestionRow extends Div {
         menu.item("Move up", () -> view.move(node, -1), !node.retired() && indexInSection > 0);
         menu.item("Move down", () -> view.move(node, 1), !node.retired() && indexInSection < sectionSize - 1);
         menu.item("Add rule…", () -> view.addRule(node), !node.retired());
+        menu.item("Reporting tags…", () -> view.reportingTags(node), !node.retired());
         menu.item("Open details", () -> view.openDetails(node));
         menu.item("Remove from this section", () -> view.removeAssignment(node), !node.retired());
 

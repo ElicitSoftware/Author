@@ -41,6 +41,9 @@ public class SurveyService {
     @Inject
     RenameLedger renames;
 
+    @Inject
+    ReportingChangeLedger reportingChanges;
+
     public List<Survey> list() {
         return Survey.listAll(Sort.by("displayOrder"));
     }
@@ -104,6 +107,7 @@ public class SurveyService {
         s.publishedBy = by;
         s.publishedComment = releaseNote == null || releaseNote.isBlank() ? null : releaseNote.trim();
         renames.clear(id);
+        reportingChanges.clear(id);
         em.flush();
         return s;
     }

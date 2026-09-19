@@ -177,6 +177,8 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
             surveyId = element.survey.id;
             kind = element.kind;
             durableId = element.durableId;
+        } else if (activeView instanceof com.elicitsoftware.author.flow.reporting.ReportingView r && r.survey != null) {
+            surveyId = r.survey.id;
         } else if (activeView instanceof SurveyDesignerView d && d.survey() != null) {
             surveyId = d.survey().id;
             designer = d;

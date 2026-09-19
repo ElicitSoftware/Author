@@ -206,15 +206,34 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         assertNotNull(lane.menu.find("Move down"), "NFR-012: steps reorder from the menu");
         assertFalse(lane.menu.find("Move up").isEnabled(), "first step cannot move up");
         SectionCard card = lane.cards.get(0);
-        for (String label : List.of("Edit…", "Add question", "Copy to step…", "Also mount in step…", "Move down", "Open details", "Remove from this step")) {
+        for (String label : List.of("Edit…", "Add question", "Copy to step…", "Also mount in step…", "Reporting tags…", "Move down", "Open details", "Remove from this step")) {
             assertNotNull(card.menu.find(label), "NFR-012: section menu has " + label);
         }
         view.toggleAndSelect(card.node());
         QuestionRow row = view.lanes.get(0).cards.get(0).rows.get(0);
-        for (String label : List.of("Edit…", "Copy to section…", "Move down", "Open details", "Remove from this section")) {
+        for (String label : List.of("Edit…", "Copy to section…", "Reporting tags…", "Move down", "Open details", "Remove from this section")) {
             assertNotNull(row.menu.find(label), "NFR-012: question menu has " + label);
         }
         assertFalse(row.menu.find("Move up").isEnabled(), "first question cannot move up");
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void reportingTagsMenuOpensTheElementsTagList() {
+        SurveyDesignerView view = open(fixture());
+        SectionCard sectionB = view.lanes.get(0).cards.get(1);
+        assertNotNull(sectionB.menu.find("Reporting tags…"), "UC-021 step 1: reachable from the card menu");
+        view.reportingTags(sectionB.node());
+        com.elicitsoftware.author.flow.reporting.ElementTagsDialog dialog = $(com.elicitsoftware.author.flow.reporting.ElementTagsDialog.class).single();
+        assertTrue(dialog.isOpened());
+        assertEquals(1, dialog.grid.getGenericDataView().getItems().count(), "Section B as mounted in Step One carries Gender = Female");
+        dialog.close();
+        view.toggleAndSelect(sectionB.node());
+        QuestionRow q3 = view.lanes.get(0).cards.get(1).rows.get(0);
+        view.reportingTags(q3.node());
+        dialog = $(com.elicitsoftware.author.flow.reporting.ElementTagsDialog.class).single();
+        assertEquals(1, dialog.grid.getGenericDataView().getItems().count(), "FixtureQ3 is tagged in this section only");
+        dialog.close();
     }
 
     @Test
