@@ -219,6 +219,7 @@ A single respondent-facing question. Type 2 SCD structural element (durable key:
 | placeholder           | Placeholder text shown in the empty input                                             | String    | 255               | Optional                                                          |
 | default_value         | Pre-filled value                                                                      | String    | 255               | Optional                                                          |
 | variant               | UI variant/style hint for rendering                                                   | String    | 255               | Optional                                                          |
+| sample                | Authoring-only example answer; the designer substitutes it wherever a TEXT rule writes this question's answer into another text, and the Survey runtime never reads it | String | 255 | Optional |
 | question_id           | Durable key shared by every version of this question                                 | Integer   | 10                | Not Null                                                          |
 | question_key | Element key: cross-deployment identity, minted once, copied to every version, never regenerated | UUID | - | Not Null, Unique with version |
 | version               | Version number; always 0 in Author, incremented by Admin's update service at deployed sites | Integer   | 10                | Not Null, Default: 0                                               |
@@ -302,7 +303,6 @@ A conditional-logic rule connecting an upstream question's answer to a downstrea
 | reference_value          | Value the upstream answer is compared against                                                | String    | 255               | Optional                                                                 |
 | default_upstream_value   | Default value used if the upstream question has not been answered                            | String    | 255               | Optional                                                                 |
 | override_upstream_value  | Value that overrides the upstream answer for this evaluation                                 | String    | 255               | Optional                                                                 |
-| sample                   | Authoring-only example answer for a TEXT rule's token; the designer previews token substitution with it, and it is never read by the Survey runtime | String | 255 | Optional |
 | relationship_id          | Durable key shared by every version of this relationship                                    | Integer   | 10                | Not Null                                                                 |
 | relationship_key | Element key: cross-deployment identity, minted once, copied to every version, never regenerated | UUID | - | Not Null, Unique with version |
 | version                  | Version number; always 0 in Author, incremented by Admin's update service at deployed sites | Integer   | 10                | Not Null, Default: 0                                                     |
@@ -311,7 +311,7 @@ A conditional-logic rule connecting an upstream question's answer to a downstrea
 | published_by             | Carried from the applied file; not set by Author on structural rows                        | String    | Unlimited (text)  | Optional                                                                 |
 | published_comment        | Carried from the applied file; not set by Author on structural rows                         | String    | Unlimited (text)  | Optional                                                                 |
 
-**Constraints:** `(relationship_id, version)` is unique. At most one current row may exist per `relationship_id`; `(relationship_key, version)` is unique. Exactly one of `downstream_step_id`, `downstream_sq_id`, `downstream_ss_id` must be set.
+**Constraints:** `(relationship_id, version)` is unique. At most one current row may exist per `relationship_id`; `(relationship_key, version)` is unique. At least one of `downstream_step_id`, `downstream_ss_id`, `downstream_sq_id` must be set; together they are the downstream path the Survey runtime walks from the outside in — the step, the section mounted in it, the question assigned to that section — and the innermost named element is what the rule acts on. A question in the upstream question's own section stands alone (no step or section, and no `upstream_step_id`: the rule fires from every mount); any other question or section names the mount it is shown in, and `upstream_step_id` names the mount the rule fires from.
 
 ### DIMENSION
 

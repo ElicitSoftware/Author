@@ -78,7 +78,7 @@ class EntityMappingSmokeTest {
         assertEquals(1, relationships);
         Relationship r = em.createQuery("select r from Relationship r where r.surveyId = :sid", Relationship.class)
                 .setParameter("sid", s.id).getSingleResult();
-        assertTrue(r.hasExactlyOneDownstream());
+        assertTrue(r.hasDownstreamTarget());
         assertEquals("SHOW", r.actionType.name);
     }
 }

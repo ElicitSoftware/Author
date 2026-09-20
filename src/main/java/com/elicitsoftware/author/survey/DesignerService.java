@@ -427,6 +427,7 @@ public class DesignerService {
         to.placeholder = from.placeholder;
         to.defaultValue = from.defaultValue;
         to.variant = from.variant;
+        to.sample = from.sample == null || from.sample.isBlank() ? null : from.sample.trim();
     }
 
     /** Rules touching a section's assignments, used by the board for badges; package-visible for tests. */

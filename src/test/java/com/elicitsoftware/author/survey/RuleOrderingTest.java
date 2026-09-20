@@ -158,10 +158,37 @@ class RuleOrderingTest {
         backward(b.problem(rule(111, null, null, 110))); // and still backward when the order is wrong
         backward(b.problem(rule(110, null, null, 120))); // fine from the step-1 mount, backward from the step-3 mount (BR-004)
         backward(b.problem(rule(110, null, null, 130))); // Consent (3,1) is before the (3,2) mount
-        // An upstream step hint does not narrow the check: the rule fires from whichever mount is answered.
+        // UC-019 BR-001: a rule that names its upstream step fires only from that mount, so only it is checked.
         Relationship hinted = rule(110, null, null, 120);
         hinted.upstreamStepId = 1;
+        forward(b.problem(hinted));
+        hinted.upstreamStepId = 3;
         backward(b.problem(hinted));
+        hinted.upstreamStepId = 99; // a step that no longer mounts the section: every mount counts again
+        backward(b.problem(hinted));
+    }
+
+    /** UC-019 BR-001: the target is the innermost element of the path, compared in the mount the path names. */
+    @Test
+    void pathTarget_isComparedAtItsInnermostElement() {
+        RuleOrdering.Board b = board();
+        forward(b.problem(rule(100, 1, 1000, 101)));   // step 1 › About you › Age, after Name in the same section
+        forward(b.problem(rule(100, 1, 1001, 110)));   // step 1 › Family › Children?, a later section of the same step
+        forward(b.problem(rule(100, 1, 1001, null)));  // step 1 › Family, the section itself
+        backward(b.problem(rule(101, 1, 1000, 100)));  // step 1 › About you › Name is before Age
+        backward(b.problem(rule(110, 1, 1000, null))); // step 1 › About you is before Family
+        backward(b.problem(rule(120, 1, 1001, 111)));  // step 1 › Family › How many is before step 2
+    }
+
+    /** UC-019 BR-001 / UC-033 BR-004: a path that names the mount is checked there, not at every mount of the section. */
+    @Test
+    void pathTarget_namedMountIsTheOnlyOneChecked() {
+        mount(1004, 1, 13, 3); // Consent also mounted in step 1 after Family
+        RuleOrdering.Board b = board();
+        backward(b.problem(rule(120, null, null, 130)));  // no path: the step-1 mount of Consent is before the origin
+        forward(b.problem(rule(120, 3, 1003, 130)));      // the path names the step-3 mount, which is after
+        backward(b.problem(rule(120, 1, 1004, 130)));     // the path names the step-1 mount, which is before
+        forward(b.problem(rule(120, 3, null, 130)));      // a step without its section still narrows to that step's mount
     }
 
     @Test

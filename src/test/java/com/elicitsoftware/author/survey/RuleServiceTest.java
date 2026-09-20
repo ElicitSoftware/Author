@@ -108,6 +108,7 @@ class RuleServiceTest {
         draft.referenceValue = "0";
         Relationship created = rules.create(s.id, draft);
         assertNotNull(created.relationshipKey, "UC-019 step 6: key minted once");
+        assertEquals(two.stepId, created.downstreamStepId, "UC-019 BR-001: the section's step completes the path");
         assertEquals("> 0", RelationshipQuery.condition(created));
         assertEquals("> 0", created.description, "description defaults to the condition");
 
@@ -119,7 +120,8 @@ class RuleServiceTest {
         rules.repoint(s.id, created.relationshipId, RuleService.End.TARGET, "sq-" + q5.sectionsQuestionId);
         Relationship after = rules.current(s.id, created.relationshipId).orElseThrow();
         assertEquals(q5.sectionsQuestionId, after.downstreamSqId);
-        assertEquals(null, after.downstreamSsId, "UC-019 BR-001: exactly one downstream");
+        assertEquals(sectionC, after.downstreamSsId, "UC-019 BR-001: a question in another section names its only mount");
+        assertEquals(two.stepId, after.downstreamStepId, "and that mount's step");
 
         // UC-019 A3: REPEAT onto a step is refused
         AuthoringException a3 = assertThrows(AuthoringException.class,
@@ -172,7 +174,54 @@ class RuleServiceTest {
 
         draft.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
         draft.downstreamStepId = Step.<Step>find("name", "Fixture Step One").firstResult().stepId;
-        assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field(), "UC-019 BR-001: two targets");
+        AuthoringException path = assertThrows(AuthoringException.class, () -> rules.create(s.id, draft));
+        assertEquals("downstream", path.field(), "UC-019 BR-001: a step that does not hold the question's section");
+        assertTrue(path.getMessage().contains("without naming the step and section"), path.getMessage());
+
+        draft.downstreamStepId = null;
+        draft.downstreamSsId = mountOf("Fixture Section A").stepsSectionsId;
+        path = assertThrows(AuthoringException.class, () -> rules.create(s.id, draft));
+        assertEquals("downstream", path.field(), "UC-019 BR-001: a section that does not hold the question");
+        assertTrue(path.getMessage().contains("does not hold that question"), path.getMessage());
+    }
+
+    /** UC-019 BR-001: a rule created the way the FHHS seed writes it — step, section and question all named — is accepted as is. */
+    @Test
+    @TestTransaction
+    void create_acceptsAFullPathAndCompletesAPartialOne() {
+        Survey s = fixture();
+        Step one = step("Fixture Step One");
+        Step two = step("Fixture Step Two");
+        Relationship full = new Relationship();
+        full.upstreamStepId = one.stepId;
+        full.upstreamSqId = assignmentOf("FixtureQ4").sectionsQuestionId;
+        full.downstreamStepId = two.stepId;
+        full.downstreamSsId = mountOf("Fixture Section C").stepsSectionsId;
+        full.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
+        full.operatorType = operator("GREATER THAN");
+        full.actionType = action("REPEAT");
+        full.referenceValue = "0";
+        Relationship created = rules.create(s.id, full);
+        assertEquals(two.stepId, created.downstreamStepId);
+        assertEquals(mountOf("Fixture Section C").stepsSectionsId, created.downstreamSsId);
+        assertEquals(one.stepId, created.upstreamStepId, "the upstream step names the mount the rule fires from");
+        assertEquals("sq-" + full.downstreamSqId, query.edges(s.id, false).stream()
+                .filter(e -> e.relationshipId() == created.relationshipId).findFirst().orElseThrow().target(),
+                "UC-020: the arrow lands on the innermost element of the path");
+
+        // A question in the upstream question's own section keeps no path and fires from every mount.
+        Relationship samePage = new Relationship();
+        samePage.upstreamStepId = one.stepId;
+        samePage.upstreamSqId = assignmentOf("FixtureQ3").sectionsQuestionId;
+        samePage.downstreamStepId = one.stepId;
+        samePage.downstreamSqId = assignmentOf("FixtureQ4").sectionsQuestionId;
+        samePage.operatorType = operator("EQUAL");
+        samePage.actionType = action("SHOW");
+        samePage.referenceValue = "N";
+        Relationship page = rules.create(s.id, samePage);
+        assertEquals(null, page.downstreamStepId, "UC-019 BR-001: no path for a question on the same page");
+        assertEquals(null, page.downstreamSsId);
+        assertEquals(null, page.upstreamStepId, "and no upstream step: it fires from every mount");
     }
 
     /** UC-033 A1: a target that is not after the question the rule reads from is refused on create. */
@@ -199,6 +248,7 @@ class RuleServiceTest {
         draft.downstreamSsId = mountOf("Fixture Section B").stepsSectionsId;
         assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field(), "the origin's own section");
 
+        draft.downstreamStepId = null; // completing the path filled in the section's step
         draft.downstreamSsId = null;
         draft.downstreamSqId = assignmentOf("FixtureQ3").sectionsQuestionId;
         assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field(), "an earlier question in the same section");
@@ -206,6 +256,8 @@ class RuleServiceTest {
         assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field(), "a question in an earlier section");
 
         // Forward targets are accepted: a question in a later step, and the later step itself.
+        draft.downstreamStepId = null;
+        draft.downstreamSsId = null;
         draft.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
         assertNotNull(rules.create(s.id, draft).relationshipId);
         Relationship toStep = new Relationship();

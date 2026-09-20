@@ -32,8 +32,10 @@ import java.util.Optional;
  * UC-033: a rule's target must come after the question it reads from. "After" is a comparison of
  * board positions {@code (step, section, question)} — the display orders UC-016 keeps contiguous —
  * compared step first (BR-001). The check is derived from current positions on every call and
- * stores nothing (BR-003); a section mounted in several steps is checked for every mount, of the
- * upstream question and of the downstream target (BR-004) — except that a downstream question in
+ * stores nothing (BR-003). The target is the innermost element of the rule's downstream path
+ * (UC-019 BR-001): a question is compared in the mount its path names; a section in its own mount;
+ * a step as a whole. A rule fires from every mount of its upstream section unless it names its
+ * upstream step, so every firing mount is checked (BR-004) — except that a downstream question in
  * the upstream question's own section is compared within the same mount, because the runtime shows
  * it on the page being answered. Missing elements are not this check's problem: the referential
  * checks in {@code RuleService.validate} and {@code ExportValidation} report those.
@@ -85,8 +87,38 @@ public class RuleOrdering {
             this.questionName = questionName;
         }
 
+        public Optional<StepsSections> mount(Integer stepsSectionsId) {
+            return Optional.ofNullable(stepsSectionsId == null ? null : mounts.get(stepsSectionsId));
+        }
+
+        public Optional<SectionsQuestion> assignment(Integer sectionsQuestionId) {
+            return Optional.ofNullable(sectionsQuestionId == null ? null : assignments.get(sectionsQuestionId));
+        }
+
+        public Optional<Step> step(Integer stepId) {
+            return Optional.ofNullable(stepId == null ? null : steps.get(stepId));
+        }
+
+        /** The current mounts of a section, in no particular order. */
+        public List<StepsSections> mountsOf(Integer sectionId) {
+            return mountsBySection.getOrDefault(sectionId, List.of());
+        }
+
+        public String sectionLabel(Integer sectionId) {
+            return quote(sectionName.get(sectionId));
+        }
+
+        public String questionLabel(Integer questionId) {
+            return quote(questionName.get(questionId));
+        }
+
+        public String stepLabel(Integer stepId) {
+            Step step = steps.get(stepId);
+            return quote(step == null ? null : step.name);
+        }
+
         /**
-         * Empty when the rule points forward for every mount pairing; otherwise a sentence such as
+         * Empty when the rule points forward from every mount it fires from; otherwise a sentence such as
          * {@code "downstream question 'Consent' in step 'Intro' › 'About you' is not after upstream question
          * 'How many' in step 'Intro' › 'Family'"}, naming the first backward pairing found.
          */
@@ -95,38 +127,69 @@ public class RuleOrdering {
             if (origin == null) {
                 return Optional.empty();
             }
-            for (StepsSections originMount : mountsBySection.getOrDefault(origin.sectionId, List.of())) {
+            for (StepsSections originMount : firingMounts(r, origin)) {
                 Position from = new Position(stepOrder(originMount), originMount.sectionDisplayOrder, origin.displayOrder);
                 String upstream = "upstream question " + quote(questionName.get(origin.questionId)) + inStep(originMount)
                         + " › " + quote(sectionName.get(originMount.sectionId));
-                if (r.downstreamStepId != null) {
-                    Step target = steps.get(r.downstreamStepId);
-                    if (target != null && !new Position(target.displayOrder, WHOLE, WHOLE).after(from)) {
-                        return Optional.of("downstream step " + quote(target.name) + " is not after " + upstream);
+                if (r.downstreamSqId != null) {
+                    SectionsQuestion target = assignments.get(r.downstreamSqId);
+                    if (target == null) {
+                        return Optional.empty();
+                    }
+                    for (StepsSections targetMount : targetMounts(r, origin, originMount, target)) {
+                        if (!new Position(stepOrder(targetMount), targetMount.sectionDisplayOrder, target.displayOrder).after(from)) {
+                            return Optional.of("downstream question " + quote(questionName.get(target.questionId)) + inStep(targetMount)
+                                    + " › " + quote(sectionName.get(targetMount.sectionId)) + " is not after " + upstream);
+                        }
                     }
                 } else if (r.downstreamSsId != null) {
                     StepsSections target = mounts.get(r.downstreamSsId);
                     if (target != null && !new Position(stepOrder(target), target.sectionDisplayOrder, WHOLE).after(from)) {
                         return Optional.of("downstream section " + quote(sectionName.get(target.sectionId)) + inStep(target) + " is not after " + upstream);
                     }
-                } else if (r.downstreamSqId != null) {
-                    SectionsQuestion target = assignments.get(r.downstreamSqId);
-                    if (target == null) {
-                        return Optional.empty();
-                    }
-                    boolean sameSection = target.sectionId.equals(origin.sectionId);
-                    for (StepsSections targetMount : mountsBySection.getOrDefault(target.sectionId, List.of())) {
-                        if (sameSection && !targetMount.stepsSectionsId.equals(originMount.stepsSectionsId)) {
-                            continue; // shown on the page being answered: only the question order matters
-                        }
-                        if (!new Position(stepOrder(targetMount), targetMount.sectionDisplayOrder, target.displayOrder).after(from)) {
-                            return Optional.of("downstream question " + quote(questionName.get(target.questionId)) + inStep(targetMount)
-                                    + " › " + quote(sectionName.get(targetMount.sectionId)) + " is not after " + upstream);
-                        }
+                } else if (r.downstreamStepId != null) {
+                    Step target = steps.get(r.downstreamStepId);
+                    if (target != null && !new Position(target.displayOrder, WHOLE, WHOLE).after(from)) {
+                        return Optional.of("downstream step " + quote(target.name) + " is not after " + upstream);
                     }
                 }
             }
             return Optional.empty();
+        }
+
+        /**
+         * The mounts the rule fires from (BR-004): the one in its upstream step when it names one and that
+         * step still mounts the section, otherwise every mount of the upstream question's section.
+         */
+        private List<StepsSections> firingMounts(Relationship r, SectionsQuestion origin) {
+            List<StepsSections> all = mountsBySection.getOrDefault(origin.sectionId, List.of());
+            if (r.upstreamStepId == null) {
+                return all;
+            }
+            List<StepsSections> named = all.stream().filter(m -> r.upstreamStepId.equals(m.stepId)).toList();
+            return named.isEmpty() ? all : named;
+        }
+
+        /**
+         * Where a downstream question is compared: the mount its path names (the section, else any mount of
+         * the section in the named step); with no path, the origin's own mount when the target shares the
+         * origin's section, else every mount of the target's section.
+         */
+        private List<StepsSections> targetMounts(Relationship r, SectionsQuestion origin, StepsSections originMount, SectionsQuestion target) {
+            if (r.downstreamSsId != null && mounts.containsKey(r.downstreamSsId)) {
+                return List.of(mounts.get(r.downstreamSsId));
+            }
+            List<StepsSections> all = mountsBySection.getOrDefault(target.sectionId, List.of());
+            if (r.downstreamStepId != null) {
+                List<StepsSections> inStep = all.stream().filter(m -> r.downstreamStepId.equals(m.stepId)).toList();
+                if (!inStep.isEmpty()) {
+                    return inStep;
+                }
+            }
+            if (target.sectionId.equals(origin.sectionId)) {
+                return all.stream().filter(m -> m.stepsSectionsId.equals(originMount.stepsSectionsId)).toList();
+            }
+            return all;
         }
 
         /** The step's own order is the source of truth; the mount's copy stands in for a dangling step. */
