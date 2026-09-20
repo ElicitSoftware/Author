@@ -28,9 +28,10 @@ import java.util.Optional;
 
 /**
  * Write side of rules (UC-019): create, edit, re-point, retire and restore relationships with
- * the runtime's constraints enforced up front — one downstream target (BR-001), a question
- * assignment upstream (BR-002), a token for Text, no Repeat onto a step (A3), and a target that
- * comes after the question the rule reads from (UC-033 A1).
+ * the runtime's constraints enforced up front — a downstream path that holds together (BR-001,
+ * completed from the chosen target by {@link RulePath}), a question assignment upstream (BR-002),
+ * a token for Text, no Repeat onto a step (A3), and a target that comes after the question the rule
+ * reads from (UC-033 A1).
  */
 @ApplicationScoped
 public class RuleService {
@@ -76,6 +77,16 @@ public class RuleService {
     /** UC-019 A5: move one end to the element named by a board anchor ({@code step-N}, {@code ss-N}, {@code sq-N}). */
     @Transactional
     public Relationship repoint(int surveyId, int relationshipId, End end, String anchor) {
+        return repoint(surveyId, relationshipId, end, anchor, null);
+    }
+
+    /**
+     * UC-019 A5 with the card the anchor was dropped in ({@code ss-N}, or null when unknown): for a
+     * question that is how the rule learns which mount it fires from or targets when the section is
+     * mounted in several steps.
+     */
+    @Transactional
+    public Relationship repoint(int surveyId, int relationshipId, End end, String anchor, String mountAnchor) {
         Relationship managed = current(surveyId, relationshipId).orElseThrow(() -> new AuthoringException("Rule not found or removed"));
         Relationship r = new Relationship(); // work on a copy: a refused re-point must not dirty the managed row
         copy(managed, r);
@@ -89,12 +100,13 @@ public class RuleService {
         } catch (NumberFormatException e) {
             throw new AuthoringException("Drop the arrow on a step, a section or a question");
         }
+        Integer mountId = mountAnchor != null && mountAnchor.startsWith("ss-") ? parseOrNull(mountAnchor.substring(3)) : null;
         if (end == End.SOURCE) {
             if (!"sq".equals(parts[0])) {
                 throw new AuthoringException("A rule reads from a question", "upstreamSqId");
             }
             r.upstreamSqId = id;
-            r.upstreamStepId = stepOfQuestionAssignment(surveyId, id).orElse(null);
+            r.upstreamStepId = mountId != null ? stepOfMount(surveyId, mountId).orElse(null) : stepOfQuestionAssignment(surveyId, id).orElse(null);
         } else {
             r.downstreamStepId = null;
             r.downstreamSsId = null;
@@ -102,13 +114,24 @@ public class RuleService {
             switch (parts[0]) {
                 case "step" -> r.downstreamStepId = id;
                 case "ss" -> r.downstreamSsId = id;
-                case "sq" -> r.downstreamSqId = id;
+                case "sq" -> {
+                    r.downstreamSqId = id;
+                    r.downstreamSsId = mountId;
+                }
                 default -> throw new AuthoringException("Drop the arrow on a step, a section or a question");
             }
         }
         validate(surveyId, r);
         copy(r, managed);
         return flushTranslated(managed);
+    }
+
+    private static Integer parseOrNull(String s) {
+        try {
+            return Integer.valueOf(s);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     @Transactional
@@ -127,6 +150,12 @@ public class RuleService {
         validate(surveyId, r); // before touching the row: a refused restore leaves it retired (UC-033 A2)
         r.effectiveTo = StructuralElement.SENTINEL;
         em.flush();
+    }
+
+    /** The step a section mount sits in. */
+    public Optional<Integer> stepOfMount(int surveyId, int stepsSectionsId) {
+        return StepsSections.<StepsSections>find("surveyId = ?1 and stepsSectionsId = ?2 and effectiveTo = ?3",
+                surveyId, stepsSectionsId, StructuralElement.SENTINEL).firstResultOptional().map(ss -> ss.stepId);
     }
 
     /** The step a question assignment sits in, through its section's first current mount. */
@@ -150,23 +179,25 @@ public class RuleService {
         if (SectionsQuestion.count("surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3", surveyId, r.upstreamSqId, StructuralElement.SENTINEL) == 0) {
             throw new AuthoringException("The rule reads from a removed or missing question assignment", "upstreamSqId");
         }
-        if (!r.hasExactlyOneDownstream()) {
-            throw new AuthoringException("A rule targets exactly one step, section or question", "downstream");
-        }
-        if (r.downstreamStepId != null && Step.count("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3", surveyId, r.downstreamStepId, StructuralElement.SENTINEL) == 0) {
+        RuleOrdering.Board board = ordering.load(surveyId);
+        RulePath.complete(r, board); // UC-019 BR-001: the chosen target implies its step and section
+        if (r.downstreamStepId != null && board.step(r.downstreamStepId).isEmpty()) {
             throw new AuthoringException("The rule targets a removed or missing step", "downstream");
         }
-        if (r.downstreamSsId != null && StepsSections.count("surveyId = ?1 and stepsSectionsId = ?2 and effectiveTo = ?3", surveyId, r.downstreamSsId, StructuralElement.SENTINEL) == 0) {
+        if (r.downstreamSsId != null && board.mount(r.downstreamSsId).isEmpty()) {
             throw new AuthoringException("The rule targets a removed or missing section assignment", "downstream");
         }
-        if (r.downstreamSqId != null && SectionsQuestion.count("surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3", surveyId, r.downstreamSqId, StructuralElement.SENTINEL) == 0) {
+        if (r.downstreamSqId != null && board.assignment(r.downstreamSqId).isEmpty()) {
             throw new AuthoringException("The rule targets a removed or missing question assignment", "downstream");
         }
+        RulePath.problem(r, board).ifPresent(problem -> {
+            throw new AuthoringException("The rule " + problem, "downstream");
+        });
         if (r.downstreamSqId != null && r.downstreamSqId.equals(r.upstreamSqId)) {
             throw new AuthoringException("A rule cannot target the question it reads from", "downstream");
         }
         // UC-033 A1 / A2: the target must come after the origin, for every mount of both (BR-001, BR-004).
-        ordering.load(surveyId).problem(r).ifPresent(problem -> {
+        board.problem(r).ifPresent(problem -> {
             throw new AuthoringException("The rule points backwards: " + problem
                     + ". The downstream target must come after the upstream question", "downstream");
         });
@@ -185,7 +216,7 @@ public class RuleService {
             }
             r.token = r.token.trim();
         }
-        if ("REPEAT".equals(r.actionType.name) && r.downstreamStepId != null) {
+        if ("REPEAT".equals(r.actionType.name) && r.target() == Relationship.Target.STEP) {
             throw new AuthoringException("Repeat applies to a section or a question, not a step", "downstream");
         }
         if (r.upstreamStepId != null && Step.count("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3", surveyId, r.upstreamStepId, StructuralElement.SENTINEL) == 0) {

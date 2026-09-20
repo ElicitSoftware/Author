@@ -92,7 +92,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         int before = relationshipQuery.edges(s.id, false).size();
 
         ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.ConnectRequestedEvent(view.overlay, true,
-                "sq-" + count.node().assignmentId(), "ss-" + sectionC.node().assignmentId(), "REPEAT"));
+                "sq-" + count.node().assignmentId(), "ss-" + sectionC.node().assignmentId(), null, "REPEAT"));
 
         RelationshipDialog dialog = $(RelationshipDialog.class).single();
         assertTrue(dialog.isOpened(), "UC-019 step 4");

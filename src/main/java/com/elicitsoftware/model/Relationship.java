@@ -104,11 +104,28 @@ public class Relationship extends StructuralElement {
     @Column(name = "relationship_key", nullable = false, updatable = false)
     public UUID relationshipKey;
 
-    /** Mirrors the table's {@code downstream_ck}: exactly one downstream target. */
-    @AssertTrue(message = "A relationship must target exactly one of: step, section assignment, question assignment")
-    public boolean hasExactlyOneDownstream() {
-        int n = (downstreamStepId != null ? 1 : 0) + (downstreamSsId != null ? 1 : 0) + (downstreamSqId != null ? 1 : 0);
-        return n == 1;
+    /** What a rule acts on: the innermost element of its downstream path (UC-019 BR-001). */
+    public enum Target { STEP, SECTION, QUESTION }
+
+    /**
+     * The downstream path must name at least one element. The Survey runtime reads the path from the
+     * outside in — step, then the section mounted in it, then the question assigned to it — and acts on
+     * the innermost; the table's {@code downstream_ck} only rules out an empty path.
+     */
+    @AssertTrue(message = "A relationship must target a step, a section assignment or a question assignment")
+    public boolean hasDownstreamTarget() {
+        return downstreamStepId != null || downstreamSsId != null || downstreamSqId != null;
+    }
+
+    /** The innermost element of the downstream path, or null when the path is empty. */
+    public Target target() {
+        if (downstreamSqId != null) {
+            return Target.QUESTION;
+        }
+        if (downstreamSsId != null) {
+            return Target.SECTION;
+        }
+        return downstreamStepId != null ? Target.STEP : null;
     }
 
     @Override public Integer getId() { return id; }
