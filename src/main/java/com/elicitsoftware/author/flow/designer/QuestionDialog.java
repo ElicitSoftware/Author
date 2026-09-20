@@ -55,23 +55,23 @@ import java.util.stream.Collectors;
  */
 public class QuestionDialog extends Dialog {
 
-    final ComboBox<QuestionType> questionType = new ComboBox<>("Type");
-    final TextArea text = new TextArea("Question text");
-    final TextField shortText = new TextField("Short text");
-    final TextField toolTip = new TextField("Tooltip");
-    final Checkbox required = new Checkbox("Required");
-    final IntegerField minValue = new IntegerField("Minimum");
-    final IntegerField maxValue = new IntegerField("Maximum");
-    final TextField validationText = new TextField("Validation message");
-    final ComboBox<SelectGroup> selectGroup = new ComboBox<>("List of options");
-    final Button newList = new Button("New list…");
-    final TextField mask = new TextField("Input mask");
-    final TextField placeholder = new TextField("Placeholder");
-    final TextField defaultValue = new TextField("Default value");
-    final TextField sample = new TextField("Sample answer");
-    final MultiSelectComboBox<String> variant = new MultiSelectComboBox<>("Variant");
-    final Button save = new Button("Save");
-    final Button cancel = new Button("Cancel");
+    final ComboBox<QuestionType> questionType = new ComboBox<>();
+    final TextArea text = new TextArea();
+    final TextField shortText = new TextField();
+    final TextField toolTip = new TextField();
+    final Checkbox required = new Checkbox();
+    final IntegerField minValue = new IntegerField();
+    final IntegerField maxValue = new IntegerField();
+    final TextField validationText = new TextField();
+    final ComboBox<SelectGroup> selectGroup = new ComboBox<>();
+    final Button newList = new Button();
+    final TextField mask = new TextField();
+    final TextField placeholder = new TextField();
+    final TextField defaultValue = new TextField();
+    final TextField sample = new TextField();
+    final MultiSelectComboBox<String> variant = new MultiSelectComboBox<>();
+    final Button save = new Button();
+    final Button cancel = new Button();
 
     /** Vaadin theme-variant names the Survey app honours on a question's input field. */
     static final List<String> VARIANTS = List.of(
@@ -97,9 +97,26 @@ public class QuestionDialog extends Dialog {
                           com.elicitsoftware.author.survey.ListService lists) {
         this.lists = lists;
         boolean creating = existing == null;
-        setHeaderTitle(creating ? "New question" : "Edit question");
+        setHeaderTitle(creating ? getTranslation("questionDialog.title.new") : getTranslation("questionDialog.title.edit"));
         setModal(true);
         setWidth("48rem");
+        questionType.setLabel(getTranslation("questionDialog.type"));
+        text.setLabel(getTranslation("questionDialog.text"));
+        shortText.setLabel(getTranslation("questionDialog.shortText"));
+        toolTip.setLabel(getTranslation("questionDialog.toolTip"));
+        required.setLabel(getTranslation("questionDialog.required"));
+        minValue.setLabel(getTranslation("questionDialog.minimum"));
+        maxValue.setLabel(getTranslation("questionDialog.maximum"));
+        validationText.setLabel(getTranslation("questionDialog.validationText"));
+        selectGroup.setLabel(getTranslation("questionDialog.selectGroup"));
+        newList.setText(getTranslation("questionDialog.newList"));
+        mask.setLabel(getTranslation("questionDialog.mask"));
+        placeholder.setLabel(getTranslation("questionDialog.placeholder"));
+        defaultValue.setLabel(getTranslation("questionDialog.defaultValue"));
+        sample.setLabel(getTranslation("questionDialog.sample"));
+        variant.setLabel(getTranslation("questionDialog.variant"));
+        save.setText(getTranslation("common.save"));
+        cancel.setText(getTranslation("common.cancel"));
 
         // What the rules that reach this question — on its step, its section or itself — write into
         // its text, so the preview substitutes {TOKEN} placeholders the way the runtime will (FR-013).
@@ -112,34 +129,33 @@ public class QuestionDialog extends Dialog {
         text.setRequiredIndicatorVisible(true);
         text.setMaxLength(8000);
         shortText.setMaxLength(255);
-        shortText.setHelperText("Shown in the tree and on the board");
+        shortText.setHelperText(getTranslation("questionDialog.shortText.helper"));
         toolTip.setMaxLength(255);
         validationText.setMaxLength(255);
         mask.setMaxLength(255);
         placeholder.setMaxLength(255);
         defaultValue.setMaxLength(255);
         sample.setMaxLength(255);
-        sample.setHelperText("Previews the texts that Text rules fill with this answer");
+        sample.setHelperText(getTranslation("questionDialog.sample.helper"));
         variant.setItems(VARIANTS);
-        variant.setHelperText("Vaadin theme variants applied to the field");
+        variant.setHelperText(getTranslation("questionDialog.variant.helper"));
 
-        FieldHelp.help(questionType, "The kind of input the respondent uses to answer.");
-        FieldHelp.help(shortText, "A short machine-friendly name, shown in the tree and on the board.");
-        FieldHelp.help(text, "The question as the respondent sees it. May contain {TOKEN} placeholders that TEXT rules fill in.");
-        FieldHelp.help(toolTip, "Help text shown to the respondent when they hover the field.");
-        FieldHelp.help(required, "The respondent must answer this before continuing.");
-        FieldHelp.help(minValue, "The smallest number the respondent may enter.");
-        FieldHelp.help(maxValue, "The largest number the respondent may enter.");
-        FieldHelp.help(selectGroup, "The list of choices the respondent picks from.");
-        FieldHelp.help(mask, "A pattern that constrains what the respondent can type.");
-        FieldHelp.help(placeholder, "Faint example text shown in the empty field.");
-        FieldHelp.help(defaultValue, "The value the field starts with.");
-        FieldHelp.help(sample, "An example answer, used only in previews. Wherever a Text rule writes this question's answer into another text, "
-                + "the preview shows this instead: sample \"Bob\" previews \"Hello {PName}\" as \"Hello Bob\". Respondents never see it.");
-        FieldHelp.help(variant, "Visual style variants applied to the field: alignment, size, or layout.");
+        FieldHelp.help(questionType, getTranslation("questionDialog.help.type"));
+        FieldHelp.help(shortText, getTranslation("questionDialog.help.shortText"));
+        FieldHelp.help(text, getTranslation("questionDialog.help.text"));
+        FieldHelp.help(toolTip, getTranslation("questionDialog.help.toolTip"));
+        FieldHelp.help(required, getTranslation("questionDialog.help.required"));
+        FieldHelp.help(minValue, getTranslation("questionDialog.help.minimum"));
+        FieldHelp.help(maxValue, getTranslation("questionDialog.help.maximum"));
+        FieldHelp.help(selectGroup, getTranslation("questionDialog.help.selectGroup"));
+        FieldHelp.help(mask, getTranslation("questionDialog.help.mask"));
+        FieldHelp.help(placeholder, getTranslation("questionDialog.help.placeholder"));
+        FieldHelp.help(defaultValue, getTranslation("questionDialog.help.defaultValue"));
+        FieldHelp.help(sample, getTranslation("questionDialog.help.sample"));
+        FieldHelp.help(variant, getTranslation("questionDialog.help.variant"));
 
         List<SelectGroup> groups = new java.util.ArrayList<>(
-                SelectGroup.<SelectGroup>list("surveyId = ?1 and effectiveTo = ?2 order by name", surveyId, StructuralElement.SENTINEL));
+                SelectGroup.<SelectGroup>list("surveyId = ?1 and effectiveTo = ?2 order by name", surveyId, StructuralElement.SENTINEL)); // i18n:ignore
         selectGroup.setItems(groups);
         selectGroup.setItemLabelGenerator(g -> g.name);
         selectGroup.setClearButtonVisible(true);
@@ -151,8 +167,8 @@ public class QuestionDialog extends Dialog {
             selectGroup.setValue(created);
         }).open());
 
-        binder.forField(questionType).asRequired("Choose a question type").bind(q -> q.questionType, (q, v) -> q.questionType = v);
-        binder.forField(text).asRequired("A question needs its text").bind(q -> q.text, (q, v) -> q.text = v);
+        binder.forField(questionType).asRequired(getTranslation("questionDialog.error.typeRequired")).bind(q -> q.questionType, (q, v) -> q.questionType = v);
+        binder.forField(text).asRequired(getTranslation("questionDialog.error.textRequired")).bind(q -> q.text, (q, v) -> q.text = v);
         binder.forField(shortText).bind(q -> q.shortText, (q, v) -> q.shortText = v);
         binder.forField(toolTip).bind(q -> q.toolTip, (q, v) -> q.toolTip = v);
         binder.forField(required).bind(q -> q.required, (q, v) -> q.required = Boolean.TRUE.equals(v));
@@ -205,7 +221,7 @@ public class QuestionDialog extends Dialog {
         form.setColspan(text, 2);
 
         // Live preview of the respondent's field, so the author sees what the type and variants do.
-        Div previewBox = new Div(new Span("Preview"), preview);
+        Div previewBox = new Div(new Span(getTranslation("questionDialog.preview")), preview);
         previewBox.addClassName("question-preview-box");
         add(form, previewBox);
         questionType.addValueChangeListener(e -> rebuildPreview());
@@ -227,7 +243,7 @@ public class QuestionDialog extends Dialog {
             try {
                 Question saved = persist.apply(bean);
                 close();
-                Notification.show(creating ? "Question created" : "Question updated", 3000, Notification.Position.BOTTOM_START)
+                Notification.show(creating ? getTranslation("questionDialog.saved.created") : getTranslation("questionDialog.saved.updated"), 3000, Notification.Position.BOTTOM_START)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 onSaved.accept(saved);
             } catch (AuthoringException ae) {
@@ -242,9 +258,10 @@ public class QuestionDialog extends Dialog {
     void rebuildPreview() {
         preview.removeAll();
         preview.addClassName("question-preview");
+        preview.getElement().setAttribute("data-i18n-content", ""); // authored question text, options and samples
         QuestionType t = questionType.getValue();
         if (t == null) {
-            preview.add(new Span("Choose a type to preview the field."));
+            preview.add(new Span(getTranslation("questionDialog.preview.chooseType")));
             return;
         }
         if ("HTML".equalsIgnoreCase(t.name)) {

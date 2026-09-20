@@ -24,11 +24,13 @@ import java.util.function.Function;
 public class PickerDialog<T> extends Dialog {
 
     final ComboBox<T> choice = new ComboBox<>();
-    final Button ok = new Button("OK");
-    final Button cancel = new Button("Cancel");
+    final Button ok = new Button();
+    final Button cancel = new Button();
 
     public PickerDialog(String title, String label, List<T> options, Function<T, String> labelOf, Consumer<T> onPicked) {
         setHeaderTitle(title);
+        ok.setText(getTranslation("common.ok"));
+        cancel.setText(getTranslation("common.cancel"));
         setModal(true);
         choice.setLabel(label);
         choice.setItems(options);
@@ -42,7 +44,7 @@ public class PickerDialog<T> extends Dialog {
                 onPicked.accept(choice.getValue());
             } else {
                 choice.setInvalid(true);
-                choice.setErrorMessage("Choose one");
+                choice.setErrorMessage(getTranslation("pickerDialog.chooseOne"));
             }
         });
         cancel.addClickListener(e -> close());

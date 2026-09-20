@@ -41,14 +41,14 @@ class SurveyModelGuideViewTest extends QuarkusBrowserlessTest {
                 .map(h -> h.getChildren().filter(c -> c.getClass() == Span.class).map(c -> ((Span) c).getText()).findFirst().orElse(""))
                 .toList();
         assertEquals(List.of(
-                "Elicit is a decision tree",
-                "Containers nest",
-                "Order is the default path",
-                "Rules are the arrows",
-                "The designer draws all of this",
-                "Designing a survey",
-                "Reporting tags",
-                "Identity and publishing"), titles, "UC-029 step 2: the eight ideas, in this order");
+                view.getTranslation("guideView.tree.h"),
+                view.getTranslation("guideView.containers.h"),
+                view.getTranslation("guideView.order.h"),
+                view.getTranslation("guideView.rules.h"),
+                view.getTranslation("guideView.designer.h"),
+                view.getTranslation("guideView.designing.h"),
+                view.getTranslation("guideView.reportingTags.h"),
+                view.getTranslation("guideView.identity.h")), titles, "UC-029 step 2: the eight ideas, in this order");
 
         assertFalse(view.diagram.getAlt().orElse("").isBlank(), "UC-029 BR-003: the diagram has an accessible description");
         assertTrue(view.getChildren().anyMatch(c -> c.getClassNames().contains("survey-guide-legend")), "UC-029 step 3: glyph legend");
@@ -69,7 +69,7 @@ class SurveyModelGuideViewTest extends QuarkusBrowserlessTest {
     void isReachableFromTheApplicationNavigation() {
         navigate(SurveyModelGuideView.class);
         MainLayout layout = (MainLayout) UI.getCurrent().getChildren().filter(MainLayout.class::isInstance).findFirst().orElseThrow();
-        assertTrue(find(SideNavItem.class, layout).all().stream().anyMatch(i -> "How surveys work".equals(i.getLabel())),
+        assertTrue(find(SideNavItem.class, layout).all().stream().anyMatch(i -> layout.getTranslation("mainLayout.nav.guide").equals(i.getLabel())),
                 "UC-029 step 1: the guide is in the application navigation");
     }
 }

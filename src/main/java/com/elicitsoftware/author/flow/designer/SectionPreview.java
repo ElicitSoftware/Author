@@ -37,7 +37,7 @@ public class SectionPreview extends Div {
     /** One question rendered in the preview, so tests and the board can find it by node. */
     public record Block(StructureNode node, Div box, Component field) { }
 
-    final Span heading = new Span("Preview");
+    final Span heading = new Span();
     final Span hint = new Span();
     final Div pages = new Div();
     final List<Block> blocks = new ArrayList<>();
@@ -46,7 +46,8 @@ public class SectionPreview extends Div {
 
     public SectionPreview() {
         addClassName("designer-preview");
-        getElement().setAttribute("aria-label", "Preview of the selected section as a respondent sees it");
+        heading.setText(getTranslation("sectionPreview.heading"));
+        getElement().setAttribute("aria-label", getTranslation("sectionPreview.aria"));
         heading.addClassName("designer-preview-heading");
         hint.addClassName("designer-preview-hint");
         pages.addClassName("designer-preview-pages");
@@ -67,7 +68,7 @@ public class SectionPreview extends Div {
         blocks.clear();
         titles.clear();
         if (selected == null) {
-            hint.setText("Select a step, section or question on the board to see it as a respondent will.");
+            hint.setText(getTranslation("sectionPreview.hint.select"));
             return;
         }
         List<StructureNode> sections = switch (selected.kind()) {
@@ -76,18 +77,18 @@ public class SectionPreview extends Div {
             case QUESTION -> List.of(selected.parent());
         };
         if (sections.isEmpty()) {
-            hint.setText("Step '" + selected.label() + "' has no sections yet, so respondents would see nothing here.");
+            hint.setText(getTranslation("sectionPreview.hint.noSections", selected.label()));
             return;
         }
         hint.setText(selected.kind() == StructureNode.Kind.STEP
-                ? "Respondents see one section per page. Answers typed here are not saved."
-                : "What a respondent sees on this page. Answers typed here are not saved.");
+                ? getTranslation("sectionPreview.hint.step")
+                : getTranslation("sectionPreview.hint.section"));
         StructureNode step = selected;
         while (step != null && step.kind() != StructureNode.Kind.STEP) {
             step = step.parent();
         }
         if (step != null && ruleShown.contains("step-" + step.durableId())) {
-            pages.add(note("Step '" + step.label() + "' is shown only when a rule reveals it."));
+            pages.add(note(getTranslation("sectionPreview.note.stepRuleShown", step.label())));
         }
         for (int i = 0; i < sections.size(); i++) {
             pages.add(page(view, sections.get(i), i, sections.size(), questions, optionTexts, samples, ruleShown));
@@ -99,7 +100,7 @@ public class SectionPreview extends Div {
         Div page = new Div();
         page.addClassName("designer-preview-page");
         if (count > 1) {
-            Span caption = new Span("Page " + (index + 1) + " of " + count);
+            Span caption = new Span(getTranslation("sectionPreview.page", index + 1, count));
             caption.addClassName("designer-preview-caption");
             page.add(caption);
         }
@@ -107,16 +108,17 @@ public class SectionPreview extends Div {
         Integer stepId = stepOf(section);
         H3 title = new H3(PreviewFields.substituteTokens(section.label(), samples.forMount(stepId, section.assignmentId(), null)));
         title.addClassName("designer-preview-title");
+        title.getElement().setAttribute("data-i18n-content", ""); // the authored section name
         page.add(title);
         titles.add(section.label());
         if (section.retired()) {
-            page.add(note("Removed: respondents do not see this section."));
+            page.add(note(getTranslation("sectionPreview.note.removed")));
         } else if (ruleShown.contains("ss-" + section.assignmentId())) {
-            page.add(note("Shown only when a rule reveals it."));
+            page.add(note(getTranslation("sectionPreview.note.ruleShown")));
         }
         List<StructureNode> rows = view.childrenOf(section).stream().filter(q -> !q.retired()).toList();
         if (rows.isEmpty()) {
-            page.add(note("No questions yet."));
+            page.add(note(getTranslation("sectionPreview.note.noQuestions")));
         }
         for (StructureNode row : rows) {
             Question q = questions.get(row.durableId());
@@ -149,9 +151,10 @@ public class SectionPreview extends Div {
                     q.required, QuestionDialog.parseVariants(q.variant), options);
             field.getElement().getClassList().add("designer-preview-field");
         }
+        field.getElement().setAttribute("data-i18n-content", ""); // the authored question as the respondent sees it
         box.add(field);
         if (ruleShown.contains("sq-" + row.assignmentId())) {
-            box.add(note("Shown only when a rule reveals it."));
+            box.add(note(getTranslation("sectionPreview.note.ruleShown")));
         }
         // Clicking a question here selects it on the board; the selected one is left alone so a
         // click inside its field (opening a list, say) does not rebuild the pane under the pointer.

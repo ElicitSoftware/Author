@@ -49,26 +49,26 @@ class MainLayoutTest extends QuarkusBrowserlessTest {
     @TestSecurity(user = "mainlayout.author", roles = {"elicit_author"})
     void authorSeesAuthoringNavigation() {
         MainLayout layout = attachLayout();
-        assertTrue(hasNavItem(layout, "Surveys"));
-        assertTrue(hasNavItem(layout, "Import definition"));
-        assertTrue(hasNavItem(layout, "Logout"));
+        assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.surveys")));
+        assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.importDefinition")));
+        assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.logout")));
     }
 
     @Test
     @TestSecurity(user = "mainlayout.admin", roles = {"elicit_admin"})
     void adminRoleAloneDoesNotGrantAuthoring() {
         MainLayout layout = attachLayout();
-        assertFalse(hasNavItem(layout, "Surveys"), "elicit_admin must not imply elicit_author (UC-002 BR-001)");
-        assertTrue(hasNavItem(layout, "Logout"));
+        assertFalse(hasNavItem(layout, layout.getTranslation("mainLayout.nav.surveys")), "elicit_admin must not imply elicit_author (UC-002 BR-001)");
+        assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.logout")));
     }
 
     @Test
     @TestSecurity(user = "mainlayout.none", roles = {})
     void noRoleSeesOnlyLogout() {
         MainLayout layout = attachLayout();
-        assertFalse(hasNavItem(layout, "Surveys"));
-        assertFalse(hasNavItem(layout, "Import definition"));
-        assertTrue(hasNavItem(layout, "Logout"));
+        assertFalse(hasNavItem(layout, layout.getTranslation("mainLayout.nav.surveys")));
+        assertFalse(hasNavItem(layout, layout.getTranslation("mainLayout.nav.importDefinition")));
+        assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.logout")));
     }
 
     @Test
@@ -76,7 +76,7 @@ class MainLayoutTest extends QuarkusBrowserlessTest {
     void headerCarriesBrandedTitle() {
         MainLayout layout = attachLayout();
         Anchor title = find(Anchor.class, layout).withClassName("brand-title").single();
-        assertTrue(title.getText().endsWith("Author"), "title ends with the application name: " + title.getText());
+        assertTrue(title.getText().endsWith(layout.getTranslation("common.appType.author")), "title ends with the application name: " + title.getText());
     }
 
     @Test

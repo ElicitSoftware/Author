@@ -41,7 +41,8 @@ public class QuestionRow extends Div {
         getElement().setAttribute("data-node-id", "sq-" + node.assignmentId());
         getElement().setAttribute("tabindex", "0");
         getElement().setAttribute("role", "button");
-        getElement().setAttribute("aria-label", "Question " + node.label() + (node.retired() ? " (removed)" : ""));
+        getElement().setAttribute("aria-label", node.retired()
+                ? getTranslation("questionRow.aria.removed", node.label()) : getTranslation("questionRow.aria", node.label()));
         if (node.retired()) {
             addClassName("retired");
         }
@@ -63,19 +64,21 @@ public class QuestionRow extends Div {
 
         label.setText(node.label());
         label.addClassName("designer-row-label");
+        label.getElement().setAttribute("data-i18n-content", "");
         type.setText(node.detail() == null ? "" : node.detail().toLowerCase());
         type.addClassName("structure-kind");
+        type.getElement().setAttribute("data-i18n-content", "");
         TagBadge.fill(tagBadge, view.tagsOf(node));
 
-        menu = new NodeMenu("Actions for question " + node.label());
-        menu.item("Edit…", () -> view.edit(node), !node.retired());
-        menu.item("Also add to section…", () -> view.addBankQuestionTo(node), !node.retired());
-        menu.item("Move up", () -> view.move(node, -1), !node.retired() && indexInSection > 0);
-        menu.item("Move down", () -> view.move(node, 1), !node.retired() && indexInSection < sectionSize - 1);
-        menu.item("Add rule…", () -> view.addRule(node), !node.retired());
-        menu.item("Reporting tags…", () -> view.reportingTags(node), !node.retired());
-        menu.item("Open details", () -> view.openDetails(node));
-        menu.item("Remove from this section", () -> view.removeAssignment(node), !node.retired());
+        menu = new NodeMenu(getTranslation("questionRow.menu.aria", node.label()));
+        menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node), !node.retired());
+        menu.item(getTranslation("questionRow.menu.alsoAddToSection"), () -> view.addBankQuestionTo(node), !node.retired());
+        menu.item(getTranslation("designer.menu.moveUp"), () -> view.move(node, -1), !node.retired() && indexInSection > 0);
+        menu.item(getTranslation("designer.menu.moveDown"), () -> view.move(node, 1), !node.retired() && indexInSection < sectionSize - 1);
+        menu.item(getTranslation("questionRow.menu.addRule"), () -> view.addRule(node), !node.retired());
+        menu.item(getTranslation("designer.menu.reportingTags"), () -> view.reportingTags(node), !node.retired());
+        menu.item(getTranslation("designer.menu.openDetails"), () -> view.openDetails(node));
+        menu.item(getTranslation("questionRow.menu.removeFromSection"), () -> view.removeAssignment(node), !node.retired());
 
         // The row itself is a drop target: a rule glyph starts a rule that reads this question
         // (UC-019 step 1); a question glyph or palette question lands *before* this row, so the
@@ -109,7 +112,7 @@ public class QuestionRow extends Div {
                 view.edit(node);
             }
         });
-        getElement().addEventListener("keydown", e -> view.select(node)).setFilter("event.key === 'Enter' || event.key === ' '");
+        getElement().addEventListener("keydown", e -> view.select(node)).setFilter("event.key === 'Enter' || event.key === ' '"); // i18n:ignore
     }
 
     public StructureNode node() {

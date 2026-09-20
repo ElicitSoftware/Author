@@ -52,21 +52,22 @@ import java.util.function.Consumer;
  */
 public class TagAssignmentDialog extends Dialog {
 
-    static final String USE_ANSWER = "Use the respondent's answer";
-    static final String FIXED_VALUE = "Fixed value";
+    /** Value-mode item ids; their labels come from {@code tagAssignmentDialog.useAnswer} / {@code .fixedValue}. */
+    static final String USE_ANSWER = "answer";
+    static final String FIXED_VALUE = "fixed";
 
-    final ComboBox<StructureNode> element = new ComboBox<>("Element");
+    final ComboBox<StructureNode> element = new ComboBox<>();
     final Span elementLabel = new Span();
-    final RadioButtonGroup<ElementRef> scope = new RadioButtonGroup<>("Applies to");
-    final ComboBox<Ontology> tag = new ComboBox<>("Tag");
-    final Button newTag = new Button("New tag…");
-    final RadioButtonGroup<String> valueMode = new RadioButtonGroup<>("Reported value");
-    final TextField value = new TextField("Fixed value");
+    final RadioButtonGroup<ElementRef> scope = new RadioButtonGroup<>();
+    final ComboBox<Ontology> tag = new ComboBox<>();
+    final Button newTag = new Button();
+    final RadioButtonGroup<String> valueMode = new RadioButtonGroup<>();
+    final TextField value = new TextField();
     final Span impact = new Span();
     final Div warning = new Div();
-    final Checkbox acknowledge = new Checkbox("I understand that answers already recorded at deployed sites are reclassified");
-    final Button save = new Button("Save");
-    final Button cancel = new Button("Cancel");
+    final Checkbox acknowledge = new Checkbox();
+    final Button save = new Button();
+    final Button cancel = new Button();
 
     private final Map<String, HasValidation> fieldsByProperty = Map.of("scope", scope, "tag", tag, "value", value);
     private final ReportingService service;
@@ -86,15 +87,24 @@ public class TagAssignmentDialog extends Dialog {
         this.context = context;
         this.existing = existing;
         boolean editing = existing != null;
-        setHeaderTitle(editing ? "Edit reporting tag" : "Assign reporting tag");
+        element.setLabel(getTranslation("tagAssignmentDialog.element"));
+        scope.setLabel(getTranslation("tagAssignmentDialog.appliesTo"));
+        tag.setLabel(getTranslation("tagAssignmentDialog.tag"));
+        newTag.setText(getTranslation("tagAssignmentDialog.newTag"));
+        valueMode.setLabel(getTranslation("tagAssignmentDialog.reportedValue"));
+        value.setLabel(getTranslation("tagAssignmentDialog.fixedValue"));
+        acknowledge.setLabel(getTranslation("tagAssignmentDialog.acknowledge"));
+        save.setText(getTranslation("common.save"));
+        cancel.setText(getTranslation("common.cancel"));
+        elementLabel.getElement().setAttribute("data-i18n-content", ""); // authored element name and path
+        setHeaderTitle(editing ? getTranslation("tagAssignmentDialog.title.edit") : getTranslation("tagAssignmentDialog.title.assign"));
         setModal(true);
         setWidth("40rem");
 
         List<StructureNode> targets = nodes == null ? List.of() : nodes.stream()
                 .filter(n -> n.kind() != StructureNode.Kind.STEP && !n.retired()).toList();
         element.setItems(targets);
-        element.setItemLabelGenerator(n -> (n.kind() == StructureNode.Kind.SECTION ? "Section " : "Question ") + n.label()
-                + " — " + ReportingService.path(n.parent()));
+        element.setItemLabelGenerator(this::elementLabel);
         element.setRequiredIndicatorVisible(true);
         element.setWidthFull();
         element.addValueChangeListener(e -> scopeFor(e.getValue()));
@@ -116,17 +126,18 @@ public class TagAssignmentDialog extends Dialog {
         }).open());
 
         valueMode.setItems(USE_ANSWER, FIXED_VALUE);
+        valueMode.setItemLabelGenerator(mode -> USE_ANSWER.equals(mode)
+                ? getTranslation("tagAssignmentDialog.useAnswer") : getTranslation("tagAssignmentDialog.fixedValue"));
         valueMode.addThemeVariants(RadioGroupVariant.LUMO_VERTICAL);
         valueMode.addValueChangeListener(e -> refresh());
         value.setMaxLength(255);
-        value.setHelperText("Stored lowercased and trimmed whenever the element is answered");
+        value.setHelperText(getTranslation("tagAssignmentDialog.value.helper"));
         value.addValueChangeListener(e -> refresh());
 
-        FieldHelp.help(tag, "The reporting tag. Its column in the report is filled from this element.");
-        FieldHelp.help(value, "A constant reported instead of the answer, e.g. 'Female' on the section about the respondent's mother.");
+        FieldHelp.help(tag, getTranslation("tagAssignmentDialog.help.tag"));
+        FieldHelp.help(value, getTranslation("tagAssignmentDialog.help.value"));
         impact.addClassName("reporting-preview");
-        warning.setText("This assignment is exported already. Changing its tag or value is retroactive: answers already recorded "
-                + "at deployed sites are reclassified, not only answers recorded from now on.");
+        warning.setText(getTranslation("tagAssignmentDialog.warning"));
         warning.addClassName("rename-warning");
         warning.getElement().setAttribute("role", "alert");
         warning.setVisible(false);
@@ -143,8 +154,7 @@ public class TagAssignmentDialog extends Dialog {
             valueMode.setValue(existing.metadata().value == null ? USE_ANSWER : FIXED_VALUE);
             value.setValue(existing.metadata().value == null ? "" : existing.metadata().value);
         } else if (context != null) {
-            elementLabel.setText((context.kind() == StructureNode.Kind.SECTION ? "Section " : "Question ") + context.label()
-                    + " — " + ReportingService.path(context.parent()));
+            elementLabel.setText(elementLabel(context));
             elementRow.add(elementLabel);
             scopeFor(context);
         } else {
@@ -166,6 +176,13 @@ public class TagAssignmentDialog extends Dialog {
         getFooter().add(cancel, save);
     }
 
+    /** "Section &lt;name&gt; — &lt;path&gt;" or "Question …": the element word is translated, the rest is authored. */
+    private String elementLabel(StructureNode n) {
+        return n.kind() == StructureNode.Kind.SECTION
+                ? getTranslation("tagAssignmentDialog.element.section", n.label(), ReportingService.path(n.parent()))
+                : getTranslation("tagAssignmentDialog.element.question", n.label(), ReportingService.path(n.parent()));
+    }
+
     /** The scopes a node offers: two for a question (UC-021 BR-002), one for a section. */
     private void scopeFor(StructureNode node) {
         if (node == null) {
@@ -176,7 +193,7 @@ public class TagAssignmentDialog extends Dialog {
         scope.setVisible(true);
         if (node.kind() == StructureNode.Kind.SECTION) {
             scope.setItems(ElementRef.STEPS_SECTIONS);
-            scope.setItemLabelGenerator(r -> "This section as it appears in step '" + labelOf(node.parent()) + "'");
+            scope.setItemLabelGenerator(r -> getTranslation("tagAssignmentDialog.scope.section", labelOf(node.parent())));
             scope.setValue(ElementRef.STEPS_SECTIONS);
             if (valueMode.getValue() == null) {
                 valueMode.setValue(FIXED_VALUE);
@@ -184,8 +201,8 @@ public class TagAssignmentDialog extends Dialog {
         } else {
             scope.setItems(ElementRef.QUESTION, ElementRef.SECTIONS_QUESTION);
             scope.setItemLabelGenerator(r -> r == ElementRef.QUESTION
-                    ? "This question wherever it appears"
-                    : "This question only in section '" + labelOf(node.parent()) + "'");
+                    ? getTranslation("tagAssignmentDialog.scope.question")
+                    : getTranslation("tagAssignmentDialog.scope.questionInSection", labelOf(node.parent())));
             scope.setValue(ElementRef.QUESTION);
             if (valueMode.getValue() == null) {
                 valueMode.setValue(USE_ANSWER);
@@ -203,10 +220,11 @@ public class TagAssignmentDialog extends Dialog {
         value.setRequiredIndicatorVisible(fixed);
         Ontology o = tag.getValue();
         if (o == null) {
-            impact.setText("Choose a tag to see the table and column it fills.");
+            impact.setText(getTranslation("tagAssignmentDialog.impact.none"));
         } else {
-            impact.setText("Values go to surveyreport." + ReportingNames.dimTable(o) + " · report column "
-                    + ReportingNames.factColumn(o.tag) + (fixed ? " · constant" : " · from the answer"));
+            impact.setText(getTranslation("tagAssignmentDialog.impact.text", ReportingNames.dimTable(o),
+                    ReportingNames.factColumn(o.tag),
+                    fixed ? getTranslation("tagAssignmentDialog.impact.constant") : getTranslation("tagAssignmentDialog.impact.fromAnswer")));
         }
         boolean changed = existing != null && (
                 !Objects.equals(existing.metadata().ontology == null ? null : existing.metadata().ontology.id, o == null ? null : o.id)
@@ -234,12 +252,12 @@ public class TagAssignmentDialog extends Dialog {
         Ontology o = tag.getValue();
         if (o == null) {
             tag.setInvalid(true);
-            tag.setErrorMessage("Choose a tag");
+            tag.setErrorMessage(getTranslation("tagAssignmentDialog.error.chooseTag"));
             return;
         }
         if (FIXED_VALUE.equals(valueMode.getValue()) && currentValue() == null) {
             value.setInvalid(true);
-            value.setErrorMessage("Enter the fixed value or report the answer instead");
+            value.setErrorMessage(getTranslation("tagAssignmentDialog.error.fixedValue"));
             return;
         }
         try {
@@ -250,20 +268,21 @@ public class TagAssignmentDialog extends Dialog {
                 StructureNode node = context != null ? context : element.getValue();
                 if (node == null) {
                     element.setInvalid(true);
-                    element.setErrorMessage("Choose an element");
+                    element.setErrorMessage(getTranslation("tagAssignmentDialog.error.chooseElement"));
                     return;
                 }
                 ElementRef ref = scope.getValue();
                 if (ref == null) {
                     scope.setInvalid(true);
-                    scope.setErrorMessage("Choose what the tag applies to");
+                    scope.setErrorMessage(getTranslation("tagAssignmentDialog.error.chooseScope"));
                     return;
                 }
                 int durableId = ref == ElementRef.QUESTION ? node.durableId() : node.assignmentId();
                 saved = service.assign(survey.id, ref, durableId, o.id, currentValue());
             }
             close();
-            Notification.show((existing != null ? "Updated tag '" : "Assigned tag '") + o.tag + "'", 3000, Notification.Position.BOTTOM_START)
+            Notification.show(existing != null ? getTranslation("tagAssignmentDialog.updated", o.tag)
+                    : getTranslation("tagAssignmentDialog.assigned", o.tag), 3000, Notification.Position.BOTTOM_START)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             onSaved.accept(saved);
         } catch (AuthoringException ae) {

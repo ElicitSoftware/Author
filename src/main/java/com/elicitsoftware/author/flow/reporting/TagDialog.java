@@ -46,14 +46,14 @@ import java.util.function.Consumer;
  */
 public class TagDialog extends Dialog {
 
-    final TextField tag = new TextField("Tag");
-    final ComboBox<String> dimension = new ComboBox<>("Dimension");
-    final TextField namespace = new TextField("Namespace");
+    final TextField tag = new TextField();
+    final ComboBox<String> dimension = new ComboBox<>();
+    final TextField namespace = new TextField();
     final Span preview = new Span();
     final Div warning = new Div();
-    final Checkbox acknowledge = new Checkbox("I understand that answers already recorded at deployed sites are reclassified");
-    final Button save = new Button("Save");
-    final Button cancel = new Button("Cancel");
+    final Checkbox acknowledge = new Checkbox();
+    final Button save = new Button();
+    final Button cancel = new Button();
 
     private final Map<String, HasValidation> fieldsByProperty = Map.of("tag", tag, "dimension", dimension);
     private final List<String> dimensionNames = new ArrayList<>();
@@ -68,13 +68,19 @@ public class TagDialog extends Dialog {
         this.existing = existing;
         boolean creating = existing == null;
         this.assigned = !creating && service.assignmentCount(existing.id) > 0;
-        setHeaderTitle(creating ? "New reporting tag" : "Edit reporting tag");
+        tag.setLabel(getTranslation("tagDialog.tag"));
+        dimension.setLabel(getTranslation("tagDialog.dimension"));
+        namespace.setLabel(getTranslation("tagDialog.namespace"));
+        acknowledge.setLabel(getTranslation("tagDialog.acknowledge"));
+        save.setText(getTranslation("common.save"));
+        cancel.setText(getTranslation("common.cancel"));
+        setHeaderTitle(creating ? getTranslation("tagDialog.title.new") : getTranslation("tagDialog.title.edit"));
         setModal(true);
         setWidth("36rem");
 
         tag.setRequiredIndicatorVisible(true);
         tag.setMaxLength(255);
-        tag.setHelperText("Letters, digits, spaces and hyphens. Becomes a column of the report.");
+        tag.setHelperText(getTranslation("tagDialog.tag.helper"));
         for (Dimension d : service.dimensions()) {
             if (d.name != null) {
                 dimensionNames.add(d.name);
@@ -83,8 +89,8 @@ public class TagDialog extends Dialog {
         dimension.setItems(dimensionNames);
         dimension.setAllowCustomValue(true);
         dimension.setClearButtonVisible(true);
-        dimension.setPlaceholder("None: the tag gets its own table");
-        dimension.setHelperText("Type a new name to create a dimension. Letters, digits and underscores.");
+        dimension.setPlaceholder(getTranslation("tagDialog.dimension.placeholder"));
+        dimension.setHelperText(getTranslation("tagDialog.dimension.helper"));
         dimension.addCustomValueSetListener(e -> {
             String custom = e.getDetail() == null ? "" : e.getDetail().trim();
             if (custom.isEmpty()) {
@@ -98,11 +104,10 @@ public class TagDialog extends Dialog {
         });
         namespace.setReadOnly(true);
         namespace.setValue(creating ? survey.name : existing.name);
-        namespace.setHelperText("Groups this survey's tags; a site keeps one row per namespace and tag");
+        namespace.setHelperText(getTranslation("tagDialog.namespace.helper"));
 
-        FieldHelp.help(tag, "The tag's name. Answers of the tagged elements are reported under a column named after it.");
-        FieldHelp.help(dimension, "A shared category such as 'age' or 'cancer'. Tags on the same dimension share one table of values; "
-                + "leave it empty to give this tag a table of its own.");
+        FieldHelp.help(tag, getTranslation("tagDialog.help.tag"));
+        FieldHelp.help(dimension, getTranslation("tagDialog.help.dimension"));
 
         if (!creating) {
             tag.setValue(existing.tag);
@@ -111,8 +116,7 @@ public class TagDialog extends Dialog {
             }
         }
         preview.addClassName("reporting-preview");
-        warning.setText("This tag is assigned. Changing its name or dimension is retroactive: answers already recorded at "
-                + "deployed sites are reclassified, not only answers recorded from now on.");
+        warning.setText(getTranslation("tagDialog.warning"));
         warning.addClassName("rename-warning");
         warning.getElement().setAttribute("role", "alert");
         warning.setVisible(false);
@@ -122,7 +126,7 @@ public class TagDialog extends Dialog {
         acknowledge.addValueChangeListener(e -> refresh());
 
         FormLayout form = new FormLayout(tag, dimension);
-        Details advanced = new Details("Advanced", namespace);
+        Details advanced = new Details(getTranslation("tagDialog.advanced"), namespace);
         add(form, preview, advanced, warning, acknowledge);
         refresh();
 
@@ -130,7 +134,7 @@ public class TagDialog extends Dialog {
         save.addClickListener(e -> {
             if (tag.getValue() == null || tag.getValue().isBlank()) {
                 tag.setInvalid(true);
-                tag.setErrorMessage("Tag is required");
+                tag.setErrorMessage(getTranslation("tagDialog.error.tagRequired"));
                 return;
             }
             try {
@@ -138,7 +142,8 @@ public class TagDialog extends Dialog {
                         ? service.createTag(survey.id, tag.getValue(), dimension.getValue())
                         : service.updateTag(survey.id, existing.id, tag.getValue(), dimension.getValue());
                 close();
-                Notification.show((creating ? "Created tag '" : "Updated tag '") + saved.tag + "'", 3000, Notification.Position.BOTTOM_START)
+                Notification.show(creating ? getTranslation("tagDialog.created", saved.tag) : getTranslation("tagDialog.updated", saved.tag),
+                                3000, Notification.Position.BOTTOM_START)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 onSaved.accept(saved);
             } catch (AuthoringException ae) {
@@ -156,10 +161,9 @@ public class TagDialog extends Dialog {
         tag.setInvalid(false);
         dimension.setInvalid(false);
         if (t.isEmpty()) {
-            preview.setText("Choose a tag to see the table and column it produces.");
+            preview.setText(getTranslation("tagDialog.preview.none"));
         } else {
-            preview.setText("Values go to surveyreport." + ReportingNames.dimTable(t, d)
-                    + " · report column " + ReportingNames.factColumn(t));
+            preview.setText(getTranslation("tagDialog.preview.text", ReportingNames.dimTable(t, d), ReportingNames.factColumn(t)));
         }
         boolean changed = assigned && (!Objects.equals(existing.tag, t)
                 || !Objects.equals(existing.dimension == null ? null : existing.dimension.name, d == null || d.isBlank() ? null : d));

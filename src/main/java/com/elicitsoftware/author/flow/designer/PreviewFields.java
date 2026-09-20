@@ -11,6 +11,7 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.survey.Tokens;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasLabel;
@@ -104,11 +105,11 @@ final class PreviewFields {
 
     /** An HTML question has no input; the respondent sees its text rendered as HTML. */
     static Component html(String content) {
-        String body = content == null || content.isBlank() ? "<em>HTML content preview</em>" : content;
+        String body = content == null || content.isBlank() ? Translations.get("previewFields.htmlPlaceholder") : content;
         try {
-            return new Html("<div class=\"question-preview-html\">" + body + "</div>");
+            return new Html("<div class=\"question-preview-html\">" + body + "</div>"); // i18n:ignore markup wrapper
         } catch (RuntimeException invalid) {
-            return new Span("Enter valid HTML to preview it.");
+            return new Span(Translations.get("previewFields.invalidHtml"));
         }
     }
 

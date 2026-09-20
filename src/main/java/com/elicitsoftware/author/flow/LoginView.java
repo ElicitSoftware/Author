@@ -64,12 +64,12 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver  {
      * post-authentication navigation in the {@link #beforeEnter(BeforeEnterEvent)}
      * method.</p>
      * 
-     * <p>The message "FHHS Admin :-)" serves as a placeholder and debugging aid
+     * <p>The redirect notice serves as a placeholder and debugging aid
      * to identify this view during development.</p>
      */
     public LoginView() {
         Log.debug("LoginView constructor");
-        add("Elicit Author");
+        add(getTranslation("loginView.redirecting"));
     }
 
     /**

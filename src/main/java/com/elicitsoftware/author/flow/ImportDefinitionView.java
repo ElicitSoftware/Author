@@ -26,7 +26,7 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.UnorderedList;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.upload.Upload;
-import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.server.streams.UploadHandler;
@@ -38,9 +38,8 @@ import java.io.ByteArrayInputStream;
 
 /** Import a {@code .elicit} definition into Author as a new working copy (UC-005). */
 @Route(value = "import", layout = MainLayout.class)
-@PageTitle("Import definition")
 @RolesAllowed(AuthorRoles.AUTHOR)
-public class ImportDefinitionView extends VerticalLayout {
+public class ImportDefinitionView extends VerticalLayout implements HasDynamicTitle {
 
     @Inject
     SurveyDefinitionImporter importer;
@@ -49,10 +48,8 @@ public class ImportDefinitionView extends VerticalLayout {
     final Div result = new Div();
 
     public ImportDefinitionView() {
-        add(new H2("Import definition"));
-        add(new Paragraph("Upload an ELICIT_SURVEY_EXPORT_V1 (.elicit) file to open it in Author as a working copy. "
-                + "Every survey and element key in the file is kept exactly as it is, so a later export updates the "
-                + "same rows at every site that already applied it. A survey whose key is already open here is refused."));
+        add(new H2(getTranslation("importDefinitionView.title")));
+        add(new Paragraph(getTranslation("importDefinitionView.intro")));
         upload = new Upload(UploadHandler.inMemory((metadata, data) ->
                 getUI().ifPresent(ui -> ui.access(() -> handleUpload(data, metadata.fileName())))));
         upload.setAcceptedFileTypes(ElicitFormat.FILE_EXTENSION);
@@ -61,29 +58,39 @@ public class ImportDefinitionView extends VerticalLayout {
         add(upload, result);
     }
 
+    @Override
+    public String getPageTitle() {
+        return getTranslation("importDefinitionView.pageTitle");
+    }
+
     /** Package-private so tests can feed a file without the browser upload. */
     void handleUpload(byte[] data, String fileName) {
         result.removeAll();
         try {
             ImportResult imported = importer.importFile(new ByteArrayInputStream(data));
-            result.add(new H3("Imported " + imported.surveyName()));
+            H3 importedHeading = new H3(getTranslation("importDefinitionView.imported", imported.surveyName()));
+            importedHeading.getElement().setAttribute("data-i18n-content", ""); // carries the authored survey name
+            result.add(importedHeading);
             UnorderedList counts = new UnorderedList();
             imported.imported().forEach((table, n) -> {
                 if (n > 0) {
                     counts.add(new ListItem(table + ": " + n));
                 }
             });
-            result.add(new Paragraph("Survey key " + imported.surveyKey()
-                    + (imported.fileRevision() != null ? ", file revision " + imported.fileRevision() : "")
-                    + ". " + imported.totalImported() + " records imported from " + fileName
-                    + (imported.totalSkipped() > 0 ? ", " + imported.totalSkipped() + " retired record(s) skipped" : "") + "."));
+            String keyLine = getTranslation("importDefinitionView.surveyKey", String.valueOf(imported.surveyKey()))
+                    + (imported.fileRevision() != null
+                            ? getTranslation("importDefinitionView.fileRevision", String.valueOf(imported.fileRevision())) : "");
+            String countLine = getTranslation("importDefinitionView.recordsImported", String.valueOf(imported.totalImported()), fileName)
+                    + (imported.totalSkipped() > 0
+                            ? getTranslation("importDefinitionView.retiredSkipped", String.valueOf(imported.totalSkipped())) : "");
+            result.add(new Paragraph(keyLine + ". " + countLine + "."));
             result.add(counts);
-            Button open = new Button("Open in editor", e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
+            Button open = new Button(getTranslation("importDefinitionView.openInEditor"), e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
                     new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(imported.surveyId())))));
             open.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
             result.add(open);
         } catch (DefinitionException e) {
-            Paragraph p = new Paragraph("Import failed: " + e.getMessage());
+            Paragraph p = new Paragraph(getTranslation("importDefinitionView.importFailed", e.getMessage()));
             p.addClassName(LumoUtility.TextColor.ERROR);
             result.add(p);
             if (!e.details().isEmpty()) {

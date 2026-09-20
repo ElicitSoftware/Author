@@ -51,7 +51,7 @@ public class DesignerPalette extends VerticalLayout {
         setSpacing(false);
         setAlignItems(Alignment.STRETCH);
         getElement().setAttribute("role", "toolbar");
-        getElement().setAttribute("aria-label", "Palette: drag a glyph onto the board to add an element");
+        getElement().setAttribute("aria-label", getTranslation("designerPalette.aria"));
 
         draggable(stepChip, PaletteItem.step());
         draggable(sectionChip, PaletteItem.section());
@@ -60,7 +60,7 @@ public class DesignerPalette extends VerticalLayout {
         questionTypePicker.setItems(types);
         questionTypePicker.setItemLabelGenerator(t -> t.name);
         questionTypePicker.setWidthFull();
-        questionTypePicker.setAriaLabel("Question type for new questions");
+        questionTypePicker.setAriaLabel(getTranslation("designerPalette.questionType"));
         types.stream().filter(t -> "TEXT".equals(t.name)).findFirst().ifPresentOrElse(questionTypePicker::setValue,
                 () -> types.stream().findFirst().ifPresent(questionTypePicker::setValue));
         questionTypePicker.addValueChangeListener(e -> rebuildQuestionChip());
@@ -72,11 +72,11 @@ public class DesignerPalette extends VerticalLayout {
 
         Div card = new Div();
         card.addClassName("designer-palette-card");
-        card.add(row("Step", chips(stepChip)),
-                row("Section", chips(sectionChip)),
-                row("Question", chips(questionSlot)),
+        card.add(row(getTranslation("designerPalette.step"), chips(stepChip)),
+                row(getTranslation("designerPalette.section"), chips(sectionChip)),
+                row(getTranslation("designerPalette.question"), chips(questionSlot)),
                 questionTypePicker,
-                row("Rule", chips(showRuleChip, repeatRuleChip, textRuleChip)));
+                row(getTranslation("designerPalette.rule"), chips(showRuleChip, repeatRuleChip, textRuleChip)));
         add(card);
     }
 
@@ -121,7 +121,7 @@ public class DesignerPalette extends VerticalLayout {
         source.setEffectAllowed(EffectAllowed.COPY_MOVE);
         source.addDragStartListener(e -> onDragStart.run());
         source.addDragEndListener(e -> onDragEnd.run());
-        glyph.getElement().setAttribute("aria-roledescription", "draggable palette item");
+        glyph.getElement().setAttribute("aria-roledescription", getTranslation("designerPalette.roledescription"));
     }
 
     private static Span label(String text) {

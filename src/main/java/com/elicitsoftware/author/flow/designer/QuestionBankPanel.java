@@ -11,6 +11,7 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.vaadin.flow.component.dnd.DragSource;
 import com.vaadin.flow.component.dnd.EffectAllowed;
@@ -32,7 +33,7 @@ import java.util.Map;
 public class QuestionBankPanel extends VerticalLayout {
 
     /** Filters the questions by short name, question text and type; scoped to this panel. */
-    final TextField search = ListPanel.searchField("Search questions", "Search questions by name, text or type");
+    final TextField search = ListPanel.searchField(Translations.get("questionBankPanel.search"), Translations.get("questionBankPanel.search.aria"));
     final Div rows = new Div();
     final List<Row> items = new ArrayList<>();
     private java.util.function.BiConsumer<String, Integer> filtered = (q, n) -> { };
@@ -54,7 +55,7 @@ public class QuestionBankPanel extends VerticalLayout {
             addClassName("designer-panel-row");
             glyph = Glyph.question(node.detail());
             glyph.getElement().setAttribute("draggable", "true");
-            glyph.getElement().setAttribute("aria-roledescription", "draggable question");
+            glyph.getElement().setAttribute("aria-roledescription", getTranslation("questionBankPanel.roledescription"));
             DragSource<Glyph> source = DragSource.create(glyph);
             source.setDragData(new BankQuestion(node.durableId(), node.label(), node.detail()));
             source.setEffectAllowed(EffectAllowed.COPY_MOVE);
@@ -62,11 +63,12 @@ public class QuestionBankPanel extends VerticalLayout {
             source.addDragEndListener(e -> view.dragEnded());
             label.setText(node.label());
             label.addClassName("designer-panel-label");
-            uses.setText("in " + placements + (placements == 1 ? " section" : " sections"));
+            label.getElement().setAttribute("data-i18n-content", "");
+            uses.setText(placements == 1 ? getTranslation("questionBankPanel.uses.one") : getTranslation("questionBankPanel.uses.many", placements));
             uses.addClassName("designer-badge");
-            menu = new NodeMenu("Actions for question " + node.label());
-            menu.item("Add to section…", () -> view.addBankQuestionTo(node));
-            menu.item("Edit…", () -> view.edit(node));
+            menu = new NodeMenu(getTranslation("questionBankPanel.menu.aria", node.label()));
+            menu.item(getTranslation("questionBankPanel.menu.addToSection"), () -> view.addBankQuestionTo(node));
+            menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node));
             add(glyph, label, uses, menu);
         }
 
@@ -128,9 +130,9 @@ public class QuestionBankPanel extends VerticalLayout {
             }
         }
         if (items.isEmpty()) {
-            empty.setText("No questions yet. Questions you add appear here and can be reused in other sections.");
+            empty.setText(getTranslation("questionBankPanel.empty"));
         } else if (shown == 0) {
-            empty.setText("No question matches '" + q.trim() + "'.");
+            empty.setText(getTranslation("questionBankPanel.noMatch", q.trim()));
         }
         empty.setVisible(items.isEmpty() || shown == 0);
         filtered.accept(query, shown);

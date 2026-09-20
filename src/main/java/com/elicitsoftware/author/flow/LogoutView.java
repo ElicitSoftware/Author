@@ -62,12 +62,12 @@ public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
      * is typically never displayed to users as the view immediately processes
      * the logout sequence in the {@link #beforeEnter(BeforeEnterEvent)} method.</p>
      * 
-     * <p>The message "Admin Logout :-)" serves as a placeholder and debugging aid
+     * <p>The signing-out notice serves as a placeholder and debugging aid
      * to identify this view during development, though users will not see it
      * due to immediate redirects.</p>
      */
     public LogoutView() {
-        add("Signed out of Elicit Author");
+        add(getTranslation("logoutView.signingOut"));
     }
 
     /**

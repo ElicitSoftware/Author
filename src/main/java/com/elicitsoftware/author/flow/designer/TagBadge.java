@@ -11,6 +11,7 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -37,9 +38,11 @@ final class TagBadge {
         Icon icon = VaadinIcon.TAG.create();
         icon.addClassName("designer-tag-badge-icon");
         String text = String.join(", ", labels);
-        badge.add(icon, new Span(text));
-        badge.setTitle("Reporting tags: " + text);
-        badge.getElement().setAttribute("aria-label", "Reporting tags: " + text);
+        Span names = new Span(text);
+        names.getElement().setAttribute("data-i18n-content", ""); // tag names are authored content
+        badge.add(icon, names);
+        badge.setTitle(Translations.get("tagBadge.title", text));
+        badge.getElement().setAttribute("aria-label", Translations.get("tagBadge.title", text));
     }
 
     /** The badge's visible text, for tests. */

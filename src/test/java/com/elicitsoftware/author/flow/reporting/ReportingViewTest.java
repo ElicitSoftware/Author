@@ -61,7 +61,8 @@ class ReportingViewTest extends QuarkusBrowserlessTest {
         String impact = text(view.impactPanel);
         assertTrue(impact.contains("dim_fixture_age"), "UC-024 step 2: shared dimension table");
         assertTrue(impact.contains("dim_has_children") && impact.contains("has_children_key"), "UC-024 step 2: own table and column");
-        assertFalse(impact.contains("Error:"), "the fixture is clean: " + impact);
+        String errorPrefix = view.getTranslation("reportingView.impact.error", "").strip();
+        assertFalse(impact.contains(errorPrefix), "the fixture is clean: " + impact);
         assertEquals(3, view.usesByTag.size(), "every fixture tag is assigned once");
     }
 
