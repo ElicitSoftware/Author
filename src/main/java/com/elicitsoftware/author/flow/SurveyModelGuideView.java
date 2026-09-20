@@ -88,6 +88,8 @@ public class SurveyModelGuideView extends VerticalLayout {
                         item(Glyph.rule("SHOW"), "Show", " — the target appears only when the rule holds. Until then the respondent never sees it."),
                         item(Glyph.rule("REPEAT"), "Repeat", " — the target section or question is repeated as many times as the answer says, for example one 'Child' section per child."),
                         item(Glyph.rule("TEXT"), "Text", " — the answer is written into the target's text wherever a {TOKEN|default} placeholder appears, so a later question can say 'your daughter' instead of 'your child'.")),
+                new Paragraph("There is no Hide rule. Hiding is the same as not showing: give the element a Show rule "
+                        + "and it stays hidden until that rule holds."),
                 new Paragraph("Operators are Boolean, Greater than, Equal, Not equal, Field exists and Contains. "
                         + "When several rules point at the same target, all of them must hold."));
 
