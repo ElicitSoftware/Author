@@ -616,6 +616,10 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `selectGroupDialog.noOptions` | No options yet. | Options-list dialog · hint when the list has no options | 30 |  |
 | `selectGroupDialog.saved.created` | Created list ''{0}'' | Options-list dialog · notification | 40 | params: {0} = the list name |
 | `selectGroupDialog.saved.updated` | Updated list ''{0}'' | Options-list dialog · notification | 40 | params: {0} = the list name |
+| `mainLayout.resizer.title` | Drag to resize the drawer | Drawer resize handle · tooltip | 40 |  |
+| `mainLayout.resizer.aria` | Resize drawer | Drawer resize handle · accessible name | 30 |  |
+| `mainLayout.smallScreen.heading` | A bigger screen is needed | Full-screen notice on narrow screens · heading | 40 |  |
+| `mainLayout.smallScreen.text` | Elicit Author is built for designing surveys on a tablet or larger screen. Please switch to a wider device. | Full-screen notice on narrow screens · paragraph | 160 |  |
 
 ## English source file
 
@@ -1173,4 +1177,8 @@ selectGroupDialog.optionsLabel=Options, in the order respondents see them
 selectGroupDialog.noOptions=No options yet.
 selectGroupDialog.saved.created=Created list ''{0}''
 selectGroupDialog.saved.updated=Updated list ''{0}''
+mainLayout.resizer.title=Drag to resize the drawer
+mainLayout.resizer.aria=Resize drawer
+mainLayout.smallScreen.heading=A bigger screen is needed
+mainLayout.smallScreen.text=Elicit Author is built for designing surveys on a tablet or larger screen. Please switch to a wider device.
 ```
