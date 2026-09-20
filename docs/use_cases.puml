@@ -35,9 +35,10 @@ rectangle "Elicit Author" {
     usecase "UC-017\nConfigure Repeating Elements" as UC017
     usecase "UC-018\nRename Step or Section" as UC018
 
-    ' Logic & Relationships (FR-019..FR-022)
+    ' Logic & Relationships (FR-019..FR-022, FR-041)
     usecase "UC-019\nCreate Conditional Relationship" as UC019
     usecase "UC-020\nVisualize Relationship Graph" as UC020
+    usecase "UC-033\nValidate Rule Direction" as UC033
 
     ' Ontology & Metadata (FR-023..FR-026)
     usecase "UC-021\nAssign Ontology Tag to Question" as UC021
@@ -92,6 +93,7 @@ author --> UC018
 ' Logic & Relationships
 author --> UC019
 author --> UC020
+author --> UC033
 
 ' Ontology & Metadata
 author --> UC021
@@ -124,6 +126,9 @@ UC015 ..> UC016 : <<include>> placing renumbers
 UC011 ..> UC015 : <<extend>> question into section
 UC016 ..> UC007 : <<extend>> initial display key
 UC019 ..> UC020 : <<extend>> drag to connect
+UC019 ..> UC033 : <<include>> refuse backward target
+UC016 ..> UC033 : <<extend>> backward rules shown red
+UC033 ..> UC007 : <<extend>> backward rule is an error
 UC022 ..> UC007 : <<extend>> retroactive warning
 
 @enduml
