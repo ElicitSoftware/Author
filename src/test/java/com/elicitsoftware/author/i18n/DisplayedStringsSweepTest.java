@@ -55,10 +55,12 @@ class DisplayedStringsSweepTest extends QuarkusBrowserlessTest {
     void authorRoutes_haveNoUntranslatedText() {
         UI.getCurrent().setLocale(ElicitI18NProvider.PSEUDO_LOCALE);
         List<String> problems = new ArrayList<>();
-        navigate(SurveysView.class);
-        sweep("surveys", problems);
+        // The surveys list is the root route the harness opened before the locale was set, so leave
+        // it first and come back to get an instance built in the pseudo-locale.
         navigate(SurveyModelGuideView.class);
         sweep("guide", problems);
+        navigate(SurveysView.class);
+        sweep("surveys", problems);
         navigate(ImportDefinitionView.class);
         sweep("import", problems);
         // UnauthorizedView is a layout-less error route the mock router cannot navigate to; UnauthorizedViewTest covers it.
