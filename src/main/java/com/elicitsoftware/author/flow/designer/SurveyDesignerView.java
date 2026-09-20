@@ -4,7 +4,7 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_START***
  * Elicit Author
  * %%
- * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * Copyright (C) 2026 Elicit Software LLC
  * %%
  * PolyForm Noncommercial License 1.0.0
  * <https://polyformproject.org/licenses/noncommercial/1.0.0>
@@ -431,17 +431,18 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 if (node.kind() != spot.accepts() || node.retired()) {
                     return;
                 }
+                Set<Integer> backwardBefore = backwardRules();
                 switch (node.kind()) {
                     case STEP -> {
                         int from = indexIn(tree.roots(), node);
                         designer.moveStep(survey.id, node.durableId(), targetIndex(from, spot.index()));
-                        afterChange(node, "Moved step '" + node.label() + "'");
+                        afterMove(node, "Moved step '" + node.label() + "'", backwardBefore);
                     }
                     case SECTION -> {
                         if (Objects.equals(node.parent().durableId(), spot.container().durableId())) {
                             int from = indexIn(childrenOf(spot.container()), node);
                             designer.moveSectionWithinStep(survey.id, node.assignmentId(), targetIndex(from, spot.index()));
-                            afterChange(node, "Moved section '" + node.label() + "'");
+                            afterMove(node, "Moved section '" + node.label() + "'", backwardBefore);
                         } else {
                             Section copy = designer.duplicateSectionInto(survey.id, node.durableId(), spot.container().durableId(), spot.index());
                             copiedSection(copy, spot.container());
@@ -451,7 +452,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                         if (Objects.equals(node.parent().durableId(), spot.container().durableId())) {
                             int from = indexIn(childrenOf(spot.container()), node);
                             designer.moveQuestionWithinSection(survey.id, node.assignmentId(), targetIndex(from, spot.index()));
-                            afterChange(node, "Moved question '" + node.label() + "'");
+                            afterMove(node, "Moved question '" + node.label() + "'", backwardBefore);
                         } else {
                             designer.assignQuestionInto(survey.id, node.durableId(), spot.container().durableId(), spot.index());
                             open(spot.container());
@@ -492,12 +493,13 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     public void move(StructureNode node, int delta) {
         try {
+            Set<Integer> backwardBefore = backwardRules();
             switch (node.kind()) {
                 case STEP -> designer.moveStep(survey.id, node.durableId(), indexIn(tree.roots(), node) + delta);
                 case SECTION -> designer.moveSectionWithinStep(survey.id, node.assignmentId(), indexIn(childrenOf(node.parent()), node) + delta);
                 case QUESTION -> designer.moveQuestionWithinSection(survey.id, node.assignmentId(), indexIn(childrenOf(node.parent()), node) + delta);
             }
-            afterChange(node, "Moved " + node.routeKind() + " '" + node.label() + "'");
+            afterMove(node, "Moved " + node.routeKind() + " '" + node.label() + "'", backwardBefore);
         } catch (AuthoringException ae) {
             error(ae.getMessage());
         }
@@ -927,6 +929,35 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         success(message);
     }
 
+    /**
+     * UC-033 step 4 / UC-016 A4: a reorder is never refused for a rule, but when it turns rules
+     * backwards the author is told how many, and the rebuilt board draws them red.
+     */
+    private void afterMove(StructureNode node, String message, Set<Integer> backwardBefore) {
+        selected = node;
+        load();
+        Set<Integer> newlyBackward = new HashSet<>(backwardRules());
+        newlyBackward.removeAll(backwardBefore);
+        if (newlyBackward.isEmpty()) {
+            success(message);
+            return;
+        }
+        int n = newlyBackward.size();
+        warning(message + " — " + n + (n == 1 ? " rule now points" : " rules now point") + " backwards (shown in red). "
+                + "Move the downstream target after the upstream question, or move the elements again.");
+    }
+
+    /** The ids of the current rules whose target is not after their origin (UC-033 BR-003: derived, never stored). */
+    private Set<Integer> backwardRules() {
+        Set<Integer> ids = new HashSet<>();
+        for (RelationshipQuery.RuleEdge e : relationshipQuery.edges(survey.id, false)) {
+            if (e.invalid()) {
+                ids.add(e.relationshipId());
+            }
+        }
+        return ids;
+    }
+
     private static int indexIn(List<StructureNode> siblings, StructureNode node) {
         for (int i = 0; i < siblings.size(); i++) {
             StructureNode s = siblings.get(i);
@@ -967,6 +998,10 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     private static void info(String message) {
         Notification.show(message, 3000, Notification.Position.BOTTOM_START);
+    }
+
+    private static void warning(String message) {
+        Notification.show(message, 8000, Notification.Position.BOTTOM_START).addThemeVariants(NotificationVariant.LUMO_WARNING);
     }
 
     private static void error(String message) {

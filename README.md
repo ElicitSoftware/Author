@@ -1,6 +1,6 @@
 # Elicit Author
 
-Copyright © 2026 The Regents of the University of Michigan
+Copyright © 2026 Elicit Software LLC
 
 ## About
 

@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Change the order respondents meet steps, sections within a step, and questions within a section, by dragging on the designer board or from an element's menu.  
 **Status:** Draft  
-**Requirements:** [FR-016, NFR-007, NFR-012](../requirements.md)
+**Requirements:** [FR-016, FR-041, NFR-007, NFR-012](../requirements.md)
 
 ## Preconditions
 
@@ -46,6 +46,15 @@
 
 1. This is a copy, not a reorder: UC-015 (sections) or UC-011 A4 (questions) applies.
 2. Use case ends.
+
+### A4: The move turns a rule backwards
+
+**Trigger:** After the move, a rule's downstream target no longer comes after its upstream question (step 2)  
+**Flow:**
+
+1. The system completes the move; it never refuses a reorder because of a rule (UC-033 BR-002).
+2. The system draws each affected rule in the error colour and tells the author how many rules now point backwards.
+3. Use case continues at step 4.
 
 ## Postconditions
 

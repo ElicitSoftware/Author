@@ -4,7 +4,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_START***
  * Elicit Author
  * %%
- * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * Copyright (C) 2026 Elicit Software LLC
  * %%
  * PolyForm Noncommercial License 1.0.0
  * <https://polyformproject.org/licenses/noncommercial/1.0.0>
@@ -29,7 +29,8 @@ import java.util.Optional;
 /**
  * Write side of rules (UC-019): create, edit, re-point, retire and restore relationships with
  * the runtime's constraints enforced up front — one downstream target (BR-001), a question
- * assignment upstream (BR-002), a token for Text, no Repeat onto a step (A3).
+ * assignment upstream (BR-002), a token for Text, no Repeat onto a step (A3), and a target that
+ * comes after the question the rule reads from (UC-033 A1).
  */
 @ApplicationScoped
 public class RuleService {
@@ -42,6 +43,9 @@ public class RuleService {
 
     @Inject
     ElementService elements;
+
+    @Inject
+    RuleOrdering ordering;
 
     public Optional<Relationship> current(int surveyId, int relationshipId) {
         return Relationship.find("surveyId = ?1 and relationshipId = ?2 and effectiveTo = ?3",
@@ -120,8 +124,8 @@ public class RuleService {
         if (r.isCurrent()) {
             return;
         }
+        validate(surveyId, r); // before touching the row: a refused restore leaves it retired (UC-033 A2)
         r.effectiveTo = StructuralElement.SENTINEL;
-        validate(surveyId, r);
         em.flush();
     }
 
@@ -161,6 +165,11 @@ public class RuleService {
         if (r.downstreamSqId != null && r.downstreamSqId.equals(r.upstreamSqId)) {
             throw new AuthoringException("A rule cannot target the question it reads from", "downstream");
         }
+        // UC-033 A1 / A2: the target must come after the origin, for every mount of both (BR-001, BR-004).
+        ordering.load(surveyId).problem(r).ifPresent(problem -> {
+            throw new AuthoringException("The rule points backwards: " + problem
+                    + ". The downstream target must come after the upstream question", "downstream");
+        });
         if (r.operatorType == null) {
             throw new AuthoringException("Choose an operator", "operatorType");
         }

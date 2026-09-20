@@ -4,13 +4,17 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_START***
  * Elicit Author
  * %%
- * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * Copyright (C) 2026 Elicit Software LLC
  * %%
  * PolyForm Noncommercial License 1.0.0
  * <https://polyformproject.org/licenses/noncommercial/1.0.0>
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.survey.DesignerService;
+import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.SectionsQuestion;
+import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import io.quarkus.test.TestTransaction;
@@ -34,6 +38,9 @@ class ExportValidationTest {
 
     @Inject
     EntityManager em;
+
+    @Inject
+    DesignerService designer;
 
     private Survey fixture() {
         return Survey.find("name", "AuthorFixture").firstResult();
@@ -117,5 +124,21 @@ class ExportValidationTest {
         em.clear();
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "steps".equals(i.kind()) && i.message().contains("has no sections")), issues.toString());
+    }
+
+    /** UC-033 A3 / UC-007 BR-001: a rule whose target precedes its origin blocks export. */
+    @Test
+    @TestTransaction
+    void ruleWhoseTargetPrecedesItsOriginIsAnError() {
+        Survey s = fixture();
+        Question q4 = Question.find("shortText = ?1 and effectiveTo = ?2", "FixtureQ4", StructuralElement.SENTINEL).firstResult();
+        SectionsQuestion sq4 = SectionsQuestion.find("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", s.id, q4.questionId, StructuralElement.SENTINEL).firstResult();
+        designer.moveQuestionWithinSection(s.id, sq4.sectionsQuestionId, 0);
+        em.flush();
+        em.clear();
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        List<ValidationIssue> errors = issues.stream().filter(ValidationIssue::isError).toList();
+        assertTrue(errors.size() == 1 && "relationships".equals(errors.get(0).kind())
+                && errors.get(0).message().contains("points backwards"), issues.toString());
     }
 }
