@@ -26,6 +26,8 @@ import com.elicitsoftware.author.survey.ReportingChangeLedger;
 import com.elicitsoftware.author.survey.ReportingService;
 import com.elicitsoftware.author.survey.RuleOrdering;
 import com.elicitsoftware.author.survey.RulePath;
+import com.elicitsoftware.author.survey.TokenSamples;
+import com.elicitsoftware.author.survey.Tokens;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -40,7 +42,8 @@ import java.util.function.Function;
 /**
  * Checks a survey's current elements before export (UC-007): dangling durable references,
  * relationships whose downstream path does not hold together or that point backwards (UC-033 A3), choice
- * questions without options, empty steps and sections, duplicate ordering. Errors block export; warnings do not.
+ * questions without options, tokens no rule fills and Text rules nothing uses (BR-005), empty steps and
+ * sections, duplicate ordering. Errors block export; warnings do not.
  * Read-only (UC-007 BR-004).
  */
 @ApplicationScoped
@@ -147,6 +150,7 @@ public class ExportValidation {
             // UC-033 A3: a rule the respondent can never see fire blocks export (UC-007 BR-001).
             board.problem(r).ifPresent(p -> issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " points backwards: " + p)));
         }
+        checkTokens(issues, steps, sections, questions, stepsSections, sectionsQuestions, relationships, board);
         for (Step s : steps.values()) {
             if (!stepsWithSections.contains(s.stepId)) {
                 issues.add(ValidationIssue.warning("steps", s.stepId, "Step '" + s.name + "' has no sections"));
@@ -198,6 +202,106 @@ public class ExportValidation {
             }
         }
         return out;
+    }
+
+    /**
+     * UC-007 BR-005 / FR-005: a token a text uses must be filled by a rule that reaches that text — a
+     * rule reaches its target and everything inside it (UC-019 BR-005) — and a Text rule's token must
+     * be used by a text it reaches. A placeholder with no default that nothing fills is an error: the
+     * runtime would show the respondent the raw placeholder. One with a default is a warning.
+     */
+    private static void checkTokens(List<ValidationIssue> issues, Map<Integer, Step> steps, Map<Integer, Section> sections,
+                                    Map<Integer, Question> questions, Map<Integer, StepsSections> stepsSections,
+                                    Map<Integer, SectionsQuestion> sectionsQuestions, List<Relationship> relationships,
+                                    RuleOrdering.Board board) {
+        TokenSamples fills = TokenSamples.of(relationships, stepsSections.values(), sectionsQuestions.values(), Map.of());
+        for (Step s : steps.values()) {
+            for (Tokens.Placeholder ph : Tokens.placeholders(s.name)) {
+                if (!fills.fills(ph, s.stepId, null, null)) {
+                    unfilled(issues, "steps", s.stepId, "Step '" + s.name + "'", ph);
+                }
+            }
+        }
+        for (StepsSections ss : stepsSections.values()) {
+            Section sec = sections.get(ss.sectionId);
+            if (sec == null) {
+                continue;
+            }
+            for (Tokens.Placeholder ph : Tokens.placeholders(sec.name)) {
+                if (!fills.fills(ph, ss.stepId, ss.stepsSectionsId, null)) {
+                    unfilled(issues, "sections", sec.sectionId, "Section '" + sec.name + "' in step " + board.stepLabel(ss.stepId), ph);
+                }
+            }
+        }
+        for (SectionsQuestion sq : sectionsQuestions.values()) {
+            Question q = questions.get(sq.questionId);
+            if (q == null) {
+                continue;
+            }
+            List<StepsSections> mounts = board.mountsOf(sq.sectionId);
+            for (Tokens.Placeholder ph : Tokens.placeholders(q.text)) {
+                boolean filled = mounts.isEmpty()
+                        ? fills.fills(ph, null, null, sq.sectionsQuestionId)
+                        : mounts.stream().allMatch(ss -> fills.fills(ph, ss.stepId, ss.stepsSectionsId, sq.sectionsQuestionId));
+                if (!filled) {
+                    unfilled(issues, "questions", q.questionId, label(q) + " in section " + board.sectionLabel(sq.sectionId), ph);
+                }
+            }
+        }
+        Map<Integer, List<Question>> questionsBySection = new HashMap<>();
+        for (SectionsQuestion sq : sectionsQuestions.values()) {
+            Question q = questions.get(sq.questionId);
+            if (q != null) {
+                questionsBySection.computeIfAbsent(sq.sectionId, k -> new ArrayList<>()).add(q);
+            }
+        }
+        for (Relationship r : relationships) {
+            if (r.actionType == null || !"TEXT".equals(r.actionType.name) || r.token == null || r.token.isBlank()) {
+                continue;
+            }
+            String tok = r.token.trim();
+            if (!reachUses(r, tok, steps, sections, questions, stepsSections, sectionsQuestions, questionsBySection)) {
+                issues.add(ValidationIssue.warning("relationships", r.relationshipId,
+                        "Rule '" + r.description + "' fills {" + tok + "} but no text it reaches uses it"));
+            }
+        }
+    }
+
+    private static void unfilled(List<ValidationIssue> issues, String kind, Integer id, String where, Tokens.Placeholder ph) {
+        if (ph.defaultText() != null) {
+            issues.add(ValidationIssue.warning(kind, id, where + " uses " + ph.text() + " but no rule fills it there, so respondents always read the default"));
+        } else {
+            issues.add(ValidationIssue.error(kind, id, where + " uses " + ph.text() + " without a default and no rule fills it there"));
+        }
+    }
+
+    /** Whether the token appears in the text of the rule's target or of anything inside it. */
+    private static boolean reachUses(Relationship r, String tok, Map<Integer, Step> steps, Map<Integer, Section> sections,
+                                     Map<Integer, Question> questions, Map<Integer, StepsSections> stepsSections,
+                                     Map<Integer, SectionsQuestion> sectionsQuestions, Map<Integer, List<Question>> questionsBySection) {
+        if (r.downstreamSqId != null) {
+            SectionsQuestion sq = sectionsQuestions.get(r.downstreamSqId);
+            Question q = sq == null ? null : questions.get(sq.questionId);
+            return q != null && Tokens.uses(q.text, tok);
+        }
+        if (r.downstreamSsId != null) {
+            StepsSections ss = stepsSections.get(r.downstreamSsId);
+            return ss != null && sectionUses(ss.sectionId, tok, sections, questionsBySection);
+        }
+        Step step = steps.get(r.downstreamStepId);
+        if (step != null && Tokens.uses(step.name, tok)) {
+            return true;
+        }
+        return stepsSections.values().stream()
+                .anyMatch(ss -> ss.stepId.equals(r.downstreamStepId) && sectionUses(ss.sectionId, tok, sections, questionsBySection));
+    }
+
+    private static boolean sectionUses(Integer sectionId, String tok, Map<Integer, Section> sections, Map<Integer, List<Question>> questionsBySection) {
+        Section sec = sections.get(sectionId);
+        if (sec != null && Tokens.uses(sec.name, tok)) {
+            return true;
+        }
+        return questionsBySection.getOrDefault(sectionId, List.of()).stream().anyMatch(q -> Tokens.uses(q.text, tok));
     }
 
     private static String label(Question q) {

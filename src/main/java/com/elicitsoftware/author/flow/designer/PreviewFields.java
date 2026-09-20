@@ -11,8 +11,7 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
-import com.elicitsoftware.model.Relationship;
-import com.elicitsoftware.model.StructuralElement;
+import com.elicitsoftware.author.survey.Tokens;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasLabel;
 import com.vaadin.flow.component.HasPlaceholder;
@@ -35,50 +34,68 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Builds the respondent's field for a question the way the Survey app's {@code Elicit*} input
  * wrappers do: the question text as the label, tooltip, placeholder, required indicator and theme
- * variants, choice types fed with their list's options, HTML rendered as HTML. Shared by the
- * question dialog's live preview (UC-011 BR-004) and the designer's section preview.
+ * variants, choice types fed with their list's options, HTML rendered as HTML, tokens substituted
+ * the way the runtime does. Shared by the question dialog's live preview (UC-011 BR-004) and the
+ * designer's section preview.
  */
 final class PreviewFields {
-
-    private static final Pattern TOKEN = Pattern.compile("\\{([^{}|]+)(?:\\|([^{}]*))?}");
 
     /** The options a choice field shows when the question has no list yet. */
     static final List<String> SAMPLE_OPTIONS = List.of("Option A", "Option B", "Option C");
 
+    /** A value may itself hold placeholders ("{G1's|your} mother"); the runtime resolves those too. */
+    private static final int MAX_NESTING = 5;
+
     private PreviewFields() { }
 
-    /** Token -> sample answer, from the survey's TEXT rules (FR-013), so a preview can show substitution. */
-    static Map<String, String> tokenSamples(int surveyId) {
-        Map<String, String> samples = new HashMap<>();
-        for (Relationship r : Relationship.<Relationship>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
-            if (r.actionType != null && "TEXT".equals(r.actionType.name)
-                    && r.token != null && !r.token.isBlank() && r.sample != null && !r.sample.isBlank()) {
-                samples.put(r.token.trim(), r.sample);
-            }
-        }
-        return samples;
-    }
-
-    /** Replace {TOKEN} / {TOKEN|default} with a rule's sample answer, then its default, else leave it. */
-    static String substituteTokens(String text, Map<String, String> samples) {
+    /**
+     * Substitute placeholders the way the runtime does (QuestionManager.replaceTokens): a placeholder
+     * {phrase|default} whose phrase contains a token with a value becomes the phrase with the token
+     * replaced, else the default, else stays as written — then the runtime's own tidying: "Dennis's"
+     * reads "Dennis'", and "her's"/"his's"/"Your's" lose the stray possessive.
+     */
+    static String substituteTokens(String text, Map<String, String> values) {
         if (text == null || text.isEmpty()) {
             return "";
         }
-        Matcher m = TOKEN.matcher(text);
+        String result = text;
+        for (int pass = 0; pass < MAX_NESTING && result.indexOf('{') >= 0; pass++) {
+            String next = substituteOnce(result, values);
+            if (next.equals(result)) {
+                break;
+            }
+            result = next;
+        }
+        return result.replace(" her's ", " her ").replace(" his's ", " his ").replace(" Your's ", " Your ")
+                .replaceAll("s's", "s'");
+    }
+
+    private static String substituteOnce(String text, Map<String, String> values) {
+        Matcher m = Tokens.PLACEHOLDER.matcher(text);
         StringBuilder sb = new StringBuilder();
         while (m.find()) {
-            String tok = m.group(1).trim();
+            String phrase = m.group(1);
             String def = m.group(2);
-            String replacement = samples.getOrDefault(tok, def != null ? def : m.group());
+            String replacement = null;
+            // Keys in sorted order, as the runtime's TreeMap walks them; every key the phrase holds is replaced.
+            for (String key : new TreeMap<>(values).keySet()) {
+                if (phrase.contains(key)) {
+                    phrase = phrase.replaceFirst(Pattern.quote(key), Matcher.quoteReplacement(values.get(key)));
+                    replacement = phrase;
+                }
+            }
+            if (replacement == null) {
+                replacement = def != null ? def : m.group();
+            }
             m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
         }
         m.appendTail(sb);

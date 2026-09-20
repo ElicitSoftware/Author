@@ -240,7 +240,6 @@ public class RuleService {
         to.referenceValue = from.referenceValue;
         to.defaultUpstreamValue = from.defaultUpstreamValue;
         to.overrideUpstreamValue = from.overrideUpstreamValue;
-        to.sample = from.sample;
     }
 
     private Relationship flushTranslated(Relationship r) {

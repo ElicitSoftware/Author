@@ -94,10 +94,6 @@ public class Relationship extends StructuralElement {
     @Column(name = "override_upstream_value", length = 255)
     public String overrideUpstreamValue;
 
-    /** Authoring-only example answer for a TEXT rule's token, used to preview token substitution. */
-    @Column(name = "sample", length = 255)
-    public String sample;
-
     @Column(name = "relationship_id", nullable = false)
     public Integer relationshipId;
 

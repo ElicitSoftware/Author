@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Connect an upstream question's answer to a downstream step, section or question with an operator, a reference value and an action (Show, Repeat or Text), by drawing the rule on the designer board or from a question's menu.  
 **Status:** Implemented  
-**Requirements:** [FR-019, FR-020, FR-022, FR-036, NFR-007, NFR-012](../requirements.md)
+**Requirements:** [FR-012, FR-019, FR-020, FR-022, NFR-007, NFR-012](../requirements.md)
 
 ## Preconditions
 
@@ -20,7 +20,7 @@
 2. The system attaches a dangling arrow to that row, its action glyph at the midpoint, and follows the pointer.
 3. The author drops the arrowhead on the target: a step lane header, a section card header or a question row.
 4. The system opens the rule dialog with the upstream question, the action and the downstream target filled in; the card the row or header sits in tells the system which mount of a shared section is meant.
-5. The author chooses the operator, enters the reference value (and, for Text, the token name and an example answer for the preview) and an optional description, and saves.
+5. The author chooses the operator, enters the reference value (and, for Text, picks the token from the names the survey already uses or types a new one) and an optional description, and saves.
 6. The system creates the rule with a key minted once, draws the arrow labelled by its action and target (UC-020 BR-004), and refreshes validation.
 
 ## Alternative Flows
@@ -93,6 +93,6 @@ Upstream question, operator, reference value, action, target — the order the r
 
 The runtime applies a target's rules with AND; the board draws them as separate arrows converging on the target.
 
-### BR-005: A Text rule may carry a sample answer
+### BR-005: A rule reaches everything inside its target, and a token is a slot, not a question
 
-A Text rule may record an example answer for its token. It is authoring-only — it drives the question preview's token substitution (UC-011 BR-004) and is never written to the export — so removing or changing it never affects a deployed site.
+The runtime builds a text's token values from the rules that target its step, then its section, then the question itself, the inner overriding the outer. A Text rule on a step therefore fills its token in every section and question of that step; one rule per step, not one per element. A token is the name of a slot in a text, declared by being used: the same token may be filled by several rules from different questions, each where the text is shown (the Family History Survey fills `{S1}` from fifteen places), and a rule of any action that carries a token fills it. The example answer a preview substitutes belongs to the question the rule reads (UC-011 BR-005), not to the rule.
