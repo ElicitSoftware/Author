@@ -408,7 +408,7 @@
                 <configuration>
                     <inceptionYear>2026</inceptionYear>
                     <licenseName>polyform</licenseName>
-                    <organizationName>The Regents of the University of Michigan - Rogel Cancer Center</organizationName>
+                    <organizationName>Elicit Software LLC</organizationName>
                     <projectName>Elicit Author</projectName>
                     <emptyLineAfterHeader>true</emptyLineAfterHeader>
                     <excludes>
