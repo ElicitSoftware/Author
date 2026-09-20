@@ -36,6 +36,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.elicitsoftware.model.Section;
 import com.elicitsoftware.model.Step;
+import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.Survey;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -417,6 +418,15 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                     case SECTION -> createSectionAt(spot.container(), spot.index());
                     case QUESTION -> createQuestionAt(spot.container(), spot.index(), typeNamed(item.questionType()));
                 }
+            } else if (data instanceof BankSection bank) {
+                // UC-015 A6: a section from the drawer's Sections panel, mounted in the target step.
+                if (spot.accepts() != StructureNode.Kind.SECTION || spot.container() == null) {
+                    return;
+                }
+                StepsSections mount = designer.mountSection(survey.id, bank.sectionId(), spot.container().durableId(), spot.index());
+                load();
+                select(find(StructureNode.Kind.SECTION, bank.sectionId(), mount.stepsSectionsId));
+                success("Section '" + bank.label() + "' is now also in step '" + spot.container().label() + "'");
             } else if (data instanceof BankQuestion bank) {
                 // UC-011 A6: a question from the drawer's Questions panel, reused in the target section.
                 if (spot.accepts() != StructureNode.Kind.QUESTION || spot.container() == null) {
@@ -426,7 +436,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 open(spot.container());
                 load();
                 select(find(StructureNode.Kind.QUESTION, bank.questionId(), null));
-                success("Added question '" + bank.label() + "' to section '" + spot.container().label() + "'");
+                success("Question '" + bank.label() + "' is now also in section '" + spot.container().label() + "'");
             } else if (data instanceof StructureNode node) {
                 if (node.kind() != spot.accepts() || node.retired()) {
                     return;
@@ -444,8 +454,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                             designer.moveSectionWithinStep(survey.id, node.assignmentId(), targetIndex(from, spot.index()));
                             afterMove(node, "Moved section '" + node.label() + "'", backwardBefore);
                         } else {
-                            Section copy = designer.duplicateSectionInto(survey.id, node.durableId(), spot.container().durableId(), spot.index());
-                            copiedSection(copy, spot.container());
+                            // UC-015 main flow: a card dragged across lanes mounts the same section there.
+                            StepsSections mount = designer.mountSection(survey.id, node.durableId(), spot.container().durableId(), spot.index());
+                            load();
+                            select(find(StructureNode.Kind.SECTION, node.durableId(), mount.stepsSectionsId));
+                            success("Section '" + node.label() + "' is now also in step '" + spot.container().label() + "'");
                         }
                     }
                     case QUESTION -> {
@@ -454,11 +467,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                             designer.moveQuestionWithinSection(survey.id, node.assignmentId(), targetIndex(from, spot.index()));
                             afterMove(node, "Moved question '" + node.label() + "'", backwardBefore);
                         } else {
+                            // UC-011 A4: a row dragged across cards places the same question there.
                             designer.assignQuestionInto(survey.id, node.durableId(), spot.container().durableId(), spot.index());
                             open(spot.container());
                             load();
                             select(find(StructureNode.Kind.QUESTION, node.durableId(), null));
-                            success("Copied question '" + node.label() + "' into section '" + spot.container().label() + "'");
+                            success("Question '" + node.label() + "' is now also in section '" + spot.container().label() + "'");
                         }
                     }
                 }
@@ -505,32 +519,22 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
     }
 
-    /** Keyboard equivalent of dragging into another container (UC-015 A5, UC-011 A4). */
+    /** UC-015 A1: a real copy of a section from the card's menu — a drag across lanes mounts instead. */
     public void copyTo(StructureNode node) {
-        switch (node.kind()) {
-            case SECTION -> new PickerDialog<>("Copy section '" + node.label() + "'", "Into step", tree.roots(), StructureNode::label, step -> {
-                try {
-                    Section copy = designer.duplicateSectionInto(survey.id, node.durableId(), step.durableId(), childrenOf(step).size());
-                    copiedSection(copy, step);
-                } catch (AuthoringException ae) {
-                    error(ae.getMessage());
-                }
-            }).open();
-            case QUESTION -> new PickerDialog<>("Copy question '" + node.label() + "'", "Into section", sectionsDistinct(), this::sectionPath, section -> {
-                try {
-                    designer.assignQuestionInto(survey.id, node.durableId(), section.durableId(), childrenOf(section).size());
-                    open(section);
-                    load();
-                    success("Copied question '" + node.label() + "' into section '" + section.label() + "'");
-                } catch (AuthoringException ae) {
-                    error(ae.getMessage());
-                }
-            }).open();
-            default -> { }
+        if (node.kind() != StructureNode.Kind.SECTION) {
+            return;
         }
+        new PickerDialog<>("Copy section '" + node.label() + "'", "Into step", tree.roots(), StructureNode::label, step -> {
+            try {
+                Section copy = designer.duplicateSectionInto(survey.id, node.durableId(), step.durableId(), childrenOf(step).size());
+                copiedSection(copy, step);
+            } catch (AuthoringException ae) {
+                error(ae.getMessage());
+            }
+        }).open();
     }
 
-    /** UC-015 A1: the same section in another step. */
+    /** UC-015 A5 keyboard route: the same section in another step. */
     public void mountIn(StructureNode section) {
         new PickerDialog<>("Mount section '" + section.label() + "'", "Also in step", tree.roots(), StructureNode::label, step -> {
             try {
@@ -555,7 +559,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         return out;
     }
 
-    /** The Lists and Questions panels read the same tables as the board; keep them in step. */
+    /** The Lists, Sections and Questions panels read the same tables as the board; keep them in step. */
     private void refreshToolbox(Map<Integer, Question> questions) {
         if (toolbox == null || survey == null || tree == null) {
             return;
@@ -568,7 +572,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 users.merge(q.selectGroupId, 1L, Long::sum);
             }
         }
+        java.util.Map<Integer, String> descriptions = new java.util.HashMap<>();
+        for (Section sec : Section.<Section>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) {
+            descriptions.put(sec.sectionId, sec.description);
+        }
         toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users, listService.optionTexts(survey.id));
+        toolbox.sections.refresh(this, tree.all(), descriptions);
         toolbox.questions.refresh(this, tree.all(), texts);
     }
 
@@ -628,14 +637,14 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }, "Cancel", e -> { }).open();
     }
 
-    /** UC-011 A6, keyboard route: reuse a bank question in a section chosen from a picker. */
+    /** UC-011 A4/A6, keyboard route: the same question in a section chosen from a picker (row menu and Questions panel). */
     public void addBankQuestionTo(StructureNode question) {
         new PickerDialog<>("Add question '" + question.label() + "'", "To section", sectionsDistinct(), this::sectionPath, section -> {
             try {
                 designer.assignQuestionInto(survey.id, question.durableId(), section.durableId(), childrenOf(section).size());
                 open(section);
                 load();
-                success("Added question '" + question.label() + "' to section '" + section.label() + "'");
+                success("Question '" + question.label() + "' is now also in section '" + section.label() + "'");
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
