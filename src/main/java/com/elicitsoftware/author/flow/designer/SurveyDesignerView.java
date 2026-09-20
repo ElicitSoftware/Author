@@ -27,6 +27,7 @@ import com.elicitsoftware.author.flow.reporting.ElementTagsDialog;
 import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyService;
+import com.elicitsoftware.author.survey.TokenSamples;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.elicitsoftware.model.ActionType;
 import com.elicitsoftware.model.Question;
@@ -592,7 +593,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 ruleShown.add(edge.target());
             }
         }
-        preview.show(this, selected, questions, listService.optionTexts(survey.id), PreviewFields.tokenSamples(survey.id), ruleShown);
+        preview.show(this, selected, questions, listService.optionTexts(survey.id), TokenSamples.load(survey.id), ruleShown);
     }
 
     // ---- lists (UC-014) ------------------------------------------------------------------------

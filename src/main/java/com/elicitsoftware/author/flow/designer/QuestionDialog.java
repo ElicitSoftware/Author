@@ -13,6 +13,7 @@ package com.elicitsoftware.author.flow.designer;
 
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.definition.ExportValidation;
+import com.elicitsoftware.author.survey.TokenSamples;
 import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.SelectGroup;
@@ -67,6 +68,7 @@ public class QuestionDialog extends Dialog {
     final TextField mask = new TextField("Input mask");
     final TextField placeholder = new TextField("Placeholder");
     final TextField defaultValue = new TextField("Default value");
+    final TextField sample = new TextField("Sample answer");
     final MultiSelectComboBox<String> variant = new MultiSelectComboBox<>("Variant");
     final Button save = new Button("Save");
     final Button cancel = new Button("Cancel");
@@ -82,7 +84,7 @@ public class QuestionDialog extends Dialog {
 
     private final Binder<Question> binder = new Binder<>(Question.class);
     private final Div preview = new Div();
-    private final Map<String, String> tokenSamples;
+    private final Map<String, String> tokenValues;
     private final Map<String, HasValidation> fieldsByProperty;
     private final com.elicitsoftware.author.survey.ListService lists;
 
@@ -99,8 +101,9 @@ public class QuestionDialog extends Dialog {
         setModal(true);
         setWidth("48rem");
 
-        // Token -> sample answer, from the survey's TEXT rules, so the preview can show substitution.
-        tokenSamples = PreviewFields.tokenSamples(surveyId);
+        // What the rules that reach this question — on its step, its section or itself — write into
+        // its text, so the preview substitutes {TOKEN} placeholders the way the runtime will (FR-013).
+        tokenValues = existing == null ? Map.of() : TokenSamples.load(surveyId).forQuestion(existing.questionId);
 
         List<QuestionType> types = QuestionType.listAll(Sort.by("name"));
         questionType.setItems(types);
@@ -115,6 +118,8 @@ public class QuestionDialog extends Dialog {
         mask.setMaxLength(255);
         placeholder.setMaxLength(255);
         defaultValue.setMaxLength(255);
+        sample.setMaxLength(255);
+        sample.setHelperText("Previews the texts that Text rules fill with this answer");
         variant.setItems(VARIANTS);
         variant.setHelperText("Vaadin theme variants applied to the field");
 
@@ -129,6 +134,8 @@ public class QuestionDialog extends Dialog {
         FieldHelp.help(mask, "A pattern that constrains what the respondent can type.");
         FieldHelp.help(placeholder, "Faint example text shown in the empty field.");
         FieldHelp.help(defaultValue, "The value the field starts with.");
+        FieldHelp.help(sample, "An example answer, used only in previews. Wherever a Text rule writes this question's answer into another text, "
+                + "the preview shows this instead: sample \"Bob\" previews \"Hello {PName}\" as \"Hello Bob\". Respondents never see it.");
         FieldHelp.help(variant, "Visual style variants applied to the field: alignment, size, or layout.");
 
         List<SelectGroup> groups = new java.util.ArrayList<>(
@@ -158,6 +165,7 @@ public class QuestionDialog extends Dialog {
         binder.forField(mask).bind(q -> q.mask, (q, v) -> q.mask = v);
         binder.forField(placeholder).bind(q -> q.placeholder, (q, v) -> q.placeholder = v);
         binder.forField(defaultValue).bind(q -> q.defaultValue, (q, v) -> q.defaultValue = v);
+        binder.forField(sample).bind(q -> q.sample, (q, v) -> q.sample = v);
         binder.forField(variant).bind(q -> parseVariants(q.variant),
                 (q, v) -> q.variant = v == null || v.isEmpty() ? null : String.join(" ", v));
         fieldsByProperty = Map.of("questionType", questionType, "text", text, "shortText", shortText, "minValue", minValue,
@@ -180,6 +188,7 @@ public class QuestionDialog extends Dialog {
             bean.placeholder = existing.placeholder;
             bean.defaultValue = existing.defaultValue;
             bean.variant = existing.variant;
+            bean.sample = existing.sample;
         } else if (presetType != null) {
             bean.questionType = presetType;
         }
@@ -192,7 +201,7 @@ public class QuestionDialog extends Dialog {
         listRow.setWidthFull();
         listRow.expand(selectGroup);
         FormLayout form = new FormLayout(questionType, shortText, text, toolTip, required, listRow,
-                minValue, maxValue, validationText, mask, placeholder, defaultValue, variant);
+                minValue, maxValue, validationText, mask, placeholder, defaultValue, variant, sample);
         form.setColspan(text, 2);
 
         // Live preview of the respondent's field, so the author sees what the type and variants do.
@@ -249,9 +258,9 @@ public class QuestionDialog extends Dialog {
                 Boolean.TRUE.equals(required.getValue()), variant.getValue(), List.of()));
     }
 
-    /** Replace {TOKEN} / {TOKEN|default} with a rule's sample answer, then its default, in the preview. */
+    /** Replace {TOKEN} / {TOKEN|default} with what the rules reaching this question write, else the default. */
     private String substituteTokens(String text) {
-        return PreviewFields.substituteTokens(text, tokenSamples);
+        return PreviewFields.substituteTokens(text, tokenValues);
     }
 
     /** The known variant names present in a stored value (space- or comma-separated), for the dropdown. */
@@ -286,6 +295,7 @@ public class QuestionDialog extends Dialog {
         toolTip.setVisible(!html);
         required.setVisible(!html);
         variant.setVisible(!html);
+        sample.setVisible(!html);
     }
 
     private void showError(AuthoringException ae) {

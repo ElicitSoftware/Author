@@ -1,3 +1,3 @@
 Mirror of /Users/matthew/Dev/Elicit/Survey/src/main/resources/db/migration
-Survey commit: 6ca79bfba68cdd9cf30146e7ce9811de545903a2
-Synced: 2026-09-20T03:07:30Z
+Survey commit: 4af04cc306784afbb98b06ec6a1915b930d9fe4d
+Synced: 2026-09-20T14:13:15Z

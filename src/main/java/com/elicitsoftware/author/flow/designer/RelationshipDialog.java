@@ -15,6 +15,7 @@ import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
+import com.elicitsoftware.author.survey.Tokens;
 import com.elicitsoftware.model.ActionType;
 import com.elicitsoftware.model.OperatorType;
 import com.elicitsoftware.model.Relationship;
@@ -52,8 +53,7 @@ public class RelationshipDialog extends Dialog {
     final ComboBox<ActionType> action = new ComboBox<>("Action");
     final RadioButtonGroup<String> targetKind = new RadioButtonGroup<>("Target");
     final ComboBox<StructureNode> target = new ComboBox<>("Target element");
-    final TextField token = new TextField("Token");
-    final TextField sample = new TextField("Sample value");
+    final ComboBox<String> token = new ComboBox<>("Token");
     final TextField description = new TextField("Description");
     final TextField defaultUpstreamValue = new TextField("Default upstream value");
     final TextField overrideUpstreamValue = new TextField("Override upstream value");
@@ -102,10 +102,19 @@ public class RelationshipDialog extends Dialog {
         action.setItemLabelGenerator(a -> a.name);
         action.setRequiredIndicatorVisible(true);
         referenceValue.setMaxLength(255);
-        token.setMaxLength(10);
-        token.setHelperText("Replaced in the target's text at {TOKEN|default}");
-        sample.setMaxLength(255);
-        sample.setHelperText("Example answer for the preview");
+        // The survey's tokens, so a name is reused rather than retyped; a new one is typed in (FR-012).
+        List<String> tokens = new ArrayList<>(Tokens.known(surveyId));
+        token.setItems(tokens);
+        token.setAllowCustomValue(true);
+        token.addCustomValueSetListener(e -> {
+            String typed = e.getDetail() == null ? "" : e.getDetail().trim();
+            if (!typed.isEmpty() && !tokens.contains(typed)) {
+                tokens.add(typed);
+                token.setItems(tokens);
+            }
+            token.setValue(typed.isEmpty() ? null : typed);
+        });
+        token.setHelperText("Fills {TOKEN|default} — or a phrase holding it, {Has TOKEN been|Were you} — in the target's text and in every text inside it");
         description.setMaxLength(255);
         defaultUpstreamValue.setMaxLength(255);
         overrideUpstreamValue.setMaxLength(255);
@@ -122,10 +131,12 @@ public class RelationshipDialog extends Dialog {
         FieldHelp.help(operator, "How the answer is compared to the value — equals, greater than, contains, or just whether an answer exists.");
         FieldHelp.help(referenceValue, "The value the answer is compared against. Leave empty for operators that only test whether an answer exists.");
         FieldHelp.help(action, "What the rule does when it matches: SHOW reveals the target, REPEAT instantiates it once per the answer, TEXT substitutes the answer into the target's text.");
-        FieldHelp.help(targetKind, "Whether the rule acts on a whole step, a section, or a single question.");
+        FieldHelp.help(targetKind, "Whether the rule acts on a whole step, a section, or a single question. "
+                + "A Text rule on a step fills its token in every section and question of that step; on a section, in every question of it.");
         FieldHelp.help(target, "The element the action applies to.");
-        FieldHelp.help(token, "For a TEXT rule: the placeholder written as {TOKEN} in the target's text that the answer replaces.");
-        FieldHelp.help(sample, "An example answer for the token, shown in the preview: sample \"Bob\" previews \"Hello {PName}\" as \"Hello Bob\".");
+        FieldHelp.help(token, "For a TEXT rule: the placeholder written as {TOKEN} in the target's text that the answer replaces. "
+                + "Pick one the survey already uses or type a new name (up to 10 characters). The same token may be filled by several rules, "
+                + "one per place it is used. The preview shows the upstream question's sample answer in its place.");
         FieldHelp.help(description, "An optional note for authors. It is not shown to respondents.");
         FieldHelp.help(defaultUpstreamValue, "The value to assume for the upstream answer when the respondent has not answered it yet.");
         FieldHelp.help(overrideUpstreamValue, "A fixed value to use for the upstream answer instead of the respondent's actual answer.");
@@ -139,8 +150,13 @@ public class RelationshipDialog extends Dialog {
             operator.setValue(seed.operatorType);
             action.setValue(seed.actionType);
             referenceValue.setValue(seed.referenceValue == null ? "" : seed.referenceValue);
-            token.setValue(seed.token == null ? "" : seed.token);
-            sample.setValue(seed.sample == null ? "" : seed.sample);
+            if (seed.token != null && !seed.token.isBlank()) {
+                if (!tokens.contains(seed.token.trim())) {
+                    tokens.add(seed.token.trim());
+                    token.setItems(tokens);
+                }
+                token.setValue(seed.token.trim());
+            }
             description.setValue(seed.description == null ? "" : seed.description);
             defaultUpstreamValue.setValue(seed.defaultUpstreamValue == null ? "" : seed.defaultUpstreamValue);
             overrideUpstreamValue.setValue(seed.overrideUpstreamValue == null ? "" : seed.overrideUpstreamValue);
@@ -166,7 +182,7 @@ public class RelationshipDialog extends Dialog {
 
         sentence.addClassName("rule-sentence");
         sentence.getElement().setAttribute("aria-live", "polite");
-        FormLayout form = new FormLayout(upstream, operator, referenceValue, action, token, sample, targetKind, target, description);
+        FormLayout form = new FormLayout(upstream, operator, referenceValue, action, token, targetKind, target, description);
         form.setColspan(upstream, 2);
         form.setColspan(target, 2);
         form.setColspan(description, 2);
@@ -186,7 +202,6 @@ public class RelationshipDialog extends Dialog {
             bean.actionType = action.getValue();
             bean.referenceValue = blankToNull(referenceValue.getValue());
             bean.token = blankToNull(token.getValue());
-            bean.sample = blankToNull(sample.getValue());
             bean.description = blankToNull(description.getValue());
             bean.defaultUpstreamValue = blankToNull(defaultUpstreamValue.getValue());
             bean.overrideUpstreamValue = blankToNull(overrideUpstreamValue.getValue());
@@ -282,7 +297,6 @@ public class RelationshipDialog extends Dialog {
         boolean text = a != null && "TEXT".equals(a.name);
         token.setVisible(text);
         token.setRequiredIndicatorVisible(text);
-        sample.setVisible(text);
         boolean repeat = a != null && "REPEAT".equals(a.name);
         targetKind.setItemEnabledProvider(k -> !(repeat && "Step".equals(k)));
     }

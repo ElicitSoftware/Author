@@ -84,6 +84,13 @@ public class Question extends StructuralElement {
     @Column(name = "variant", length = 255)
     public String variant;
 
+    /**
+     * Authoring-only example answer (UC-011 BR-005). The designer substitutes it wherever a TEXT rule
+     * writes this question's answer into another element's text; the Survey runtime never reads it.
+     */
+    @Column(name = "sample", length = 255)
+    public String sample;
+
     @Column(name = "question_id", nullable = false)
     public Integer questionId;
 

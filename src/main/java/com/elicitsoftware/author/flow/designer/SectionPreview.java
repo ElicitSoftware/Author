@@ -12,6 +12,7 @@ package com.elicitsoftware.author.flow.designer;
  */
 
 import com.elicitsoftware.author.survey.StructureNode;
+import com.elicitsoftware.author.survey.TokenSamples;
 import com.elicitsoftware.model.Question;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
@@ -57,11 +58,11 @@ public class SectionPreview extends Div {
      *
      * @param questions   the survey's current questions by durable id
      * @param optionTexts option display texts per select group (durable id)
-     * @param samples     token samples from TEXT rules, for label substitution
+     * @param samples     what the survey's rules write into each text's tokens, scoped by step, section and question
      * @param ruleShown   anchors ("step-" + step id, "ss-"/"sq-" + assignment id) that only a SHOW rule reveals
      */
     void show(SurveyDesignerView view, StructureNode selected, Map<Integer, Question> questions,
-              Map<Integer, List<String>> optionTexts, Map<String, String> samples, Set<String> ruleShown) {
+              Map<Integer, List<String>> optionTexts, TokenSamples samples, Set<String> ruleShown) {
         pages.removeAll();
         blocks.clear();
         titles.clear();
@@ -94,7 +95,7 @@ public class SectionPreview extends Div {
     }
 
     private Div page(SurveyDesignerView view, StructureNode section, int index, int count, Map<Integer, Question> questions,
-                     Map<Integer, List<String>> optionTexts, Map<String, String> samples, Set<String> ruleShown) {
+                     Map<Integer, List<String>> optionTexts, TokenSamples samples, Set<String> ruleShown) {
         Div page = new Div();
         page.addClassName("designer-preview-page");
         if (count > 1) {
@@ -102,7 +103,9 @@ public class SectionPreview extends Div {
             caption.addClassName("designer-preview-caption");
             page.add(caption);
         }
-        H3 title = new H3(section.label());
+        // The section's name as the respondent reads it: rules on its step and on this mount fill its tokens.
+        Integer stepId = stepOf(section);
+        H3 title = new H3(PreviewFields.substituteTokens(section.label(), samples.forMount(stepId, section.assignmentId(), null)));
         title.addClassName("designer-preview-title");
         page.add(title);
         titles.add(section.label());
@@ -126,7 +129,10 @@ public class SectionPreview extends Div {
     }
 
     private Div block(SurveyDesignerView view, StructureNode row, Question q, Map<Integer, List<String>> optionTexts,
-                      Map<String, String> samples, Set<String> ruleShown) {
+                      TokenSamples samples, Set<String> ruleShown) {
+        // What the runtime substitutes here: the step's rules, then the section mount's, then the assignment's own.
+        StructureNode section = row.parent();
+        Map<String, String> values = samples.forMount(stepOf(row), section == null ? null : section.assignmentId(), row.assignmentId());
         Div box = new Div();
         box.addClassName("designer-preview-question");
         box.getElement().setAttribute("data-node-id", "sq-" + row.assignmentId());
@@ -136,10 +142,10 @@ public class SectionPreview extends Div {
         String typeName = q.questionType == null ? "" : q.questionType.name;
         Component field;
         if ("HTML".equalsIgnoreCase(typeName)) {
-            field = PreviewFields.html(PreviewFields.substituteTokens(q.text, samples));
+            field = PreviewFields.html(PreviewFields.substituteTokens(q.text, values));
         } else {
             List<String> options = q.selectGroupId == null ? List.of() : optionTexts.getOrDefault(q.selectGroupId, List.of());
-            field = PreviewFields.field(typeName, PreviewFields.substituteTokens(q.text, samples), q.placeholder, q.toolTip,
+            field = PreviewFields.field(typeName, PreviewFields.substituteTokens(q.text, values), q.placeholder, q.toolTip,
                     q.required, QuestionDialog.parseVariants(q.variant), options);
             field.getElement().getClassList().add("designer-preview-field");
         }
@@ -171,5 +177,15 @@ public class SectionPreview extends Div {
 
     public List<Block> blocks() {
         return List.copyOf(blocks);
+    }
+
+    /** The durable id of the step a node sits in, walking up the tree. */
+    private static Integer stepOf(StructureNode n) {
+        for (StructureNode p = n; p != null; p = p.parent()) {
+            if (p.kind() == StructureNode.Kind.STEP) {
+                return p.durableId();
+            }
+        }
+        return null;
     }
 }

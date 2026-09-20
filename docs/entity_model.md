@@ -219,6 +219,7 @@ A single respondent-facing question. Type 2 SCD structural element (durable key:
 | placeholder           | Placeholder text shown in the empty input                                             | String    | 255               | Optional                                                          |
 | default_value         | Pre-filled value                                                                      | String    | 255               | Optional                                                          |
 | variant               | UI variant/style hint for rendering                                                   | String    | 255               | Optional                                                          |
+| sample                | Authoring-only example answer; the designer substitutes it wherever a TEXT rule writes this question's answer into another text, and the Survey runtime never reads it | String | 255 | Optional |
 | question_id           | Durable key shared by every version of this question                                 | Integer   | 10                | Not Null                                                          |
 | question_key | Element key: cross-deployment identity, minted once, copied to every version, never regenerated | UUID | - | Not Null, Unique with version |
 | version               | Version number; always 0 in Author, incremented by Admin's update service at deployed sites | Integer   | 10                | Not Null, Default: 0                                               |
@@ -302,7 +303,6 @@ A conditional-logic rule connecting an upstream question's answer to a downstrea
 | reference_value          | Value the upstream answer is compared against                                                | String    | 255               | Optional                                                                 |
 | default_upstream_value   | Default value used if the upstream question has not been answered                            | String    | 255               | Optional                                                                 |
 | override_upstream_value  | Value that overrides the upstream answer for this evaluation                                 | String    | 255               | Optional                                                                 |
-| sample                   | Authoring-only example answer for a TEXT rule's token; the designer previews token substitution with it, and it is never read by the Survey runtime | String | 255 | Optional |
 | relationship_id          | Durable key shared by every version of this relationship                                    | Integer   | 10                | Not Null                                                                 |
 | relationship_key | Element key: cross-deployment identity, minted once, copied to every version, never regenerated | UUID | - | Not Null, Unique with version |
 | version                  | Version number; always 0 in Author, incremented by Admin's update service at deployed sites | Integer   | 10                | Not Null, Default: 0                                                     |
