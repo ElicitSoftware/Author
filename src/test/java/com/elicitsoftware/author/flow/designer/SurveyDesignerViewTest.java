@@ -43,6 +43,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -143,7 +144,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     @Test
     @TestTransaction
     @TestSecurity(user = "designer.author", roles = {"elicit_author"})
-    void droppingASectionIntoAnotherLaneCopiesIt() {
+    void droppingASectionIntoAnotherLaneMountsIt() {
         Survey s = fixture();
         SurveyDesignerView view = open(s);
         // Expand Step Two so its section-level insertion zone is rendered (drop target).
@@ -157,10 +158,12 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
 
         assertEquals(2, view.lanes.get(0).cards.size(), "UC-015 BR-001: the original stays");
         assertEquals(2, view.lanes.get(1).cards.size());
-        SectionCard copy = view.lanes.get(1).cards.get(0);
-        assertEquals("Fixture Section A", copy.node().label());
-        assertFalse(copy.node().durableId().equals(sectionA.node().durableId()), "a brand-new section");
-        assertTrue(view.isSelected(copy.node()), "the copy is selected");
+        SectionCard mount = view.lanes.get(1).cards.get(0);
+        assertEquals("Fixture Section A", mount.node().label());
+        assertEquals(sectionA.node().durableId(), mount.node().durableId(), "UC-015 BR-001: the same section, not a copy");
+        assertNotEquals(sectionA.node().assignmentId(), mount.node().assignmentId(), "a second assignment");
+        assertTrue(mount.mountBadge.isVisible(), "both cards say 'in 2 steps'");
+        assertTrue(view.isSelected(mount.node()), "the new mount is selected");
     }
 
     @Test
@@ -254,7 +257,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         }
         view.toggleAndSelect(card.node());
         QuestionRow row = view.lanes.get(0).cards.get(0).rows.get(0);
-        for (String label : List.of("Edit…", "Copy to section…", "Reporting tags…", "Move down", "Open details", "Remove from this section")) {
+        for (String label : List.of("Edit…", "Also add to section…", "Reporting tags…", "Move down", "Open details", "Remove from this section")) {
             assertNotNull(row.menu.find(label), "NFR-012: question menu has " + label);
         }
         assertFalse(row.menu.find("Move up").isEnabled(), "first question cannot move up");
@@ -262,17 +265,22 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
 
     @Test
     @TestSecurity(user = "designer.author", roles = {"elicit_author"})
-    void drawerToolboxHasCollapsiblePanelsWithListsAndQuestions() {
+    void drawerToolboxHasCollapsiblePanelsWithListsSectionsAndQuestions() {
         SurveyDesignerView view = open(fixture());
         DesignerToolbox toolbox = view.toolbox();
-        assertEquals(List.of("Controls", "Lists", "Questions"),
-                List.of(toolbox.controlsPanel.getSummaryText(), toolbox.listsPanel.getSummaryText(), toolbox.questionsPanel.getSummaryText()));
+        assertEquals(List.of("Controls", "Lists", "Sections", "Questions"),
+                List.of(toolbox.controlsPanel.getSummaryText(), toolbox.listsPanel.getSummaryText(),
+                        toolbox.sectionsPanel.getSummaryText(), toolbox.questionsPanel.getSummaryText()));
         assertTrue(toolbox.controlsPanel.isOpened(), "the palette stays open by default");
         assertEquals(1, toolbox.lists.items.size(), "UC-014 step 1: the fixture's one list");
         assertEquals("FixtureYesNo", toolbox.lists.items.get(0).group().name);
         assertFalse(toolbox.lists.items.get(0).menu.find("Remove").isEnabled(), "UC-014 A2: in use by FixtureQ3");
         assertEquals(5, toolbox.questions.items.size(), "UC-011 A6: every current question once");
         assertNotNull(toolbox.questions.items.get(0).menu.find("Add to section…"), "NFR-012: keyboard route");
+        assertEquals(List.of("Fixture Section A", "Fixture Section B", "Fixture Section C"),
+                toolbox.sections.items.stream().map(r -> r.node().label()).toList(), "UC-015 A6: every current section once");
+        assertEquals("in 1 step", toolbox.sections.items.get(0).uses.getText());
+        assertNotNull(toolbox.sections.items.get(0).menu.find("Mount in step…"), "NFR-012: keyboard route");
     }
 
     @Test
@@ -295,6 +303,13 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         test(toolbox.questions.search).setValue("");
         assertEquals(5, toolbox.questions.items.stream().filter(Component::isVisible).count(), "cleared: everything back");
         assertEquals("Questions", toolbox.questionsPanel.getSummaryText());
+        test(toolbox.sections.search).setValue("section b");
+        assertEquals(List.of("Fixture Section B"),
+                toolbox.sections.items.stream().filter(Component::isVisible).map(r -> r.node().label()).toList());
+        assertEquals("Sections (1)", toolbox.sectionsPanel.getSummaryText());
+        assertEquals("Questions", toolbox.questionsPanel.getSummaryText(), "the Questions panel is untouched by the Sections search");
+        test(toolbox.sections.search).setValue("");
+        assertEquals("Sections", toolbox.sectionsPanel.getSummaryText());
     }
 
     @Test
@@ -327,6 +342,24 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         List<String> labels = view.childrenOf(view.lanes.get(1).cards.get(0).node()).stream().map(StructureNode::label).toList();
         assertEquals(List.of("FixtureQ2", "FixtureQ5"), labels, "UC-011 A6: the same question, placed first in Section C");
         assertEquals("in 2 sections", view.toolbox().questions.items.stream().filter(r -> r.node().label().equals("FixtureQ2")).findFirst().orElseThrow().uses.getText());
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void droppingABankSectionIntoALaneMountsItThereOnce() {
+        Survey s = fixture();
+        SurveyDesignerView view = open(s);
+        StructureNode stepTwo = view.lanes.get(1).node();
+        SectionBankPanel.Row a = view.toolbox().sections.items.stream().filter(r -> r.node().label().equals("Fixture Section A")).findFirst().orElseThrow();
+        view.onDrop(new BankSection(a.node().durableId(), a.node().label()), new DropSpot(stepTwo, 0, StructureNode.Kind.SECTION));
+        List<String> labels = view.childrenOf(view.lanes.get(1).node()).stream().map(StructureNode::label).toList();
+        assertEquals(List.of("Fixture Section A", "Fixture Section C"), labels, "UC-015 A6: the same section, mounted first in Step Two");
+        assertEquals(3, view.toolbox().sections.items.size(), "still one row per section, not per mount");
+        assertEquals("in 2 steps", view.toolbox().sections.items.stream().filter(r -> r.node().label().equals("Fixture Section A")).findFirst().orElseThrow().uses.getText());
+        view.onDrop(new BankSection(a.node().durableId(), a.node().label()), new DropSpot(stepTwo, 0, StructureNode.Kind.SECTION));
+        assertEquals(List.of("Fixture Section A", "Fixture Section C"),
+                view.childrenOf(view.lanes.get(1).node()).stream().map(StructureNode::label).toList(), "UC-015 A2: a second mount in the same step is refused");
     }
 
     @Test

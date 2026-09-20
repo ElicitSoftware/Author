@@ -48,7 +48,7 @@
 1. Nothing is created or changed.
 2. Use case ends.
 
-### A4: Copy a question into another section
+### A4: Ask a question again in another section
 
 **Trigger:** The author drags a row's glyph into a different card (step 1)  
 **Flow:**
@@ -88,7 +88,7 @@
 
 ### BR-001: A question's key is minted once
 
-Editing never re-mints the key; copying into another section adds an assignment, never a new question.
+Editing never re-mints the key; dragging a row into another card, or Also add to section…, adds an assignment, never a new question.
 
 ### BR-002: Choice types need a list
 
@@ -96,7 +96,7 @@ RADIO, COMBOBOX, MULTI_SELECT and CHECKBOX_GROUP questions must reference a curr
 
 ### BR-003: Rules bind to assignments
 
-A rule reads or targets a question *in a section*; copying the question elsewhere does not carry its rules.
+A rule reads or targets a question *in a section*; placing the question in another section does not carry its rules.
 
 ### BR-004: The editor shows only what the type uses, and previews it
 

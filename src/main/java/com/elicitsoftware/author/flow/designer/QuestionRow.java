@@ -69,7 +69,7 @@ public class QuestionRow extends Div {
 
         menu = new NodeMenu("Actions for question " + node.label());
         menu.item("Edit…", () -> view.edit(node), !node.retired());
-        menu.item("Copy to section…", () -> view.copyTo(node), !node.retired());
+        menu.item("Also add to section…", () -> view.addBankQuestionTo(node), !node.retired());
         menu.item("Move up", () -> view.move(node, -1), !node.retired() && indexInSection > 0);
         menu.item("Move down", () -> view.move(node, 1), !node.retired() && indexInSection < sectionSize - 1);
         menu.item("Add rule…", () -> view.addRule(node), !node.retired());

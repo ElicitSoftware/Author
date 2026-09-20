@@ -44,7 +44,7 @@
 **Trigger:** The insertion bar belongs to another lane or card (step 1)  
 **Flow:**
 
-1. This is a copy, not a reorder: UC-015 (sections) or UC-011 A4 (questions) applies.
+1. This is not a reorder: the element is also placed in the other container — UC-015 (sections) or UC-011 A4 (questions) applies.
 2. Use case ends.
 
 ### A4: The move turns a rule backwards
