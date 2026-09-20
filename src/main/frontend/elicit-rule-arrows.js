@@ -2,7 +2,7 @@
  * ***LICENSE_START***
  * Elicit Author
  * %%
- * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * Copyright (C) 2026 Elicit Software LLC
  * %%
  * PolyForm Noncommercial License 1.0.0
  * <https://polyformproject.org/licenses/noncommercial/1.0.0>
@@ -54,6 +54,10 @@ class ElicitRuleArrows extends LitElement {
       stroke-width: 2;
     }
     .edge.retired path.line { stroke-dasharray: 6 4; opacity: 0.6; }
+    /* UC-033 BR-005: a rule whose target is not after its origin — red, and its label says so. */
+    .edge.invalid path.line { stroke: var(--brand-error, var(--lumo-error-color, #c62828)); }
+    .edge.invalid .glyph circle, .edge.invalid .end { fill: var(--brand-error, var(--lumo-error-color, #c62828)); }
+    .edge.invalid .label { fill: var(--brand-error, var(--lumo-error-color, #c62828)); font-weight: 600; }
     .edge.selected path.line { stroke-width: 3.5; }
     /* When an element is selected, fade the rules that don't touch it and hide their labels. */
     .edge.focus-dim { opacity: 0.1; }
@@ -73,6 +77,7 @@ class ElicitRuleArrows extends LitElement {
     .pending path { fill: none; stroke: var(--brand-primary, var(--lumo-primary-color, #1a5fb4)); stroke-width: 2; stroke-dasharray: 5 4; }
     marker path { fill: var(--brand-accent, var(--brand-warning, var(--lumo-warning-color, #b7791f))); }
     marker.pending-head path { fill: var(--brand-primary, var(--lumo-primary-color, #1a5fb4)); }
+    marker.invalid-head path { fill: var(--brand-error, var(--lumo-error-color, #c62828)); }
   `;
 
   constructor() {
@@ -309,6 +314,7 @@ class ElicitRuleArrows extends LitElement {
       <defs>
         <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
         <marker id="pending-head" class="pending-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
+        <marker id="invalid-head" class="invalid-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
       </defs>
       ${this._lines.map((l) => this._renderEdge(l, dragged))}
       ${pending ? svg`<g class="pending"><path d="${this._path(pending.from, pending.to)}" marker-end="url(#pending-head)"></path></g>` : ''}
@@ -337,10 +343,12 @@ class ElicitRuleArrows extends LitElement {
       : { x: l.cx, y: (from.y + to.y) / 2 };
     const selected = String(id) === String(this.selectedEdgeId);
     const dim = this.selectedAnchor && !l.active;
-    const cls = `edge ${e.retired ? 'retired' : ''} ${selected ? 'selected' : ''} ${dim ? 'focus-dim' : ''}`;
+    const invalid = !!e.invalid && !e.retired;
+    const cls = `edge ${e.retired ? 'retired' : ''} ${invalid ? 'invalid' : ''} ${selected ? 'selected' : ''} ${dim ? 'focus-dim' : ''}`;
     const d = beingDragged ? this._path(from, to) : this._channelPath(from, to, l.cx);
+    const label = invalid ? `${e.label} — points backwards` : e.label;
     return svg`<g class="${cls}" data-edge-id="${id}">
-      <path class="line" d="${d}" marker-end="url(#head)"></path>
+      <path class="line" d="${d}" marker-end="url(#${invalid ? 'invalid-head' : 'head'})"></path>
       <path class="hit" d="${d}" @click=${() => this._emit('edge-selected', { edgeId: id })}></path>
       <circle class="end" cx="${from.x}" cy="${from.y}" r="5" @pointerdown=${(ev) => this._grabEnd(ev, id, 'SOURCE')}><title>Drag to read from another question</title></circle>
       <circle class="end" cx="${to.x}" cy="${to.y}" r="5" @pointerdown=${(ev) => this._grabEnd(ev, id, 'TARGET')}><title>Drag to another target</title></circle>
@@ -348,9 +356,9 @@ class ElicitRuleArrows extends LitElement {
          @pointerdown=${(ev) => this._grabEnd(ev, id, 'TARGET')}>
         <circle r="11"></circle>
         <text>${GLYPH[e.action] || '?'}</text>
-        <title>${e.label}${e.condition ? ' — when ' + e.condition : ''}${e.description ? ' (' + e.description + ')' : ''}</title>
+        <title>${invalid && e.problem ? e.problem + '. ' : ''}${e.label}${e.condition ? ' — when ' + e.condition : ''}${e.description ? ' (' + e.description + ')' : ''}</title>
       </g>
-      <text class="label" style="text-anchor:start" x="2" y="${mid.y - 8}">${e.label}</text>
+      <text class="label" style="text-anchor:start" x="2" y="${mid.y - 8}">${label}</text>
     </g>`;
   }
 }

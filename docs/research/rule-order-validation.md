@@ -1,6 +1,11 @@
 # Validating Rule Direction: Origin Before Target
 
-**Status:** research / proposal, 2026-09-19. Nothing here is implemented.
+**Status:** implemented on `feature/rule-direction`, 2026-09-19, as FR-041 / UC-033
+(`docs/use_cases/UC-033-validate-rule-direction.md`). The catalog entries below
+were moved into `requirements.md`, `use_cases.puml` and UC-016 A4; the code lives in
+`RuleOrdering`, `RuleService.validate`, `RelationshipQuery.edges`, `ExportValidation`,
+`SurveyDesignerView.afterMove` and `elicit-rule-arrows.js`. Decisions taken while
+building it are marked *Decided* in section 5.
 
 Source: `docs/requirements.md` (FR-005, FR-016, FR-019, FR-021, FR-022),
 `docs/use_cases/UC-007`, `UC-016`, `UC-019`, `UC-020`, `UC-029`,
@@ -97,10 +102,10 @@ integers, 0 meaning "the whole container":
 | `ss-N` (section assignment) | `(stepOrder, sectionOrder, 0)` |
 | `sq-N` (question assignment) | `(stepOrder, sectionOrder, questionOrder)` for each mount of its section |
 
-The **origin** is the upstream question assignment. Its step is
-`upstream_step_id` when set — `RuleService.repoint` records it as the
-section's first mount (`RuleService.java:93`, `:129-138`) — and otherwise
-every current mount of the section, checked one by one.
+The **origin** is the upstream question assignment. Every current mount of
+its section is checked, one by one; `upstream_step_id` is *not* used to narrow
+the check, because the runtime fires the rule from whichever mount the
+respondent answers in (*Decided*, see BR-004).
 
 A rule is **forward** when the target's position is strictly greater than the
 origin's, comparing the tuple lexicographically, with one adjustment per
@@ -213,14 +218,13 @@ drag the head to a later target, or drag the tail to an earlier question.
 
 ## 5. Open questions and risks
 
-- **Same-section, earlier question.** The runtime *does* render such a
-  target (section 1), above the origin. The strict rule forbids it because
-  UC-029's "order is the default path" and the arrow's left-to-right
-  reading both promise that a rule reveals something further on, and a
-  question appearing above the one just answered breaks that promise.
-  Recommendation: strict. If authors need it, relax the question row of the
-  table in section 2 to `>=` on `(step, section)` and document the
-  behaviour in the model guide.
+- **Same-section, earlier question.** *Decided: strict.* The runtime *does*
+  render such a target (section 1), above the origin, but UC-029's "order is
+  the default path" and the arrow's left-to-right reading both promise that a
+  rule reveals something further on. One refinement was needed for multi-mount:
+  a downstream question in the upstream question's *own* section is compared
+  within the same mount only (the runtime shows it on the page being answered),
+  otherwise every same-section rule in a twice-mounted section would be red.
 - **Question targets in another section.** For a question target the runtime
   copies the origin answer's step and section into the new key and only
   sets the question order (`QuestionManager.java:612`, `:827-851`), so a
@@ -230,18 +234,16 @@ drag the head to a later target, or drag the tail to an earlier question.
   rule is already approximate; the ordering check should not pretend to
   more precision than the runtime has, and the reason text should name
   pages ("in an earlier section") rather than rows.
-- **Multi-mount strictness.** "Forward for every mount pairing" can flag a
-  rule that is fine for the mount the author cares about. The alternative
-  is to check only the mount named by `upstream_step_id` and the first
-  mount of the target, mirroring `stepOfQuestionAssignment`
-  (`RuleService.java:129-138`); it is simpler and wrong for the other mounts.
-  Ship strict, watch for complaints.
-- **TEXT rules.** Token substitution presumably happens when the target's
-  answer text is built (the answer is created with the question's text,
-  `QuestionManager.java:615-617`), which would make a TEXT rule just as
-  order-dependent as SHOW. This was not traced to the substitution code;
-  confirm before applying the check to TEXT, and if TEXT turns out to
-  substitute at render time, exempt it.
+- **Multi-mount strictness.** *Decided: strict* — forward for every mount
+  pairing (UC-033 BR-004), with the same-section refinement above. The
+  alternative, checking only the mount named by `upstream_step_id`, is simpler
+  and wrong for the other mounts. Watch for complaints.
+- **TEXT rules.** *Decided: checked like SHOW and REPEAT* (UC-033 BR-006).
+  Traced: after an upstream save the runtime looks the downstream answer up by
+  display key and rewrites its text (`QuestionManager.java:666-675`), and an
+  answer's text is built with the upstream values known when it is created
+  (`buildDipslayText`, `:1160-1191`). A backward TEXT rule therefore edits a
+  page the respondent has already passed.
 - **Imported surveys.** Existing `.elicit` files may contain backward rules
   that have "worked" only because nobody noticed. They will turn red on
   first open and block the next export. That is the intended effect, but the
@@ -251,6 +253,17 @@ drag the head to a later target, or drag the tail to an earlier question.
   more. `RuleService.validate` currently runs count queries per field
   (`:146-160`); the ordering check needs the positions of two assignments,
   two or three more small queries per save.
+- **Database enforcement (considered, rejected 2026-09-19).** *Decided: not built.* A deferred
+  constraint trigger on `relationships`, `steps`, `steps_sections` and
+  `sections_questions` could refuse any commit that leaves a rule backward;
+  a plain CHECK cannot, because the positions live in other tables. It was
+  rejected for now: it would make a reorder fail, and the whole point of
+  drawing the rule red instead is that the author can keep moving things
+  until the rule is forward again, rather than deleting and redrawing it.
+  A trigger would also reject imported files with backward rules (C-015),
+  apply to the Survey runtime database through the shared migrations, and
+  still need the Java check for a readable message. Revisit only if red
+  arrows prove to be missed in practice.
 - **Undo/redo and discard.** A move that turns rules red is undone by the
   inverse move (`docs/research/undo-redo.md`, section 1) and the red
   disappears with it because nothing was stored. A discard restore
@@ -258,9 +271,11 @@ drag the head to a later target, or drag the tail to an earlier question.
 
 ## 6. Proposed catalog entries
 
-Not added to `requirements.md` or `use_cases.puml`; for the maintainer to
-paste. Numbers follow the sibling proposals (FR-039 / UC-032 are taken by
-`session-discard.md`).
+Superseded: added to `requirements.md` and `use_cases.puml` as **FR-041 /
+UC-033** (FR-039 / UC-031 belong to `undo-redo.md`, FR-040 / UC-032 to
+`session-discard.md`). The authoritative spec is
+`docs/use_cases/UC-033-validate-rule-direction.md`; the draft below is kept for
+the record and uses the old provisional numbers.
 
 ### Requirement row (Conditional Logic table)
 

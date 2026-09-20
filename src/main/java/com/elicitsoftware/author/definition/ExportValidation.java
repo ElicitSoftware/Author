@@ -4,7 +4,7 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_START***
  * Elicit Author
  * %%
- * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * Copyright (C) 2026 Elicit Software LLC
  * %%
  * PolyForm Noncommercial License 1.0.0
  * <https://polyformproject.org/licenses/noncommercial/1.0.0>
@@ -24,6 +24,7 @@ import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.author.survey.RenameLedger;
 import com.elicitsoftware.author.survey.ReportingChangeLedger;
 import com.elicitsoftware.author.survey.ReportingService;
+import com.elicitsoftware.author.survey.RuleOrdering;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -37,8 +38,8 @@ import java.util.function.Function;
 
 /**
  * Checks a survey's current elements before export (UC-007): dangling durable references,
- * relationships without exactly one downstream target, choice questions without options,
- * empty steps and sections, duplicate ordering. Errors block export; warnings do not.
+ * relationships without exactly one downstream target or pointing backwards (UC-033 A3), choice
+ * questions without options, empty steps and sections, duplicate ordering. Errors block export; warnings do not.
  * Read-only (UC-007 BR-004).
  */
 @ApplicationScoped
@@ -115,6 +116,11 @@ public class ExportValidation {
                 issues.add(ValidationIssue.error("select_items", i.selectItemId, "Option '" + i.displayText + "' belongs to a removed or missing list"));
             }
         }
+        Map<Integer, String> sectionNames = new HashMap<>();
+        sections.values().forEach(s -> sectionNames.put(s.sectionId, s.name));
+        Map<Integer, String> questionNames = new HashMap<>();
+        questions.values().forEach(q -> questionNames.put(q.questionId, RuleOrdering.questionLabel(q)));
+        RuleOrdering.Board board = new RuleOrdering.Board(steps.values(), stepsSections.values(), sectionsQuestions.values(), sectionNames, questionNames);
         for (Relationship r : relationships) {
             String rule = "Rule '" + r.description + "'";
             if (!r.hasExactlyOneDownstream()) {
@@ -138,6 +144,8 @@ public class ExportValidation {
             if (r.operatorType == null || r.actionType == null) {
                 issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " has no operator or action"));
             }
+            // UC-033 A3: a rule the respondent can never see fire blocks export (UC-007 BR-001).
+            board.problem(r).ifPresent(p -> issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " points backwards: " + p)));
         }
         for (Step s : steps.values()) {
             if (!stepsWithSections.contains(s.stepId)) {

@@ -64,6 +64,7 @@ Roles referenced below:
 | FR-020 | Configure Relationship Action     | As a survey author, I want to choose the action a relationship triggers (SHOW, REPEAT, TEXT replacement) so that the relationship produces its intended effect on flow or content.                                            | High     | Implemented |
 | FR-021 | Visualize Relationship Graph      | As a survey author, I want to see a visual map of how questions, sections, and relationships connect so that I can understand and validate complex conditional logic before exporting.                                       | Medium   | Implemented |
 | FR-022 | Validate Relationship Consistency | As a survey author, I want the system to flag relationships that reference removed or missing elements, or that have zero or several downstream targets, so that I can fix broken logic (surfaced through FR-005).             | High     | Open   |
+| FR-041 | Validate Rule Direction           | As a survey author, I want a rule whose downstream target comes before its upstream question — by step, section and question order — to be refused when I draw it, drawn in red with the reason when a reorder makes it backwards, and reported as an error that blocks export, so that I never ship a rule the respondent can never see fire. | High     | Implemented |
 
 ### Ontology & Metadata
 

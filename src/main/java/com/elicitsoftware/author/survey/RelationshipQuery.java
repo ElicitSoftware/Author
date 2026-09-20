@@ -4,7 +4,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_START***
  * Elicit Author
  * %%
- * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * Copyright (C) 2026 Elicit Software LLC
  * %%
  * PolyForm Noncommercial License 1.0.0
  * <https://polyformproject.org/licenses/noncommercial/1.0.0>
@@ -26,25 +26,29 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Read model for the rule arrows (UC-020): one edge per relationship, anchored on the DOM ids
  * the board gives its nodes ({@code step-N}, {@code ss-N}, {@code sq-N}). Because a question
  * row is only rendered while its card is open, each end also carries the ids of the cards that
- * hold it, for the overlay to fall back on (UC-020 step 3). BR-001: derived, never stored.
+ * hold it, for the overlay to fall back on (UC-020 step 3). BR-001: derived, never stored — and so
+ * is the {@code invalid} mark of a rule whose target is not after its origin (UC-033 BR-003).
  */
 @ApplicationScoped
 public class RelationshipQuery {
 
     public record RuleEdge(int relationshipId, UUID key, String source, List<String> sourceFallbacks,
                            String target, List<String> targetFallbacks, String action, String operator,
-                           String label, String condition, String description, boolean retired) { }
+                           String label, String condition, String description, boolean retired,
+                           boolean invalid, String problem) { }
 
     public List<RuleEdge> edges(int surveyId, boolean includeRetired) {
         // Names, so the arrow can read "Show <section>", "Repeat <question>", "Replace {TOKEN}".
         Map<Integer, String> stepName = new HashMap<>();
-        for (Step s : Step.<Step>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
+        List<Step> steps = Step.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL);
+        for (Step s : steps) {
             stepName.put(s.stepId, s.name);
         }
         Map<Integer, String> sectionName = new HashMap<>();
@@ -61,18 +65,21 @@ public class RelationshipQuery {
         Map<Integer, Integer> sectionIdByAssignment = new HashMap<>();  // ss id -> section durable id
         Map<Integer, Integer> stepIdByAssignment = new HashMap<>();     // ss id -> step durable id
         Map<Integer, Integer> questionIdByAssignment = new HashMap<>(); // sq id -> question durable id
-        for (StepsSections ss : StepsSections.<StepsSections>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
+        List<StepsSections> mounts = StepsSections.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL);
+        List<SectionsQuestion> assignments = SectionsQuestion.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL);
+        for (StepsSections ss : mounts) {
             mountsBySection.computeIfAbsent(ss.sectionId, k -> new ArrayList<>()).add(ss);
             sectionIdByAssignment.put(ss.stepsSectionsId, ss.sectionId);
             stepIdByAssignment.put(ss.stepsSectionsId, ss.stepId);
         }
-        for (SectionsQuestion sq : SectionsQuestion.<SectionsQuestion>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
+        for (SectionsQuestion sq : assignments) {
             List<String> cards = new ArrayList<>();
             mountsBySection.getOrDefault(sq.sectionId, List.of()).forEach(ss -> cards.add("ss-" + ss.stepsSectionsId));
             cardsHoldingQuestionAssignment.put(sq.sectionsQuestionId, cards);
             questionIdByAssignment.put(sq.sectionsQuestionId, sq.questionId);
         }
 
+        RuleOrdering.Board board = new RuleOrdering.Board(steps, mounts, assignments, sectionName, questionName);
         List<RuleEdge> edges = new ArrayList<>();
         for (Relationship r : Relationship.<Relationship>list("surveyId", surveyId)) {
             if (!includeRetired && !r.isCurrent()) {
@@ -98,9 +105,12 @@ public class RelationshipQuery {
             String action = r.actionType == null ? "" : r.actionType.name;
             String operator = r.operatorType == null ? "" : r.operatorType.name;
             List<String> sourceFallbacks = collapseFallbacks(cardsHoldingQuestionAssignment.get(r.upstreamSqId), stepIdByAssignment);
+            // UC-033: retired rules are never validated; a current rule that points backwards is marked with its reason.
+            Optional<String> problem = r.isCurrent() ? board.problem(r) : Optional.empty();
             edges.add(new RuleEdge(r.relationshipId, r.relationshipKey,
                     "sq-" + r.upstreamSqId, sourceFallbacks,
-                    target, targetFallbacks, action, operator, label(r, targetName), condition(r), r.description, !r.isCurrent()));
+                    target, targetFallbacks, action, operator, label(r, targetName), condition(r), r.description, !r.isCurrent(),
+                    problem.isPresent(), problem.map(p -> "Points backwards: " + p).orElse(null)));
         }
         edges.sort(Comparator.comparing(RuleEdge::relationshipId));
         return edges;

@@ -4,7 +4,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_START***
  * Elicit Author
  * %%
- * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * Copyright (C) 2026 Elicit Software LLC
  * %%
  * PolyForm Noncommercial License 1.0.0
  * <https://polyformproject.org/licenses/noncommercial/1.0.0>
@@ -57,6 +57,9 @@ class DesignerServiceTest {
 
     @Inject
     ExportValidation validation;
+
+    @Inject
+    RelationshipQuery relationships;
 
     @Inject
     RenameLedger renames;
@@ -373,5 +376,46 @@ class DesignerServiceTest {
         List<StepsSections> after = ordering.currentLane(s.id, one.stepId);
         assertEquals(2, after.size(), "UC-010: the section is back in its step");
         assertKeysDerived(s);
+    }
+
+    /** UC-033 BR-002 / BR-003: a move that inverts a rule is not refused; the edge is marked, and unmarked by the inverse move. */
+    @Test
+    @TestTransaction
+    void moveQuestion_isNeverRefusedForARule_andMarksTheEdgeUntilMovedBack() {
+        Survey s = fixture();
+        SectionsQuestion q4 = elements.currentAssignmentsOfQuestion(s.id, question("FixtureQ4").questionId).get(0);
+        assertTrue(relationships.edges(s.id, false).stream().noneMatch(RelationshipQuery.RuleEdge::invalid), "fixture rule is forward");
+
+        service.moveQuestionWithinSection(s.id, q4.sectionsQuestionId, 0); // FixtureQ4 now before FixtureQ3, which shows it
+        em.flush();
+        List<RelationshipQuery.RuleEdge> edges = relationships.edges(s.id, false);
+        assertEquals(1, edges.size());
+        assertTrue(edges.get(0).invalid(), "UC-033 step 4: the edge is marked");
+        assertTrue(edges.get(0).problem().contains("'FixtureQ4'") && edges.get(0).problem().contains("'FixtureQ3'"), edges.get(0).problem());
+        assertTrue(validation.validate(Survey.findById(s.id)).stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
+                && i.message().contains("points backwards")), "UC-033 A3: an export error");
+
+        service.moveQuestionWithinSection(s.id, q4.sectionsQuestionId, 1);
+        em.flush();
+        assertFalse(relationships.edges(s.id, false).get(0).invalid(), "UC-033 BR-003: nothing stored, the mark follows the positions");
+    }
+
+    /** UC-033 BR-004: moving a step so that one mount of the origin's section lands after the target marks the rule. */
+    @Test
+    @TestTransaction
+    void moveStep_marksARuleWhoseOriginIsNowInALaterStep() {
+        Survey s = fixture();
+        // Retarget the fixture rule (FixtureQ3 shows FixtureQ4) at Section C in Step Two, which is forward today.
+        Relationship r = Relationship.find("surveyId = ?1 and effectiveTo = ?2", s.id, StructuralElement.SENTINEL).firstResult();
+        r.downstreamSqId = null;
+        r.downstreamSsId = ordering.currentLane(s.id, step("Fixture Step Two").stepId).get(0).stepsSectionsId;
+        em.flush();
+        assertFalse(relationships.edges(s.id, false).get(0).invalid());
+
+        service.moveStep(s.id, step("Fixture Step Two").stepId, 0); // Step Two (with Section C) now first
+        em.flush();
+        RelationshipQuery.RuleEdge edge = relationships.edges(s.id, false).get(0);
+        assertTrue(edge.invalid(), "the target's step now comes before the origin's");
+        assertTrue(edge.problem().contains("'Fixture Section C'"), edge.problem());
     }
 }

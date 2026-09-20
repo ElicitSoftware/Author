@@ -4,7 +4,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_START***
  * Elicit Author
  * %%
- * Copyright (C) 2026 The Regents of the University of Michigan - Rogel Cancer Center
+ * Copyright (C) 2026 Elicit Software LLC
  * %%
  * PolyForm Noncommercial License 1.0.0
  * <https://polyformproject.org/licenses/noncommercial/1.0.0>
@@ -18,6 +18,7 @@ import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.Step;
+import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
@@ -47,6 +48,9 @@ class RuleServiceTest {
     @Inject
     ElementService elements;
 
+    @Inject
+    DesignerService designer;
+
     private Survey fixture() {
         return Survey.find("name", "AuthorFixture").firstResult();
     }
@@ -54,6 +58,15 @@ class RuleServiceTest {
     private SectionsQuestion assignmentOf(String shortText) {
         Question q = Question.find("shortText = ?1 and effectiveTo = ?2", shortText, StructuralElement.SENTINEL).firstResult();
         return elements.currentAssignmentsOfQuestion(q.surveyId, q.questionId).get(0);
+    }
+
+    private static Step step(String name) {
+        return Step.find("name = ?1 and effectiveTo = ?2", name, StructuralElement.SENTINEL).firstResult();
+    }
+
+    private StepsSections mountOf(String sectionName) {
+        return StepsSections.find("sectionId = (select s.sectionId from Section s where s.name = ?1 and s.effectiveTo = ?2) and effectiveTo = ?2",
+                sectionName, StructuralElement.SENTINEL).firstResult();
     }
 
     private static OperatorType operator(String name) {
@@ -160,5 +173,117 @@ class RuleServiceTest {
         draft.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
         draft.downstreamStepId = Step.<Step>find("name", "Fixture Step One").firstResult().stepId;
         assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field(), "UC-019 BR-001: two targets");
+    }
+
+    /** UC-033 A1: a target that is not after the question the rule reads from is refused on create. */
+    @Test
+    @TestTransaction
+    void create_refusesTargetBeforeOrigin() {
+        Survey s = fixture();
+        // FixtureQ4 sits in Step One › Section B as its second question.
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf("FixtureQ4").sectionsQuestionId;
+        draft.operatorType = operator("EQUAL");
+        draft.actionType = action("SHOW");
+        draft.referenceValue = "1";
+
+        draft.downstreamStepId = step("Fixture Step One").stepId;
+        AuthoringException ownStep = assertThrows(AuthoringException.class, () -> rules.create(s.id, draft));
+        assertEquals("downstream", ownStep.field(), "UC-033 BR-001: the origin's own step is not after it");
+        assertTrue(ownStep.getMessage().contains("points backwards"), ownStep.getMessage());
+        assertTrue(ownStep.getMessage().contains("'Fixture Step One'"), "the reason names the target: " + ownStep.getMessage());
+
+        draft.downstreamStepId = null;
+        draft.downstreamSsId = mountOf("Fixture Section A").stepsSectionsId;
+        assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field(), "an earlier section in the same step");
+        draft.downstreamSsId = mountOf("Fixture Section B").stepsSectionsId;
+        assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field(), "the origin's own section");
+
+        draft.downstreamSsId = null;
+        draft.downstreamSqId = assignmentOf("FixtureQ3").sectionsQuestionId;
+        assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field(), "an earlier question in the same section");
+        draft.downstreamSqId = assignmentOf("FixtureQ2").sectionsQuestionId;
+        assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field(), "a question in an earlier section");
+
+        // Forward targets are accepted: a question in a later step, and the later step itself.
+        draft.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
+        assertNotNull(rules.create(s.id, draft).relationshipId);
+        Relationship toStep = new Relationship();
+        toStep.upstreamSqId = draft.upstreamSqId;
+        toStep.downstreamStepId = step("Fixture Step Two").stepId;
+        toStep.operatorType = operator("EQUAL");
+        toStep.actionType = action("SHOW");
+        toStep.referenceValue = "1";
+        assertNotNull(rules.create(s.id, toStep).relationshipId);
+        assertEquals(3, query.edges(s.id, false).size());
+        assertTrue(query.edges(s.id, false).stream().noneMatch(RelationshipQuery.RuleEdge::invalid), "UC-033: nothing accepted is backward");
+    }
+
+    /** UC-033 A1 via UC-019 A5: re-pointing either end so the rule points backwards is refused and leaves the rule as it was. */
+    @Test
+    @TestTransaction
+    void repoint_refusesABackwardHeadOrTail() {
+        Survey s = fixture();
+        Relationship existing = Relationship.find("surveyId = ?1 and effectiveTo = ?2", s.id, StructuralElement.SENTINEL).firstResult();
+        int q4 = assignmentOf("FixtureQ4").sectionsQuestionId;
+        assertEquals(q4, existing.downstreamSqId, "fixture: FixtureQ3 shows FixtureQ4");
+
+        AuthoringException head = assertThrows(AuthoringException.class,
+                () -> rules.repoint(s.id, existing.relationshipId, RuleService.End.TARGET, "sq-" + assignmentOf("FixtureQ2").sectionsQuestionId));
+        assertEquals("downstream", head.field());
+        assertEquals(q4, rules.current(s.id, existing.relationshipId).orElseThrow().downstreamSqId, "a refused re-point changes nothing");
+
+        AuthoringException tail = assertThrows(AuthoringException.class,
+                () -> rules.repoint(s.id, existing.relationshipId, RuleService.End.SOURCE, "sq-" + assignmentOf("FixtureQ5").sectionsQuestionId));
+        assertTrue(tail.getMessage().contains("points backwards"), tail.getMessage());
+        assertEquals(assignmentOf("FixtureQ3").sectionsQuestionId, rules.current(s.id, existing.relationshipId).orElseThrow().upstreamSqId);
+    }
+
+    /** UC-033 A2: a removed rule whose target has since moved before its origin cannot be restored. */
+    @Test
+    @TestTransaction
+    void restore_refusesARuleThatIsNowBackward() {
+        Survey s = fixture();
+        Relationship existing = Relationship.find("surveyId = ?1 and effectiveTo = ?2", s.id, StructuralElement.SENTINEL).firstResult();
+        rules.retire(s.id, existing.relationshipId);
+        designer.moveQuestionWithinSection(s.id, assignmentOf("FixtureQ4").sectionsQuestionId, 0); // FixtureQ4 now before FixtureQ3
+
+        AuthoringException refused = assertThrows(AuthoringException.class, () -> rules.restore(s.id, existing.relationshipId));
+        assertTrue(refused.getMessage().contains("points backwards"), refused.getMessage());
+        assertTrue(rules.current(s.id, existing.relationshipId).isEmpty(), "the rule stays removed");
+
+        designer.moveQuestionWithinSection(s.id, assignmentOf("FixtureQ4").sectionsQuestionId, 1); // back where it was
+        rules.restore(s.id, existing.relationshipId);
+        assertTrue(rules.current(s.id, existing.relationshipId).isPresent(), "forward again, so restorable");
+    }
+
+    /** UC-033 BR-004: a second mount of the origin's section that sits after the target makes the rule backward. */
+    @Test
+    @TestTransaction
+    void create_everyMountOfTheOriginCounts() {
+        Survey s = fixture();
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf("FixtureQ3").sectionsQuestionId; // Section B, mounted in Step One
+        draft.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId; // Section C, Step Two
+        draft.operatorType = operator("EQUAL");
+        draft.actionType = action("SHOW");
+        draft.referenceValue = "Y";
+        Relationship created = rules.create(s.id, draft);
+        assertTrue(query.edges(s.id, false).stream().noneMatch(RelationshipQuery.RuleEdge::invalid));
+
+        // Mount Section B into Step Two after Section C: from that mount the rule points backwards.
+        designer.mountSection(s.id, mountOf("Fixture Section B").sectionId, step("Fixture Step Two").stepId, 99);
+        RelationshipQuery.RuleEdge edge = query.edges(s.id, false).stream()
+                .filter(e -> e.relationshipId() == created.relationshipId).findFirst().orElseThrow();
+        assertTrue(edge.invalid(), "UC-033 BR-004: backward for one mount pairing is backward");
+        assertTrue(edge.problem().startsWith("Points backwards"), edge.problem());
+
+        Relationship again = new Relationship();
+        again.upstreamSqId = draft.upstreamSqId;
+        again.downstreamSqId = draft.downstreamSqId;
+        again.operatorType = operator("NOT_EQUAL");
+        again.actionType = action("SHOW");
+        again.referenceValue = "N";
+        assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, again)).field());
     }
 }
