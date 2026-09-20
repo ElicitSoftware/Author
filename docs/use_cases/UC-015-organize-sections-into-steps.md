@@ -5,7 +5,7 @@
 **Use Case ID:** UC-015  
 **Use Case Name:** Organize Sections into Steps  
 **Primary Actor:** Survey Author  
-**Goal:** Place sections in the steps where respondents should meet them — by creating a section in a step, copying a section into another step, or mounting one section in several steps — using the designer board.  
+**Goal:** Place sections in the steps where respondents should meet them — by creating a section in a step, mounting one section in several steps, or copying a section into another step — using the designer board.  
 **Status:** Draft  
 **Requirements:** [FR-015, NFR-007, NFR-012](../requirements.md)
 
@@ -18,24 +18,24 @@
 ## Main Success Scenario
 
 1. The author drags a section card's glyph out of its lane and drops it between two cards of another lane.
-2. The system creates a new section with a new element key, copying the name, dimension name and description of the dragged section, mounts it in the target step at the drop position, and assigns every question of the dragged section to it, in order.
-3. The system renumbers the target lane's sections, recomputes their display keys (UC-016 BR-001), refreshes the board and the structure tree, and shows a notice "Copied" with Undo.
-4. The author selects the new card; the breadcrumb and the tree follow.
+2. The system mounts the existing section in the target step at the drop position: one more assignment for the same section, no new section. The original card stays where it was.
+3. The system renumbers the target lane's sections, recomputes their display keys (UC-016 BR-001), refreshes the board and the structure tree, and confirms that the section is now also in the target step.
+4. The system selects the new card; both cards now carry a "mounted in N steps" badge, and editing the section from either card changes both.
 
 ## Alternative Flows
 
-### A1: Mount the same section in another step
+### A1: Copy a section into another step
 
-**Trigger:** The author chooses Also mount in step… from a card's menu and picks a step (step 1)  
+**Trigger:** The author chooses Copy to step… from a card's menu and picks a step (step 1)  
 **Flow:**
 
-1. The system mounts the existing section in the chosen step at the end of that lane: one more assignment for the same section, no new section.
-2. Both cards now carry a "mounted in N steps" badge; editing the section from either card changes both.
+1. The system creates a new section with a new element key, copying the name, dimension name and description of the dragged section, mounts it at the end of the chosen lane, and assigns every question of the source section to it, in order (BR-002).
+2. The system shows a notice "Copied" with Undo, which retires the new section again.
 3. Use case continues at step 3.
 
 ### A2: Target step already holds the section
 
-**Trigger:** The chosen step already mounts the section (A1 step 1)  
+**Trigger:** The target step already mounts the section (step 1, A5 or A6)  
 **Flow:**
 
 1. The system refuses and explains that a section can be mounted once per step.
@@ -64,15 +64,24 @@
 **Trigger:** The author cannot or does not want to drag (step 1)  
 **Flow:**
 
-1. Every drag action is available from the card's menu: Copy to step…, Also mount in step…, Move up, Move down, Remove from this step.
+1. Every drag action is available from the card's menu: Also mount in step… (the drag across lanes), Copy to step… (A1), Move up, Move down, Remove from this step.
 2. Use case continues at step 2.
+
+### A6: Mount a section from the Sections panel
+
+**Trigger:** The author drags a section from the drawer's Sections panel (narrowed with the panel's own search box if needed) into a lane, or chooses Mount in step… on it (step 1)  
+**Flow:**
+
+1. The system mounts the existing section in the target step at the drop position, exactly as the main flow does for a card dragged across lanes.
+2. If the target step already holds the section, the system refuses and explains (A2).
+3. Use case continues at step 3.
 
 ## Postconditions
 
 ### Success Postconditions
 
 - The target step's lane shows the section at the intended position with contiguous display orders and valid display keys.
-- The new section (main flow) or assignment (A1) is current, carries a key minted once, and will be exported on the next export.
+- The new assignment (main flow, A6) or section (A1, A4) is current, carries a key minted once, and will be exported on the next export.
 
 ### Failure Postconditions
 
@@ -80,13 +89,13 @@
 
 ## Business Rules
 
-### BR-001: A drag between steps copies
+### BR-001: A drag between steps mounts
 
-Dragging a section from one step into another never moves it: it creates a brand-new section in the target step and leaves the original in place. Moving is copy followed by Remove from this step.
+Dragging a section from one step into another never moves it and never duplicates it: it mounts the same section in the target step and leaves the original in place (decided 2026-09-20; before that a drag copied). Moving is mount followed by Remove from this step. A separate section with its own key comes only from Copy to step… (A1).
 
 ### BR-002: Copies share questions, not rules
 
-The copy assigns the same questions (same durable ids and keys) so ontology tags and reports keep pointing at one question. Rules are bound to specific assignments and do not follow the copy; the author adds rules to the copy deliberately (UC-019).
+A copy (A1) assigns the same questions (same durable ids and keys) so ontology tags and reports keep pointing at one question. Rules are bound to specific assignments and follow neither a copy nor a new mount; the author adds rules to the new card deliberately (UC-019).
 
 ### BR-003: One section, many steps
 

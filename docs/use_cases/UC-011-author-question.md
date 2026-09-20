@@ -17,7 +17,7 @@
 ## Main Success Scenario
 
 1. The author drags a question glyph of the wanted type from the palette and drops it between two rows of an open section card (or chooses Add question on the card).
-2. The system opens the question dialog with the type preselected: question text, short text, tooltip, required, minimum and maximum, validation text, mask, placeholder, default value, presentation variant, and — for choice types — the select group. Each control carries an information icon explaining it, only the settings the chosen type uses are shown (for example HTML has no input mask), and a live preview shows the respondent's field for the type and variants, updating as the author edits.
+2. The system opens the question dialog with the type preselected: question text, short text, tooltip, required, minimum and maximum, validation text, mask, placeholder, default value, presentation variant, a sample answer for previews, and — for choice types — the select group. Each control carries an information icon explaining it, only the settings the chosen type uses are shown (for example HTML has no input mask), and a live preview shows the respondent's field for the type and variants, updating as the author edits.
 3. The author fills in the text and saves.
 4. The system creates the question with a key minted once, assigns it to the section at the drop position, renumbers the section's questions, and refreshes the board and tree with the new row selected.
 
@@ -48,7 +48,7 @@
 1. Nothing is created or changed.
 2. Use case ends.
 
-### A4: Copy a question into another section
+### A4: Ask a question again in another section
 
 **Trigger:** The author drags a row's glyph into a different card (step 1)  
 **Flow:**
@@ -88,7 +88,7 @@
 
 ### BR-001: A question's key is minted once
 
-Editing never re-mints the key; copying into another section adds an assignment, never a new question.
+Editing never re-mints the key; dragging a row into another card, or Also add to section…, adds an assignment, never a new question.
 
 ### BR-002: Choice types need a list
 
@@ -96,8 +96,12 @@ RADIO, COMBOBOX, MULTI_SELECT and CHECKBOX_GROUP questions must reference a curr
 
 ### BR-003: Rules bind to assignments
 
-A rule reads or targets a question *in a section*; copying the question elsewhere does not carry its rules.
+A rule reads or targets a question *in a section*; placing the question in another section does not carry its rules.
 
 ### BR-004: The editor shows only what the type uses, and previews it
 
-The dialog reveals only the settings the selected type supports (numeric bounds for numbers, a select group for choice types, no input mask for HTML, and so on), and the live preview renders the actual respondent field for that type and its presentation variants. In the preview, a `{TOKEN}` in the text is replaced by the sample answer of the Text rule that fills it (UC-019 BR-005), falling back to the token's default.
+The dialog reveals only the settings the selected type supports (numeric bounds for numbers, a select group for choice types, no input mask for HTML, and so on), and the live preview renders the actual respondent field for that type and its presentation variants. In the preview, a `{TOKEN}` in the text is replaced by what the rules reaching this question would write there — a rule on the question's step, on its section, or on the question itself, the inner overriding the outer, exactly as the runtime scopes it (UC-019 BR-005) — using the rule's default upstream value, else the sample answer of the question it reads (BR-005), falling back to the token's default.
+
+### BR-005: A question may carry a sample answer
+
+A question may record an example answer. It is authoring-only — the designer substitutes it wherever a Text rule writes this question's answer into another text, so one sample serves every rule that reads the question — and it is never written to the export, so changing it never affects a deployed site.

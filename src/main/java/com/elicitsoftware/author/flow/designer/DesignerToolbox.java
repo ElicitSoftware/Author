@@ -18,22 +18,26 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.RouterLink;
 
 /**
- * The designer drawer above the structure tree: the guide link and three collapsible panels —
- * Controls (the palette), Lists (UC-014) and Questions (UC-011 A6). The tree stays at the bottom.
+ * The designer drawer above the structure tree: the guide link and four collapsible panels —
+ * Controls (the palette), Lists (UC-014), Sections (UC-015 A6) and Questions (UC-011 A6). The tree
+ * stays at the bottom.
  */
 public class DesignerToolbox extends VerticalLayout {
 
     final RouterLink guide = new RouterLink("How surveys work", SurveyModelGuideView.class);
     final DesignerPalette palette;
     final ListPanel lists;
+    final SectionBankPanel sections;
     final QuestionBankPanel questions;
     final Details controlsPanel;
     final Details listsPanel;
+    final Details sectionsPanel;
     final Details questionsPanel;
 
     public DesignerToolbox(SurveyDesignerView view, DesignerPalette palette) {
         this.palette = palette;
         this.lists = new ListPanel(view);
+        this.sections = new SectionBankPanel();
         this.questions = new QuestionBankPanel();
         addClassName("designer-toolbox");
         setPadding(false);
@@ -42,11 +46,13 @@ public class DesignerToolbox extends VerticalLayout {
         guide.addClassName("designer-guide-link");
         controlsPanel = panel("Controls", palette, true);
         listsPanel = panel("Lists", lists, false);
+        sectionsPanel = panel("Sections", sections, false);
         questionsPanel = panel("Questions", questions, false);
         // Each panel filters itself; the title shows the match count while a search is active.
         lists.onFiltered((q, hits) -> listsPanel.setSummaryText(q.isEmpty() ? "Lists" : "Lists (" + hits + ")"));
+        sections.onFiltered((q, hits) -> sectionsPanel.setSummaryText(q.isEmpty() ? "Sections" : "Sections (" + hits + ")"));
         questions.onFiltered((q, hits) -> questionsPanel.setSummaryText(q.isEmpty() ? "Questions" : "Questions (" + hits + ")"));
-        add(guide, controlsPanel, listsPanel, questionsPanel);
+        add(guide, controlsPanel, listsPanel, sectionsPanel, questionsPanel);
     }
 
     public DesignerPalette palette() {

@@ -88,19 +88,23 @@ public class RelationshipQuery {
             String target;
             String targetName;
             List<String> targetFallbacks;
-            if (r.downstreamStepId != null) {
-                target = "step-" + r.downstreamStepId;
-                targetName = stepName.get(r.downstreamStepId);
-                targetFallbacks = List.of();
+            // UC-019 BR-001: the arrow lands on the innermost element of the downstream path.
+            if (r.downstreamSqId != null) {
+                target = "sq-" + r.downstreamSqId;
+                targetName = questionName.get(questionIdByAssignment.get(r.downstreamSqId));
+                Integer stepId = stepIdByAssignment.get(r.downstreamSsId);
+                targetFallbacks = r.downstreamSsId != null && stepId != null
+                        ? List.of("ss-" + r.downstreamSsId, "step-" + stepId)
+                        : collapseFallbacks(cardsHoldingQuestionAssignment.get(r.downstreamSqId), stepIdByAssignment);
             } else if (r.downstreamSsId != null) {
                 target = "ss-" + r.downstreamSsId;
                 targetName = sectionName.get(sectionIdByAssignment.get(r.downstreamSsId));
                 Integer stepId = stepIdByAssignment.get(r.downstreamSsId);
                 targetFallbacks = stepId == null ? List.of() : List.of("step-" + stepId);
             } else {
-                target = "sq-" + r.downstreamSqId;
-                targetName = questionName.get(questionIdByAssignment.get(r.downstreamSqId));
-                targetFallbacks = collapseFallbacks(cardsHoldingQuestionAssignment.get(r.downstreamSqId), stepIdByAssignment);
+                target = "step-" + r.downstreamStepId;
+                targetName = stepName.get(r.downstreamStepId);
+                targetFallbacks = List.of();
             }
             String action = r.actionType == null ? "" : r.actionType.name;
             String operator = r.operatorType == null ? "" : r.operatorType.name;

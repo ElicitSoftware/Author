@@ -27,6 +27,7 @@ import com.elicitsoftware.author.flow.reporting.ElementTagsDialog;
 import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyService;
+import com.elicitsoftware.author.survey.TokenSamples;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.elicitsoftware.model.ActionType;
 import com.elicitsoftware.model.Question;
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.elicitsoftware.model.Section;
 import com.elicitsoftware.model.Step;
+import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.Survey;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -142,9 +144,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         });
         split.addClassName("designer-split");
         split.add(board, preview);
-        overlay.addConnectRequestedListener(e -> connectRequested(e.sourceAnchor(), e.targetAnchor(), e.action()));
+        overlay.addConnectRequestedListener(e -> connectRequested(e.sourceAnchor(), e.targetAnchor(), e.mountAnchor(), e.action()));
         overlay.addEdgeSelectedListener(e -> editRule(e.edgeId()));
-        overlay.addEdgeRepointedListener(e -> repoint(e.edgeId(), e.end(), e.targetAnchor()));
+        overlay.addEdgeRepointedListener(e -> repoint(e.edgeId(), e.end(), e.targetAnchor(), e.mountAnchor()));
         overview.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
         overview.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
                 new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id)))));
@@ -417,6 +419,15 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                     case SECTION -> createSectionAt(spot.container(), spot.index());
                     case QUESTION -> createQuestionAt(spot.container(), spot.index(), typeNamed(item.questionType()));
                 }
+            } else if (data instanceof BankSection bank) {
+                // UC-015 A6: a section from the drawer's Sections panel, mounted in the target step.
+                if (spot.accepts() != StructureNode.Kind.SECTION || spot.container() == null) {
+                    return;
+                }
+                StepsSections mount = designer.mountSection(survey.id, bank.sectionId(), spot.container().durableId(), spot.index());
+                load();
+                select(find(StructureNode.Kind.SECTION, bank.sectionId(), mount.stepsSectionsId));
+                success("Section '" + bank.label() + "' is now also in step '" + spot.container().label() + "'");
             } else if (data instanceof BankQuestion bank) {
                 // UC-011 A6: a question from the drawer's Questions panel, reused in the target section.
                 if (spot.accepts() != StructureNode.Kind.QUESTION || spot.container() == null) {
@@ -426,7 +437,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 open(spot.container());
                 load();
                 select(find(StructureNode.Kind.QUESTION, bank.questionId(), null));
-                success("Added question '" + bank.label() + "' to section '" + spot.container().label() + "'");
+                success("Question '" + bank.label() + "' is now also in section '" + spot.container().label() + "'");
             } else if (data instanceof StructureNode node) {
                 if (node.kind() != spot.accepts() || node.retired()) {
                     return;
@@ -444,8 +455,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                             designer.moveSectionWithinStep(survey.id, node.assignmentId(), targetIndex(from, spot.index()));
                             afterMove(node, "Moved section '" + node.label() + "'", backwardBefore);
                         } else {
-                            Section copy = designer.duplicateSectionInto(survey.id, node.durableId(), spot.container().durableId(), spot.index());
-                            copiedSection(copy, spot.container());
+                            // UC-015 main flow: a card dragged across lanes mounts the same section there.
+                            StepsSections mount = designer.mountSection(survey.id, node.durableId(), spot.container().durableId(), spot.index());
+                            load();
+                            select(find(StructureNode.Kind.SECTION, node.durableId(), mount.stepsSectionsId));
+                            success("Section '" + node.label() + "' is now also in step '" + spot.container().label() + "'");
                         }
                     }
                     case QUESTION -> {
@@ -454,11 +468,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                             designer.moveQuestionWithinSection(survey.id, node.assignmentId(), targetIndex(from, spot.index()));
                             afterMove(node, "Moved question '" + node.label() + "'", backwardBefore);
                         } else {
+                            // UC-011 A4: a row dragged across cards places the same question there.
                             designer.assignQuestionInto(survey.id, node.durableId(), spot.container().durableId(), spot.index());
                             open(spot.container());
                             load();
                             select(find(StructureNode.Kind.QUESTION, node.durableId(), null));
-                            success("Copied question '" + node.label() + "' into section '" + spot.container().label() + "'");
+                            success("Question '" + node.label() + "' is now also in section '" + spot.container().label() + "'");
                         }
                     }
                 }
@@ -505,32 +520,22 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
     }
 
-    /** Keyboard equivalent of dragging into another container (UC-015 A5, UC-011 A4). */
+    /** UC-015 A1: a real copy of a section from the card's menu — a drag across lanes mounts instead. */
     public void copyTo(StructureNode node) {
-        switch (node.kind()) {
-            case SECTION -> new PickerDialog<>("Copy section '" + node.label() + "'", "Into step", tree.roots(), StructureNode::label, step -> {
-                try {
-                    Section copy = designer.duplicateSectionInto(survey.id, node.durableId(), step.durableId(), childrenOf(step).size());
-                    copiedSection(copy, step);
-                } catch (AuthoringException ae) {
-                    error(ae.getMessage());
-                }
-            }).open();
-            case QUESTION -> new PickerDialog<>("Copy question '" + node.label() + "'", "Into section", sectionsDistinct(), this::sectionPath, section -> {
-                try {
-                    designer.assignQuestionInto(survey.id, node.durableId(), section.durableId(), childrenOf(section).size());
-                    open(section);
-                    load();
-                    success("Copied question '" + node.label() + "' into section '" + section.label() + "'");
-                } catch (AuthoringException ae) {
-                    error(ae.getMessage());
-                }
-            }).open();
-            default -> { }
+        if (node.kind() != StructureNode.Kind.SECTION) {
+            return;
         }
+        new PickerDialog<>("Copy section '" + node.label() + "'", "Into step", tree.roots(), StructureNode::label, step -> {
+            try {
+                Section copy = designer.duplicateSectionInto(survey.id, node.durableId(), step.durableId(), childrenOf(step).size());
+                copiedSection(copy, step);
+            } catch (AuthoringException ae) {
+                error(ae.getMessage());
+            }
+        }).open();
     }
 
-    /** UC-015 A1: the same section in another step. */
+    /** UC-015 A5 keyboard route: the same section in another step. */
     public void mountIn(StructureNode section) {
         new PickerDialog<>("Mount section '" + section.label() + "'", "Also in step", tree.roots(), StructureNode::label, step -> {
             try {
@@ -555,7 +560,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         return out;
     }
 
-    /** The Lists and Questions panels read the same tables as the board; keep them in step. */
+    /** The Lists, Sections and Questions panels read the same tables as the board; keep them in step. */
     private void refreshToolbox(Map<Integer, Question> questions) {
         if (toolbox == null || survey == null || tree == null) {
             return;
@@ -568,7 +573,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 users.merge(q.selectGroupId, 1L, Long::sum);
             }
         }
+        java.util.Map<Integer, String> descriptions = new java.util.HashMap<>();
+        for (Section sec : Section.<Section>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) {
+            descriptions.put(sec.sectionId, sec.description);
+        }
         toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users, listService.optionTexts(survey.id));
+        toolbox.sections.refresh(this, tree.all(), descriptions);
         toolbox.questions.refresh(this, tree.all(), texts);
     }
 
@@ -583,7 +593,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 ruleShown.add(edge.target());
             }
         }
-        preview.show(this, selected, questions, listService.optionTexts(survey.id), PreviewFields.tokenSamples(survey.id), ruleShown);
+        preview.show(this, selected, questions, listService.optionTexts(survey.id), TokenSamples.load(survey.id), ruleShown);
     }
 
     // ---- lists (UC-014) ------------------------------------------------------------------------
@@ -628,14 +638,14 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }, "Cancel", e -> { }).open();
     }
 
-    /** UC-011 A6, keyboard route: reuse a bank question in a section chosen from a picker. */
+    /** UC-011 A4/A6, keyboard route: the same question in a section chosen from a picker (row menu and Questions panel). */
     public void addBankQuestionTo(StructureNode question) {
         new PickerDialog<>("Add question '" + question.label() + "'", "To section", sectionsDistinct(), this::sectionPath, section -> {
             try {
                 designer.assignQuestionInto(survey.id, question.durableId(), section.durableId(), childrenOf(section).size());
                 open(section);
                 load();
-                success("Added question '" + question.label() + "' to section '" + section.label() + "'");
+                success("Question '" + question.label() + "' is now also in section '" + section.label() + "'");
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
@@ -744,10 +754,14 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
     }
 
+    /** The row a pending rule hangs from, so the rule learns the mount it fires from (UC-019 BR-001). */
+    private StructureNode pendingSource;
+
     /** UC-019 step 1-2: a rule glyph landed on a question row; the overlay now follows the pointer. */
     public void startRule(String action, StructureNode question) {
         showRules.setValue(true);
         selected = question;
+        pendingSource = question;
         openAncestors(question);
         render();
         overlay.setPending("sq-" + question.assignmentId(), action);
@@ -760,7 +774,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         new RelationshipDialog(survey.id, tree, rules, null, preset, saved -> ruleSaved(saved), this::load).open();
     }
 
-    void connectRequested(String sourceAnchor, String targetAnchor, String action) {
+    void connectRequested(String sourceAnchor, String targetAnchor, String mountAnchor, String action) {
         overlay.setPending("", "");
         Integer sq = anchorId(sourceAnchor, "sq");
         if (sq == null || targetAnchor == null) {
@@ -768,6 +782,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
         Relationship preset = new Relationship();
         preset.upstreamSqId = sq;
+        // The row the glyph landed on names the mount the rule fires from (UC-019 BR-001).
+        StructureNode source = pendingSource != null && sq.equals(pendingSource.assignmentId()) ? pendingSource : null;
+        StructureNode sourceStep = source == null ? null : stepOf(source);
+        preset.upstreamStepId = sourceStep == null ? null : sourceStep.durableId();
+        pendingSource = null;
         preset.actionType = action == null || action.isBlank() ? null : ActionType.find("name", action).firstResult();
         Integer step = anchorId(targetAnchor, "step");
         Integer ss = anchorId(targetAnchor, "ss");
@@ -778,6 +797,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             preset.downstreamSsId = ss;
         } else if (tsq != null) {
             preset.downstreamSqId = tsq;
+            preset.downstreamSsId = anchorId(mountAnchor, "ss"); // the card the row was dropped in
         } else {
             info("Drop the arrow on a step, a section or a question");
             return;
@@ -803,25 +823,27 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }).open();
     }
 
-    /** The downstream element a rule points at, resolved to a board node. */
+    /** The downstream element a rule points at — the innermost of its path, in the mount the path names — resolved to a board node. */
     private StructureNode targetNode(Relationship r) {
-        if (r.downstreamStepId != null) {
-            return find(StructureNode.Kind.STEP, r.downstreamStepId, null);
+        if (r.downstreamSqId != null) {
+            List<StructureNode> rows = tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION
+                    && Objects.equals(n.assignmentId(), r.downstreamSqId)).toList();
+            return rows.stream().filter(n -> n.parent() != null && Objects.equals(n.parent().assignmentId(), r.downstreamSsId))
+                    .findFirst().orElse(rows.isEmpty() ? null : rows.get(0));
         }
         if (r.downstreamSsId != null) {
             return tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.SECTION
                     && Objects.equals(n.assignmentId(), r.downstreamSsId)).findFirst().orElse(null);
         }
-        if (r.downstreamSqId != null) {
-            return tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION
-                    && Objects.equals(n.assignmentId(), r.downstreamSqId)).findFirst().orElse(null);
+        if (r.downstreamStepId != null) {
+            return find(StructureNode.Kind.STEP, r.downstreamStepId, null);
         }
         return null;
     }
 
-    void repoint(int relationshipId, String end, String targetAnchor) {
+    void repoint(int relationshipId, String end, String targetAnchor, String mountAnchor) {
         try {
-            rules.repoint(survey.id, relationshipId, "SOURCE".equals(end) ? RuleService.End.SOURCE : RuleService.End.TARGET, targetAnchor);
+            rules.repoint(survey.id, relationshipId, "SOURCE".equals(end) ? RuleService.End.SOURCE : RuleService.End.TARGET, targetAnchor, mountAnchor);
             load();
             success("Rule re-pointed");
         } catch (AuthoringException ae) {

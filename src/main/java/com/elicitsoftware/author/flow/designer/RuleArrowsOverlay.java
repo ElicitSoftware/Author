@@ -86,16 +86,24 @@ public class RuleArrowsOverlay extends Component {
     public static class ConnectRequestedEvent extends ComponentEvent<RuleArrowsOverlay> {
         private final String source;
         private final String target;
+        private final String mount;
         private final String action;
 
         public ConnectRequestedEvent(RuleArrowsOverlay source, boolean fromClient,
                                      @EventData("event.detail.source") String sourceAnchor,
                                      @EventData("event.detail.target") String targetAnchor,
+                                     @EventData("event.detail.mount") String mountAnchor,
                                      @EventData("event.detail.action") String action) {
             super(source, fromClient);
             this.source = sourceAnchor;
             this.target = targetAnchor;
+            this.mount = mountAnchor;
             this.action = action;
+        }
+
+        /** The section card ({@code ss-N}) a question-row target sits in, or null. */
+        public String mountAnchor() {
+            return mount;
         }
 
         public String sourceAnchor() {
@@ -130,15 +138,23 @@ public class RuleArrowsOverlay extends Component {
         private final int edgeId;
         private final String end;
         private final String target;
+        private final String mount;
 
         public EdgeRepointedEvent(RuleArrowsOverlay source, boolean fromClient,
                                   @EventData("event.detail.edgeId") int edgeId,
                                   @EventData("event.detail.end") String end,
-                                  @EventData("event.detail.target") String target) {
+                                  @EventData("event.detail.target") String target,
+                                  @EventData("event.detail.mount") String mount) {
             super(source, fromClient);
             this.edgeId = edgeId;
             this.end = end;
             this.target = target;
+            this.mount = mount;
+        }
+
+        /** The section card ({@code ss-N}) a question-row target sits in, or null. */
+        public String mountAnchor() {
+            return mount;
         }
 
         public int edgeId() {

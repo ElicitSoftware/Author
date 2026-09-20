@@ -87,7 +87,9 @@ public class SurveyModelGuideView extends VerticalLayout {
                 bullets(
                         item(Glyph.rule("SHOW"), "Show", " — the target appears only when the rule holds. Until then the respondent never sees it."),
                         item(Glyph.rule("REPEAT"), "Repeat", " — the target section or question is repeated as many times as the answer says, for example one 'Child' section per child."),
-                        item(Glyph.rule("TEXT"), "Text", " — the answer is written into the target's text wherever a {TOKEN|default} placeholder appears, so a later question can say 'your daughter' instead of 'your child'.")),
+                        item(Glyph.rule("TEXT"), "Text", " — the answer is written into the target's text wherever a {TOKEN|default} placeholder appears, so a later question can say 'your daughter' instead of 'your child'. "
+                                + "The rule reaches everything inside its target: one Text rule on a step fills the token in every section and question of that step. "
+                                + "A token is a slot name, not a question — several rules may fill the same token, each where it is used.")),
                 new Paragraph("There is no Hide rule. Hiding is the same as not showing: give the element a Show rule "
                         + "and it stays hidden until that rule holds."),
                 new Paragraph("Operators are Boolean, Greater than, Equal, Not equal, Field exists and Contains. "
@@ -101,7 +103,8 @@ public class SurveyModelGuideView extends VerticalLayout {
                         + "question), and the structure tree at the bottom of the drawer follows your selection. Every "
                         + "element carries its glyph, and the glyph is its handle: drag a glyph from the Controls panel to "
                         + "create an element, drag it within its container to reorder, or drag it into another container "
-                        + "to copy it there. Drag a rule glyph onto a question to start a rule, then drag the arrowhead "
+                        + "to show the same element there as well (a section in another step, a question in another "
+                        + "section); Copy to step… in a card's menu makes a separate section instead. Drag a rule glyph onto a question to start a rule, then drag the arrowhead "
                         + "onto the target. Everything a drag can do, the element's menu can do too."));
 
         section(VaadinIcon.EDIT.create(), "Designing a survey",
@@ -109,17 +112,20 @@ public class SurveyModelGuideView extends VerticalLayout {
                         + "toolbox; the board on the right is the survey. Work top-down: steps, then sections, then "
                         + "questions, then the lists, rules and reporting tags that give them meaning."),
                 bullets(
-                        item(VaadinIcon.SEARCH.create(), "Search", " — each of the Lists and Questions panels has its own search box that "
-                                + "narrows that panel as you type: lists by name, description and option text, questions by name, "
-                                + "text and type. Handy once a survey has dozens of each."),
+                        item(VaadinIcon.SEARCH.create(), "Search", " — each of the Lists, Sections and Questions panels has its own search "
+                                + "box that narrows that panel as you type: lists by name, description and option text, sections by "
+                                + "name and description, questions by name, text and type. Handy once a survey has dozens of each."),
                         item(VaadinIcon.TOOLS.create(), "Controls", " — the glyphs for a step, a section, a question of the chosen type, and the "
                                 + "three rules. Drag one onto the board, or use Add step and the Add… items in the menus."),
                         item(VaadinIcon.LIST.create(), "Lists", " — the lists of options a choice question (radio, combo box, multi-select, "
                                 + "checkbox group) offers. New list… defines one with its options in order; drag a list's glyph onto a "
                                 + "question to give it those options, or pick the list in the question's editor."),
+                        item(Glyph.section(), "Sections", " — every section in the survey, once, with the number of steps it is "
+                                + "mounted in. Drag one into a lane, or use Mount in step…, to show the same section in another "
+                                + "step; it stays one section, so a change to its name or questions reaches every step."),
                         item(Glyph.question("TEXT"), "Questions", " — every question in the survey, once, with the number of sections it "
                                 + "appears in. Drag one into a card, or use Add to section…, to ask the same question again elsewhere; "
-                                + "it stays one question, so a change to its text reaches every copy."),
+                                + "it stays one question, so a change to its text reaches every section it is in."),
                         item(VaadinIcon.TAG.create(), "Reporting tags", " — the \u22ee menu of a question or section offers Reporting tags…; the "
                                 + "survey's Reporting… page lists them all with the tables and columns they produce. Tagged elements "
                                 + "show a tag badge on the board, one entry per tag."),
