@@ -20,9 +20,9 @@ import { LitElement, html, svg, css } from 'lit';
  * pointer after a rule glyph was dropped on a question (`pendingSource`).
  *
  * Events (all bubble, composed):
- *   connect-requested {source, target, action}  – pending arrow released on a target
+ *   connect-requested {source, target, mount, action}  – pending arrow released on a target
  *   edge-selected     {edgeId}                   – action glyph clicked
- *   edge-repointed    {edgeId, end, target}      – an arrow end dropped on another element
+ *   edge-repointed    {edgeId, end, target, mount}      – an arrow end dropped on another element
  */
 const GLYPH = { SHOW: '\u{1F441}', REPEAT: '↻', TEXT: '{T}' };
 
@@ -262,6 +262,9 @@ class ElicitRuleArrows extends LitElement {
     const hit = document.elementFromPoint(e.clientX, e.clientY);
     const node = hit ? hit.closest('[data-node-id]') : null;
     const anchor = node ? node.getAttribute('data-node-id') : null;
+    // A question row's card: which mount of a shared section the rule fires from or targets.
+    const card = node && node.parentElement ? node.parentElement.closest('[data-node-id^="ss-"]') : null;
+    const mount = card ? card.getAttribute('data-node-id') : null;
     if (!drag) return;
     if (drag.armed) {
       // Never moved: a click, not a re-point.
@@ -274,10 +277,10 @@ class ElicitRuleArrows extends LitElement {
       const action = this.pendingAction;
       this.pendingSource = '';
       if (anchor && anchor !== source) {
-        this._emit('connect-requested', { source, target: anchor, action });
+        this._emit('connect-requested', { source, target: anchor, mount, action });
       }
     } else if (anchor) {
-      this._emit('edge-repointed', { edgeId: drag.edgeId, end: drag.end, target: anchor });
+      this._emit('edge-repointed', { edgeId: drag.edgeId, end: drag.end, target: anchor, mount });
     }
     this._schedule();
   }

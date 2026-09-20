@@ -25,6 +25,7 @@ import com.elicitsoftware.author.survey.RenameLedger;
 import com.elicitsoftware.author.survey.ReportingChangeLedger;
 import com.elicitsoftware.author.survey.ReportingService;
 import com.elicitsoftware.author.survey.RuleOrdering;
+import com.elicitsoftware.author.survey.RulePath;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -38,7 +39,7 @@ import java.util.function.Function;
 
 /**
  * Checks a survey's current elements before export (UC-007): dangling durable references,
- * relationships without exactly one downstream target or pointing backwards (UC-033 A3), choice
+ * relationships whose downstream path does not hold together or that point backwards (UC-033 A3), choice
  * questions without options, empty steps and sections, duplicate ordering. Errors block export; warnings do not.
  * Read-only (UC-007 BR-004).
  */
@@ -123,9 +124,8 @@ public class ExportValidation {
         RuleOrdering.Board board = new RuleOrdering.Board(steps.values(), stepsSections.values(), sectionsQuestions.values(), sectionNames, questionNames);
         for (Relationship r : relationships) {
             String rule = "Rule '" + r.description + "'";
-            if (!r.hasExactlyOneDownstream()) {
-                issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " must target exactly one step, section or question"));
-            }
+            // UC-019 BR-001: the downstream path — step, section in it, question in that — must hold together.
+            RulePath.problem(r, board).ifPresent(p -> issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " " + p)));
             if (!sectionsQuestions.containsKey(r.upstreamSqId)) {
                 issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " reads from a removed or missing question assignment"));
             }

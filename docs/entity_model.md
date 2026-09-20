@@ -311,7 +311,7 @@ A conditional-logic rule connecting an upstream question's answer to a downstrea
 | published_by             | Carried from the applied file; not set by Author on structural rows                        | String    | Unlimited (text)  | Optional                                                                 |
 | published_comment        | Carried from the applied file; not set by Author on structural rows                         | String    | Unlimited (text)  | Optional                                                                 |
 
-**Constraints:** `(relationship_id, version)` is unique. At most one current row may exist per `relationship_id`; `(relationship_key, version)` is unique. Exactly one of `downstream_step_id`, `downstream_sq_id`, `downstream_ss_id` must be set.
+**Constraints:** `(relationship_id, version)` is unique. At most one current row may exist per `relationship_id`; `(relationship_key, version)` is unique. At least one of `downstream_step_id`, `downstream_ss_id`, `downstream_sq_id` must be set; together they are the downstream path the Survey runtime walks from the outside in — the step, the section mounted in it, the question assigned to that section — and the innermost named element is what the rule acts on. A question in the upstream question's own section stands alone (no step or section, and no `upstream_step_id`: the rule fires from every mount); any other question or section names the mount it is shown in, and `upstream_step_id` names the mount the rule fires from.
 
 ### DIMENSION
 

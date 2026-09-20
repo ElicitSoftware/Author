@@ -142,9 +142,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         });
         split.addClassName("designer-split");
         split.add(board, preview);
-        overlay.addConnectRequestedListener(e -> connectRequested(e.sourceAnchor(), e.targetAnchor(), e.action()));
+        overlay.addConnectRequestedListener(e -> connectRequested(e.sourceAnchor(), e.targetAnchor(), e.mountAnchor(), e.action()));
         overlay.addEdgeSelectedListener(e -> editRule(e.edgeId()));
-        overlay.addEdgeRepointedListener(e -> repoint(e.edgeId(), e.end(), e.targetAnchor()));
+        overlay.addEdgeRepointedListener(e -> repoint(e.edgeId(), e.end(), e.targetAnchor(), e.mountAnchor()));
         overview.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
         overview.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
                 new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id)))));
@@ -744,10 +744,14 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
     }
 
+    /** The row a pending rule hangs from, so the rule learns the mount it fires from (UC-019 BR-001). */
+    private StructureNode pendingSource;
+
     /** UC-019 step 1-2: a rule glyph landed on a question row; the overlay now follows the pointer. */
     public void startRule(String action, StructureNode question) {
         showRules.setValue(true);
         selected = question;
+        pendingSource = question;
         openAncestors(question);
         render();
         overlay.setPending("sq-" + question.assignmentId(), action);
@@ -760,7 +764,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         new RelationshipDialog(survey.id, tree, rules, null, preset, saved -> ruleSaved(saved), this::load).open();
     }
 
-    void connectRequested(String sourceAnchor, String targetAnchor, String action) {
+    void connectRequested(String sourceAnchor, String targetAnchor, String mountAnchor, String action) {
         overlay.setPending("", "");
         Integer sq = anchorId(sourceAnchor, "sq");
         if (sq == null || targetAnchor == null) {
@@ -768,6 +772,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
         Relationship preset = new Relationship();
         preset.upstreamSqId = sq;
+        // The row the glyph landed on names the mount the rule fires from (UC-019 BR-001).
+        StructureNode source = pendingSource != null && sq.equals(pendingSource.assignmentId()) ? pendingSource : null;
+        StructureNode sourceStep = source == null ? null : stepOf(source);
+        preset.upstreamStepId = sourceStep == null ? null : sourceStep.durableId();
+        pendingSource = null;
         preset.actionType = action == null || action.isBlank() ? null : ActionType.find("name", action).firstResult();
         Integer step = anchorId(targetAnchor, "step");
         Integer ss = anchorId(targetAnchor, "ss");
@@ -778,6 +787,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             preset.downstreamSsId = ss;
         } else if (tsq != null) {
             preset.downstreamSqId = tsq;
+            preset.downstreamSsId = anchorId(mountAnchor, "ss"); // the card the row was dropped in
         } else {
             info("Drop the arrow on a step, a section or a question");
             return;
@@ -803,25 +813,27 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }).open();
     }
 
-    /** The downstream element a rule points at, resolved to a board node. */
+    /** The downstream element a rule points at — the innermost of its path, in the mount the path names — resolved to a board node. */
     private StructureNode targetNode(Relationship r) {
-        if (r.downstreamStepId != null) {
-            return find(StructureNode.Kind.STEP, r.downstreamStepId, null);
+        if (r.downstreamSqId != null) {
+            List<StructureNode> rows = tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION
+                    && Objects.equals(n.assignmentId(), r.downstreamSqId)).toList();
+            return rows.stream().filter(n -> n.parent() != null && Objects.equals(n.parent().assignmentId(), r.downstreamSsId))
+                    .findFirst().orElse(rows.isEmpty() ? null : rows.get(0));
         }
         if (r.downstreamSsId != null) {
             return tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.SECTION
                     && Objects.equals(n.assignmentId(), r.downstreamSsId)).findFirst().orElse(null);
         }
-        if (r.downstreamSqId != null) {
-            return tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION
-                    && Objects.equals(n.assignmentId(), r.downstreamSqId)).findFirst().orElse(null);
+        if (r.downstreamStepId != null) {
+            return find(StructureNode.Kind.STEP, r.downstreamStepId, null);
         }
         return null;
     }
 
-    void repoint(int relationshipId, String end, String targetAnchor) {
+    void repoint(int relationshipId, String end, String targetAnchor, String mountAnchor) {
         try {
-            rules.repoint(survey.id, relationshipId, "SOURCE".equals(end) ? RuleService.End.SOURCE : RuleService.End.TARGET, targetAnchor);
+            rules.repoint(survey.id, relationshipId, "SOURCE".equals(end) ? RuleService.End.SOURCE : RuleService.End.TARGET, targetAnchor, mountAnchor);
             load();
             success("Rule re-pointed");
         } catch (AuthoringException ae) {

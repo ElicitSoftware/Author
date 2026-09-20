@@ -19,7 +19,7 @@
 1. The author drags a rule glyph — Show, Repeat or Text — from the palette and drops it on the question row whose answer the rule reads.
 2. The system attaches a dangling arrow to that row, its action glyph at the midpoint, and follows the pointer.
 3. The author drops the arrowhead on the target: a step lane header, a section card header or a question row.
-4. The system opens the rule dialog with the upstream question, the action and the downstream target filled in.
+4. The system opens the rule dialog with the upstream question, the action and the downstream target filled in; the card the row or header sits in tells the system which mount of a shared section is meant.
 5. The author chooses the operator, enters the reference value (and, for Text, the token name and an example answer for the preview) and an optional description, and saves.
 6. The system creates the rule with a key minted once, draws the arrow labelled by its action and target (UC-020 BR-004), and refreshes validation.
 
@@ -30,7 +30,7 @@
 **Trigger:** The author chooses Add rule… from a question row's menu (step 1)  
 **Flow:**
 
-1. The system opens the rule dialog with the upstream question filled in; the author picks the downstream kind and target from lists.
+1. The system opens the rule dialog with the upstream question filled in; the author picks the downstream kind and target from lists, in which a section mounted in several steps appears once per mount, labelled by its path.
 2. Use case continues at step 5.
 
 ### A2: Text action without a token
@@ -62,14 +62,14 @@
 **Trigger:** The author drags an arrow's tail or head to another row or header (step 1)  
 **Flow:**
 
-1. The system moves that end of the rule to the new element, subject to A3, and redraws.
+1. The system moves that end of the rule to the new element in the card it was dropped in, completes the path (BR-001), subject to A3, and redraws.
 2. Use case ends.
 
 ## Postconditions
 
 ### Success Postconditions
 
-- The rule is current, reads from one question assignment, targets exactly one step, section assignment or question assignment, and is drawn on the board.
+- The rule is current, reads from one question assignment, carries a downstream path whose innermost element is the step, section assignment or question assignment it acts on, and is drawn on the board at that element.
 
 ### Failure Postconditions
 
@@ -77,9 +77,9 @@
 
 ## Business Rules
 
-### BR-001: Exactly one downstream target
+### BR-001: The downstream target is a path
 
-A rule targets one step, one section assignment or one question assignment, never several and never none (FR-022).
+A rule's downstream is the path the Survey runtime walks from the outside in: the step, the section mounted in that step, the question assigned to that section. The innermost element named is what the rule acts on; the outer ones say where the runtime places it. The author names only the element the rule acts on; the system completes the path from where that element sits on the board. A question in the upstream question's own section needs no path — the runtime shows it on the page being answered, whichever mount that is — and such a rule names no upstream step, so it fires from every mount. A section, a step, or a question in another section names its step (and section), and the rule names the upstream step it fires from. A path that does not hold together — a section outside its step, a question outside its section, a question in another section with no mount named — is refused (FR-022).
 
 ### BR-002: Upstream is always a question assignment
 
