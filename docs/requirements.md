@@ -125,6 +125,7 @@ answers to generate a first-draft structure for a *different*, new survey.
 | FR-045 | Right-to-Left Layout      | As a survey author whose language is written right-to-left, I want the whole tool — including the designer board and its drag-and-drop lanes — laid out right-to-left when that language is selected so that it reads naturally. | High | Implemented |
 | FR-046 | Translation Handoff Package | As a system administrator, I want one generated document containing every translatable text with its context and translation rules so that I can hand it to a translator or an AI agent and receive a complete language file back. | Medium | Implemented |
 | FR-047 | Localized Service Messages | As a survey author, I want validation and export error messages produced by the authoring services to appear in my language so that I understand what to fix. | Low | Planned |
+| FR-048 | Manage Languages from the Tool | As a survey author with the `elicit_author` role, I want to add, replace or remove a language for the tool by uploading a validated translation file on a Languages page so that a site can offer a new language without server access. | Medium | Planned |
 
 ## Non-Functional Requirements
 
@@ -171,6 +172,7 @@ answers to generate a first-draft structure for a *different*, new survey.
 | C-019 | Removal Means Retire               | Author never physically deletes a structural element that may have been exported; removal closes `effective_to`, and exported files carry retired rows so Admin's update can close them at each site.                       | Technical  | High     | Open        |
 | C-020 | Translation File Layout            | Translation files must use the Vaadin standard layout (`src/main/resources/vaadin-i18n/translations[_tag].properties`, `getTranslation` keys, `{0}` placeholders) so that Vaadin Copilot's internationalization tooling keeps working alongside hand-written extraction. | Technical  | Medium   | Implemented |
 | C-021 | Authored Content Language          | Only the tool's own chrome is localized. Survey content the author writes (question text, options, step and section names, tags) is stored and exported as entered, in one language; content translation is tracked on a separate branch. | Business   | High     | Implemented |
+| C-022 | Writable Translations Directory    | Managing languages from the tool (FR-048) requires the translations directory (`i18n.file.system.path`) to be mounted writable for the tool; the compose file currently mounts it read-only, and languages are then added on the server as documented in the umbrella `DeploymentScript.md`. | Technical  | Medium   | Planned     |
 
 ## Open Items for Review
 
