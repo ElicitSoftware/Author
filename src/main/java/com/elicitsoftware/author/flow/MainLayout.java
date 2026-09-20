@@ -164,7 +164,10 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     protected void onAttach(AttachEvent attachEvent) {
         getUI().ifPresent(ui -> ui.addAfterNavigationListener(this));
         // Install the mouse-draggable drawer resize handle (drawer-resizer.js) on this app-layout.
-        getElement().executeJs("window.__initDrawerResizer && window.__initDrawerResizer(this)");
+        getElement().executeJs("window.__initDrawerResizer && window.__initDrawerResizer(this, "
+                + "{title: $0, ariaLabel: $1, smallScreenHeading: $2, smallScreenText: $3})",
+                getTranslation("mainLayout.resizer.title"), getTranslation("mainLayout.resizer.aria"),
+                getTranslation("mainLayout.smallScreen.heading"), getTranslation("mainLayout.smallScreen.text"));
     }
 
     @Override
