@@ -11,6 +11,7 @@ package com.elicitsoftware.author;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import jakarta.persistence.PersistenceException;
 import org.hibernate.exception.ConstraintViolationException;
 
@@ -19,22 +20,25 @@ import java.util.Map;
 
 /**
  * Turns database constraint violations into {@link AuthoringException}s with a message an author
- * can act on, keyed by the constraint names Survey's schema declares.
+ * can act on, keyed by the constraint names Survey's schema declares. Each constraint maps to the
+ * field it concerns and to a translation key ({@code constraint.<constraint name>}) resolved for
+ * the current UI locale at lookup time (UC-034).
  */
 public final class ConstraintViolationTranslator {
 
-    private static final Map<String, String[]> BY_CONSTRAINT = Map.ofEntries(
-            Map.entry("surveys_name_un", new String[]{"name", "Another survey already uses this name"}),
-            Map.entry("surveys_survey_key_un", new String[]{null, "A survey with this key already exists in Author"}),
-            Map.entry("steps_survey_name_un", new String[]{"name", "Another step in this survey already uses this name"}),
-            Map.entry("steps_survey_display_order_un", new String[]{"displayOrder", "Another step already has this position"}),
-            Map.entry("sections_survey_display_order_un", new String[]{"displayOrder", "Another section already has this position"}),
-            Map.entry("select_groups_name_un", new String[]{"name", "Another list in this survey already uses this name"}),
-            Map.entry("select_items_display_text_un", new String[]{"displayText", "This list already has an option with that text"}),
-            Map.entry("steps_sections_display_key_un", new String[]{"displayKey", "Another assignment already uses this display key"}),
-            Map.entry("dimensions_un", new String[]{"dimension", "A dimension with this name already exists"}),
-            Map.entry("ontology_un", new String[]{"tag", "A tag with this name already exists in this survey's namespace"}),
-            Map.entry("metadata_un", new String[]{null, "This element already carries this tag with the same value"})
+    /** Constraint name suffix -> the field it concerns (or null); the message key is {@code constraint.<name>}. */
+    private static final Map<String, String> FIELD_BY_CONSTRAINT = Map.ofEntries(
+            Map.entry("surveys_name_un", "name"),
+            Map.entry("surveys_survey_key_un", ""),
+            Map.entry("steps_survey_name_un", "name"),
+            Map.entry("steps_survey_display_order_un", "displayOrder"),
+            Map.entry("sections_survey_display_order_un", "displayOrder"),
+            Map.entry("select_groups_name_un", "name"),
+            Map.entry("select_items_display_text_un", "displayText"),
+            Map.entry("steps_sections_display_key_un", "displayKey"),
+            Map.entry("dimensions_un", "dimension"),
+            Map.entry("ontology_un", "tag"),
+            Map.entry("metadata_un", "")
     );
 
     private ConstraintViolationTranslator() {
@@ -54,16 +58,17 @@ public final class ConstraintViolationTranslator {
         }
         ConstraintViolationException cve = (ConstraintViolationException) t;
         String name = cve.getConstraintName() == null ? "" : cve.getConstraintName().toLowerCase(Locale.ROOT);
-        for (Map.Entry<String, String[]> entry : BY_CONSTRAINT.entrySet()) {
+        for (Map.Entry<String, String> entry : FIELD_BY_CONSTRAINT.entrySet()) {
             if (name.endsWith(entry.getKey())) {
-                return new AuthoringException(entry.getValue()[1], entry.getValue()[0]);
+                String field = entry.getValue().isEmpty() ? null : entry.getValue();
+                return new AuthoringException(Translations.get("constraint." + entry.getKey()), field);
             }
         }
         if ("23503".equals(cve.getSQLState())) {
-            return new AuthoringException("This element is still referenced by another element");
+            return new AuthoringException(Translations.get("constraint.sqlstate.23503"));
         }
         if ("23505".equals(cve.getSQLState())) {
-            return new AuthoringException("A row with the same unique value already exists (" + cve.getConstraintName() + ")");
+            return new AuthoringException(Translations.get("constraint.sqlstate.23505", cve.getConstraintName()));
         }
         return e instanceof PersistenceException ? e : new PersistenceException(e);
     }

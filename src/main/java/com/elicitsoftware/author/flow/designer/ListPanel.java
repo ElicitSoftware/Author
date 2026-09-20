@@ -11,6 +11,7 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.model.SelectGroup;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -36,9 +37,9 @@ import java.util.Map;
  */
 public class ListPanel extends VerticalLayout {
 
-    final Button newList = new Button("New list…", VaadinIcon.PLUS.create());
+    final Button newList = new Button(VaadinIcon.PLUS.create());
     /** Filters the lists by name, description and option text; scoped to this panel. */
-    final TextField search = searchField("Search lists", "Search lists by name, description or option text");
+    final TextField search = searchField(Translations.get("listPanel.search"), Translations.get("listPanel.search.aria"));
     final Div rows = new Div();
     final List<Row> items = new ArrayList<>();
     private java.util.function.BiConsumer<String, Integer> filtered = (q, n) -> { };
@@ -60,7 +61,7 @@ public class ListPanel extends VerticalLayout {
             addClassName("designer-panel-row");
             glyph.add(new Icon(VaadinIcon.LIST));
             glyph.addClassName("designer-panel-glyph");
-            glyph.getElement().setAttribute("aria-roledescription", "draggable list");
+            glyph.getElement().setAttribute("aria-roledescription", getTranslation("listPanel.roledescription"));
             glyph.getElement().setAttribute("draggable", "true");
             DragSource<Span> source = DragSource.create(glyph);
             source.setDragData(new PaletteList(group.selectGroupId, group.name));
@@ -69,11 +70,13 @@ public class ListPanel extends VerticalLayout {
             source.addDragEndListener(e -> view.dragEnded());
             label.setText(group.name);
             label.addClassName("designer-panel-label");
-            count.setText(options + (options == 1 ? " option" : " options") + (users > 0 ? " · " + users + (users == 1 ? " question" : " questions") : ""));
+            label.getElement().setAttribute("data-i18n-content", "");
+            count.setText((options == 1 ? getTranslation("listPanel.optionCount.one") : getTranslation("listPanel.optionCount.many", options))
+                    + (users > 0 ? " · " + (users == 1 ? getTranslation("listPanel.questionCount.one") : getTranslation("listPanel.questionCount.many", users)) : ""));
             count.addClassName("designer-badge");
-            menu = new NodeMenu("Actions for list " + group.name);
-            menu.item("Edit…", () -> view.editList(group));
-            menu.item("Remove", () -> view.removeList(group), users == 0);
+            menu = new NodeMenu(getTranslation("listPanel.menu.aria", group.name));
+            menu.item(getTranslation("designer.menu.edit"), () -> view.editList(group));
+            menu.item(getTranslation("common.remove"), () -> view.removeList(group), users == 0);
             add(glyph, label, count, menu);
         }
 
@@ -87,6 +90,7 @@ public class ListPanel extends VerticalLayout {
         setPadding(false);
         setSpacing(false);
         setAlignItems(Alignment.STRETCH);
+        newList.setText(getTranslation("listPanel.newList"));
         newList.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
         newList.addClickListener(e -> view.newList());
         rows.addClassName("designer-panel-rows");
@@ -143,9 +147,9 @@ public class ListPanel extends VerticalLayout {
             }
         }
         if (items.isEmpty()) {
-            empty.setText("No lists yet. A choice question (radio, combo box, multi-select, checkbox group) needs one.");
+            empty.setText(getTranslation("listPanel.empty"));
         } else if (shown == 0) {
-            empty.setText("No list matches '" + q.trim() + "'.");
+            empty.setText(getTranslation("listPanel.noMatch", q.trim()));
         }
         empty.setVisible(items.isEmpty() || shown == 0);
         filtered.accept(query, shown);

@@ -111,11 +111,12 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         assertEquals(2, reopened.rows.size());
         assertTrue(view.isSelected(reopened.node()));
         String crumbs = view.breadcrumb.getChildren().map(c -> c.getElement().getText()).reduce("", String::concat);
-        assertTrue(crumbs.contains("Step: Fixture Step One") && crumbs.contains("Section: Fixture Section A"), crumbs);
+        assertTrue(crumbs.contains(view.getTranslation("surveyDesignerView.crumb.step", "Fixture Step One"))
+                && crumbs.contains(view.getTranslation("surveyDesignerView.crumb.section", "Fixture Section A")), crumbs);
 
         view.select(reopened.rows.get(1).node());
         crumbs = view.breadcrumb.getChildren().map(c -> c.getElement().getText()).reduce("", String::concat);
-        assertTrue(crumbs.contains("Question: FixtureQ2"), crumbs);
+        assertTrue(crumbs.contains(view.getTranslation("surveyDesignerView.crumb.question", "FixtureQ2")), crumbs);
         assertTrue(view.lanes.get(0).cards.get(0).isOpen(), "the selected question's card stays open");
     }
 
@@ -212,7 +213,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         SurveyDesignerView view = open(fixture());
         assertTrue(view.preview.isVisible(), "the preview pane is on by default");
         assertTrue(view.preview.titles().isEmpty(), "nothing selected: nothing previewed");
-        assertTrue(view.preview.hint.getText().startsWith("Select a step"), view.preview.hint.getText());
+        assertEquals(view.getTranslation("sectionPreview.hint.select"), view.preview.hint.getText());
 
         view.toggleAndSelect(view.lanes.get(0).node()); // Fixture Step One: Section A, Section B
         assertEquals(List.of("Fixture Section A", "Fixture Section B"), view.preview.titles(),
@@ -249,18 +250,22 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     void everyDragHasAMenuEquivalent() {
         SurveyDesignerView view = open(fixture());
         StepLane lane = view.lanes.get(0);
-        assertNotNull(lane.menu.find("Move down"), "NFR-012: steps reorder from the menu");
-        assertFalse(lane.menu.find("Move up").isEnabled(), "first step cannot move up");
+        assertNotNull(lane.menu.find(view.getTranslation("designer.menu.moveDown")), "NFR-012: steps reorder from the menu");
+        assertFalse(lane.menu.find(view.getTranslation("designer.menu.moveUp")).isEnabled(), "first step cannot move up");
         SectionCard card = lane.cards.get(0);
-        for (String label : List.of("Edit…", "Add question", "Copy to step…", "Also mount in step…", "Reporting tags…", "Move down", "Open details", "Remove from this step")) {
+        for (String key : List.of("designer.menu.edit", "sectionCard.menu.addQuestion", "sectionCard.menu.copyToStep", "sectionCard.menu.alsoMountInStep",
+                "designer.menu.reportingTags", "designer.menu.moveDown", "designer.menu.openDetails", "sectionCard.menu.removeFromStep")) {
+            String label = view.getTranslation(key);
             assertNotNull(card.menu.find(label), "NFR-012: section menu has " + label);
         }
         view.toggleAndSelect(card.node());
         QuestionRow row = view.lanes.get(0).cards.get(0).rows.get(0);
-        for (String label : List.of("Edit…", "Also add to section…", "Reporting tags…", "Move down", "Open details", "Remove from this section")) {
+        for (String key : List.of("designer.menu.edit", "questionRow.menu.alsoAddToSection", "designer.menu.reportingTags", "designer.menu.moveDown",
+                "designer.menu.openDetails", "questionRow.menu.removeFromSection")) {
+            String label = view.getTranslation(key);
             assertNotNull(row.menu.find(label), "NFR-012: question menu has " + label);
         }
-        assertFalse(row.menu.find("Move up").isEnabled(), "first question cannot move up");
+        assertFalse(row.menu.find(view.getTranslation("designer.menu.moveUp")).isEnabled(), "first question cannot move up");
     }
 
     @Test
@@ -268,19 +273,20 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     void drawerToolboxHasCollapsiblePanelsWithListsSectionsAndQuestions() {
         SurveyDesignerView view = open(fixture());
         DesignerToolbox toolbox = view.toolbox();
-        assertEquals(List.of("Controls", "Lists", "Sections", "Questions"),
+        assertEquals(List.of(view.getTranslation("designerToolbox.controls"), view.getTranslation("designerToolbox.lists"),
+                        view.getTranslation("designerToolbox.sections"), view.getTranslation("designerToolbox.questions")),
                 List.of(toolbox.controlsPanel.getSummaryText(), toolbox.listsPanel.getSummaryText(),
                         toolbox.sectionsPanel.getSummaryText(), toolbox.questionsPanel.getSummaryText()));
         assertTrue(toolbox.controlsPanel.isOpened(), "the palette stays open by default");
         assertEquals(1, toolbox.lists.items.size(), "UC-014 step 1: the fixture's one list");
         assertEquals("FixtureYesNo", toolbox.lists.items.get(0).group().name);
-        assertFalse(toolbox.lists.items.get(0).menu.find("Remove").isEnabled(), "UC-014 A2: in use by FixtureQ3");
+        assertFalse(toolbox.lists.items.get(0).menu.find(view.getTranslation("common.remove")).isEnabled(), "UC-014 A2: in use by FixtureQ3");
         assertEquals(5, toolbox.questions.items.size(), "UC-011 A6: every current question once");
-        assertNotNull(toolbox.questions.items.get(0).menu.find("Add to section…"), "NFR-012: keyboard route");
+        assertNotNull(toolbox.questions.items.get(0).menu.find(view.getTranslation("questionBankPanel.menu.addToSection")), "NFR-012: keyboard route");
         assertEquals(List.of("Fixture Section A", "Fixture Section B", "Fixture Section C"),
                 toolbox.sections.items.stream().map(r -> r.node().label()).toList(), "UC-015 A6: every current section once");
-        assertEquals("in 1 step", toolbox.sections.items.get(0).uses.getText());
-        assertNotNull(toolbox.sections.items.get(0).menu.find("Mount in step…"), "NFR-012: keyboard route");
+        assertEquals(view.getTranslation("sectionBankPanel.uses.one"), toolbox.sections.items.get(0).uses.getText());
+        assertNotNull(toolbox.sections.items.get(0).menu.find(view.getTranslation("sectionBankPanel.menu.mountInStep")), "NFR-012: keyboard route");
     }
 
     @Test
@@ -291,25 +297,25 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         test(toolbox.questions.search).setValue("children");
         List<String> shown = toolbox.questions.items.stream().filter(Component::isVisible).map(r -> r.node().label()).toList();
         assertEquals(List.of("FixtureQ3", "FixtureQ4"), shown, "matches the question text, not only the short name");
-        assertEquals("Questions (2)", toolbox.questionsPanel.getSummaryText());
-        assertEquals("Lists", toolbox.listsPanel.getSummaryText(), "the Lists panel is untouched by the Questions search");
+        assertEquals(view.getTranslation("designerToolbox.questionsCount", 2), toolbox.questionsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.lists"), toolbox.listsPanel.getSummaryText(), "the Lists panel is untouched by the Questions search");
         assertEquals(1, toolbox.lists.items.stream().filter(Component::isVisible).count());
         test(toolbox.lists.search).setValue("yes");
         assertEquals(1, toolbox.lists.items.stream().filter(Component::isVisible).count(), "matches an option text of FixtureYesNo");
-        assertEquals("Lists (1)", toolbox.listsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.listsCount", 1), toolbox.listsPanel.getSummaryText());
         test(toolbox.lists.search).setValue("zzz");
         assertTrue(toolbox.lists.empty.isVisible(), "no list matches: the hint says so");
-        assertEquals("Lists (0)", toolbox.listsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.listsCount", 0), toolbox.listsPanel.getSummaryText());
         test(toolbox.questions.search).setValue("");
         assertEquals(5, toolbox.questions.items.stream().filter(Component::isVisible).count(), "cleared: everything back");
-        assertEquals("Questions", toolbox.questionsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.questions"), toolbox.questionsPanel.getSummaryText());
         test(toolbox.sections.search).setValue("section b");
         assertEquals(List.of("Fixture Section B"),
                 toolbox.sections.items.stream().filter(Component::isVisible).map(r -> r.node().label()).toList());
-        assertEquals("Sections (1)", toolbox.sectionsPanel.getSummaryText());
-        assertEquals("Questions", toolbox.questionsPanel.getSummaryText(), "the Questions panel is untouched by the Sections search");
+        assertEquals(view.getTranslation("designerToolbox.sectionsCount", 1), toolbox.sectionsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.questions"), toolbox.questionsPanel.getSummaryText(), "the Questions panel is untouched by the Sections search");
         test(toolbox.sections.search).setValue("");
-        assertEquals("Sections", toolbox.sectionsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.sections"), toolbox.sectionsPanel.getSummaryText());
     }
 
     @Test
@@ -383,7 +389,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     void reportingTagsMenuOpensTheElementsTagList() {
         SurveyDesignerView view = open(fixture());
         SectionCard sectionB = view.lanes.get(0).cards.get(1);
-        assertNotNull(sectionB.menu.find("Reporting tags…"), "UC-021 step 1: reachable from the card menu");
+        assertNotNull(sectionB.menu.find(view.getTranslation("designer.menu.reportingTags")), "UC-021 step 1: reachable from the card menu");
         view.reportingTags(sectionB.node());
         com.elicitsoftware.author.flow.reporting.ElementTagsDialog dialog = $(com.elicitsoftware.author.flow.reporting.ElementTagsDialog.class).single();
         assertTrue(dialog.isOpened());

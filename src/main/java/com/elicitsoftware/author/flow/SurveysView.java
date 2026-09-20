@@ -21,7 +21,7 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
 import jakarta.annotation.security.RolesAllowed;
@@ -29,36 +29,35 @@ import jakarta.inject.Inject;
 
 /** Surveys list: create (UC-003), edit metadata (UC-004), open (UC-006), export (UC-008). */
 @Route(value = "", layout = MainLayout.class)
-@PageTitle("Surveys")
 @RolesAllowed(AuthorRoles.AUTHOR)
-public class SurveysView extends VerticalLayout {
+public class SurveysView extends VerticalLayout implements HasDynamicTitle {
 
     final Grid<Survey> grid = new Grid<>(Survey.class, false);
-    final Button newSurvey = new Button("New survey", VaadinIcon.PLUS.create());
+    final Button newSurvey = new Button(getTranslation("surveysView.newSurvey"), VaadinIcon.PLUS.create());
 
     @Inject
     SurveyService surveyService;
 
     public SurveysView() {
         setSizeFull();
-        HorizontalLayout toolbar = new HorizontalLayout(new H2("Surveys"), newSurvey);
+        HorizontalLayout toolbar = new HorizontalLayout(new H2(getTranslation("surveysView.title")), newSurvey);
         toolbar.setAlignItems(Alignment.BASELINE);
         toolbar.setWidthFull();
         toolbar.expand(toolbar.getComponentAt(0));
         newSurvey.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         newSurvey.addClickListener(e -> new SurveyMetadataDialog(surveyService, null, saved -> refresh()).open());
 
-        grid.addColumn(s -> s.name).setHeader("Name").setAutoWidth(true).setSortable(true);
-        grid.addColumn(s -> s.title).setHeader("Title").setAutoWidth(true).setFlexGrow(1);
-        grid.addColumn(s -> s.displayOrder).setHeader("Order").setAutoWidth(true);
-        grid.addColumn(s -> s.publishedBy).setHeader("Last edited by").setAutoWidth(true);
-        grid.addColumn(s -> s.publishedComment).setHeader("Release note").setAutoWidth(true);
+        grid.addColumn(s -> s.name).setHeader(getTranslation("surveysView.grid.name")).setAutoWidth(true).setSortable(true);
+        grid.addColumn(s -> s.title).setHeader(getTranslation("surveysView.grid.title")).setAutoWidth(true).setFlexGrow(1);
+        grid.addColumn(s -> s.displayOrder).setHeader(getTranslation("surveysView.grid.order")).setAutoWidth(true);
+        grid.addColumn(s -> s.publishedBy).setHeader(getTranslation("surveysView.grid.lastEditedBy")).setAutoWidth(true);
+        grid.addColumn(s -> s.publishedComment).setHeader(getTranslation("surveysView.grid.releaseNote")).setAutoWidth(true);
         grid.addComponentColumn(s -> {
-            Button open = new Button("Open", VaadinIcon.EDIT.create(), e ->
+            Button open = new Button(getTranslation("surveysView.open"), VaadinIcon.EDIT.create(), e ->
                     getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
                             new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(s.id)))));
             open.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-            Button edit = new Button("Edit details", VaadinIcon.PENCIL.create(), e ->
+            Button edit = new Button(getTranslation("surveysView.editDetails"), VaadinIcon.PENCIL.create(), e ->
                     new SurveyMetadataDialog(surveyService, s, saved -> refresh()).open());
             edit.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
             return new HorizontalLayout(open, edit);
@@ -69,6 +68,11 @@ public class SurveysView extends VerticalLayout {
                 new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(e.getItem().id)))));
         grid.setSizeFull();
         add(toolbar, grid);
+    }
+
+    @Override
+    public String getPageTitle() {
+        return getTranslation("surveysView.pageTitle");
     }
 
     @jakarta.annotation.PostConstruct

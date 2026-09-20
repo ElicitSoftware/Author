@@ -46,8 +46,8 @@ class ImportDefinitionViewTest extends QuarkusBrowserlessTest {
 
         String text = find(Paragraph.class, view.result).all().stream().map(Paragraph::getText).reduce("", String::concat);
         int expected = com.elicitsoftware.author.definition.SurveyDefinitionImporterTest.headerCounts().values().stream().mapToInt(Integer::intValue).sum();
-        assertTrue(text.contains(expected + " records imported"), text);
-        Button open = find(Button.class, view.result).withText("Open in editor").single();
+        assertTrue(text.contains(view.getTranslation("importDefinitionView.recordsImported", String.valueOf(expected), "ElicitDesigner.elicit")), text);
+        Button open = find(Button.class, view.result).withText(view.getTranslation("importDefinitionView.openInEditor")).single();
         assertTrue(open.isEnabled());
         assertEquals(1, Survey.count("name", "ElicitDesigner"));
     }
@@ -58,6 +58,6 @@ class ImportDefinitionViewTest extends QuarkusBrowserlessTest {
         ImportDefinitionView view = navigate(ImportDefinitionView.class);
         view.handleUpload("not a definition".getBytes(StandardCharsets.UTF_8), "junk.elicit");
         String text = find(Paragraph.class, view.result).single().getText();
-        assertTrue(text.startsWith("Import failed"), text);
+        assertTrue(text.startsWith(view.getTranslation("importDefinitionView.importFailed", "")), text);
     }
 }

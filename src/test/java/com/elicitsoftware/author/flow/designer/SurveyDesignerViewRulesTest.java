@@ -76,7 +76,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
 
         assertEquals("sq-" + row.node().assignmentId(), view.overlay.pendingSource(), "UC-019 step 2: the arrow hangs from the question");
         assertEquals("REPEAT", view.overlay.pendingAction());
-        assertNotNull(row.menu.find("Add rule…"), "UC-019 A1: keyboard path on the row menu");
+        assertNotNull(row.menu.find(row.getTranslation("questionRow.menu.addRule")), "UC-019 A1: keyboard path on the row menu");
     }
 
     @Test
@@ -98,7 +98,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         assertTrue(dialog.isOpened(), "UC-019 step 4");
         assertEquals(count.node().assignmentId(), dialog.upstream.getValue().assignmentId(), "upstream pre-filled");
         assertEquals("REPEAT", dialog.action.getValue().name, "action pre-filled from the glyph");
-        assertEquals("Section", dialog.targetKind.getValue());
+        assertEquals(RelationshipDialog.KIND_SECTION, dialog.targetKind.getValue());
         assertEquals(sectionC.node().assignmentId(), dialog.target.getValue().assignmentId(), "target pre-filled");
         assertFalse(dialog.token.isVisible(), "token only for Text rules");
         assertFalse(dialog.remove.isVisible(), "no Remove while creating");

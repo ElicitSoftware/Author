@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 public class StructureNavigationTree extends VerticalLayout {
 
     final TreeGrid<StructureNode> grid = new TreeGrid<>();
-    final Checkbox showRemoved = new Checkbox("Show removed");
+    final Checkbox showRemoved = new Checkbox();
     private final TreeData<StructureNode> data = new TreeData<>();
     private final TreeDataProvider<StructureNode> provider = new TreeDataProvider<>(data);
 
@@ -46,6 +46,7 @@ public class StructureNavigationTree extends VerticalLayout {
     public StructureNavigationTree(int surveyId, SurveyStructureQuery query, Consumer<StructureNode> onSelect) {
         this.surveyId = surveyId;
         this.query = query;
+        showRemoved.setLabel(getTranslation("structureNavigationTree.showRemoved"));
         setPadding(false);
         setSpacing(false);
         // Width only: the tree grows to its rows so the drawer scrolls as one surface (palette,
@@ -56,11 +57,11 @@ public class StructureNavigationTree extends VerticalLayout {
         grid.setDataProvider(provider);
         // Display order is the whole point of the tree (UC-006 step 2): a sortable header would let a
         // click re-sort it alphabetically.
-        grid.addHierarchyColumn(StructureNode::label).setHeader("Survey structure").setFlexGrow(1).setSortable(false);
+        grid.addHierarchyColumn(StructureNode::label).setHeader(getTranslation("structureNavigationTree.header")).setFlexGrow(1).setSortable(false);
         grid.setPartNameGenerator(n -> {
             StringBuilder parts = new StringBuilder();
             if (isCurrent(n)) {
-                parts.append("current-element-row ");
+                parts.append("current-element-row").append(' ');
             }
             if (n.retired()) {
                 parts.append("retired-element-row");

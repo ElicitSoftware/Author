@@ -96,7 +96,8 @@ class ElementViewTest extends QuarkusBrowserlessTest {
         test(view.restore).click();
         ConfirmDialog restoreDialog = $(ConfirmDialog.class).single();
         assertTrue(restoreDialog.isOpened());
-        assertTrue(restoreDialog.getElement().getProperty("header").startsWith("Restore Question 'FixtureQ5'"));
+        assertEquals(view.getTranslation("elementView.restore.header", "Question 'FixtureQ5'"),
+                restoreDialog.getElement().getProperty("header"));
         assertTrue(Question.<Question>find("shortText", "FixtureQ5").firstResult().isRetired(), "nothing restored before confirming");
         ComponentUtil.fireEvent(restoreDialog, new ConfirmDialog.ConfirmEvent(restoreDialog, true));
         restoreDialog.close(); // a real click closes it client-side; the fired event alone does not

@@ -11,6 +11,7 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.vaadin.flow.component.dnd.DragSource;
 import com.vaadin.flow.component.dnd.EffectAllowed;
@@ -33,7 +34,7 @@ import java.util.Map;
 public class SectionBankPanel extends VerticalLayout {
 
     /** Filters the sections by name and description; scoped to this panel. */
-    final TextField search = ListPanel.searchField("Search sections", "Search sections by name or description");
+    final TextField search = ListPanel.searchField(Translations.get("sectionBankPanel.search"), Translations.get("sectionBankPanel.search.aria"));
     final Div rows = new Div();
     final List<Row> items = new ArrayList<>();
     private java.util.function.BiConsumer<String, Integer> filtered = (q, n) -> { };
@@ -54,7 +55,7 @@ public class SectionBankPanel extends VerticalLayout {
             addClassName("designer-panel-row");
             glyph = Glyph.section();
             glyph.getElement().setAttribute("draggable", "true");
-            glyph.getElement().setAttribute("aria-roledescription", "draggable section");
+            glyph.getElement().setAttribute("aria-roledescription", getTranslation("sectionBankPanel.roledescription"));
             DragSource<Glyph> source = DragSource.create(glyph);
             source.setDragData(new BankSection(node.durableId(), node.label()));
             source.setEffectAllowed(EffectAllowed.COPY_MOVE);
@@ -62,11 +63,12 @@ public class SectionBankPanel extends VerticalLayout {
             source.addDragEndListener(e -> view.dragEnded());
             label.setText(node.label());
             label.addClassName("designer-panel-label");
-            uses.setText("in " + mounts + (mounts == 1 ? " step" : " steps"));
+            label.getElement().setAttribute("data-i18n-content", "");
+            uses.setText(mounts == 1 ? getTranslation("sectionBankPanel.uses.one") : getTranslation("sectionBankPanel.uses.many", mounts));
             uses.addClassName("designer-badge");
-            menu = new NodeMenu("Actions for section " + node.label());
-            menu.item("Mount in step…", () -> view.mountIn(node));
-            menu.item("Edit…", () -> view.edit(node));
+            menu = new NodeMenu(getTranslation("sectionBankPanel.menu.aria", node.label()));
+            menu.item(getTranslation("sectionBankPanel.menu.mountInStep"), () -> view.mountIn(node));
+            menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node));
             add(glyph, label, uses, menu);
         }
 
@@ -128,9 +130,9 @@ public class SectionBankPanel extends VerticalLayout {
             }
         }
         if (items.isEmpty()) {
-            empty.setText("No sections yet. Sections you add appear here and can be mounted in other steps.");
+            empty.setText(getTranslation("sectionBankPanel.empty"));
         } else if (shown == 0) {
-            empty.setText("No section matches '" + q.trim() + "'.");
+            empty.setText(getTranslation("sectionBankPanel.noMatch", q.trim()));
         }
         empty.setVisible(items.isEmpty() || shown == 0);
         filtered.accept(query, shown);

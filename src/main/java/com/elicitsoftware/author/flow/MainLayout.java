@@ -12,6 +12,9 @@ package com.elicitsoftware.author.flow;
  */
 
 import com.elicitsoftware.author.flow.designer.SurveyDesignerView;
+import com.elicitsoftware.author.i18n.ElicitI18NProvider;
+import com.elicitsoftware.author.i18n.LanguageSwitcher;
+import com.elicitsoftware.author.i18n.LocaleSelection;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.elicitsoftware.author.util.BrandUtil;
@@ -28,6 +31,7 @@ import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationListener;
+import com.vaadin.quarkus.annotation.VaadinServiceEnabled;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
@@ -50,6 +54,15 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
 
     @Inject
     SurveyStructureQuery structureQuery;
+
+    /** Remembers the language the author picks (UC-034). */
+    @Inject
+    LocaleSelection localeSelection;
+
+    /** Supplies the languages offered by the switcher. */
+    @Inject
+    @VaadinServiceEnabled
+    ElicitI18NProvider i18nProvider;
 
     private Component drawerContent;
     private StructureNavigationTree structureTree;
@@ -80,7 +93,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         try {
             Image logo = new Image();
             logo.setSrc(brandUtil.getIconResourcePath(brandInfo));
-            logo.setAlt(brandInfo.getDisplayName() + " Logo");
+            logo.setAlt(getTranslation("common.logoAlt", brandInfo.getDisplayName(getLocale())));
             logo.addClassName("logo");
             Div logoContainer = new Div(logo);
             logoContainer.addClassName("logo-container");
@@ -89,10 +102,16 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
             // Logo not available, continue without it
         }
 
-        String appTitle = brandInfo != null ? brandUtil.getApplicationTitle(brandInfo, "Author") : "Elicit Author";
+        String appType = getTranslation("common.appType.author");
+        String appTitle = brandInfo == null || brandInfo.isDefaultBrand()
+                ? getTranslation("common.appTitle.default", appType)
+                : getTranslation("common.appTitle", brandInfo.getDisplayName(getLocale()), appType);
         Anchor title = new Anchor("/", appTitle);
         title.addClassName("brand-title");
         headerContainer.add(title);
+
+        // Language selector (UC-034): every page offers the shipped and mounted languages.
+        headerContainer.add(new LanguageSwitcher(localeSelection, i18nProvider));
 
         addToNavbar(headerContainer);
     }
@@ -101,11 +120,11 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     public void showApplicationNavigation() {
         SideNav nav = new SideNav();
         if (identity != null && identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.AUTHOR)) {
-            nav.addItem(new SideNavItem("Surveys", SurveysView.class, VaadinIcon.LIST.create()));
-            nav.addItem(new SideNavItem("How surveys work", SurveyModelGuideView.class, VaadinIcon.OPEN_BOOK.create()));
-            nav.addItem(new SideNavItem("Import definition", ImportDefinitionView.class, VaadinIcon.UPLOAD.create()));
+            nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.surveys"), SurveysView.class, VaadinIcon.LIST.create()));
+            nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.guide"), SurveyModelGuideView.class, VaadinIcon.OPEN_BOOK.create()));
+            nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.importDefinition"), ImportDefinitionView.class, VaadinIcon.UPLOAD.create()));
         }
-        nav.addItem(new SideNavItem("Logout", LogoutView.class, VaadinIcon.LOCK.create()));
+        nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.logout"), LogoutView.class, VaadinIcon.LOCK.create()));
         setDrawerContent(nav);
     }
 

@@ -42,14 +42,14 @@ import java.util.function.Consumer;
  */
 public class SelectGroupDialog extends Dialog {
 
-    final TextField name = new TextField("Name");
-    final TextField description = new TextField("Description");
-    final TextField dataType = new TextField("Data type");
+    final TextField name = new TextField();
+    final TextField description = new TextField();
+    final TextField dataType = new TextField();
     final Div optionRows = new Div();
     final Span optionsError = new Span();
-    final Button addOption = new Button("Add option", VaadinIcon.PLUS.create());
-    final Button save = new Button("Save");
-    final Button cancel = new Button("Cancel");
+    final Button addOption = new Button(VaadinIcon.PLUS.create());
+    final Button save = new Button();
+    final Button cancel = new Button();
     final List<OptionRow> rows = new ArrayList<>();
 
     private final Binder<SelectGroup> binder = new Binder<>(SelectGroup.class);
@@ -69,20 +69,20 @@ public class SelectGroupDialog extends Dialog {
             addClassName("designer-option-row");
             setAlignItems(Alignment.BASELINE);
             setWidthFull();
-            displayText.setPlaceholder("Display text");
+            displayText.setPlaceholder(getTranslation("selectGroupDialog.option.displayText"));
             displayText.setMaxLength(255);
             displayText.setValue(text == null ? "" : text);
-            displayText.setAriaLabel("Option display text");
-            codedValue.setPlaceholder("Coded value (defaults to the text)");
+            displayText.setAriaLabel(getTranslation("selectGroupDialog.option.displayText.aria"));
+            codedValue.setPlaceholder(getTranslation("selectGroupDialog.option.codedValue"));
             codedValue.setMaxLength(255);
             codedValue.setValue(coded == null ? "" : coded);
-            codedValue.setAriaLabel("Option coded value");
+            codedValue.setAriaLabel(getTranslation("selectGroupDialog.option.codedValue.aria"));
             for (Button b : List.of(up, down, remove)) {
                 b.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
             }
-            up.setAriaLabel("Move option up");
-            down.setAriaLabel("Move option down");
-            remove.setAriaLabel("Remove option");
+            up.setAriaLabel(getTranslation("selectGroupDialog.option.moveUp"));
+            down.setAriaLabel(getTranslation("selectGroupDialog.option.moveDown"));
+            remove.setAriaLabel(getTranslation("selectGroupDialog.option.remove"));
             remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
             up.addClickListener(e -> move(this, -1));
             down.addClickListener(e -> move(this, 1));
@@ -105,20 +105,26 @@ public class SelectGroupDialog extends Dialog {
      */
     public SelectGroupDialog(ListService service, int surveyId, SelectGroup existing, Consumer<SelectGroup> onSaved) {
         boolean creating = existing == null;
-        setHeaderTitle(creating ? "New list of options" : "Edit list of options");
+        setHeaderTitle(creating ? getTranslation("selectGroupDialog.title.new") : getTranslation("selectGroupDialog.title.edit"));
         setModal(true);
         setWidth("44rem");
+        name.setLabel(getTranslation("selectGroupDialog.name"));
+        description.setLabel(getTranslation("selectGroupDialog.description"));
+        dataType.setLabel(getTranslation("selectGroupDialog.dataType"));
+        addOption.setText(getTranslation("selectGroupDialog.addOption"));
+        save.setText(getTranslation("common.save"));
+        cancel.setText(getTranslation("common.cancel"));
 
         name.setRequiredIndicatorVisible(true);
         name.setMaxLength(255);
         description.setMaxLength(255);
         dataType.setMaxLength(50);
-        dataType.setHelperText("Informational; 'Text' unless the site's reporting expects otherwise");
-        FieldHelp.help(name, "The list's name, shown when picking options for a question. Unique within the survey.");
-        FieldHelp.help(description, "An optional note for authors.");
-        FieldHelp.help(dataType, "A label carried with the list; the Survey runtime does not interpret it.");
+        dataType.setHelperText(getTranslation("selectGroupDialog.dataType.helper"));
+        FieldHelp.help(name, getTranslation("selectGroupDialog.help.name"));
+        FieldHelp.help(description, getTranslation("selectGroupDialog.help.description"));
+        FieldHelp.help(dataType, getTranslation("selectGroupDialog.help.dataType"));
 
-        binder.forField(name).asRequired("Name is required").bind(g -> g.name, (g, v) -> g.name = v);
+        binder.forField(name).asRequired(getTranslation("selectGroupDialog.error.nameRequired")).bind(g -> g.name, (g, v) -> g.name = v);
         binder.forField(description).bind(g -> g.description, (g, v) -> g.description = v);
         binder.forField(dataType).bind(g -> g.dataType, (g, v) -> g.dataType = v);
 
@@ -133,11 +139,12 @@ public class SelectGroupDialog extends Dialog {
                 rows.add(new OptionRow(i.selectItemId, i.displayText, i.codedValue));
             }
         } else {
-            bean.dataType = "Text";
+            bean.dataType = "Text"; // i18n:ignore stored default of the list's data type, not display text
         }
         binder.readBean(bean);
 
         optionRows.addClassName("designer-option-rows");
+        optionRows.getElement().setAttribute("data-i18n-content", ""); // authored option texts and coded values
         optionsError.addClassName("designer-field-error");
         optionsError.setVisible(false);
         addOption.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
@@ -151,7 +158,7 @@ public class SelectGroupDialog extends Dialog {
 
         FormLayout form = new FormLayout(name, dataType, description);
         form.setColspan(description, 2);
-        Span optionsLabel = new Span("Options, in the order respondents see them");
+        Span optionsLabel = new Span(getTranslation("selectGroupDialog.optionsLabel"));
         optionsLabel.addClassName("designer-palette-label");
         add(form, optionsLabel, optionRows, optionsError, addOption);
 
@@ -167,7 +174,8 @@ public class SelectGroupDialog extends Dialog {
             try {
                 SelectGroup saved = creating ? service.create(surveyId, bean, drafts) : service.update(surveyId, bean, drafts);
                 close();
-                Notification.show((creating ? "Created list '" : "Updated list '") + saved.name + "'", 3000, Notification.Position.BOTTOM_START)
+                Notification.show(creating ? getTranslation("selectGroupDialog.saved.created", saved.name)
+                                : getTranslation("selectGroupDialog.saved.updated", saved.name), 3000, Notification.Position.BOTTOM_START)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 onSaved.accept(saved);
             } catch (AuthoringException ae) {
@@ -198,7 +206,7 @@ public class SelectGroupDialog extends Dialog {
             optionRows.add(r);
         }
         if (rows.isEmpty()) {
-            Span none = new Span("No options yet.");
+            Span none = new Span(getTranslation("selectGroupDialog.noOptions"));
             none.addClassName("designer-empty-hint");
             optionRows.add(none);
         }

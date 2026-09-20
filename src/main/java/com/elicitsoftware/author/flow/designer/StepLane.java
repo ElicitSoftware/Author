@@ -47,7 +47,7 @@ public class StepLane extends Div {
         addClassName("designer-lane");
         getElement().setAttribute("data-node-id", "step-" + node.durableId());
         getElement().setAttribute("role", "group");
-        getElement().setAttribute("aria-label", "Step " + order + ": " + node.label());
+        getElement().setAttribute("aria-label", getTranslation("stepLane.aria", order, node.label()));
         if (node.retired()) {
             addClassName("retired");
         }
@@ -75,24 +75,26 @@ public class StepLane extends Div {
         toggle.addClassName("designer-card-toggle");
         name.setText(node.label());
         name.addClassName("designer-lane-name");
-        sectionCount.setText(sections.size() == 1 ? "1 section" : sections.size() + " sections");
+        name.getElement().setAttribute("data-i18n-content", "");
+        sectionCount.setText(sections.size() == 1 ? getTranslation("stepLane.sectionCount.one") : getTranslation("stepLane.sectionCount.many", sections.size()));
         sectionCount.addClassName("designer-badge");
 
-        menu = new NodeMenu("Actions for step " + node.label());
-        menu.item("Edit…", () -> view.edit(node), !node.retired());
-        menu.item("Add step after", () -> view.addStepAfter(node), !node.retired());
-        menu.item("Add section", () -> view.addChild(node), !node.retired());
-        menu.item("Move up", () -> view.move(node, -1), !node.retired() && indexInBoard > 0);
-        menu.item("Move down", () -> view.move(node, 1), !node.retired() && indexInBoard < boardSize - 1);
-        menu.item("Open details", () -> view.openDetails(node));
-        menu.item("Remove step", () -> view.removeStep(node), !node.retired());
+        menu = new NodeMenu(getTranslation("stepLane.menu.aria", node.label()));
+        menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node), !node.retired());
+        menu.item(getTranslation("stepLane.menu.addStepAfter"), () -> view.addStepAfter(node), !node.retired());
+        menu.item(getTranslation("stepLane.menu.addSection"), () -> view.addChild(node), !node.retired());
+        menu.item(getTranslation("designer.menu.moveUp"), () -> view.move(node, -1), !node.retired() && indexInBoard > 0);
+        menu.item(getTranslation("designer.menu.moveDown"), () -> view.move(node, 1), !node.retired() && indexInBoard < boardSize - 1);
+        menu.item(getTranslation("designer.menu.openDetails"), () -> view.openDetails(node));
+        menu.item(getTranslation("stepLane.menu.removeStep"), () -> view.removeStep(node), !node.retired());
 
         header.addClassName("designer-lane-header");
         header.getElement().setAttribute("role", "button");
         header.getElement().setAttribute("tabindex", "0");
         header.getElement().setAttribute("aria-expanded", String.valueOf(open));
-        header.getElement().setAttribute("aria-label", "Step " + order + ": " + node.label() + ", " + sectionCount.getText()
-                + (node.retired() ? ", removed" : ""));
+        header.getElement().setAttribute("aria-label", node.retired()
+                ? getTranslation("stepLane.header.aria.removed", order, node.label(), sectionCount.getText())
+                : getTranslation("stepLane.header.aria", order, node.label(), sectionCount.getText()));
         header.add(toggle, glyph, name, sectionCount, menu);
         // Single click toggles and selects; double click edits (UC-018 step 1). Told apart on the
         // client, as QuestionRow does: a debounced single vs. an immediate double, so the board
@@ -107,7 +109,7 @@ public class StepLane extends Div {
                 view.edit(node);
             }
         });
-        header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '");
+        header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '"); // i18n:ignore
         DropTarget<Div> headerDrop = DropTarget.create(header);
         headerDrop.setDropEffect(DropEffect.MOVE);
         headerDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
@@ -129,7 +131,7 @@ public class StepLane extends Div {
         }
         body.add(new DropZone(new DropSpot(node, sections.size(), StructureNode.Kind.SECTION), view::onDrop));
         if (sections.isEmpty()) {
-            Span empty = new Span("No sections yet — drop a section glyph here or use Add section.");
+            Span empty = new Span(getTranslation("stepLane.empty"));
             empty.addClassName("designer-empty");
             body.add(empty);
         }

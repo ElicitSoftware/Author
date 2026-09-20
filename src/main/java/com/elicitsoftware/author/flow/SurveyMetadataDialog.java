@@ -31,14 +31,14 @@ import java.util.function.Consumer;
 /** Create (UC-003) or edit (UC-004) a survey's metadata. */
 public class SurveyMetadataDialog extends Dialog {
 
-    final TextField name = new TextField("Name");
-    final TextField title = new TextField("Title");
-    final TextArea description = new TextArea("Description");
-    final TextField initialDisplayKey = new TextField("Initial display key");
-    final TextField postSurveyUrl = new TextField("Post-survey address");
-    final TextField surveyKey = new TextField("Survey key");
-    final Button save = new Button("Save");
-    final Button cancel = new Button("Cancel");
+    final TextField name = new TextField(getTranslation("surveyMetadataDialog.name"));
+    final TextField title = new TextField(getTranslation("surveyMetadataDialog.title"));
+    final TextArea description = new TextArea(getTranslation("surveyMetadataDialog.description"));
+    final TextField initialDisplayKey = new TextField(getTranslation("surveyMetadataDialog.initialDisplayKey"));
+    final TextField postSurveyUrl = new TextField(getTranslation("surveyMetadataDialog.postSurveyUrl"));
+    final TextField surveyKey = new TextField(getTranslation("surveyMetadataDialog.surveyKey"));
+    final Button save = new Button(getTranslation("common.save"));
+    final Button cancel = new Button(getTranslation("common.cancel"));
 
     private final Binder<Survey> binder = new Binder<>(Survey.class);
     private final Map<String, com.vaadin.flow.component.HasValidation> fieldsByProperty;
@@ -49,7 +49,7 @@ public class SurveyMetadataDialog extends Dialog {
      */
     public SurveyMetadataDialog(SurveyService service, Survey existing, Consumer<Survey> onSaved) {
         boolean creating = existing == null;
-        setHeaderTitle(creating ? "New survey" : "Edit survey");
+        setHeaderTitle(getTranslation(creating ? "surveyMetadataDialog.newSurvey" : "surveyMetadataDialog.editSurvey"));
         setModal(true);
 
         name.setRequiredIndicatorVisible(true);
@@ -62,8 +62,8 @@ public class SurveyMetadataDialog extends Dialog {
         surveyKey.setReadOnly(true);
         surveyKey.setVisible(!creating);
 
-        binder.forField(name).asRequired("Name is required").bind(s -> s.name, (s, v) -> s.name = v);
-        binder.forField(title).asRequired("Title is required").bind(s -> s.title, (s, v) -> s.title = v);
+        binder.forField(name).asRequired(getTranslation("surveyMetadataDialog.nameRequired")).bind(s -> s.name, (s, v) -> s.name = v);
+        binder.forField(title).asRequired(getTranslation("surveyMetadataDialog.titleRequired")).bind(s -> s.title, (s, v) -> s.title = v);
         binder.forField(description).bind(s -> s.description, (s, v) -> s.description = v);
         binder.forField(initialDisplayKey).bind(s -> s.initialDisplayKey, (s, v) -> s.initialDisplayKey = v);
         binder.forField(postSurveyUrl).bind(s -> s.postSurveyUrl, (s, v) -> s.postSurveyUrl = v);
@@ -97,7 +97,7 @@ public class SurveyMetadataDialog extends Dialog {
             try {
                 Survey saved = creating ? service.create(bean) : service.updateMetadata(bean.id, bean);
                 close();
-                Notification.show(creating ? "Survey created" : "Survey updated", 3000, Notification.Position.BOTTOM_START)
+                Notification.show(getTranslation(creating ? "surveyMetadataDialog.created" : "surveyMetadataDialog.updated"), 3000, Notification.Position.BOTTOM_START)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 onSaved.accept(saved);
             } catch (AuthoringException ae) {
