@@ -115,6 +115,17 @@ answers to generate a first-draft structure for a *different*, new survey.
 |--------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------|
 | FR-037 | Brand the Authoring Interface | As a system administrator, I want Author to display the deployment's brand — logo, display name, and theme — from a mounted brand directory, resolved through a fixed fallback order (external mount, then a local directory, then the brand embedded in the application) and served only from within the brand root, so that Author matches the Survey and Admin apps at a site and never serves a file from outside the brand directory. | Medium | Implemented |
 
+### Localization
+
+| ID     | Title                     | User Story                                                                                                                                                                | Priority | Status      |
+|--------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------|
+| FR-042 | Localized Authoring Chrome | As a survey author, I want every label, button, menu, grid header, dialog, message, page title and guide text the authoring tool itself displays (including brand-supplied names) to appear in my language so that I can design surveys without reading English. | High | In Progress |
+| FR-043 | Language Selection        | As a survey author, I want the tool to open in my browser's language and let me switch languages on any page so that I am never stuck in a language I do not read. | High | In Progress |
+| FR-044 | Externally Mounted Translations | As a system administrator, I want to mount translation files for additional languages, or override individual texts, without rebuilding the tool so that each site can serve the languages its authors need. | High | In Progress |
+| FR-045 | Right-to-Left Layout      | As a survey author whose language is written right-to-left, I want the whole tool — including the designer board and its drag-and-drop lanes — laid out right-to-left when that language is selected so that it reads naturally. | High | In Progress |
+| FR-046 | Translation Handoff Package | As a system administrator, I want one generated document containing every translatable text with its context and translation rules so that I can hand it to a translator or an AI agent and receive a complete language file back. | Medium | In Progress |
+| FR-047 | Localized Service Messages | As a survey author, I want validation and export error messages produced by the authoring services to appear in my language so that I understand what to fix. | Low | Planned |
+
 ## Non-Functional Requirements
 
 | ID      | Title                              | Requirement                                                                                                                                                                                                | Category        | Priority | Status |
@@ -132,6 +143,8 @@ answers to generate a first-draft structure for a *different*, new survey.
 | NFR-011 | Format Round Trip                  | Importing a `.elicit` file and exporting it again must reproduce every record field-for-field (ignoring remapped local ids, rebased display-key prefixes, and header timestamps), verified by automated test. | Maintainability | High     | Open   |
 | NFR-012 | Keyboard Equivalence               | Every drag-and-drop action in the designer has a keyboard-reachable equivalent (element menu or button), so WCAG 2.1 success criterion 2.1.1 holds without a pointer. Adding a step uses a top-bar "Add step" button and the step menu's "Add step after"; sections and questions use "Add …" in a container's menu; reordering uses the "Move up / Move down" menu items; the new element is positioned by the current selection. | Usability | High | Implemented |
 | NFR-013 | Minimum Viewport                   | The designer targets tablet-sized screens and larger; below 768px it shows a full-screen "use a wider screen" notice instead of reflowing into an unusable phone layout. | Usability | Low | Implemented |
+| NFR-014 | Displayed-String Coverage          | 100% of user-visible text set by authoring-tool code must be resolved through the translation mechanism; an automated test that scans the view sources fails on any remaining hard-coded literal. | Maintainability | High | In Progress |
+| NFR-015 | Missing-Translation Policy         | A text missing from a language file must fall back to the English text; a text missing from every language file must render as a visible `!key!` marker, never blank; a bundle-consistency test must fail when the language files disagree on keys or placeholders. | Usability | High | In Progress |
 
 ## Constraints
 
@@ -156,6 +169,8 @@ answers to generate a first-draft structure for a *different*, new survey.
 | C-017 | Immutable Element Keys             | `survey_key` and every `{entity}_key` are minted once and never regenerated or rewritten; import carries them verbatim.                                                                                                     | Technical  | High     | Open        |
 | C-018 | Working-Copy Model                 | In Author's database each element has exactly one row (`version = 0`, epoch `effective_from`, sentinel `effective_to` while current); Author never writes `version` and never creates draft rows.                            | Technical  | High     | Open        |
 | C-019 | Removal Means Retire               | Author never physically deletes a structural element that may have been exported; removal closes `effective_to`, and exported files carry retired rows so Admin's update can close them at each site.                       | Technical  | High     | Open        |
+| C-020 | Translation File Layout            | Translation files must use the Vaadin standard layout (`src/main/resources/vaadin-i18n/translations[_tag].properties`, `getTranslation` keys, `{0}` placeholders) so that Vaadin Copilot's internationalization tooling keeps working alongside hand-written extraction. | Technical  | Medium   | In Progress |
+| C-021 | Authored Content Language          | Only the tool's own chrome is localized. Survey content the author writes (question text, options, step and section names, tags) is stored and exported as entered, in one language; content translation is tracked on a separate branch. | Business   | High     | Implemented |
 
 ## Open Items for Review
 
