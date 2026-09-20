@@ -59,6 +59,9 @@ rectangle "Elicit Author" {
 
     ' Branding (FR-037)
     usecase "UC-030\nBrand the Authoring Interface" as UC030
+
+    ' Localization (FR-042..FR-047)
+    usecase "UC-034\nAuthor Surveys in My Language" as UC034
 }
 
 ' Access
@@ -114,6 +117,10 @@ author --> UC029
 
 ' Branding
 admin --> UC030
+
+' Localization
+author --> UC034
+admin --> UC034
 
 ' Relationships worth calling out explicitly
 UC008 ..> UC007 : <<include>>

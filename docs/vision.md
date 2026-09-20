@@ -75,6 +75,9 @@ survey updates the same rows at every site instead of installing a second copy.
   target by Admin's update — never deleted, so recorded answers survive.
 - Generate first-draft survey structures from a guided
   requirements-collection flow ("survey-to-build-surveys" meta-survey).
+- Present the tool itself in each author's language (browser or on-page choice),
+  including right-to-left layout, with translations a deployment can mount
+  without rebuilding.
 - Let authors preview a survey as a respondent using the Survey app in the
   local authoring stack.
 
