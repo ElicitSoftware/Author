@@ -62,6 +62,7 @@ rectangle "Elicit Author" {
 
     ' Localization (FR-042..FR-047)
     usecase "UC-034\nAuthor Surveys in My Language" as UC034
+    usecase "UC-035\nManage Languages" as UC035
 }
 
 ' Access
@@ -121,6 +122,7 @@ admin --> UC030
 ' Localization
 author --> UC034
 admin --> UC034
+author --> UC035
 
 ' Relationships worth calling out explicitly
 UC008 ..> UC007 : <<include>>
@@ -137,5 +139,6 @@ UC019 ..> UC033 : <<include>> refuse backward target
 UC016 ..> UC033 : <<extend>> backward rules shown red
 UC033 ..> UC007 : <<extend>> backward rule is an error
 UC022 ..> UC007 : <<extend>> retroactive warning
+UC035 ..> UC034 : <<extend>> adds a language to the selector
 
 @enduml

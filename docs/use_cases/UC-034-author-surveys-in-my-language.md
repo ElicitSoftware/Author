@@ -12,7 +12,7 @@
 ## Preconditions
 
 - The author is authenticated and has reached the authoring tool (UC-001).
-- The tool ships English texts and at least one additional language (Latin American Spanish and Arabic in the reference deployment).
+- The tool ships English texts only; the deployment's translations directory supplies every other language (Latin American Spanish and Arabic in the reference deployment).
 - The deployment may have mounted further language files or text overrides; if so, those languages are also available.
 
 ## Main Success Scenario
