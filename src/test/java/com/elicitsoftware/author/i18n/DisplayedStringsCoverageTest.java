@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * UC-034 / NFR-014: 100 % displayed-string coverage gate.
+ * UC-039 / NFR-016: 100 % displayed-string coverage gate.
  * <p>
  * Scans the UI source (every class under a {@code flow} package plus the explicit extras below)
  * for string literals that look like prose a user could see and are not routed through
@@ -91,7 +91,7 @@ class DisplayedStringsCoverageTest {
         }
         if (!hits.isEmpty()) {
             StringBuilder sb = new StringBuilder();
-            sb.append(hits.size()).append(" hard-coded user-visible literal(s) remain (UC-034 / NFR-014):\n");
+            sb.append(hits.size()).append(" hard-coded user-visible literal(s) remain (UC-039 / NFR-016):\n");
             hits.forEach(h -> sb.append("  ").append(h.render(root)).append('\n'));
             sb.append("Route each through getTranslation(...) or, for a genuinely non-display literal, ")
               .append("append // i18n:ignore or add it to src/test/resources/i18n/coverage-allowlist.txt");

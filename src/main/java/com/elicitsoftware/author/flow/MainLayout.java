@@ -55,7 +55,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     @Inject
     SurveyStructureQuery structureQuery;
 
-    /** Remembers the language the author picks (UC-034). */
+    /** Remembers the language the author picks (UC-039). */
     @Inject
     LocaleSelection localeSelection;
 
@@ -110,7 +110,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         title.addClassName("brand-title");
         headerContainer.add(title);
 
-        // Language selector (UC-034): every page offers the shipped and mounted languages.
+        // Language selector (UC-039): every page offers the shipped and mounted languages.
         headerContainer.add(new LanguageSwitcher(localeSelection, i18nProvider));
 
         addToNavbar(headerContainer);
@@ -124,8 +124,31 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
             nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.guide"), SurveyModelGuideView.class, VaadinIcon.OPEN_BOOK.create()));
             nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.importDefinition"), ImportDefinitionView.class, VaadinIcon.UPLOAD.create()));
         }
+        if (identity != null && identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.ADMIN)) {
+            nav.addItem(createSystemSection());
+        }
         nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.logout"), LogoutView.class, VaadinIcon.LOCK.create()));
         setDrawerContent(nav);
+    }
+
+    /**
+     * The System section: setup and diagnostics for the administrator or operator wiring up a
+     * deployment (UC-034 to UC-038). Gated on {@code elicit_admin}, which grants no authoring.
+     */
+    private SideNavItem createSystemSection() {
+        SideNavItem systemSection = new SideNavItem(getTranslation("mainLayout.nav.system"));
+        systemSection.setPrefixComponent(VaadinIcon.TOOLS.create());
+        systemSection.addItem(new SideNavItem(getTranslation("mainLayout.nav.systemOverview"), SystemOverviewView.class,
+                VaadinIcon.DASHBOARD.create()));
+        systemSection.addItem(new SideNavItem(getTranslation("mainLayout.nav.systemDatabase"), SystemDatabaseView.class,
+                VaadinIcon.DATABASE.create()));
+        systemSection.addItem(new SideNavItem(getTranslation("mainLayout.nav.systemBranding"), SystemBrandingView.class,
+                VaadinIcon.PAINTBRUSH.create()));
+        systemSection.addItem(new SideNavItem(getTranslation("mainLayout.nav.systemConnections"), SystemConnectionsView.class,
+                VaadinIcon.CONNECT.create()));
+        systemSection.addItem(new SideNavItem(getTranslation("mainLayout.nav.systemOidc"), OidcDiagnosticsView.class,
+                VaadinIcon.SHIELD.create()));
+        return systemSection;
     }
 
     /** Replaces the drawer content (used by the survey editor to show the structure tree). */

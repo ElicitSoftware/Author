@@ -60,9 +60,16 @@ rectangle "Elicit Author" {
     ' Branding (FR-037)
     usecase "UC-030\nBrand the Authoring Interface" as UC030
 
-    ' Localization (FR-042..FR-047)
-    usecase "UC-034\nAuthor Surveys in My Language" as UC034
-    usecase "UC-035\nManage Languages" as UC035
+    ' System setup and diagnostics (FR-042..FR-046)
+    usecase "UC-034\nView System Overview" as UC034
+    usecase "UC-035\nDiagnose Database" as UC035
+    usecase "UC-036\nDiagnose Branding" as UC036
+    usecase "UC-037\nCheck Connections" as UC037
+    usecase "UC-038\nView OIDC Diagnostics" as UC038
+
+    ' Localization (FR-047..FR-052)
+    usecase "UC-039\nAuthor Surveys in My Language" as UC039
+    usecase "UC-040\nManage Languages" as UC040
 }
 
 ' Access
@@ -119,10 +126,21 @@ author --> UC029
 ' Branding
 admin --> UC030
 
-' Localization
-author --> UC034
+' System setup and diagnostics
 admin --> UC034
-author --> UC035
+admin --> UC035
+admin --> UC036
+admin --> UC037
+admin --> UC038
+UC034 ..> UC035 : <<directs to>>
+UC034 ..> UC036 : <<directs to>>
+UC034 ..> UC037 : <<directs to>>
+UC036 ..> UC030 : <<reports>>
+
+' Localization
+author --> UC039
+admin --> UC039
+author --> UC040
 
 ' Relationships worth calling out explicitly
 UC008 ..> UC007 : <<include>>
@@ -139,6 +157,6 @@ UC019 ..> UC033 : <<include>> refuse backward target
 UC016 ..> UC033 : <<extend>> backward rules shown red
 UC033 ..> UC007 : <<extend>> backward rule is an error
 UC022 ..> UC007 : <<extend>> retroactive warning
-UC035 ..> UC034 : <<extend>> adds a language to the selector
+UC040 ..> UC039 : <<extend>> adds a language to the selector
 
 @enduml

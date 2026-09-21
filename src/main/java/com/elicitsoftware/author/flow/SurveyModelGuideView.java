@@ -36,7 +36,7 @@ import java.util.List;
  * UC-029: the survey model explained in the designer's own vocabulary. Eight ideas in a fixed
  * order (BR-002 rules read as a sentence), each headed by the glyph the board uses for it
  * (BR-001 one vocabulary), all stated in text so the diagram is optional (BR-003).
- * Every text comes from the translation bundle (UC-034), keyed {@code guideView.<section>.<n>}.
+ * Every text comes from the translation bundle (UC-039), keyed {@code guideView.<section>.<n>}.
  */
 @Route(value = "guide", layout = MainLayout.class)
 @RolesAllowed(AuthorRoles.AUTHOR)
@@ -44,7 +44,7 @@ public class SurveyModelGuideView extends VerticalLayout implements HasDynamicTi
 
     /** Section headings in page order; tests assert the sequence UC-029 step 2 prescribes. */
     final List<H3> headings = new ArrayList<>();
-    final Image diagram = new Image("images/survey-model.svg", getTranslation("guideView.diagram.alt"));
+    final Image diagram = new Image("images/survey-model.png", getTranslation("guideView.diagram.alt"));
     final RouterLink surveysLink = new RouterLink(getTranslation("guideView.surveysLink"), SurveysView.class);
 
     public SurveyModelGuideView() {
