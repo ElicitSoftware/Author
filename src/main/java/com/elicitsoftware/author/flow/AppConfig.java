@@ -57,6 +57,7 @@ import java.nio.file.Paths;
 // then styles.css so its application overrides still win the cascade.
 @StyleSheet("context://components/branded-header.css")
 @StyleSheet("context://components/structure-navigation.css")
+@StyleSheet("context://components/debug-view.css")
 @StyleSheet("context://components/survey-designer.css")
 @StyleSheet("context://styles.css")
 @ApplicationScoped
