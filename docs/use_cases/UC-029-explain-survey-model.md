@@ -16,7 +16,7 @@
 ## Main Success Scenario
 
 1. The author chooses How surveys work in the application navigation.
-2. The system shows the guide page: a heading, a diagram of a small survey drawn the way the designer draws one, and one section per idea, in this order:
+2. The system shows the guide page: a heading, a picture of the designer board showing a small survey, captured from the designer itself, and one section per idea, in this order:
    1. Elicit is a decision tree — the respondent walks a path, and answers decide what comes next.
    2. Containers nest — a survey holds steps, a step holds sections, a section holds questions; what each is for the respondent and for the author.
    3. Order is the default path — steps, sections and questions run in display order unless a rule says otherwise.

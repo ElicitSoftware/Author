@@ -23,6 +23,12 @@ public final class AuthorRoles {
     /** The only role that grants authoring access. */
     public static final String AUTHOR = "elicit_author";
 
+    /**
+     * Platform administrator: sees the System setup and diagnostics section (UC-034 to UC-038)
+     * but gains no authoring access from this role alone (UC-002 BR-001).
+     */
+    public static final String ADMIN = "elicit_admin";
+
     public static final Set<String> ALL = Set.of(AUTHOR);
 
     private AuthorRoles() {

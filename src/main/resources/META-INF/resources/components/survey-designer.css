@@ -110,10 +110,12 @@
     --guide-muted: var(--brand-text-secondary, var(--lumo-secondary-text-color));
 }
 
-.survey-guide-diagram svg {
+.survey-guide-diagram img {
     width: 100%;
     height: auto;
     display: block;
+    border: 1px solid var(--brand-border, var(--lumo-contrast-20pct));
+    border-radius: var(--lumo-border-radius-m);
 }
 
 .survey-guide-rule {
