@@ -14,7 +14,12 @@ package com.elicitsoftware.author.i18n;
 import com.elicitsoftware.author.flow.ImportDefinitionView;
 import com.elicitsoftware.author.flow.SurveyEditorView;
 import com.elicitsoftware.author.flow.SurveyModelGuideView;
+import com.elicitsoftware.author.flow.OidcDiagnosticsView;
 import com.elicitsoftware.author.flow.SurveysView;
+import com.elicitsoftware.author.flow.SystemBrandingView;
+import com.elicitsoftware.author.flow.SystemConnectionsView;
+import com.elicitsoftware.author.flow.SystemDatabaseView;
+import com.elicitsoftware.author.flow.SystemOverviewView;
 import com.elicitsoftware.author.flow.designer.SurveyDesignerView;
 import com.elicitsoftware.author.flow.reporting.ReportingView;
 import com.elicitsoftware.model.Survey;
@@ -36,7 +41,7 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * UC-034 / NFR-014 backstop: with the pseudo-locale every translated text renders as
+ * UC-039 / NFR-016 backstop: with the pseudo-locale every translated text renders as
  * {@code ⟦key⟧}, so any prose-like text on a rendered route that lacks the marker bypassed the
  * provider. Subtrees flagged {@code data-i18n-content} carry authored survey content and are skipped.
  */
@@ -77,6 +82,25 @@ class DisplayedStringsSweepTest extends QuarkusBrowserlessTest {
         } else {
             problems.add("<fixture> survey 'AuthorFixture' not found; designer, editor and reporting routes not swept");
         }
+        assertTrue(problems.isEmpty(), report(problems));
+    }
+
+    /** UC-034..UC-038: the System pages are gated on elicit_admin, so they are swept as that role. */
+    @Test
+    @TestSecurity(user = "sweep.admin", roles = {"elicit_admin"})
+    void systemRoutes_haveNoUntranslatedText() {
+        UI.getCurrent().setLocale(ElicitI18NProvider.PSEUDO_LOCALE);
+        List<String> problems = new ArrayList<>();
+        navigate(SystemOverviewView.class);
+        sweep("system", problems);
+        navigate(SystemDatabaseView.class);
+        sweep("system/database", problems);
+        navigate(SystemBrandingView.class);
+        sweep("system/branding", problems);
+        navigate(SystemConnectionsView.class);
+        sweep("system/connections", problems);
+        navigate(OidcDiagnosticsView.class);
+        sweep("oidc", problems);
         assertTrue(problems.isEmpty(), report(problems));
     }
 
@@ -125,6 +149,6 @@ class DisplayedStringsSweepTest extends QuarkusBrowserlessTest {
     }
 
     private static String report(List<String> problems) {
-        return problems.size() + " untranslated text(s) rendered (UC-034 / NFR-014):\n  " + String.join("\n  ", problems);
+        return problems.size() + " untranslated text(s) rendered (UC-039 / NFR-016):\n  " + String.join("\n  ", problems);
     }
 }

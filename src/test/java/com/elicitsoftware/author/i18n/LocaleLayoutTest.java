@@ -29,7 +29,7 @@ import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * UC-034 BR-003/BR-004: direction and language attributes follow the locale, a {@code ?lang=}
+ * UC-039 BR-003/BR-004: direction and language attributes follow the locale, a {@code ?lang=}
  * query parameter selects a language before the view is built, and the language switcher in the
  * header offers the shipped locales.
  */

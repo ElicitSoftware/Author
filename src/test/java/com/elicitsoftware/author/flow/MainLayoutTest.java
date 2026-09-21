@@ -22,6 +22,8 @@ import io.quarkus.test.security.TestSecurity;
 import jakarta.enterprise.inject.spi.CDI;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,6 +62,20 @@ class MainLayoutTest extends QuarkusBrowserlessTest {
         MainLayout layout = attachLayout();
         assertFalse(hasNavItem(layout, layout.getTranslation("mainLayout.nav.surveys")), "elicit_admin must not imply elicit_author (UC-002 BR-001)");
         assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.logout")));
+        // UC-034..UC-038: elicit_admin sees the System section and its five entries.
+        assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.system")), "elicit_admin should see the System section");
+        for (String entry : List.of("systemOverview", "systemDatabase", "systemBranding", "systemConnections", "systemOidc")) {
+            assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav." + entry)), "elicit_admin should see System > " + entry);
+        }
+    }
+
+    @Test
+    @TestSecurity(user = "mainlayout.author.only", roles = {"elicit_author"})
+    void authorRoleAloneDoesNotSeeSystem() {
+        MainLayout layout = attachLayout();
+        assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.surveys")));
+        assertFalse(hasNavItem(layout, layout.getTranslation("mainLayout.nav.system")), "elicit_author alone must not see the System section");
+        assertFalse(hasNavItem(layout, layout.getTranslation("mainLayout.nav.systemOidc")));
     }
 
     @Test
