@@ -44,10 +44,10 @@ public class SurveyModelGuideView extends VerticalLayout {
 
     /** Section headings in page order; tests assert the sequence UC-029 step 2 prescribes. */
     final List<H3> headings = new ArrayList<>();
-    final Image diagram = new Image("images/survey-model.svg",
-            "A survey drawn as the designer draws it: two step lanes holding section cards and question rows, "
-                    + "a Show rule from the question 'Do you have children?' to the section 'Children', "
-                    + "and a Repeat rule from 'How many children?' to the section 'Child' in the next step.");
+    final Image diagram = new Image("images/survey-model.png",
+            "The designer board for a small survey called Family history: two step cards, About you and Each child, "
+                    + "each holding section cards (You and Children, then Child) with question rows inside them, "
+                    + "and a Show rule drawn from the question 'Has children' to the question 'Child count'.");
     final RouterLink surveysLink = new RouterLink("Go to the Surveys list", SurveysView.class);
 
     public SurveyModelGuideView() {
