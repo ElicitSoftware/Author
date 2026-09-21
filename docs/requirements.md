@@ -115,6 +115,16 @@ answers to generate a first-draft structure for a *different*, new survey.
 |--------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------|
 | FR-037 | Brand the Authoring Interface | As a system administrator, I want Author to display the deployment's brand — logo, display name, and theme — from a mounted brand directory, resolved through a fixed fallback order (external mount, then a local directory, then the brand embedded in the application) and served only from within the brand root, so that Author matches the Survey and Admin apps at a site and never serves a file from outside the brand directory. | Medium | Implemented |
 
+### System Setup & Diagnostics
+
+| ID     | Title                     | User Story                                                                                                                                 | Priority | Status      |
+|--------|---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------|
+| FR-042 | View System Overview      | As a platform operator, I want one screen showing Author's version, build time, profile, uptime, health and whether every required setting is present so that I can confirm a deployment is wired correctly. | High     | Implemented |
+| FR-043 | Diagnose Database         | As a platform operator, I want to see whether Author's database connection works, whether the survey schema it depends on is present, and which Survey migration created it so that I can tell a credential problem from a schema that was never created. | High     | Implemented |
+| FR-044 | Diagnose Branding         | As a platform operator, I want to see which brand directory resolved and where each brand asset came from so that a missing or partial brand mount is visible rather than silently falling back to the default theme. | Medium   | Implemented |
+| FR-045 | Check Connections         | As a platform operator, I want to check the identity provider and the telemetry collector with a bounded probe so that an unreachable dependency is named rather than inferred from a login that never completes. | High     | Implemented |
+| FR-046 | View OIDC Diagnostics     | As a platform operator, I want to see the current sign-in's principal, roles and masked tokens so that I can troubleshoot why authoring access is not granted. | Medium   | Implemented |
+
 ## Non-Functional Requirements
 
 | ID      | Title                              | Requirement                                                                                                                                                                                                | Category        | Priority | Status |
@@ -132,6 +142,8 @@ answers to generate a first-draft structure for a *different*, new survey.
 | NFR-011 | Format Round Trip                  | Importing a `.elicit` file and exporting it again must reproduce every record field-for-field (ignoring remapped local ids, rebased display-key prefixes, and header timestamps), verified by automated test. | Maintainability | High     | Open   |
 | NFR-012 | Keyboard Equivalence               | Every drag-and-drop action in the designer has a keyboard-reachable equivalent (element menu or button), so WCAG 2.1 success criterion 2.1.1 holds without a pointer. Adding a step uses a top-bar "Add step" button and the step menu's "Add step after"; sections and questions use "Add …" in a container's menu; reordering uses the "Move up / Move down" menu items; the new element is positioned by the current selection. | Usability | High | Implemented |
 | NFR-013 | Minimum Viewport                   | The designer targets tablet-sized screens and larger; below 768px it shows a full-screen "use a wider screen" notice instead of reflowing into an unusable phone layout. | Usability | Low | Implemented |
+| NFR-014 | Diagnostics Never Leak Secrets     | Diagnostic screens must never render a password, client secret, or token value; a secret is reported only as present or absent, and tokens are masked to their last four characters. | Security | High | Implemented |
+| NFR-015 | Bounded Diagnostic Checks          | Every outbound probe started from a diagnostic screen must complete or fail within 5 seconds, so that an unreachable dependency never hangs the tool. | Availability | Medium | Implemented |
 
 ## Constraints
 
@@ -156,6 +168,8 @@ answers to generate a first-draft structure for a *different*, new survey.
 | C-017 | Immutable Element Keys             | `survey_key` and every `{entity}_key` are minted once and never regenerated or rewritten; import carries them verbatim.                                                                                                     | Technical  | High     | Open        |
 | C-018 | Working-Copy Model                 | In Author's database each element has exactly one row (`version = 0`, epoch `effective_from`, sentinel `effective_to` while current); Author never writes `version` and never creates draft rows.                            | Technical  | High     | Open        |
 | C-019 | Removal Means Retire               | Author never physically deletes a structural element that may have been exported; removal closes `effective_to`, and exported files carry retired rows so Admin's update can close them at each site.                       | Technical  | High     | Open        |
+| C-020 | Runtime Configuration Is Read-Only | Datasource, OIDC, telemetry and brand-path settings are Quarkus startup configuration and cannot be changed from the tool; diagnostic screens show the effective value and test it, they do not edit it. | Technical | Medium | Verified |
+| C-021 | System Section Gate                | The System setup and diagnostics section is gated on `elicit_admin`, the platform administrator role shared with the Admin console; that role grants no authoring access (UC-002). | Technical | Medium | Verified |
 
 ## Open Items for Review
 

@@ -105,8 +105,26 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
             nav.addItem(new SideNavItem("How surveys work", SurveyModelGuideView.class, VaadinIcon.OPEN_BOOK.create()));
             nav.addItem(new SideNavItem("Import definition", ImportDefinitionView.class, VaadinIcon.UPLOAD.create()));
         }
+        if (identity != null && identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.ADMIN)) {
+            nav.addItem(createSystemSection());
+        }
         nav.addItem(new SideNavItem("Logout", LogoutView.class, VaadinIcon.LOCK.create()));
         setDrawerContent(nav);
+    }
+
+    /**
+     * The System section: setup and diagnostics for the administrator or operator wiring up a
+     * deployment (UC-034 to UC-038). Gated on {@code elicit_admin}, which grants no authoring.
+     */
+    private SideNavItem createSystemSection() {
+        SideNavItem systemSection = new SideNavItem("System");
+        systemSection.setPrefixComponent(VaadinIcon.TOOLS.create());
+        systemSection.addItem(new SideNavItem("Overview", SystemOverviewView.class, VaadinIcon.DASHBOARD.create()));
+        systemSection.addItem(new SideNavItem("Database", SystemDatabaseView.class, VaadinIcon.DATABASE.create()));
+        systemSection.addItem(new SideNavItem("Branding", SystemBrandingView.class, VaadinIcon.PAINTBRUSH.create()));
+        systemSection.addItem(new SideNavItem("Connections", SystemConnectionsView.class, VaadinIcon.CONNECT.create()));
+        systemSection.addItem(new SideNavItem("OIDC", OidcDiagnosticsView.class, VaadinIcon.SHIELD.create()));
+        return systemSection;
     }
 
     /** Replaces the drawer content (used by the survey editor to show the structure tree). */
