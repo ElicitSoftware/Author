@@ -32,6 +32,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -155,6 +156,80 @@ class RuleServiceTest {
         assertEquals("NAME", created.token);
         assertEquals("exists {NAME}", RelationshipQuery.condition(created));
         assertEquals("Replace {NAME}", RelationshipQuery.label(created, "ignored"), "TEXT reads Replace {token}");
+    }
+
+    /**
+     * UC-019 BR-001: a target in the upstream question's own section is stored question-only, whatever
+     * path the caller pre-filled; a target in another section keeps its step and section.
+     */
+    @Test
+    @TestTransaction
+    void create_sameSectionTargetIsStoredQuestionOnly() {
+        Survey s = fixture();
+        SectionsQuestion q3 = assignmentOf("FixtureQ3");
+        SectionsQuestion q4 = assignmentOf("FixtureQ4");
+        Step one = step("Fixture Step One");
+        StepsSections sectionB = mountOf("Fixture Section B");
+
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = q3.sectionsQuestionId;
+        draft.upstreamStepId = one.stepId;
+        draft.downstreamSqId = q4.sectionsQuestionId;
+        draft.downstreamSsId = sectionB.stepsSectionsId; // the full path, as a card on the board would name it
+        draft.downstreamStepId = one.stepId;
+        draft.operatorType = operator("EQUAL");
+        draft.actionType = action("REPEAT");
+        draft.referenceValue = "N";
+        Relationship created = rules.create(s.id, draft);
+        Relationship stored = rules.current(s.id, created.relationshipId).orElseThrow();
+        assertEquals(q4.sectionsQuestionId, stored.downstreamSqId);
+        assertNull(stored.downstreamSsId, "same section: no downstream section");
+        assertNull(stored.downstreamStepId, "same section: no downstream step");
+        assertNull(stored.upstreamStepId, "same section: fires from every mount");
+
+        Relationship cross = new Relationship();
+        cross.upstreamSqId = q4.sectionsQuestionId;
+        cross.upstreamStepId = one.stepId; // the mount the arrow was drawn from, as the dialog names it
+        cross.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
+        cross.operatorType = operator("FIELD_EXIST");
+        cross.actionType = action("SHOW");
+        Relationship crossCreated = rules.create(s.id, cross);
+        Step two = step("Fixture Step Two");
+        assertEquals(mountOf("Fixture Section C").stepsSectionsId, crossCreated.downstreamSsId, "another section: its mount is named");
+        assertEquals(two.stepId, crossCreated.downstreamStepId, "and its step");
+        assertEquals(one.stepId, crossCreated.upstreamStepId, "and the upstream step it fires from");
+
+        // A5: re-pointing both ends onto rows of one card is stored question-only too
+        Relationship repointed = rules.repoint(s.id, crossCreated.relationshipId, RuleService.End.SOURCE, "sq-" + q3.sectionsQuestionId, "ss-" + sectionB.stepsSectionsId);
+        repointed = rules.repoint(s.id, repointed.relationshipId, RuleService.End.TARGET, "sq-" + q4.sectionsQuestionId, "ss-" + sectionB.stepsSectionsId);
+        assertEquals(q4.sectionsQuestionId, repointed.downstreamSqId);
+        assertNull(repointed.downstreamSsId, "re-pointed into the upstream's own section: question-only");
+        assertNull(repointed.downstreamStepId);
+        assertNull(repointed.upstreamStepId);
+    }
+
+    /** UC-019 BR-005: a token is a slot any rule may fill — a SHOW rule keeps the token it is saved with. */
+    @Test
+    @TestTransaction
+    void create_showActionKeepsItsToken() {
+        Survey s = fixture();
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf("FixtureQ2").sectionsQuestionId;
+        draft.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
+        draft.operatorType = operator("FIELD_EXIST");
+        draft.actionType = action("SHOW");
+        Relationship without = rules.create(s.id, draft);
+        assertNull(without.token, "a SHOW rule needs no token");
+
+        draft.token = " NAME ";
+        Relationship created = rules.create(s.id, draft);
+        assertEquals("NAME", created.token, "the token is kept, trimmed, for a non-Text action");
+        assertEquals("NAME", rules.current(s.id, created.relationshipId).orElseThrow().token, "and persisted");
+        assertEquals("exists {NAME}", RelationshipQuery.condition(created), "the tooltip shows the token for any action");
+        assertTrue(RelationshipQuery.label(created, "Q5").startsWith("Show "), "the label still reads the action");
+
+        draft.token = "WAYTOOLONGTOKEN";
+        assertEquals("token", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field(), "the 10-character limit holds for every action");
     }
 
     @Test

@@ -187,6 +187,10 @@ class ExportValidationTest {
     }
 
     private Relationship textRuleOntoStepTwo(Survey s, String token) {
+        return ruleOntoStepTwo(s, "TEXT", token);
+    }
+
+    private Relationship ruleOntoStepTwo(Survey s, String action, String token) {
         SectionsQuestion name = SectionsQuestion.find("questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
                 "FixtureQ2", s.id, StructuralElement.SENTINEL).firstResult();
         Step one = Step.find("name = ?1 and effectiveTo = ?2", "Fixture Step One", StructuralElement.SENTINEL).firstResult();
@@ -196,7 +200,7 @@ class ExportValidationTest {
         draft.upstreamStepId = one.stepId;
         draft.downstreamStepId = two.stepId;
         draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
-        draft.actionType = ActionType.find("name", "TEXT").firstResult();
+        draft.actionType = ActionType.find("name", action).firstResult();
         draft.token = token;
         Relationship created = rules.create(s.id, draft);
         em.flush();
@@ -242,6 +246,22 @@ class ExportValidationTest {
         Relationship r = textRuleOntoStepTwo(s, "ZZZ");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind()) && r.relationshipId.equals(i.durableId())
+                && i.message().contains("fills {ZZZ} but no text it reaches uses it")), issues.toString());
+    }
+
+    /** UC-007 BR-005 / UC-019 BR-005: a token is checked whatever the action of the rule carrying it. */
+    @Test
+    @TestTransaction
+    void aShowRuleWithATokenFillsItAndIsWarnedWhenNothingUsesIt() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {NAME}?");
+        ruleOntoStepTwo(s, "SHOW", "NAME");
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("{NAME}")), "a SHOW rule fills the token: " + issues);
+
+        Relationship unused = ruleOntoStepTwo(s, "SHOW", "ZZZ");
+        issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind()) && unused.relationshipId.equals(i.durableId())
                 && i.message().contains("fills {ZZZ} but no text it reaches uses it")), issues.toString());
     }
 }

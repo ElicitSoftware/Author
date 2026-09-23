@@ -114,7 +114,7 @@ public class RelationshipDialog extends Dialog {
             }
             token.setValue(typed.isEmpty() ? null : typed);
         });
-        token.setHelperText("Fills {TOKEN|default} — or a phrase holding it, {Has TOKEN been|Were you} — in the target's text and in every text inside it");
+        token.setHelperText("Optional for Show and Repeat, required for Text. Fills {TOKEN|default} — or a phrase holding it, {Has TOKEN been|Were you} — in the target's text and in every text inside it");
         description.setMaxLength(255);
         defaultUpstreamValue.setMaxLength(255);
         overrideUpstreamValue.setMaxLength(255);
@@ -130,11 +130,13 @@ public class RelationshipDialog extends Dialog {
         FieldHelp.help(upstream, "The question whose answer this rule checks.");
         FieldHelp.help(operator, "How the answer is compared to the value — equals, greater than, contains, or just whether an answer exists.");
         FieldHelp.help(referenceValue, "The value the answer is compared against. Leave empty for operators that only test whether an answer exists.");
-        FieldHelp.help(action, "What the rule does when it matches: SHOW reveals the target, REPEAT instantiates it once per the answer, TEXT substitutes the answer into the target's text.");
+        FieldHelp.help(action, "What the rule does when it matches: SHOW reveals the target, REPEAT instantiates it once per the answer, TEXT substitutes the answer into the target's text. "
+                + "A SHOW or REPEAT rule may also carry a token naming the slot the upstream answer fills in the target's texts; a TEXT rule must.");
         FieldHelp.help(targetKind, "Whether the rule acts on a whole step, a section, or a single question. "
-                + "A Text rule on a step fills its token in every section and question of that step; on a section, in every question of it.");
+                + "A rule with a token on a step fills it in every section and question of that step; on a section, in every question of it.");
         FieldHelp.help(target, "The element the action applies to.");
-        FieldHelp.help(token, "For a TEXT rule: the placeholder written as {TOKEN} in the target's text that the answer replaces. "
+        FieldHelp.help(token, "The slot written as {TOKEN} in the target's texts that the upstream answer fills. Any rule may carry one — "
+                + "a SHOW or REPEAT rule that also names a token fills it, as the runtime does — and a TEXT rule must. "
                 + "Pick one the survey already uses or type a new name (up to 10 characters). The same token may be filled by several rules, "
                 + "one per place it is used. The preview shows the upstream question's sample answer in its place.");
         FieldHelp.help(description, "An optional note for authors. It is not shown to respondents.");
@@ -216,8 +218,15 @@ public class RelationshipDialog extends Dialog {
                     }
                     case QUESTION -> {
                         bean.downstreamSqId = t.assignmentId();
-                        bean.downstreamSsId = t.parent() == null ? null : t.parent().assignmentId();
-                        bean.downstreamStepId = stepOf(t);
+                        // UC-019 BR-001: a question in the upstream question's own section is stored question-only —
+                        // no section, no step, no upstream step — so it fires from every mount of that section and the
+                        // runtime shows it on the page being answered (RulePath). A question elsewhere names its mount and step.
+                        if (!sameSection(up, t)) {
+                            bean.downstreamSsId = t.parent() == null ? null : t.parent().assignmentId();
+                            bean.downstreamStepId = stepOf(t);
+                        } else {
+                            bean.upstreamStepId = null;
+                        }
                     }
                 }
             }
@@ -256,6 +265,13 @@ public class RelationshipDialog extends Dialog {
         return String.join(" › ", parts);
     }
 
+    /** Whether two question nodes sit in the same section (by the section's durable id, whichever mount each is shown in). */
+    private static boolean sameSection(StructureNode a, StructureNode b) {
+        return a != null && b != null && a.parent() != null && b.parent() != null
+                && a.parent().kind() == StructureNode.Kind.SECTION && b.parent().kind() == StructureNode.Kind.SECTION
+                && Objects.equals(a.parent().durableId(), b.parent().durableId());
+    }
+
     private static Integer stepOf(StructureNode n) {
         for (StructureNode p = n; p != null; p = p.parent()) {
             if (p.kind() == StructureNode.Kind.STEP) {
@@ -291,11 +307,14 @@ public class RelationshipDialog extends Dialog {
         }
     }
 
-    /** UC-019 A2/A3 hints: the token only for Text; Repeat never targets a step. */
+    /**
+     * UC-019 A2/A3 hints: any action may carry a token (BR-005) and only Text requires one; Repeat
+     * never targets a step.
+     */
     void updateActionFields() {
         ActionType a = action.getValue();
         boolean text = a != null && "TEXT".equals(a.name);
-        token.setVisible(text);
+        token.setVisible(true);
         token.setRequiredIndicatorVisible(text);
         boolean repeat = a != null && "REPEAT".equals(a.name);
         targetKind.setItemEnabledProvider(k -> !(repeat && "Step".equals(k)));
@@ -308,7 +327,7 @@ public class RelationshipDialog extends Dialog {
         String op = operator.getValue() == null ? "(operator)" : operator.getValue().name;
         String act = action.getValue() == null ? "(action)" : action.getValue().name;
         String val = referenceValue.getValue() == null || referenceValue.getValue().isBlank() ? "" : " " + referenceValue.getValue();
-        String tok = token.isVisible() && token.getValue() != null && !token.getValue().isBlank() ? " {" + token.getValue() + "}" : "";
+        String tok = token.getValue() != null && !token.getValue().isBlank() ? " {" + token.getValue() + "}" : "";
         sentence.removeAll();
         sentence.add(new Span("Question '" + (up == null ? "…" : up.label()) + "' " + op + val + " → " + act + tok + " '"
                 + (t == null ? "…" : t.label()) + "'"));
