@@ -206,8 +206,8 @@ public class ExportValidation {
 
     /**
      * UC-007 BR-005 / FR-005: a token a text uses must be filled by a rule that reaches that text — a
-     * rule reaches its target and everything inside it (UC-019 BR-005) — and a Text rule's token must
-     * be used by a text it reaches. A placeholder with no default that nothing fills is an error: the
+     * rule reaches its target and everything inside it (UC-019 BR-005) — and the token a rule of any
+     * action carries must be used by a text it reaches. A placeholder with no default that nothing fills is an error: the
      * runtime would show the respondent the raw placeholder. One with a default is a warning.
      */
     private static void checkTokens(List<ValidationIssue> issues, Map<Integer, Step> steps, Map<Integer, Section> sections,
@@ -256,7 +256,7 @@ public class ExportValidation {
             }
         }
         for (Relationship r : relationships) {
-            if (r.actionType == null || !"TEXT".equals(r.actionType.name) || r.token == null || r.token.isBlank()) {
+            if (r.token == null || r.token.isBlank()) {
                 continue;
             }
             String tok = r.token.trim();

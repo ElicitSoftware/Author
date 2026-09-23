@@ -14,6 +14,8 @@ package com.elicitsoftware.author.flow.designer;
 import com.elicitsoftware.author.flow.SurveyEditorView;
 import com.elicitsoftware.author.survey.RelationshipQuery;
 import com.elicitsoftware.model.OperatorType;
+import com.elicitsoftware.model.Relationship;
+import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
@@ -32,6 +34,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
@@ -100,7 +103,8 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         assertEquals("REPEAT", dialog.action.getValue().name, "action pre-filled from the glyph");
         assertEquals("Section", dialog.targetKind.getValue());
         assertEquals(sectionC.node().assignmentId(), dialog.target.getValue().assignmentId(), "target pre-filled");
-        assertFalse(dialog.token.isVisible(), "token only for Text rules");
+        assertTrue(dialog.token.isVisible(), "UC-019 BR-005: any action may carry a token");
+        assertFalse(dialog.token.isRequiredIndicatorVisible(), "only a Text rule requires one (UC-019 A2)");
         assertFalse(dialog.remove.isVisible(), "no Remove while creating");
 
         test(dialog.operator).selectItem("GREATER THAN");
@@ -128,5 +132,90 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         assertEquals("Y", dialog.referenceValue.getValue());
         assertTrue(dialog.sentence.getElement().getTextRecursively().contains("EQUAL Y → SHOW"), "UC-019 BR-003: " + dialog.sentence.getElement().getTextRecursively());
         test(dialog.cancel).click();
+    }
+
+    private Relationship ruleOnto(Survey s, int downstreamSqId) {
+        return Relationship.find("surveyId = ?1 and downstreamSqId = ?2 and effectiveTo = ?3 order by id desc",
+                s.id, downstreamSqId, StructuralElement.SENTINEL).firstResult();
+    }
+
+    /** UC-019 BR-001: a rule between two questions of one section is stored question-only and fires from every mount. */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "rules.author", roles = {"elicit_author"})
+    void savingARuleWithinOneSectionStoresItQuestionOnly() {
+        Survey s = fixture();
+        SurveyDesignerView view = open(s);
+        view.toggleAndSelect(view.lanes.get(0).cards.get(0).node());
+        SectionCard sectionA = view.lanes.get(0).cards.get(0);
+        QuestionRow welcome = sectionA.rows.get(0);
+        QuestionRow name = sectionA.rows.get(1);
+
+        ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.ConnectRequestedEvent(view.overlay, true,
+                "sq-" + welcome.node().assignmentId(), "sq-" + name.node().assignmentId(), "ss-" + sectionA.node().assignmentId(), "SHOW"));
+        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        assertEquals(name.node().assignmentId(), dialog.target.getValue().assignmentId(), "target pre-filled in the card it was dropped in");
+        test(dialog.operator).selectItem("FIELD_EXIST");
+        test(dialog.save).click();
+        assertFalse(dialog.isOpened());
+
+        Relationship stored = ruleOnto(s, name.node().assignmentId());
+        assertEquals(welcome.node().assignmentId(), stored.upstreamSqId);
+        assertNull(stored.downstreamSsId, "same section: no downstream section");
+        assertNull(stored.downstreamStepId, "same section: no downstream step");
+        assertNull(stored.upstreamStepId, "same section: fires from every mount");
+        assertTrue(view.overlay.edges().contains("\"target\":\"sq-" + name.node().assignmentId() + "\""), "and the arrow lands on the row: " + view.overlay.edges());
+    }
+
+    /** UC-019 BR-001: a rule onto a question in another section names the step and section it is shown in. */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "rules.author", roles = {"elicit_author"})
+    void savingARuleAcrossSectionsStoresTheFullPath() {
+        Survey s = fixture();
+        SurveyDesignerView view = open(s);
+        view.toggleAndSelect(view.lanes.get(0).cards.get(1).node());
+        view.toggleAndSelect(view.lanes.get(1).cards.get(0).node());
+        QuestionRow count = view.lanes.get(0).cards.get(1).rows.get(1);
+        SectionCard sectionC = view.lanes.get(1).cards.get(0);
+        QuestionRow anythingElse = sectionC.rows.get(0);
+
+        ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.ConnectRequestedEvent(view.overlay, true,
+                "sq-" + count.node().assignmentId(), "sq-" + anythingElse.node().assignmentId(), "ss-" + sectionC.node().assignmentId(), "SHOW"));
+        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        test(dialog.operator).selectItem("GREATER THAN");
+        test(dialog.referenceValue).setValue("0");
+        test(dialog.save).click();
+        assertFalse(dialog.isOpened());
+
+        Relationship stored = ruleOnto(s, anythingElse.node().assignmentId());
+        assertEquals(sectionC.node().assignmentId(), stored.downstreamSsId, "another section: its mount is named");
+        assertEquals(view.lanes.get(1).node().durableId(), stored.downstreamStepId, "and its step");
+        assertEquals(view.lanes.get(0).node().durableId(), stored.upstreamStepId, "and the upstream step the rule fires from");
+    }
+
+    /** UC-019 BR-001: editing a question-only rule keeps it question-only. */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "rules.author", roles = {"elicit_author"})
+    void editingAQuestionOnlyRuleKeepsItQuestionOnly() {
+        Survey s = fixture();
+        SurveyDesignerView view = open(s);
+        RelationshipQuery.RuleEdge edge = relationshipQuery.edges(s.id, false).get(0);
+        Relationship before = Relationship.find("surveyId = ?1 and relationshipId = ?2", s.id, edge.relationshipId()).firstResult();
+        assertNull(before.downstreamSsId, "the fixture rule is question-only");
+
+        ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.EdgeSelectedEvent(view.overlay, true, edge.relationshipId()));
+        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        test(dialog.description).setValue("Edited");
+        test(dialog.save).click();
+        assertFalse(dialog.isOpened());
+
+        Relationship after = Relationship.find("surveyId = ?1 and relationshipId = ?2", s.id, edge.relationshipId()).firstResult();
+        assertEquals("Edited", after.description);
+        assertEquals(before.downstreamSqId, after.downstreamSqId);
+        assertNull(after.downstreamSsId, "still question-only");
+        assertNull(after.downstreamStepId);
+        assertNull(after.upstreamStepId, "still fires from every mount");
     }
 }
