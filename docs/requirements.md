@@ -102,6 +102,7 @@ answers to generate a first-draft structure for a *different*, new survey.
 | ID     | Title                    | User Story                                                                                                                                                                                                                                     | Priority | Status |
 |--------|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|--------|
 | FR-034 | Explain the Survey Model | As a new survey author, I want an in-app page that explains how a survey is put together (steps, sections, questions, the default path, and the rules that connect them) so that I understand the designer's vocabulary before I use it. | Low      | Implemented |
+| FR-047 | Consult the Author's Manual | As a survey author, I want a printable, step-by-step manual with screenshots that walks me through building a survey from an empty list to an exported `.elicit` file, reachable from the application header and shipped inside the running application, so that I can follow the procedure away from the screen and know the instructions match the version I am using. | Medium   | Implemented |
 ### Access & Integration
 
 | ID     | Title                     | User Story                                                                                                                                                                | Priority | Status |
@@ -144,6 +145,7 @@ answers to generate a first-draft structure for a *different*, new survey.
 | NFR-013 | Minimum Viewport                   | The designer targets tablet-sized screens and larger; below 768px it shows a full-screen "use a wider screen" notice instead of reflowing into an unusable phone layout. | Usability | Low | Implemented |
 | NFR-014 | Diagnostics Never Leak Secrets     | Diagnostic screens must never render a password, client secret, or token value; a secret is reported only as present or absent, and tokens are masked to their last four characters. | Security | High | Implemented |
 | NFR-015 | Bounded Diagnostic Checks          | Every outbound probe started from a diagnostic screen must complete or fail within 5 seconds, so that an unreachable dependency never hangs the tool. | Availability | Medium | Implemented |
+| NFR-016 | Manual Version Stamping            | The author's manual carries the application version and build date of the image it ships in, on the title page and in the footer of every page, so that a printed or downloaded copy is always attributable to one build. | Maintainability | Medium | Implemented |
 
 ## Constraints
 
