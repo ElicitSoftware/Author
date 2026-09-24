@@ -30,8 +30,8 @@ import java.util.Optional;
  * Write side of rules (UC-019): create, edit, re-point, retire and restore relationships with
  * the runtime's constraints enforced up front — a downstream path that holds together (BR-001,
  * completed from the chosen target by {@link RulePath}), a question assignment upstream (BR-002),
- * a token for Text, no Repeat onto a step (A3), and a target that comes after the question the rule
- * reads from (UC-033 A1).
+ * a token for Text (any action may carry one, BR-005), no Repeat onto a step (A3), and a target that
+ * comes after the question the rule reads from (UC-033 A1).
  */
 @ApplicationScoped
 public class RuleService {
@@ -207,14 +207,18 @@ public class RuleService {
         if (r.actionType == null) {
             throw new AuthoringException("Choose an action", "actionType");
         }
-        if ("TEXT".equals(r.actionType.name)) {
-            if (r.token == null || r.token.isBlank()) {
-                throw new AuthoringException("A Text rule needs the token it replaces", "token");
-            }
-            if (r.token.trim().length() > 10) {
+        // UC-019 BR-005: a rule of any action may carry a token; A2: a Text rule must.
+        if (r.token != null && r.token.isBlank()) {
+            r.token = null;
+        }
+        if ("TEXT".equals(r.actionType.name) && r.token == null) {
+            throw new AuthoringException("A Text rule needs the token it replaces", "token");
+        }
+        if (r.token != null) {
+            r.token = r.token.trim();
+            if (r.token.length() > 10) {
                 throw new AuthoringException("Token names are at most 10 characters", "token");
             }
-            r.token = r.token.trim();
         }
         if ("REPEAT".equals(r.actionType.name) && r.target() == Relationship.Target.STEP) {
             throw new AuthoringException("Repeat applies to a section or a question, not a step", "downstream");

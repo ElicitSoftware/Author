@@ -76,7 +76,7 @@ Every rule is also reachable as text: the rule dialog lists upstream, operator, 
 
 ### BR-004: The label says what the rule does
 
-The visible arrow label is the action verb plus the target's name (Show / Repeat / Replace); the condition (operator and reference value, and the token for a Text rule) is carried on the tooltip, not the label.
+The visible arrow label is the action verb plus the target's name (Show / Repeat / Replace); the condition (operator and reference value, and the token when the rule carries one) is carried on the tooltip, not the label.
 
 ### BR-005: Rules are shown in their context
 

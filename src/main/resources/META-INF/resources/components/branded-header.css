@@ -135,3 +135,40 @@
         transition: none;
     }
 }
+
+/* Manual link (UC-039): sits at the far right of the header, in the header's own text colour
+   so it works on a light or a dark brand. Hidden below the designer's minimum viewport
+   (NFR-013), where header space is scarce and the drawer carries the same link. */
+.branded-header .header-manual-link {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid currentColor;
+    border-radius: var(--lumo-border-radius-m, 4px);
+    font-family: var(--brand-font-primary, 'Montserrat', sans-serif);
+    font-size: var(--lumo-font-size-s);
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--brand-header-text);
+    opacity: 0.85;
+    white-space: nowrap;
+}
+
+.branded-header .header-manual-link:hover,
+.branded-header .header-manual-link:focus-visible {
+    opacity: 1;
+    text-decoration: none;
+}
+
+.branded-header .header-manual-link vaadin-icon {
+    width: 1em;
+    height: 1em;
+}
+
+@media (max-width: 767px) {
+    .branded-header .header-manual-link {
+        display: none;
+    }
+}
