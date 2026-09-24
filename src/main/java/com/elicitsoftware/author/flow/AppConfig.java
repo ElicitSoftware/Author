@@ -281,7 +281,7 @@ public class AppConfig implements AppShellConfigurator {
                     String brandName = extractJsonValue(content, "name");
                     String version = extractJsonValue(content, "version");
                     String organization = extractJsonValue(content, "organization");
-                    // Per-language variants from the brand's "localized" block (UC-039 BR-006)
+                    // Per-language variants from the brand's "localized" block (UC-040 BR-006)
                     java.util.Map<String, String> localized = localizedBrandText(content, locale);
                     brandName = localized.getOrDefault("name", brandName);
                     organization = localized.getOrDefault("organization", organization);

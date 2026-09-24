@@ -232,8 +232,15 @@ public class RelationshipDialog extends Dialog {
                     }
                     case QUESTION -> {
                         bean.downstreamSqId = t.assignmentId();
-                        bean.downstreamSsId = t.parent() == null ? null : t.parent().assignmentId();
-                        bean.downstreamStepId = stepOf(t);
+                        // UC-019 BR-001: a question in the upstream question's own section is stored question-only —
+                        // no section, no step, no upstream step — so it fires from every mount of that section and the
+                        // runtime shows it on the page being answered (RulePath). A question elsewhere names its mount and step.
+                        if (!sameSection(up, t)) {
+                            bean.downstreamSsId = t.parent() == null ? null : t.parent().assignmentId();
+                            bean.downstreamStepId = stepOf(t);
+                        } else {
+                            bean.upstreamStepId = null;
+                        }
                     }
                 }
             }
@@ -272,6 +279,13 @@ public class RelationshipDialog extends Dialog {
         return String.join(" › ", parts);
     }
 
+    /** Whether two question nodes sit in the same section (by the section's durable id, whichever mount each is shown in). */
+    private static boolean sameSection(StructureNode a, StructureNode b) {
+        return a != null && b != null && a.parent() != null && b.parent() != null
+                && a.parent().kind() == StructureNode.Kind.SECTION && b.parent().kind() == StructureNode.Kind.SECTION
+                && Objects.equals(a.parent().durableId(), b.parent().durableId());
+    }
+
     private static Integer stepOf(StructureNode n) {
         for (StructureNode p = n; p != null; p = p.parent()) {
             if (p.kind() == StructureNode.Kind.STEP) {
@@ -307,11 +321,14 @@ public class RelationshipDialog extends Dialog {
         }
     }
 
-    /** UC-019 A2/A3 hints: the token only for Text; Repeat never targets a step. */
+    /**
+     * UC-019 A2/A3 hints: any action may carry a token (BR-005) and only Text requires one; Repeat
+     * never targets a step.
+     */
     void updateActionFields() {
         ActionType a = action.getValue();
         boolean text = a != null && "TEXT".equals(a.name);
-        token.setVisible(text);
+        token.setVisible(true);
         token.setRequiredIndicatorVisible(text);
         boolean repeat = a != null && "REPEAT".equals(a.name);
         targetKind.setItemEnabledProvider(k -> !(repeat && KIND_STEP.equals(k)));
@@ -324,7 +341,7 @@ public class RelationshipDialog extends Dialog {
         String op = operator.getValue() == null ? getTranslation("relationshipDialog.sentence.noOperator") : operator.getValue().name;
         String act = action.getValue() == null ? getTranslation("relationshipDialog.sentence.noAction") : action.getValue().name;
         String val = referenceValue.getValue() == null || referenceValue.getValue().isBlank() ? "" : " " + referenceValue.getValue();
-        String tok = token.isVisible() && token.getValue() != null && !token.getValue().isBlank() ? " {" + token.getValue() + "}" : "";
+        String tok = token.getValue() != null && !token.getValue().isBlank() ? " {" + token.getValue() + "}" : "";
         sentence.removeAll();
         sentence.add(new Span(getTranslation("relationshipDialog.sentence",
                 up == null ? "…" : up.label(), op, val, act, tok, t == null ? "…" : t.label())));

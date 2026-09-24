@@ -54,8 +54,9 @@ rectangle "Elicit Author" {
     ' Preview (FR-030)
     usecase "UC-028\nPreview Survey as Respondent" as UC028
 
-    ' Guidance (FR-034)
+    ' Guidance (FR-034, FR-047)
     usecase "UC-029\nExplain the Survey Model" as UC029
+    usecase "UC-039\nConsult the Author's Manual" as UC039
 
     ' Branding (FR-037)
     usecase "UC-030\nBrand the Authoring Interface" as UC030
@@ -68,8 +69,8 @@ rectangle "Elicit Author" {
     usecase "UC-038\nView OIDC Diagnostics" as UC038
 
     ' Localization (FR-047..FR-052)
-    usecase "UC-039\nAuthor Surveys in My Language" as UC039
-    usecase "UC-040\nManage Languages" as UC040
+    usecase "UC-040\nAuthor Surveys in My Language" as UC040
+    usecase "UC-041\nManage Languages" as UC041
 }
 
 ' Access
@@ -122,6 +123,7 @@ author --> UC028
 
 ' Guidance
 author --> UC029
+author --> UC039
 
 ' Branding
 admin --> UC030
@@ -138,9 +140,9 @@ UC034 ..> UC037 : <<directs to>>
 UC036 ..> UC030 : <<reports>>
 
 ' Localization
-author --> UC039
-admin --> UC039
 author --> UC040
+admin --> UC040
+author --> UC041
 
 ' Relationships worth calling out explicitly
 UC008 ..> UC007 : <<include>>
@@ -157,6 +159,7 @@ UC019 ..> UC033 : <<include>> refuse backward target
 UC016 ..> UC033 : <<extend>> backward rules shown red
 UC033 ..> UC007 : <<extend>> backward rule is an error
 UC022 ..> UC007 : <<extend>> retroactive warning
-UC040 ..> UC039 : <<extend>> adds a language to the selector
+UC039 ..> UC029 : <<extend>> printable form of the guide
+UC041 ..> UC040 : <<extend>> adds a language to the selector
 
 @enduml

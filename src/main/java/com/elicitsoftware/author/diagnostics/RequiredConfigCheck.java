@@ -37,7 +37,7 @@ public class RequiredConfigCheck {
     public record RequiredSetting(String property, String envVar, String purpose, boolean present) {
     }
 
-    /** {@code purposeKey} names the translation of what the setting is for (UC-039). */
+    /** {@code purposeKey} names the translation of what the setting is for (UC-040). */
     private record Required(String property, String envVar, String purposeKey) {
     }
 

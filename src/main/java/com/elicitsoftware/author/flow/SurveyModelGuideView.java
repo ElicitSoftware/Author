@@ -36,7 +36,7 @@ import java.util.List;
  * UC-029: the survey model explained in the designer's own vocabulary. Eight ideas in a fixed
  * order (BR-002 rules read as a sentence), each headed by the glyph the board uses for it
  * (BR-001 one vocabulary), all stated in text so the diagram is optional (BR-003).
- * Every text comes from the translation bundle (UC-039), keyed {@code guideView.<section>.<n>}.
+ * Every text comes from the translation bundle (UC-040), keyed {@code guideView.<section>.<n>}.
  */
 @Route(value = "guide", layout = MainLayout.class)
 @RolesAllowed(AuthorRoles.AUTHOR)

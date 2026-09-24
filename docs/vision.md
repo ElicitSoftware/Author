@@ -80,6 +80,9 @@ survey updates the same rows at every site instead of installing a second copy.
   without rebuilding.
 - Let authors preview a survey as a respondent using the Survey app in the
   local authoring stack.
+- Teach the tool itself: an in-app guide to the survey model and a printable
+  author's manual, built from the documentation sources and shipped inside the
+  application image so its instructions always match the running version.
 
 ## Scope
 
@@ -93,6 +96,8 @@ survey updates the same rows at every site instead of installing a second copy.
 - Validation, export, and import of `.elicit` definition files.
 - Removing and restoring structural elements (retire semantics).
 - Requirements collection and first-draft structure generation.
+- Author-facing documentation: the in-app survey-model guide and the printable
+  author's manual packaged with the application.
 
 **Out of scope** (handled by sibling modules)
 - Installing or updating a definition at a deployed site → Admin app

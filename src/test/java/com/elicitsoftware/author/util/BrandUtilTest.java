@@ -190,7 +190,7 @@ class BrandUtilTest {
         assertEquals("Acme Corp Author", util(brandDir).getApplicationTitle(external, "Author"));
     }
 
-    // UC-039 BR-006: the brand's "localized" block supplies per-language display names.
+    // UC-040 BR-006: the brand's "localized" block supplies per-language display names.
     @Test
     void detectCurrentBrand_localizedBlock_resolvesTagThenLanguageThenBase(@TempDir Path brandDir) throws IOException {
         writeConfig(brandDir, "{\"name\": \"Health Test\", \"organization\": \"Health Test Organization\", "

@@ -22,7 +22,7 @@ import java.util.Map;
  * Turns database constraint violations into {@link AuthoringException}s with a message an author
  * can act on, keyed by the constraint names Survey's schema declares. Each constraint maps to the
  * field it concerns and to a translation key ({@code constraint.<constraint name>}) resolved for
- * the current UI locale at lookup time (UC-039).
+ * the current UI locale at lookup time (UC-040).
  */
 public final class ConstraintViolationTranslator {
 

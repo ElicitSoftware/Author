@@ -96,7 +96,7 @@ public class BrandDiagnostics {
         }
     }
 
-    /** {@code roleKey} is the suffix of the {@code systemBrandingView.asset.*} translation (UC-039). */
+    /** {@code roleKey} is the suffix of the {@code systemBrandingView.asset.*} translation (UC-040). */
     private record Expected(String path, String roleKey) {
         String role() {
             return Translations.get("systemBrandingView.asset." + roleKey);
