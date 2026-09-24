@@ -71,6 +71,18 @@ Produces `target/quarkus-app/quarkus-run.jar`, runnable with
 ./buildDockerImage.sh
 ```
 
+This also typesets the **author's manual** and packages it with the image; see
+[`docs/manual/README.md`](docs/manual/README.md). It needs Docker (the manual is typeset
+in a TeX Live container); `SKIP_MANUAL=1 ./buildDockerImage.sh` builds without it, and the
+application then simply does not offer the link.
+
+### The author's manual
+
+`docs/manual/` holds *Building a Survey*, a LaTeX manual with step-by-step instructions and
+screenshots, stamped with the version and build date of the image it ships in. Signed-in
+authors open it from the **Manual** link in the header or **Manual (PDF)** in the navigation,
+which serve it from `/api/manual`.
+
 ## Configuration
 
 Key environment variables (see `src/main/resources/application.properties`):
@@ -93,7 +105,8 @@ every drag has a menu equivalent. A guide page (`guide`, "How surveys work") exp
 Rules are drawn as arrows between elements, and the survey's **Reporting** page
 (`survey/{id}/reporting`) manages the reporting tags, dimensions and assignments that drive the
 site's dimensional reporting schema, with a preview of the tables and columns they produce; the
-same tags are reachable from a question's or section's menu on the board. Work follows the AIUP workflow described
+same tags are reachable from a question's or section's menu on the board. The printable
+[author's manual](docs/manual/README.md) ships inside the image alongside that guide. Work follows the AIUP workflow described
 in [`CLAUDE.md`](CLAUDE.md); use case specs live in [`docs/use_cases/`](docs/use_cases/).
 
 ## Related Guides

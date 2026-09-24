@@ -1,0 +1,13 @@
+{
+  "name": "elicit-author-manual-capture",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Regenerates the author's manual screenshots (UC-039) from a running Author. Kept out of the Vaadin-managed package.json at the project root.",
+  "type": "module",
+  "scripts": {
+    "capture": "playwright install --with-deps chromium && node capture-screenshots.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

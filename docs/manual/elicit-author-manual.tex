@@ -1,0 +1,392 @@
+%% The Elicit Author manual — UC-039, "Consult the Author's Manual".
+%%
+%% Build it with docs/manual/build-manual.sh, which renders it through a TeX Live container
+%% and stamps it with the application version and build date (UC-039 BR-003). See README.md.
+
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[a4paper, margin = 25mm, bottom = 28mm]{geometry}
+\usepackage{elicit-brand}
+\usepackage[hidelinks]{hyperref}
+
+\hypersetup{
+  pdftitle = {Elicit Author — Building a Survey},
+  pdfauthor = {Elicit Software},
+  pdfsubject = {Step-by-step instructions for building a survey in Elicit Author},
+  colorlinks = true,
+  linkcolor = elicitInkDark,
+  urlcolor = elicitInkDark,
+}
+
+\graphicspath{{./}}
+
+\begin{document}
+
+%% ------------------------------------------------------------------ title page
+\begin{titlepage}
+\thispagestyle{empty}
+\centering
+\vspace*{3.5cm}
+
+\includegraphics[width = 34mm]{images/elicit-logo.png}
+
+\vspace{1.4cm}
+
+{\color{elicitInkDarkest}\Huge\bfseries Building a Survey\par}
+
+\vspace{0.5cm}
+
+{\color{elicitSlate}\Large The Elicit Author manual\par}
+
+\vspace{2.6cm}
+
+{\color{elicitSlate}\large
+Version \textbf{\elicitVersion}\\[0.35em]
+Built \textbf{\elicitBuildDate}\par}
+
+\vfill
+
+{\color{elicitSlate}\small
+This manual was produced by the same build as the application it ships inside,\\
+and describes that version. Elicit Software.\par}
+
+\vspace{1cm}
+\end{titlepage}
+
+%% ------------------------------------------------------------------ contents
+\pagenumbering{roman}
+\setcounter{page}{1}
+{\color{elicitInkDarkest}\section*{Contents}}
+\vspace{-0.6em}
+\begingroup
+\hypersetup{linkcolor = elicitCharcoal}
+\makeatletter\@starttoc{toc}\makeatother
+\endgroup
+
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+%% ------------------------------------------------------------------ 1
+\section{What a survey is made of}
+\markboth{What a survey is made of}{}
+
+An Elicit survey is a decision tree a respondent walks through. What they answer decides what
+they see next, so designing a survey means designing that path. Everything in this manual uses
+the same names and the same glyphs the application puts on screen.
+
+\subsection{The containers}
+
+Everything sits inside something else:
+
+\begin{itemize}
+  \item A \term{survey} holds steps.
+  \item A \term{step} is a page in the respondent's progress bar. On the designer board it is a
+        lane that groups related sections.
+  \item A \term{section} is a titled group of questions on that page. On the board it is a card
+        inside a lane.
+  \item A \term{question} is one input the respondent answers. On the board it is a row inside a
+        card, carrying a glyph that shows its type.
+\end{itemize}
+
+Steps run in order, sections run in order within their step, and questions run in order within
+their section. Unless a rule says otherwise, that display order is exactly what the respondent
+experiences.
+
+\subsection{The rules}
+
+A \term{rule} reads the answer to one upstream question, compares it with a reference value using
+an operator, and when the comparison holds performs an action on one downstream target — a step,
+a section or a question. Every rule is the same sentence:
+
+\begin{quote}
+\ui{question} \; (\ui{operator}) \; \ui{value} \; $\rightarrow$ \; (\ui{action}) \; \ui{target}
+\end{quote}
+
+There are three actions:
+
+\begin{itemize}
+  \item \term{Show} — the target appears only when the rule holds. Until then the respondent
+        never sees it.
+  \item \term{Repeat} — the target section or question is repeated as many times as the answer
+        says, for example one \ui{Child} section per child.
+  \item \term{Text} — the answer is written into the target's text wherever a
+        \texttt{\{TOKEN|default\}} placeholder appears, so a later question can say
+        ``your daughter'' rather than ``your child''.
+\end{itemize}
+
+There is no Hide rule. Hiding is the same as not showing: give the element a Show rule and it
+stays hidden until that rule holds. The operators are Boolean, Greater than, Equal, Not equal,
+Field exists and Contains. When several rules point at the same target, all of them must hold.
+
+\begin{elicitnote}[The same page, inside the application]
+Everything in this section is also on the \ui{How surveys work} page in the application
+navigation, with the glyphs drawn live. This manual is its printable form, and adds the
+step-by-step procedure that follows.
+\end{elicitnote}
+
+\subsection{Identity and publishing}
+
+Every element gets a key the moment it is created and keeps it for life. Removing an element
+\term{retires} it rather than deleting it, so answers already recorded at a site keep their
+meaning. When the survey is ready you \term{export} a \texttt{.elicit} file; the Admin app
+installs it at a site the first time and updates it in place after that, matching elements by
+key.
+
+\begin{elicitnote}[Vocabulary]
+Author never uses ``publish'' for a state in the database — the verb is \emph{export}. The
+credential a respondent enters to reach a survey is the \term{access code}, never a token;
+``token'' means only the \texttt{\{KEY|default\}} placeholder in question text.
+\end{elicitnote}
+
+%% ------------------------------------------------------------------ 2
+\section{Signing in}
+\markboth{Signing in}{}
+
+Author uses the platform's identity provider, the same one as the Admin and Survey apps. Open
+Author in a browser and you are sent to the sign-in page.
+
+\screenshot{01-sign-in}{The identity provider's sign-in page. Author itself never asks for a
+password.}
+
+Authoring requires the \texttt{elicit\_author} role. It is granted explicitly and is \emph{not}
+implied by \texttt{elicit\_admin}: an administrator who has not been given it can open the
+System pages but not a survey. If you sign in and the surveys are not there, that role is the
+first thing to check with whoever administers your identity provider.
+
+After signing in you land on the \ui{Surveys} list, the application's front door.
+
+\screenshot{02-surveys-list}{The Surveys list. Every survey you can edit, with who last edited
+it and the note from its last export.}
+
+%% ------------------------------------------------------------------ 3
+\section{Creating a survey}
+\markboth{Creating a survey}{}
+
+Choose \ui{New survey}. A survey needs two things to exist: a \ui{Name}, which is the machine
+name and may not contain spaces, and a \ui{Title}, which is what a respondent sees.
+
+\screenshot{03-new-survey}{Creating a survey. Name and Title are required; the rest can be filled
+in later from \ui{Edit details}.}
+
+\begin{itemize}
+  \item \ui{Name} — the machine name, for example \texttt{FamilyHistory}. No spaces.
+  \item \ui{Title} — the respondent-facing title, for example ``Family Health History''.
+  \item \ui{Description} — a note for your colleagues; respondents never see it.
+  \item \ui{Initial display key} — where the respondent starts. Leave it empty unless you have a
+        reason not to.
+  \item \ui{Post-survey address} — where the respondent is sent when they finish.
+\end{itemize}
+
+Save, and the survey appears in the list. Open it and you get its overview: the survey key, when
+it was last exported, the four things you can do to it, and a validation panel.
+
+\screenshot{04-survey-overview}{A survey's overview page. The validation panel is the thing to
+watch — it is what stands between you and a clean export.}
+
+The validation panel is live. It tells you what is still wrong with the definition — a survey
+with no steps, a choice question with no list, a rule that points backwards — and it has to read
+``Ready to export: no findings'' before the export is worth doing.
+
+%% ------------------------------------------------------------------ 4
+\section{Laying out steps and sections}
+\markboth{Laying out steps and sections}{}
+
+Choose \ui{Design…} from the survey overview. The drawer on the left is your toolbox; the board
+on the right is the survey; the panel beside the board previews the selection as a respondent
+will see it.
+
+\screenshot{05-designer-board}{The designer. Controls, Lists, Sections, Questions and the
+structure tree on the left; the board in the middle; the respondent preview on the right.}
+
+Work top-down: steps, then sections, then questions, then the lists, rules and reporting tags
+that give them meaning.
+
+\subsection{Adding a step}
+
+Use \ui{Add step} at the top of the board, or drag the \ui{STEP} glyph from \ui{Controls} onto
+the board. Both open the same editor.
+
+\screenshot{06-new-step}{A new step. \ui{Dimension name} is what the reporting schema calls this
+step; it defaults to the name, and changing it later is a reporting change rather than a rename.}
+
+\begin{elicitnote}[Everything a drag can do, a menu can do too]
+Every element on the board carries a \ui{$\vdots$} menu with the same actions the drag gestures
+perform, so the designer is usable without a pointer.
+\end{elicitnote}
+
+\screenshot{07-step-menu}{A step's menu: edit it, add another step after it, add a section, move
+it up or down, open its details page, or remove it.}
+
+\subsection{Adding a section}
+
+A step with no sections shows the respondent nothing. Add one from the step's menu, or drag the
+\ui{SECTION} glyph into the lane.
+
+\screenshot{08-new-section}{A new section. The name is the page heading the respondent reads.}
+
+One click on a lane opens it to reveal its section cards; one click on a card opens it to reveal
+its question rows. A double click on any of them opens its editor.
+
+%% ------------------------------------------------------------------ 5
+\section{Giving choice questions their options}
+\markboth{Giving choice questions their options}{}
+
+A choice question — radio, combo box, multi-select or checkbox group — needs a \term{list of
+options} before it can be saved. Define the list first, from the \ui{Lists} panel in the drawer.
+
+\screenshot{09-list-of-options}{A new list of options. The options are in the order respondents
+see them; the arrows reorder them and the coded value defaults to the display text.}
+
+A list belongs to the survey, not to one question, so several questions can offer the same
+options. Drag a list's glyph onto a question to give it those options, or pick the list in the
+question's own editor.
+
+%% ------------------------------------------------------------------ 6
+\section{Adding questions}
+\markboth{Adding questions}{}
+
+Add a question from a section's menu, or drag the \ui{QUESTION} glyph — set to the type you want
+— into the card.
+
+\screenshot{10-question-editor}{A text question. \ui{Short text} is what the board and the
+structure tree show; \ui{Question text} is what the respondent reads.}
+
+The fields worth knowing:
+
+\begin{itemize}
+  \item \ui{Type} — text, integer, radio, combo box, date and the rest. The editor changes with
+        the type, and the preview at the bottom shows the field the respondent will get.
+  \item \ui{Short text} — the label on the board and in the structure tree. Keep it short.
+  \item \ui{Question text} — what the respondent reads. This is where a
+        \texttt{\{TOKEN|default\}} placeholder goes if a Text rule is to fill it.
+  \item \ui{Required} and \ui{Validation message} — whether an answer is compulsory, and what
+        the respondent is told when it is missing.
+  \item \ui{Sample answer} — previews what a Text rule reading this question would write
+        elsewhere.
+\end{itemize}
+
+Choose a choice type and the editor asks for the list of options you defined earlier.
+
+\screenshot{11-choice-question}{A radio question with its list of options attached. Without a
+list the editor refuses to save.}
+
+Once a section is open you can see the whole page taking shape: rows in order, each with its type
+glyph, and the respondent's view of the same page beside it.
+
+\screenshot{12-section-opened}{A section opened on the board, with the rules drawn as arrows and
+the respondent preview beside it.}
+
+\subsection{Asking the same question twice}
+
+The \ui{Sections} and \ui{Questions} panels in the drawer list every section and every question
+in the survey once, with the number of places each appears in. Drag one into another container,
+or use \ui{Also add to section…}, and it is the \emph{same} element shown in a second place — a
+change to its text reaches every section it is in.
+
+\screenshot{15-question-bank}{The Questions panel. Each question appears once, with how many
+sections use it; the search box narrows the panel as you type.}
+
+%% ------------------------------------------------------------------ 7
+\section{Connecting questions with rules}
+\markboth{Connecting questions with rules}{}
+
+Anything conditional is a rule. Start one from the upstream question — the one whose answer is
+read — using \ui{Add rule…} in its menu, or by dragging a rule glyph from \ui{Controls} onto the
+question and then dragging the arrowhead onto the target.
+
+\screenshot{13-question-menu}{A question's menu. Rules and reporting tags both start here.}
+
+The editor is the rule sentence, in the order the runtime evaluates it.
+
+\screenshot{14-new-rule}{A Repeat rule: when \ui{Child count} is greater than 0, repeat the
+section \ui{Child} that many times.}
+
+\begin{elicitcaution}[Rules only point forwards]
+The target must come after the upstream question in the survey's order. Author refuses a rule
+that points backwards and says so, because the respondent would reach the target before there is
+an answer to read. A count question therefore sits in the section \emph{before} the block it
+repeats — a section cannot repeat itself.
+\end{elicitcaution}
+
+Rules are drawn on the board as arrows from the question that is read to the element that is
+acted on, labelled with the action. Untick \ui{Show rules} at the top of the board to hide them
+while you work on structure.
+
+%% ------------------------------------------------------------------ 8
+\section{Tagging for reporting}
+\markboth{Tagging for reporting}{}
+
+A \term{reporting tag} names a column of the report a site builds from the answers. Tag a
+question and its answers fill that column; tag a section as it appears in a step with a fixed
+value, and every respondent who reaches it is classified by that value. Tags that share a
+\term{dimension} share one table of values.
+
+Open the survey's \ui{Reporting…} page to see every tag, every assignment, and the schema they
+will produce.
+
+\screenshot{16-reporting}{The reporting page: the tags, where they are assigned, and the
+dimension tables and report columns the site's reporting build will create.}
+
+Define a tag with \ui{New tag…} and attach it with \ui{Assign tag…}, or use \ui{Reporting tags…}
+in a question's or section's own menu.
+
+\screenshot{17-assign-tag}{Assigning a tag. A question can report the respondent's answer; a
+section in a step can classify everyone who reaches it by a fixed value.}
+
+\begin{elicitcaution}[Tag changes are retroactive]
+Changing or removing an assigned tag relabels answers that deployed sites have \emph{already}
+recorded, once the survey is exported and applied. Historical reports change with it. Treat a
+tag change as a decision about past data, not only about future data.
+\end{elicitcaution}
+
+%% ------------------------------------------------------------------ 9
+\section{Checking and exporting}
+\markboth{Checking and exporting}{}
+
+Go back to the survey overview and read the validation panel. It must say ``Ready to export: no
+findings''. Anything else names the element and the problem — fix it on the board and the panel
+updates.
+
+Then choose \ui{Export…}.
+
+\screenshot{18-export}{Exporting. The release note is required: it is recorded on the survey and
+inside the file, and it is what a colleague sees in the Surveys list.}
+
+The export writes a \texttt{.elicit} file in the \texttt{ELICIT\_SURVEY\_EXPORT\_V1} format,
+records who exported it and the note, and mints a revision. Hand that file to the Admin app's
+\ui{Apply Survey Definition}: the first time it installs the survey at a site, and every time
+after that it updates it in place, matching elements by their keys. Elements you removed travel
+as retirements, so answers already recorded keep their meaning.
+
+\begin{elicitnote}[The round trip]
+\ui{Import definition} in the application navigation reads a \texttt{.elicit} file back into
+Author for further editing, keeping every key. That is how you pick up a survey someone else
+exported, or start from one of the sample definitions.
+\end{elicitnote}
+
+%% ------------------------------------------------------------------ 10
+\section{Where to look next}
+\markboth{Where to look next}{}
+
+\begin{itemize}
+  \item \ui{How surveys work} in the application navigation — this manual's first section, drawn
+        live with the real glyphs.
+  \item \ui{Import definition} — bring an existing \texttt{.elicit} file into Author.
+  \item \ui{System} (for administrators) — version, database, branding, connections and OIDC
+        diagnostics for a deployment.
+\end{itemize}
+
+\screenshot{19-guide}{The in-app guide. It is always the version you are running, because it
+ships with the application — as does this manual.}
+
+\vspace{1em}
+
+\begin{elicitnote}[Which version is this?]
+This manual describes Elicit Author \textbf{\elicitVersion}, built \textbf{\elicitBuildDate}.
+The same pair is printed at the foot of every page, so a printed copy can always be matched back
+to the build it came from.
+\end{elicitnote}
+
+\end{document}
