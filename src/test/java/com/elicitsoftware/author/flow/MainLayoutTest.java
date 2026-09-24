@@ -15,6 +15,7 @@ import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.AnchorTarget;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -93,6 +95,34 @@ class MainLayoutTest extends QuarkusBrowserlessTest {
         MainLayout layout = attachLayout();
         Anchor title = find(Anchor.class, layout).withClassName("brand-title").single();
         assertTrue(title.getText().endsWith("Author"), "title ends with the application name: " + title.getText());
+    }
+
+    /**
+     * UC-039 step 1: an author reaches the manual from the header and from the navigation. The
+     * test classpath carries a stand-in PDF, so the link is expected here; the build that has no
+     * manual is covered by {@code MissingManualTest}.
+     */
+    @Test
+    @TestSecurity(user = "mainlayout.author", roles = {"elicit_author"})
+    void authorReachesTheManual() {
+        MainLayout layout = attachLayout();
+
+        Anchor manual = find(Anchor.class, layout).withClassName("header-manual-link").single();
+        assertEquals("/api/manual", manual.getHref());
+        assertTrue(manual.isRouterIgnore(), "/api/manual is served outside the Vaadin router");
+        assertEquals(AnchorTarget.BLANK.getValue(), manual.getTarget().orElse(null),
+                "the manual opens in a new tab so the author keeps their place (UC-039 step 2)");
+
+        assertTrue(hasNavItem(layout, "Manual (PDF)"));
+    }
+
+    /** UC-039 A4: the manual is authoring documentation, so it is not offered without the role. */
+    @Test
+    @TestSecurity(user = "mainlayout.admin", roles = {"elicit_admin"})
+    void adminRoleAloneIsNotOfferedTheManual() {
+        MainLayout layout = attachLayout();
+        assertEquals(0, find(Anchor.class, layout).withClassName("header-manual-link").all().size());
+        assertFalse(hasNavItem(layout, "Manual (PDF)"));
     }
 
     @Test

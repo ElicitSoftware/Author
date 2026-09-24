@@ -54,8 +54,9 @@ rectangle "Elicit Author" {
     ' Preview (FR-030)
     usecase "UC-028\nPreview Survey as Respondent" as UC028
 
-    ' Guidance (FR-034)
+    ' Guidance (FR-034, FR-047)
     usecase "UC-029\nExplain the Survey Model" as UC029
+    usecase "UC-039\nConsult the Author's Manual" as UC039
 
     ' Branding (FR-037)
     usecase "UC-030\nBrand the Authoring Interface" as UC030
@@ -118,6 +119,7 @@ author --> UC028
 
 ' Guidance
 author --> UC029
+author --> UC039
 
 ' Branding
 admin --> UC030
@@ -148,5 +150,6 @@ UC019 ..> UC033 : <<include>> refuse backward target
 UC016 ..> UC033 : <<extend>> backward rules shown red
 UC033 ..> UC007 : <<extend>> backward rule is an error
 UC022 ..> UC007 : <<extend>> retroactive warning
+UC039 ..> UC029 : <<extend>> printable form of the guide
 
 @enduml

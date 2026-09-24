@@ -12,6 +12,7 @@ package com.elicitsoftware.author.flow;
  */
 
 import com.elicitsoftware.author.flow.designer.SurveyDesignerView;
+import com.elicitsoftware.author.manual.AuthorManual;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.elicitsoftware.author.util.BrandUtil;
@@ -20,6 +21,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.AnchorTarget;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -50,6 +52,9 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
 
     @Inject
     SurveyStructureQuery structureQuery;
+
+    @Inject
+    AuthorManual manual;
 
     private Component drawerContent;
     private StructureNavigationTree structureTree;
@@ -94,7 +99,31 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         title.addClassName("brand-title");
         headerContainer.add(title);
 
+        addManualLink(headerContainer);
+
         addToNavbar(headerContainer);
+    }
+
+    /**
+     * The manual (UC-039): a link in the header, opening the packaged PDF in a new tab. A build
+     * that carries no manual simply does not offer it (UC-039 A1), and the link is only shown to
+     * an author, because {@code /api/manual} refuses anyone else (UC-039 A4).
+     */
+    private void addManualLink(Div headerContainer) {
+        if (manual == null || !manual.isAvailable()) {
+            return;
+        }
+        if (identity == null || !identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.AUTHOR)) {
+            return;
+        }
+        Anchor manualLink = new Anchor("/api/manual", "Manual");
+        // The Vaadin router intercepts relative hrefs; /api/manual is served outside the router.
+        manualLink.setRouterIgnore(true);
+        manualLink.setTarget(AnchorTarget.BLANK);
+        manualLink.setTitle("Open the author's manual (PDF) in a new tab");
+        manualLink.addClassName("header-manual-link");
+        manualLink.getElement().insertChild(0, VaadinIcon.FILE_TEXT_O.create().getElement());
+        headerContainer.add(manualLink);
     }
 
     /** Standard navigation: what an author can do outside a survey. */
@@ -103,6 +132,12 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         if (identity != null && identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.AUTHOR)) {
             nav.addItem(new SideNavItem("Surveys", SurveysView.class, VaadinIcon.LIST.create()));
             nav.addItem(new SideNavItem("How surveys work", SurveyModelGuideView.class, VaadinIcon.OPEN_BOOK.create()));
+            if (manual != null && manual.isAvailable()) {
+                SideNavItem manualItem = new SideNavItem("Manual (PDF)", "/api/manual", VaadinIcon.FILE_TEXT_O.create());
+                manualItem.setRouterIgnore(true);
+                manualItem.setOpenInNewBrowserTab(true);
+                nav.addItem(manualItem);
+            }
             nav.addItem(new SideNavItem("Import definition", ImportDefinitionView.class, VaadinIcon.UPLOAD.create()));
         }
         if (identity != null && identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.ADMIN)) {

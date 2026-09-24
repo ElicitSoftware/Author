@@ -36,16 +36,20 @@ public final class RulePath {
     /**
      * Fills in the outer elements a target implies: a section's step; for a question outside the
      * upstream question's section, its mount when only one fits. A question in the upstream's own
-     * section keeps no path, and such a rule names no upstream step: it fires from every mount.
+     * section keeps no path — even when the caller named the mount it was chosen in — and such a
+     * rule names no upstream step: it fires from every mount. (The runtime's login-time query hides
+     * every question of a section or step a rule names downstream, so a same-section rule stored
+     * with a path would blank the section for a fresh respondent.)
      */
     public static void complete(Relationship r, RuleOrdering.Board board) {
-        if (r.downstreamSqId != null && r.downstreamSsId == null) {
+        if (r.downstreamSqId != null) {
             SectionsQuestion target = board.assignment(r.downstreamSqId).orElse(null);
             SectionsQuestion origin = board.assignment(r.upstreamSqId).orElse(null);
             if (target != null && origin != null && target.sectionId.equals(origin.sectionId)) {
+                r.downstreamSsId = null;
                 r.downstreamStepId = null;
                 r.upstreamStepId = null;
-            } else if (target != null) {
+            } else if (target != null && r.downstreamSsId == null) {
                 List<StepsSections> mounts = board.mountsOf(target.sectionId).stream()
                         .filter(m -> r.downstreamStepId == null || r.downstreamStepId.equals(m.stepId)).toList();
                 if (mounts.size() == 1) {
