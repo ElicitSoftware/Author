@@ -2,12 +2,12 @@
 
 ## Overview
 
-**Use Case ID:** UC-039  
+**Use Case ID:** UC-040  
 **Use Case Name:** Author Surveys in My Language  
 **Primary Actor:** Survey Author  
 **Goal:** See every page of the authoring tool — navigation, buttons, menus, grid headers, dialogs, messages, page titles, the survey-model guide and the organization name — in a language they read, laid out right-to-left when that language requires it, so that they can design and export surveys without understanding English.  
 **Status:** Implemented  
-**Requirements:** [FR-047, FR-048, FR-049, FR-050, FR-051, NFR-016, NFR-017, C-022, C-023](../requirements.md)
+**Requirements:** [FR-048, FR-049, FR-050, FR-051, FR-052, NFR-017, NFR-018, C-022, C-023](../requirements.md)
 
 ## Preconditions
 

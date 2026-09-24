@@ -2,17 +2,17 @@
 
 ## Overview
 
-**Use Case ID:** UC-040  
+**Use Case ID:** UC-041  
 **Use Case Name:** Manage Languages  
 **Primary Actor:** Survey Author (with the `elicit_author` role)  
 **Goal:** Add, replace or remove a language for the authoring tool by uploading a translation file through the tool, so that a site can offer a new language without anyone touching the server.  
 **Status:** Draft  
-**Requirements:** [FR-053, C-024](../requirements.md)
+**Requirements:** [FR-054, C-024](../requirements.md)
 
 ## Preconditions
 
 - The author is authenticated (UC-001) and holds the `elicit_author` role; users without that role do not see the Languages page.
-- The tool reads its translations from the deployment's translations directory (UC-039), which is writable by the tool.
+- The tool reads its translations from the deployment's translations directory (UC-040), which is writable by the tool.
 - The tool ships English only; every other language is a file in that directory.
 
 ## Main Success Scenario
@@ -104,7 +104,7 @@ For every text, the set of `{n}` placeholders must equal the English set, and a 
 
 ### BR-005: A partial file is an override, not an error
 
-A file that translates only some texts is accepted; the missing texts fall back to English (UC-039 BR-001). The summary makes the count visible before the file is stored.
+A file that translates only some texts is accepted; the missing texts fall back to English (UC-040 BR-001). The summary makes the count visible before the file is stored.
 
 ### BR-006: The file is the unit of change
 

@@ -152,7 +152,7 @@ public class RelationshipQuery {
         };
     }
 
-    /** UC-019 BR-003: the condition "(operator) value" and, for Text, the token — shown in the tooltip. */
+    /** UC-019 BR-003: the condition "(operator) value" and the token the rule carries, if any — shown in the tooltip. */
     public static String condition(Relationship r) {
         String op = r.operatorType == null ? "?" : switch (r.operatorType.name) {
             case "BOOLEAN" -> "is true";
@@ -166,7 +166,7 @@ public class RelationshipQuery {
         };
         boolean unary = "is true".equals(op) || "exists".equals(op);
         String value = unary || r.referenceValue == null || r.referenceValue.isBlank() ? "" : " " + r.referenceValue;
-        String token = r.actionType != null && "TEXT".equals(r.actionType.name) && r.token != null && !r.token.isBlank() ? " {" + r.token + "}" : "";
+        String token = r.token != null && !r.token.isBlank() ? " {" + r.token + "}" : "";
         return op + value + token;
     }
 }

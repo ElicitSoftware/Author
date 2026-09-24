@@ -17,7 +17,7 @@ import com.vaadin.flow.component.html.Span;
 
 /**
  * Shared rendering for the System screens: a status badge per {@link CheckResult}. The labels are
- * looked up through {@link Translations} because the helpers are static (UC-039).
+ * looked up through {@link Translations} because the helpers are static (UC-040).
  */
 final class SystemBadges {
 

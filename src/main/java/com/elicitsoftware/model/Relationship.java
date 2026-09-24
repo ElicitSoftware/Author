@@ -29,7 +29,8 @@ import java.util.UUID;
  * A conditional-logic rule ({@code survey.relationships}): an upstream question/answer drives a
  * SHOW, REPEAT or TEXT action on exactly one downstream step, section assignment or question
  * assignment. All five cross-references are durable keys. {@code token} is the question-text
- * placeholder name used by TEXT actions (never the respondent's access code).
+ * placeholder name the rule fills — any action may carry one, TEXT must (never the respondent's
+ * access code).
  */
 @Entity
 @Table(name = "relationships", schema = "survey")
