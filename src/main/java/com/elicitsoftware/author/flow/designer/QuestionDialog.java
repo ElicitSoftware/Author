@@ -17,6 +17,7 @@ import com.elicitsoftware.author.survey.TokenSamples;
 import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.SelectGroup;
+import com.elicitsoftware.model.SelectItem;
 import com.elicitsoftware.model.StructuralElement;
 import com.vaadin.flow.component.HasValidation;
 import com.vaadin.flow.component.button.Button;
@@ -41,6 +42,7 @@ import com.vaadin.flow.data.binder.ValidationException;
 import io.quarkus.panache.common.Sort;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +86,9 @@ public class QuestionDialog extends Dialog {
 
     private final Binder<Question> binder = new Binder<>(Question.class);
     private final Div preview = new Div();
+    private final int surveyId;
+    /** Option texts per select group, read the first time the preview needs them. */
+    private final Map<Integer, List<String>> optionTexts = new HashMap<>();
     private final Map<String, String> tokenValues;
     private final Map<String, HasValidation> fieldsByProperty;
     private final com.elicitsoftware.author.survey.ListService lists;
@@ -96,6 +101,7 @@ public class QuestionDialog extends Dialog {
     public QuestionDialog(int surveyId, Question existing, QuestionType presetType, Function<Question, Question> persist, Consumer<Question> onSaved,
                           com.elicitsoftware.author.survey.ListService lists) {
         this.lists = lists;
+        this.surveyId = surveyId;
         boolean creating = existing == null;
         setHeaderTitle(creating ? getTranslation("questionDialog.title.new") : getTranslation("questionDialog.title.edit"));
         setModal(true);
@@ -226,6 +232,7 @@ public class QuestionDialog extends Dialog {
         add(form, previewBox);
         questionType.addValueChangeListener(e -> rebuildPreview());
         variant.addValueChangeListener(e -> rebuildPreview());
+        selectGroup.addValueChangeListener(e -> rebuildPreview());
         shortText.addValueChangeListener(e -> rebuildPreview());
         text.addValueChangeListener(e -> rebuildPreview());
         toolTip.addValueChangeListener(e -> rebuildPreview());
@@ -272,7 +279,24 @@ public class QuestionDialog extends Dialog {
         String label = shortText.getValue() != null && !shortText.getValue().isBlank()
                 ? shortText.getValue() : (text.getValue() == null ? "" : text.getValue());
         preview.add(PreviewFields.field(t.name, substituteTokens(label), placeholder.getValue(), toolTip.getValue(),
-                Boolean.TRUE.equals(required.getValue()), variant.getValue(), List.of()));
+                Boolean.TRUE.equals(required.getValue()), variant.getValue(), previewOptions()));
+    }
+
+    /**
+     * The chosen list's option texts, so a choice type previews the answers the respondent will see
+     * rather than the sample options (UC-011 BR-004). Empty until a list is chosen, and for a list
+     * created here it is read once the creation has committed.
+     */
+    private List<String> previewOptions() {
+        SelectGroup group = selectGroup.getValue();
+        if (group == null || group.selectGroupId == null) {
+            return List.of();
+        }
+        return optionTexts.computeIfAbsent(group.selectGroupId, id ->
+                SelectItem.<SelectItem>list("surveyId = ?1 and selectGroupId = ?2 and effectiveTo = ?3 order by displayOrder", // i18n:ignore
+                                surveyId, id, StructuralElement.SENTINEL).stream()
+                        .map(i -> i.displayText == null ? "" : i.displayText)
+                        .toList());
     }
 
     /** Replace {TOKEN} / {TOKEN|default} with what the rules reaching this question write, else the default. */
@@ -299,12 +323,18 @@ public class QuestionDialog extends Dialog {
         boolean checkboxSingle = "CHECKBOX".equals(name);
         boolean textLike = "TEXT".equals(name) || "TEXTAREA".equals(name) || "EMAIL".equals(name) || "PASSWORD".equals(name);
         boolean datey = "DATE_PICKER".equals(name) || "DATETIME".equals(name);
+        boolean lengths = lengthBounded(name);
 
         selectGroup.setVisible(choice);
         newList.setVisible(choice && lists != null);
         selectGroup.setRequiredIndicatorVisible(choice);
-        minValue.setVisible(numeric);
-        maxValue.setVisible(numeric);
+        minValue.setVisible(numeric || lengths);
+        maxValue.setVisible(numeric || lengths);
+        // The same two columns mean characters for the text types and values for the numbers, so say which.
+        minValue.setLabel(lengths ? getTranslation("questionDialog.minimumLength") : getTranslation("questionDialog.minimum"));
+        maxValue.setLabel(lengths ? getTranslation("questionDialog.maximumLength") : getTranslation("questionDialog.maximum"));
+        FieldHelp.help(minValue, lengths ? getTranslation("questionDialog.help.minimumLength") : getTranslation("questionDialog.help.minimum"));
+        FieldHelp.help(maxValue, lengths ? getTranslation("questionDialog.help.maximumLength") : getTranslation("questionDialog.help.maximum"));
         mask.setVisible(textLike);
         placeholder.setVisible(textLike || datey || "COMBOBOX".equals(name) || "MULTI_SELECT".equals(name));
         validationText.setVisible(!html && !checkboxSingle);
@@ -313,6 +343,18 @@ public class QuestionDialog extends Dialog {
         required.setVisible(!html);
         variant.setVisible(!html);
         sample.setVisible(!html);
+    }
+
+    /**
+     * Types whose minimum and maximum are character counts rather than numeric bounds (BR-004): Survey's
+     * TEXT, TEXTAREA and PASSWORD fields validate the answer's length against them. EMAIL is not one —
+     * its field reads the pair only as a switch for the address-pattern check and ignores the values —
+     * and the date and time types encode theirs as epoch days, HHMM and nanoseconds, which is no
+     * representation to put in front of an author.
+     */
+    static boolean lengthBounded(String typeName) {
+        String name = typeName == null ? "" : typeName.toUpperCase();
+        return "TEXT".equals(name) || "TEXTAREA".equals(name) || "PASSWORD".equals(name);
     }
 
     private void showError(AuthoringException ae) {
