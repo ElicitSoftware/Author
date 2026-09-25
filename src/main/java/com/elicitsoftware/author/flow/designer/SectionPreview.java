@@ -141,7 +141,7 @@ public class SectionPreview extends Div {
         }
         String typeName = q.questionType == null ? "" : q.questionType.name;
         Component field;
-        if ("HTML".equalsIgnoreCase(typeName)) {
+        if (PreviewFields.isDisplayOnly(typeName)) {
             field = PreviewFields.html(PreviewFields.substituteTokens(q.text, values));
         } else {
             List<String> options = q.selectGroupId == null ? List.of() : optionTexts.getOrDefault(q.selectGroupId, List.of());
