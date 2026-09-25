@@ -75,6 +75,9 @@ survey updates the same rows at every site instead of installing a second copy.
   target by Admin's update — never deleted, so recorded answers survive.
 - Generate first-draft survey structures from a guided
   requirements-collection flow ("survey-to-build-surveys" meta-survey).
+- Teach the definition format to an AI agent: a self-contained specification an
+  author can hand to any AI session, away from Author, and get back a draft
+  `.elicit` file that Author imports and they refine here.
 - Let authors preview a survey as a respondent using the Survey app in the
   local authoring stack.
 - Teach the tool itself: an in-app guide to the survey model and a printable
@@ -93,6 +96,9 @@ survey updates the same rows at every site instead of installing a second copy.
 - Validation, export, and import of `.elicit` definition files.
 - Removing and restoring structural elements (retire semantics).
 - Requirements collection and first-draft structure generation.
+- The AI-facing specification of the survey model and the `.elicit` record
+  format, and importing the drafts written from it. A draft carries its own format
+  marker so it reaches a deployed site only after review and export here.
 - Author-facing documentation: the in-app survey-model guide and the printable
   author's manual packaged with the application.
 

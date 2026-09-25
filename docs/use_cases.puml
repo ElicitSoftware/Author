@@ -54,9 +54,10 @@ rectangle "Elicit Author" {
     ' Preview (FR-030)
     usecase "UC-028\nPreview Survey as Respondent" as UC028
 
-    ' Guidance (FR-034, FR-047)
+    ' Guidance (FR-034, FR-047, FR-048)
     usecase "UC-029\nExplain the Survey Model" as UC029
     usecase "UC-039\nConsult the Author's Manual" as UC039
+    usecase "UC-042\nDraft a Definition Outside Author" as UC042
 
     ' Branding (FR-037)
     usecase "UC-030\nBrand the Authoring Interface" as UC030
@@ -120,6 +121,7 @@ author --> UC028
 ' Guidance
 author --> UC029
 author --> UC039
+author --> UC042
 
 ' Branding
 admin --> UC030
@@ -151,5 +153,7 @@ UC016 ..> UC033 : <<extend>> backward rules shown red
 UC033 ..> UC007 : <<extend>> backward rule is an error
 UC022 ..> UC007 : <<extend>> retroactive warning
 UC039 ..> UC029 : <<extend>> printable form of the guide
+UC042 ..> UC029 : <<extend>> the same model, written for an AI agent
+UC042 ..> UC005 : <<include>> the draft is opened by importing it
 
 @enduml

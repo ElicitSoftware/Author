@@ -53,6 +53,9 @@ public class ImportDefinitionView extends VerticalLayout {
         add(new Paragraph("Upload an ELICIT_SURVEY_EXPORT_V1 (.elicit) file to open it in Author as a working copy. "
                 + "Every survey and element key in the file is kept exactly as it is, so a later export updates the "
                 + "same rows at every site that already applied it. A survey whose key is already open here is refused."));
+        add(new Paragraph("An ELICIT_SURVEY_DRAFT_V1 file is accepted too -- a definition drafted outside Author, "
+                + "which leaves its keys blank for Author to mint. Only Author reads that marker, so a draft cannot be "
+                + "installed at a site until it passes validation here and is exported."));
         upload = new Upload(UploadHandler.inMemory((metadata, data) ->
                 getUI().ifPresent(ui -> ui.access(() -> handleUpload(data, metadata.fileName())))));
         upload.setAcceptedFileTypes(ElicitFormat.FILE_EXTENSION);
@@ -67,6 +70,11 @@ public class ImportDefinitionView extends VerticalLayout {
         try {
             ImportResult imported = importer.importFile(new ByteArrayInputStream(data));
             result.add(new H3("Imported " + imported.surveyName()));
+            if (imported.draftFormat()) {
+                result.add(new Paragraph("This came from an " + ElicitFormat.DRAFT_FORMAT_VERSION
+                        + " draft, so its keys were minted here. Review it, fix anything validation reports, "
+                        + "then export it to get a file a site can apply."));
+            }
             UnorderedList counts = new UnorderedList();
             imported.imported().forEach((table, n) -> {
                 if (n > 0) {
