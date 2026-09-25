@@ -28,6 +28,7 @@ import com.elicitsoftware.author.survey.RuleOrdering;
 import com.elicitsoftware.author.survey.RulePath;
 import com.elicitsoftware.author.survey.TokenSamples;
 import com.elicitsoftware.author.survey.Tokens;
+import com.elicitsoftware.author.survey.TranslationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -57,6 +58,9 @@ public class ExportValidation {
 
     @Inject
     ReportingChangeLedger reportingChanges;
+
+    @Inject
+    TranslationService translations;
 
     public static final Set<String> CHOICE_TYPES = Set.of("RADIO", "COMBOBOX", "MULTI_SELECT", "CHECKBOX_GROUP");
 
@@ -180,6 +184,10 @@ public class ExportValidation {
                 .map(ss -> Map.entry(ss.stepsSectionsId, ss.stepId + ":" + ss.sectionDisplayOrder)).toList());
         duplicateOrders(issues, "sections_questions", sectionsQuestions.values().stream()
                 .map(sq -> Map.entry(sq.sectionsQuestionId, sq.sectionId + ":" + sq.displayOrder)).toList());
+        // UC-043 / FR-060: warnings, never errors. An author may legitimately export a survey whose
+        // translations are behind -- every one of those strings falls back to the base language at
+        // the site -- but they should be reminded once more before the file leaves Author.
+        translationGaps(issues, survey);
         return issues;
     }
 
@@ -302,6 +310,23 @@ public class ExportValidation {
             return true;
         }
         return questionsBySection.getOrDefault(sectionId, List.of()).stream().anyMatch(q -> Tokens.uses(q.text, tok));
+    }
+
+    /** One warning per published language that is incomplete or out of date. */
+    private void translationGaps(List<ValidationIssue> issues, Survey survey) {
+        for (String language : translations.contentLanguages(survey)) {
+            TranslationService.Counts counts = translations.counts(survey.id, language);
+            if (counts.missing() > 0) {
+                issues.add(ValidationIssue.warning("translations", survey.id,
+                        language + " is published but " + counts.missing()
+                                + " string(s) are not translated; they will show in the base language"));
+            }
+            if (counts.stale() > 0) {
+                issues.add(ValidationIssue.warning("translations", survey.id,
+                        counts.stale() + " translation(s) in " + language
+                                + " are out of date and will not be shown until they are translated again"));
+            }
+        }
     }
 
     private static String label(Question q) {

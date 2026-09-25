@@ -54,6 +54,12 @@ public class DesignerService {
     @Inject
     RenameLedger renames;
 
+    @Inject
+    TranslationService translations;
+
+    @Inject
+    StaleTranslationLedger staleTranslations;
+
     // ---- create ----------------------------------------------------------------------------
 
     /** UC-016 / UC-015 A4 for steps: a new step placed at {@code position} among the current steps. */
@@ -250,6 +256,7 @@ public class DesignerService {
         Step step = currentStep(surveyId, edited.stepId);
         if (!Objects.equals(step.name, edited.name)) {
             renames.record(surveyId, "steps", step.stepId, step.name, edited.name);
+            recordStale(surveyId, step.stepKey, "name", "step name");
         }
         copy(edited, step);
         return flushTranslated(step);
@@ -261,9 +268,37 @@ public class DesignerService {
         Section section = currentSection(surveyId, edited.sectionId);
         if (!Objects.equals(section.name, edited.name)) {
             renames.record(surveyId, "sections", section.sectionId, section.name, edited.name);
+            recordStale(surveyId, section.sectionKey, "name", "section name");
         }
         copy(edited, section);
         return flushTranslated(section);
+    }
+
+    /**
+     * Records, for each translatable field of a question whose wording changed, which languages
+     * that has just invalidated (FR-060). The author is told at the moment of the edit, because a
+     * translation faithful to the old wording may now ask a different question.
+     */
+    private void noteWordingChanges(int surveyId, Question stored, Question edited) {
+        if (!Objects.equals(stored.text, edited.text)) {
+            recordStale(surveyId, stored.questionKey, "text", "question");
+        }
+        if (!Objects.equals(stored.shortText, edited.shortText)) {
+            recordStale(surveyId, stored.questionKey, "short_text", "short text");
+        }
+        if (!Objects.equals(stored.toolTip, edited.toolTip)) {
+            recordStale(surveyId, stored.questionKey, "tool_tip", "tooltip");
+        }
+        if (!Objects.equals(stored.placeholder, edited.placeholder)) {
+            recordStale(surveyId, stored.questionKey, "placeholder", "placeholder");
+        }
+        if (!Objects.equals(stored.validationText, edited.validationText)) {
+            recordStale(surveyId, stored.questionKey, "validation_text", "validation message");
+        }
+    }
+
+    private void recordStale(int surveyId, java.util.UUID key, String field, String what) {
+        staleTranslations.record(surveyId, what, translations.languagesAboutToGoStale(surveyId, key, field));
     }
 
     /** UC-014 steps 6-7 / BR-001: give a choice question its list of options. */
@@ -285,6 +320,9 @@ public class DesignerService {
     public Question update(int surveyId, Question edited) {
         validate(edited);
         Question question = currentQuestion(surveyId, edited.questionId);
+        // FR-060: compared before the copy, while the stored wording is still the one the existing
+        // translations were made from.
+        noteWordingChanges(surveyId, question, edited);
         copy(edited, question);
         return flushTranslated(question);
     }

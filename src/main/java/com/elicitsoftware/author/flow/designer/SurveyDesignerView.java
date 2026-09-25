@@ -28,6 +28,8 @@ import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.author.survey.TokenSamples;
+import com.elicitsoftware.author.survey.StaleTranslationLedger;
+import com.elicitsoftware.author.flow.translations.TranslationsView;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.elicitsoftware.model.ActionType;
 import com.elicitsoftware.model.Question;
@@ -85,6 +87,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
 
     @Inject
     SurveyStructureQuery structureQuery;
+
+    @Inject
+    StaleTranslationLedger staleTranslations;
 
     @Inject
     DesignerService designer;
@@ -211,6 +216,34 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         selected = selected == null ? null : find(selected.kind(), selected.durableId(), selected.assignmentId());
         openAncestors(selected);
         render();
+        warnAboutStaleTranslations();
+    }
+
+    /**
+     * FR-060: after a save that changed a translated wording, say which languages it invalidated.
+     * <p>
+     * The notification does not dismiss itself and carries a link to the Translations page, because
+     * the consequence is invisible otherwise: every affected string quietly falls back to the base
+     * language at every site until it is translated again.
+     */
+    private void warnAboutStaleTranslations() {
+        for (String[] entry : staleTranslations.drain(survey.id)) {
+            Notification notification = new Notification();
+            notification.addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+            notification.setPosition(Notification.Position.BOTTOM_START);
+            Button open = new Button(getTranslation("designer.staleTranslations.open"), e -> {
+                notification.close();
+                getUI().ifPresent(ui -> ui.navigate(TranslationsView.class,
+                        new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id))));
+            });
+            open.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+            Button dismiss = new Button(getTranslation("common.close"), e -> notification.close());
+            dismiss.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+            notification.add(new HorizontalLayout(
+                    new Span(getTranslation("designer.staleTranslations", entry[0], entry[2], entry[1])),
+                    open, dismiss));
+            notification.open();
+        }
     }
 
     private void render() {
