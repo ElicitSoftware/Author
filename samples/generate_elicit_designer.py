@@ -6,6 +6,7 @@ Field layouts follow the post-Survey-V015 ELICIT_SURVEY_EXPORT_V1 contract (no t
 is_draft field), as read by Author's ElicitFormat and Admin's SurveyDefinitionImportService.
 Required field counts are asserted against the reader's own checks so the output cannot drift.
 """
+import hashlib
 import uuid, sys
 
 # Leading component of every display key. Cosmetic since the importer rebases it onto the
@@ -21,9 +22,9 @@ def ek(name): return str(uuid.uuid5(NS, name))
 # Since Survey V015 the Type 2 records end with published_comment; the old trailing is_draft
 # field is gone (readers still accept it on files written before V015).
 COUNTS = {
-    "surveys": 10, "select_groups": 10, "select_items": 11, "steps": 11,
+    "surveys": 12, "select_groups": 10, "select_items": 11, "steps": 11,
     "sections": 11, "steps_sections": 12, "questions": 20,
-    "sections_questions": 10, "relationships": 19,
+    "sections_questions": 10, "relationships": 19, "translations": 13,
 }
 
 def esc(v):
@@ -56,7 +57,8 @@ add("surveys", 1, SURVEY_KEY, "ElicitDesigner", 1,
     "want to build, and its completed responses are the skeleton an author turns into "
     "a .elicit definition file for import into any Elicit deployment.",
     f"{SURVEY_PREFIX}-0001-0000-0001-0000-0000-0000",
-    "", "elicit-designer", "Initial publication")
+    "", "elicit-designer", "Initial publication",
+    "en", "es-419")
 
 # ----------------------------------------------------------------- select groups
 SG = {}
@@ -290,19 +292,54 @@ rel("Ask for a report name only when a PDF report was requested", "channels", "C
 rel("Ask for an endpoint only when a webhook was requested", "channels", "CONTAINS",
     "SHOW", ref="WEBHOOK", down_sq="report_url")
 
+# ----------------------------------------------------------------- translations
+# A handful of es-419 rows, enough to exercise the record type end to end: one of each
+# element type that carries respondent-facing text, plus the survey's own title and
+# description.  source_hash is the sha256 the runtime compares against the base text; a
+# row whose base text is later edited stops matching and is not served.
+BASE = {}   # (element_type, element_key, field) -> the base text it was written from
+
+def base_text(element_type, key, field, text):
+    BASE[(element_type, key, field)] = text
+
+def translate(element_type, key, field, language, value):
+    source = BASE[(element_type, key, field)]
+    digest = hashlib.sha256(source.encode("utf-8")).hexdigest()
+    add("translations", len(records["translations"]) + 1,
+        ek(f"tr:{element_type}:{key}:{field}:{language}"),
+        element_type, key, field, language, value, digest, *SCD)
+
+SURVEY_TITLE = "Elicit Survey Designer"
+base_text("surveys", SURVEY_KEY, "title", SURVEY_TITLE)
+translate("surveys", SURVEY_KEY, "title", "es-419", "Dise\u00f1ador de encuestas Elicit")
+
+base_text("steps", ek("step:Welcome"), "name", "Welcome")
+translate("steps", ek("step:Welcome"), "name", "es-419", "Bienvenida")
+
+base_text("sections", ek("section:Naming and Purpose"), "name", "Naming and Purpose")
+translate("sections", ek("section:Naming and Purpose"), "name", "es-419", "Nombre y prop\u00f3sito")
+
+base_text("select_items", ek("si:DeliveryChannel:EMAIL"), "display_text", "Email notification")
+translate("select_items", ek("si:DeliveryChannel:EMAIL"), "display_text", "es-419",
+          "Notificaci\u00f3n por correo electr\u00f3nico")
+
 # ----------------------------------------------------------------- emit
 ORDER = ["surveys","select_groups","select_items","steps","sections","steps_sections",
-         "questions","sections_questions","relationships"]
+         "questions","sections_questions","relationships","translations"]
 EMPTY = ["reports","post_survey_actions","dimensions","ontology","metadata"]
 
 out = ["# ELICIT_SURVEY_EXPORT_V1",
        "# survey_id: 1",
        f"# survey_key: {SURVEY_KEY}",
        "# survey_name: ElicitDesigner"]
+# Header counts follow the file's record order (ElicitFormat.TABLES): translations last,
+# because a translation references every other table's element keys.
 for t in ORDER:
-    out.append(f"# {t}: {len(records[t])}")
+    if t != "translations":
+        out.append(f"# {t}: {len(records[t])}")
 for t in EMPTY:
     out.append(f"# {t}: 0")
+out.append(f"# translations: {len(records['translations'])}")
 out += ["# generated: 2026-09-17T19:00:00-04:00",
         "# survey_revision: 2026-09-17T19:00:00-04:00",
         ""]
