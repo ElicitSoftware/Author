@@ -30,7 +30,7 @@
 **Trigger:** The author chooses Add rule… from a question row's menu (step 1)  
 **Flow:**
 
-1. The system opens the rule dialog with the upstream question filled in; the author picks the downstream kind and target from lists, in which a section mounted in several steps appears once per mount, labelled by its path.
+1. The system opens the rule dialog with the upstream question filled in; the author picks the downstream kind and target from lists, in which a section mounted in several steps appears once per mount, labelled by its path. A question is labelled by its path and its type — `welcome › Demographics › married (radio)` — in both the upstream and the target list, since the type is what decides the operators and values the rule can use.
 2. Use case continues at step 5.
 
 ### A2: Text action without a token

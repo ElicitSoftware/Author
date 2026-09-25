@@ -36,6 +36,7 @@ import io.quarkus.panache.common.Sort;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -276,7 +277,17 @@ public class RelationshipDialog extends Dialog {
         for (StructureNode p = n; p != null; p = p.parent()) {
             parts.add(0, p.label());
         }
-        return String.join(" › ", parts);
+        String path = String.join(" › ", parts);
+        // Which question a rule reads decides what its operator and value can be, so name the type too.
+        return typeSuffix(n).isEmpty() ? path : path + " (" + typeSuffix(n) + ")";
+    }
+
+    /** A question node's type as the picker shows it — {@code date picker} — or empty for steps and sections. */
+    private static String typeSuffix(StructureNode n) {
+        if (n == null || n.kind() != StructureNode.Kind.QUESTION || n.detail() == null || n.detail().isBlank()) {
+            return "";
+        }
+        return n.detail().replace('_', ' ').toLowerCase(Locale.ROOT);
     }
 
     /** Whether two question nodes sit in the same section (by the section's durable id, whichever mount each is shown in). */
