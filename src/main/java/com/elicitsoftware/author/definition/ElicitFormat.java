@@ -32,6 +32,14 @@ import java.util.UUID;
 public final class ElicitFormat {
 
     public static final String FORMAT_VERSION = "ELICIT_SURVEY_EXPORT_V1";
+    /**
+     * Marker for a definition drafted outside Author -- an AI session writing straight to the
+     * format, guided by {@code docs/ai/AUTHORING_FOR_AI.md}. Author imports it; Admin refuses it,
+     * because Admin's readers gate on {@link #FORMAT_VERSION} as a substring and this deliberately
+     * does not contain it. A draft therefore cannot reach a deployed site: it must be reviewed in
+     * Author and re-exported under {@link #FORMAT_VERSION} first. Author never writes this marker.
+     */
+    public static final String DRAFT_FORMAT_VERSION = "ELICIT_SURVEY_DRAFT_V1";
     public static final String REVISION_HEADER = "# survey_revision:";
     public static final String SENTINEL_LITERAL = "9999-12-31 23:59:59+00";
     public static final OffsetDateTime SENTINEL = OffsetDateTime.parse("9999-12-31T23:59:59Z");

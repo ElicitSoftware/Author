@@ -103,6 +103,7 @@ answers to generate a first-draft structure for a *different*, new survey.
 |--------|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|--------|
 | FR-034 | Explain the Survey Model | As a new survey author, I want an in-app page that explains how a survey is put together (steps, sections, questions, the default path, and the rules that connect them) so that I understand the designer's vocabulary before I use it. | Low      | Implemented |
 | FR-047 | Consult the Author's Manual | As a survey author, I want a printable, step-by-step manual with screenshots that walks me through building a survey from an empty list to an exported `.elicit` file, reachable from the application header and shipped inside the running application, so that I can follow the procedure away from the screen and know the instructions match the version I am using. | Medium   | Implemented |
+| FR-048 | Specify the Definition Format for AI Agents | As a survey author without access to Author, I want a single self-contained document that explains the survey model and the `.elicit` record format to an AI agent so that I can describe the survey I want in an AI session and receive a draft definition file that Author imports. | Medium   | Implemented |
 ### Access & Integration
 
 | ID     | Title                     | User Story                                                                                                                                                                | Priority | Status |
@@ -146,6 +147,7 @@ answers to generate a first-draft structure for a *different*, new survey.
 | NFR-014 | Diagnostics Never Leak Secrets     | Diagnostic screens must never render a password, client secret, or token value; a secret is reported only as present or absent, and tokens are masked to their last four characters. | Security | High | Implemented |
 | NFR-015 | Bounded Diagnostic Checks          | Every outbound probe started from a diagnostic screen must complete or fail within 5 seconds, so that an unreachable dependency never hangs the tool. | Availability | Medium | Implemented |
 | NFR-016 | Manual Version Stamping            | The author's manual carries the application version and build date of the image it ships in, on the title page and in the footer of every page, so that a printed or downloaded copy is always attributable to one build. | Maintainability | Medium | Implemented |
+| NFR-017 | AI Specification Matches the Code   | Everything in the AI authoring specification (`docs/ai/AUTHORING_FOR_AI.md`) that restates the implementation -- per-record field counts, record order, the format markers, the file-size cap, and the question, operator and action id tables -- is verified against `ElicitFormat`, `SurveyDefinitionExporter` and the seeded lookup rows by automated test, and its worked example is imported and validated in that test, so the document cannot drift out of date unnoticed. | Maintainability | High | Implemented |
 
 ## Constraints
 
@@ -172,6 +174,7 @@ answers to generate a first-draft structure for a *different*, new survey.
 | C-019 | Removal Means Retire               | Author never physically deletes a structural element that may have been exported; removal closes `effective_to`, and exported files carry retired rows so Admin's update can close them at each site.                       | Technical  | High     | Open        |
 | C-020 | Runtime Configuration Is Read-Only | Datasource, OIDC, telemetry and brand-path settings are Quarkus startup configuration and cannot be changed from the tool; diagnostic screens show the effective value and test it, they do not edit it. | Technical | Medium | Verified |
 | C-021 | System Section Gate                | The System setup and diagnostics section is gated on `elicit_admin`, the platform administrator role shared with the Admin console; that role grants no authoring access (UC-002). | Technical | Medium | Verified |
+| C-022 | Drafts Carry a Separate Marker      | A definition drafted outside Author is marked `ELICIT_SURVEY_DRAFT_V1`, never `ELICIT_SURVEY_EXPORT_V1`, and the draft marker must not contain the export marker as a substring, because Admin's readers gate on that substring. Author reads both markers and writes only the export marker, so a draft must be reviewed and exported here before any site can apply it. | Technical | High | Implemented |
 
 ## Open Items for Review
 
