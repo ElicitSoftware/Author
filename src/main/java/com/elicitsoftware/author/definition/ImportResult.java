@@ -17,7 +17,8 @@ import java.util.UUID;
 
 /** Outcome of a successful import (UC-005): the new local survey plus what the file carried. */
 public record ImportResult(int surveyId, UUID surveyKey, String surveyName, OffsetDateTime fileRevision,
-                           Map<String, Integer> imported, Map<String, Integer> skippedRetired) {
+                           Map<String, Integer> imported, Map<String, Integer> skippedRetired,
+                           boolean draftFormat) {
 
     public int totalImported() {
         return imported.values().stream().mapToInt(Integer::intValue).sum();
