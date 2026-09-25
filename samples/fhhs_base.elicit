@@ -16,10 +16,11 @@
 # dimensions: 0
 # ontology: 0
 # metadata: 0
+# translations: 0
 # generated: 2026-09-17T21:00:00-04:00
 # survey_revision: 2026-09-17T21:00:00-04:00
 
-surveys: 1|7d4f2a9c-1e6b-5c83-9f47-2b8e6d1a4c55|FamilyHistorySurvey|1|Family History|This survey is designed to help you and your healthcare provider better understand your hereditary risk for cancer. By collecting information about your own health and the cancer history of your blood relatives - parents, siblings, children, grandparents, aunts, and uncles - this tool can support decisions about additional testing, personalize treatment, and ultimately improve care for you and your family.|0001-0001-0000-0001-0000-0000-0000||fhhs-researcher|Transcribed from ElicitDesigner answers
+surveys: 1|7d4f2a9c-1e6b-5c83-9f47-2b8e6d1a4c55|FamilyHistorySurvey|1|Family History|This survey is designed to help you and your healthcare provider better understand your hereditary risk for cancer. By collecting information about your own health and the cancer history of your blood relatives - parents, siblings, children, grandparents, aunts, and uncles - this tool can support decisions about additional testing, personalize treatment, and ultimately improve care for you and your family.|0001-0001-0000-0001-0000-0000-0000||fhhs-researcher|Transcribed from ElicitDesigner answers|en|
 steps: 1|061abbd9-be9f-579a-8e39-a92a0662e024|1|Welcome|Welcome||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
 steps: 2|e82384b0-b3a0-5146-aa8b-dc0bafeea44a|2|Demographics|Demographics||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
 steps: 3|a1456485-f34d-53ba-9818-10cff2960733|3|Proband|Proband||0|||fhhs-researcher|Transcribed from ElicitDesigner answers

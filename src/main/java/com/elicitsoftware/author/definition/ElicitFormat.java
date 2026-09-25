@@ -28,6 +28,11 @@ import java.util.UUID;
  * <p>Record layouts (field counts are the <em>minimum</em> a reader requires; a writer emits
  * exactly this many). Since Survey V015 the Type 2 records end with {@code published_comment};
  * files written before V015 carry one more trailing {@code is_draft} field, which readers ignore.</p>
+ *
+ * <p>Survey V019 redefined two records in place, under the same header: {@code surveys} gained the
+ * trailing {@code base_language|content_languages} (arity 10 to 12), and {@code translations} was
+ * added last in {@link #TABLES}, because it references every other table's element keys. Nothing
+ * needs a compatibility layer -- no file with this header exists outside this repository.</p>
  */
 public final class ElicitFormat {
 
@@ -44,21 +49,37 @@ public final class ElicitFormat {
     public static final String SENTINEL_LITERAL = "9999-12-31 23:59:59+00";
     public static final OffsetDateTime SENTINEL = OffsetDateTime.parse("9999-12-31T23:59:59Z");
     public static final int MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+    /**
+     * Fields of a {@code translations} record, in file order:
+     * {@code translation_id|translation_key|element_type|element_key|field|language|value|source_hash}
+     * followed by the Type 2 tail. {@code translation_id} is a local link only and is remapped on
+     * import; {@code translation_key} and {@code element_key} are preserved verbatim, and
+     * {@code source_hash} travels as it stands so a translation that is stale at the master is
+     * stale at every site. {@code source_text} is authoring-only and is never exported, on the
+     * same footing as a question's sample.
+     */
+    public static final String TRANSLATION_FIELDS =
+            "translation_id, translation_key, element_type, element_key, field, language, value, source_hash";
     public static final String FILE_EXTENSION = ".elicit";
 
     /** Tables in dependency (and file) order. */
     public static final List<String> TABLES = List.of(
             "surveys", "select_groups", "select_items", "steps", "sections", "steps_sections",
             "questions", "sections_questions", "relationships", "reports", "post_survey_actions",
-            "dimensions", "ontology", "metadata");
+            "dimensions", "ontology", "metadata", "translations");
 
     /** Tables whose rows carry the Type 2 tail {@code version|effective_from|effective_to|published_by|published_comment}. */
     public static final List<String> VERSIONED_TABLES = List.of(
             "select_groups", "select_items", "steps", "sections", "steps_sections",
-            "questions", "sections_questions", "relationships");
+            "questions", "sections_questions", "relationships", "translations");
 
     /** Minimum field count per record type (post-V015 layout, without {@code is_draft}). */
     public static final Map<String, Integer> REQUIRED_FIELDS = Map.ofEntries(
+            // 10, not 12: base_language and content_languages (V019) are read when present and
+            // default to 'en' and "nothing published" when they are not, so a file written before
+            // them -- or drafted by hand or by an agent (DRAFT_FORMAT_VERSION) -- stays valid. A
+            // writer emits all 12.
             Map.entry("surveys", 10),
             Map.entry("select_groups", 10),
             Map.entry("select_items", 11),
@@ -72,7 +93,8 @@ public final class ElicitFormat {
             Map.entry("post_survey_actions", 6),
             Map.entry("dimensions", 3),
             Map.entry("ontology", 5),
-            Map.entry("metadata", 7));
+            Map.entry("metadata", 7),
+            Map.entry("translations", 13));
 
     /** Zero-based index of {@code effective_to} within each versioned record. */
     public static final Map<String, Integer> EFFECTIVE_TO_INDEX = Map.ofEntries(
@@ -83,7 +105,8 @@ public final class ElicitFormat {
             Map.entry("steps_sections", 9),
             Map.entry("questions", 17),
             Map.entry("sections_questions", 7),
-            Map.entry("relationships", 16));
+            Map.entry("relationships", 16),
+            Map.entry("translations", 10));
 
     private ElicitFormat() {
     }

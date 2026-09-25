@@ -55,7 +55,8 @@ public class SurveyDefinitionExporter {
         }
         Integer surveyId = survey.id;
         Object[] s = rows("SELECT id, survey_key, name, display_order, title, description, initial_display_key, post_survey_url, "
-                + "published_by, published_comment FROM survey.surveys WHERE id = :sid", surveyId).get(0);
+                + "published_by, published_comment, base_language, content_languages "
+                + "FROM survey.surveys WHERE id = :sid", surveyId).get(0);
 
         Map<String, List<Object[]>> tables = new LinkedHashMap<>();
         tables.put("select_groups", rows("SELECT select_group_id, select_group_key, name, description, data_type, " + T2_TAIL
@@ -81,6 +82,11 @@ public class SurveyDefinitionExporter {
         tables.put("dimensions", rows("SELECT DISTINCT d.id, d.dimension_key, d.name FROM survey.dimensions d INNER JOIN survey.ontology o ON o.dimension = d.id WHERE o.survey_id = :sid ORDER BY d.id", surveyId));
         tables.put("ontology", rows("SELECT id, ontology_key, name, tag, dimension FROM survey.ontology WHERE survey_id = :sid ORDER BY id", surveyId));
         tables.put("metadata", rows("SELECT id, metadata_key, steps_sections_id, question_id, sections_question_id, ontology_id, value FROM survey.metadata WHERE survey_id = :sid ORDER BY id", surveyId));
+        // Last, because it references every other table's element keys. source_text is not
+        // selected: it is the authoring-only snapshot behind the out-of-date diff (UC-043).
+        tables.put("translations", rows("SELECT " + ElicitFormat.TRANSLATION_FIELDS + ", " + T2_TAIL
+                + " FROM survey.translations WHERE survey_id = :sid "
+                + "ORDER BY element_type, element_key, field, language, version", surveyId));
 
         OffsetDateTime exportedAt = OffsetDateTime.now();
         StringBuilder out = new StringBuilder();
