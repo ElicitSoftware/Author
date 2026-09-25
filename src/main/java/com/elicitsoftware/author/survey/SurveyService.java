@@ -123,6 +123,28 @@ public class SurveyService {
         to.description = blankToNull(from.description);
         to.initialDisplayKey = blankToNull(from.initialDisplayKey);
         to.postSurveyUrl = blankToNull(from.postSurveyUrl);
+        // UC-044. Withdrawing a language leaves its translations in place, closed by nothing:
+        // they simply stop being published, and re-publishing brings them back.
+        to.baseLanguage = from.baseLanguage == null || from.baseLanguage.isBlank() ? "en" : from.baseLanguage.trim();
+        to.contentLanguages = normalizeLanguages(from.contentLanguages);
+    }
+
+    /**
+     * The published set as stored: trimmed, de-duplicated, ordered, and without the base language,
+     * which is the fallback rather than a translation of anything.
+     */
+    static String normalizeLanguages(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        java.util.TreeSet<String> tags = new java.util.TreeSet<>();
+        for (String tag : raw.split(",")) {
+            String trimmed = tag.trim();
+            if (!trimmed.isEmpty()) {
+                tags.add(trimmed);
+            }
+        }
+        return tags.isEmpty() ? null : String.join(",", tags);
     }
 
     private static void validate(Survey s) {

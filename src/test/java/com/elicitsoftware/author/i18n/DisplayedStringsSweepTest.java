@@ -22,6 +22,7 @@ import com.elicitsoftware.author.flow.SystemDatabaseView;
 import com.elicitsoftware.author.flow.SystemOverviewView;
 import com.elicitsoftware.author.flow.designer.SurveyDesignerView;
 import com.elicitsoftware.author.flow.reporting.ReportingView;
+import com.elicitsoftware.author.flow.translations.TranslationsView;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
@@ -79,6 +80,10 @@ class DisplayedStringsSweepTest extends QuarkusBrowserlessTest {
             sweep("designer", problems);
             navigate(ReportingView.class, id);
             sweep("reporting", problems);
+            // Swept in both of its states: the fixture publishes no language, so this is the empty
+            // one. The grid itself is content (base text and translations), marked as such.
+            navigate(TranslationsView.class, id);
+            sweep("translations", problems);
         } else {
             problems.add("<fixture> survey 'AuthorFixture' not found; designer, editor and reporting routes not swept");
         }
