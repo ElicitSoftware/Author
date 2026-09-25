@@ -48,10 +48,12 @@ public class Glyph extends Span {
             Map.entry("COMBOBOX", VaadinIcon.COMBOBOX),
             Map.entry("MULTI_SELECT", VaadinIcon.LIST_SELECT),
             Map.entry("DATE_PICKER", VaadinIcon.CALENDAR),
-            Map.entry("DATETIME", VaadinIcon.CALENDAR_CLOCK),
+            Map.entry("DATE_TIME_PICKER", VaadinIcon.CALENDAR_CLOCK),
+            Map.entry("TIME_PICKER", VaadinIcon.CLOCK),
             Map.entry("EMAIL", VaadinIcon.ENVELOPE_O),
             Map.entry("PASSWORD", VaadinIcon.PASSWORD),
-            Map.entry("HTML", VaadinIcon.CODE));
+            Map.entry("HTML", VaadinIcon.CODE),
+            Map.entry("MODAL", VaadinIcon.MODAL));
 
     private final Kind kind;
 
