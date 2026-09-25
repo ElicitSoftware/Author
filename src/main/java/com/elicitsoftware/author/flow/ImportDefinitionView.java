@@ -50,6 +50,7 @@ public class ImportDefinitionView extends VerticalLayout implements HasDynamicTi
     public ImportDefinitionView() {
         add(new H2(getTranslation("importDefinitionView.title")));
         add(new Paragraph(getTranslation("importDefinitionView.intro")));
+        add(new Paragraph(getTranslation("importDefinitionView.introDraft")));
         upload = new Upload(UploadHandler.inMemory((metadata, data) ->
                 getUI().ifPresent(ui -> ui.access(() -> handleUpload(data, metadata.fileName())))));
         upload.setAcceptedFileTypes(ElicitFormat.FILE_EXTENSION);
@@ -71,6 +72,10 @@ public class ImportDefinitionView extends VerticalLayout implements HasDynamicTi
             H3 importedHeading = new H3(getTranslation("importDefinitionView.imported", imported.surveyName()));
             importedHeading.getElement().setAttribute("data-i18n-content", ""); // carries the authored survey name
             result.add(importedHeading);
+            if (imported.draftFormat()) {
+                result.add(new Paragraph(
+                        getTranslation("importDefinitionView.draftNotice", ElicitFormat.DRAFT_FORMAT_VERSION)));
+            }
             UnorderedList counts = new UnorderedList();
             imported.imported().forEach((table, n) -> {
                 if (n > 0) {

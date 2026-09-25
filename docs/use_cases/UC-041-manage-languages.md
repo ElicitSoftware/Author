@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author (with the `elicit_author` role)  
 **Goal:** Add, replace or remove a language for the authoring tool by uploading a translation file through the tool, so that a site can offer a new language without anyone touching the server.  
 **Status:** Draft  
-**Requirements:** [FR-054, C-024](../requirements.md)
+**Requirements:** [FR-055, C-025](../requirements.md)
 
 ## Preconditions
 

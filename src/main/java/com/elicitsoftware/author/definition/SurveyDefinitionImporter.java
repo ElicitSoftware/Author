@@ -77,6 +77,7 @@ public class SurveyDefinitionImporter {
         String surveyName = null;
         OffsetDateTime fileRevision = null;
         boolean versionValidated = false;
+        boolean draftFormat = false;
         int lineNumber = 0;
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
@@ -90,6 +91,11 @@ public class SurveyDefinitionImporter {
                 if (line.startsWith("#")) {
                     if (line.contains(ElicitFormat.FORMAT_VERSION)) {
                         versionValidated = true;
+                    } else if (line.contains(ElicitFormat.DRAFT_FORMAT_VERSION)) {
+                        // A definition drafted outside Author (UC-042). Same records, different
+                        // marker, so Admin cannot install it at a site without a round trip here.
+                        versionValidated = true;
+                        draftFormat = true;
                     }
                     try {
                         OffsetDateTime parsed = ElicitFormat.parseRevisionHeader(line);
@@ -162,13 +168,14 @@ public class SurveyDefinitionImporter {
             throw new DefinitionException("Failed to read the file: " + e.getMessage(), e);
         }
         if (!versionValidated) {
-            throw new DefinitionException("This is not a survey definition export: no '# " + ElicitFormat.FORMAT_VERSION + "' header");
+            throw new DefinitionException("This is not a survey definition: the file must start with '# "
+                    + ElicitFormat.FORMAT_VERSION + "' or '# " + ElicitFormat.DRAFT_FORMAT_VERSION + "'");
         }
         if (surveyId == null) {
             throw new DefinitionException("This file contains no surveys record, so it is not a survey definition export");
         }
         em.flush();
-        return new ImportResult(surveyId.intValue(), surveyKey, surveyName, fileRevision, counts, skipped);
+        return new ImportResult(surveyId.intValue(), surveyKey, surveyName, fileRevision, counts, skipped, draftFormat);
     }
 
     private static String rootMessage(Throwable t) {

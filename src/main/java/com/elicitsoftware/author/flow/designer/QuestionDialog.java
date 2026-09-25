@@ -271,7 +271,7 @@ public class QuestionDialog extends Dialog {
             preview.add(new Span(getTranslation("questionDialog.preview.chooseType")));
             return;
         }
-        if ("HTML".equalsIgnoreCase(t.name)) {
+        if (PreviewFields.isDisplayOnly(t.name)) {
             String content = text.getValue() == null || text.getValue().isBlank() ? null : substituteTokens(text.getValue());
             preview.add(PreviewFields.html(content));
             return;
@@ -317,12 +317,12 @@ public class QuestionDialog extends Dialog {
     void updateChoiceFields() {
         QuestionType t = questionType.getValue();
         String name = t == null ? "" : t.name.toUpperCase();
-        boolean html = "HTML".equals(name);
+        boolean html = PreviewFields.isDisplayOnly(name);
         boolean choice = t != null && ExportValidation.CHOICE_TYPES.contains(t.name);
         boolean numeric = "INTEGER".equals(name) || "DOUBLE".equals(name);
         boolean checkboxSingle = "CHECKBOX".equals(name);
         boolean textLike = "TEXT".equals(name) || "TEXTAREA".equals(name) || "EMAIL".equals(name) || "PASSWORD".equals(name);
-        boolean datey = "DATE_PICKER".equals(name) || "DATETIME".equals(name);
+        boolean datey = "DATE_PICKER".equals(name) || "DATE_TIME_PICKER".equals(name) || "TIME_PICKER".equals(name);
         boolean lengths = lengthBounded(name);
 
         selectGroup.setVisible(choice);
