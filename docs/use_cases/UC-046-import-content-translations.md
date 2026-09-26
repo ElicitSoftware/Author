@@ -6,7 +6,7 @@
 **Use Case Name:** Import Content Translations  
 **Primary Actor:** Survey Author  
 **Goal:** Load a returned translation file in one step, with every item checked before it is stored, so that a good file lands complete and a bad item is reported by name instead of failing the file.  
-**Status:** Draft  
+**Status:** Implemented  
 **Requirements:** [FR-059](../requirements.md)
 
 ## Preconditions

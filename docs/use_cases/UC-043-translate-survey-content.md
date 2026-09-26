@@ -6,7 +6,7 @@
 **Use Case Name:** Translate Survey Content  
 **Primary Actor:** Survey Author  
 **Goal:** Review and correct a survey's content in one published language, string by string, seeing for every string whether it is translated, missing or out of date, so that respondents at every site read the survey in their own language.  
-**Status:** Draft  
+**Status:** Implemented  
 **Requirements:** [FR-056, FR-060, C-024](../requirements.md)
 
 ## Preconditions

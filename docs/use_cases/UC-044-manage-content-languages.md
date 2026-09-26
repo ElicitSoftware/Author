@@ -6,7 +6,7 @@
 **Use Case Name:** Manage Content Languages  
 **Primary Actor:** Survey Author  
 **Goal:** Declare the language a survey's content is written in and the languages it is published in, so that a finished language reaches every site and a half-finished one is held back.  
-**Status:** Draft  
+**Status:** Implemented  
 **Requirements:** [FR-057, C-024](../requirements.md)
 
 ## Preconditions
