@@ -6,7 +6,7 @@
 **Use Case Name:** Request a Content Translation  
 **Primary Actor:** Survey Author  
 **Goal:** Produce one file per survey and target language, carrying every string with the context, rules and length budget a translator or an AI agent needs, so that a whole survey can be translated outside the tool and returned in one document.  
-**Status:** Draft  
+**Status:** Implemented  
 **Requirements:** [FR-058](../requirements.md)
 
 ## Preconditions
