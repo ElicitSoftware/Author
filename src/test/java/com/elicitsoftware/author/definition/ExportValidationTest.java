@@ -264,4 +264,122 @@ class ExportValidationTest {
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind()) && unused.relationshipId.equals(i.durableId())
                 && i.message().contains("fills {ZZZ} but no text it reaches uses it")), issues.toString());
     }
+    // ---- UC-019 BR-006: a token fed by a question that collects no answer ----------------------
+
+    /** FixtureQ1 is the fixture's HTML question, so it collects nothing a token could take. */
+    private Relationship htmlSourcedRuleOntoStepTwo(Survey s, String defaultUpstreamValue) {
+        SectionsQuestion html = SectionsQuestion.find("questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
+                "FixtureQ1", s.id, StructuralElement.SENTINEL).firstResult();
+        Step one = Step.find("name = ?1 and effectiveTo = ?2", "Fixture Step One", StructuralElement.SENTINEL).firstResult();
+        Step two = Step.find("name = ?1 and effectiveTo = ?2", "Fixture Step Two", StructuralElement.SENTINEL).firstResult();
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = html.sectionsQuestionId;
+        draft.upstreamStepId = one.stepId;
+        draft.downstreamStepId = two.stepId;
+        draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
+        draft.actionType = ActionType.find("name", "TEXT").firstResult();
+        draft.token = "NAME";
+        draft.defaultUpstreamValue = defaultUpstreamValue;
+        Relationship created = rules.create(s.id, draft);
+        em.flush();
+        em.clear();
+        return created;
+    }
+
+    @Test
+    @TestTransaction
+    void aTokenFedByADisplayOnlyQuestionThatCarriesItsOwnValueIsAWarning() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        htmlSourcedRuleOntoStepTwo(s, "{G1's|your} mother");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("display-only HTML")),
+                "it works, but only by way of the constant: " + issues);
+        assertTrue(issues.stream().noneMatch(ValidationIssue::isError), issues.toString());
+    }
+
+    @Test
+    @TestTransaction
+    void aTokenFedByADisplayOnlyQuestionWithNoValueAtAllIsAnError() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        Relationship created = htmlSourcedRuleOntoStepTwo(s, "{G1's|your} mother");
+        // RuleService refuses this shape outright (UC-019 BR-006), so reach the row the only way an
+        // imported definition can carry it: with the constant taken away afterwards.
+        em.createNativeQuery("UPDATE survey.relationships SET default_upstream_value = NULL WHERE id = ?1")
+                .setParameter(1, created.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("nothing ever fills {NAME}")),
+                "nothing can ever fill the slot: " + issues);
+    }
+
+    @Test
+    @TestTransaction
+    void aTokenFedByAQuestionThatCollectsAnAnswerIsNotFlagged() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("display-only")), issues.toString());
+    }
+
+    // ---- UC-007 BR-005: a placeholder that names its token as a bare word ----------------------
+
+    @Test
+    @TestTransaction
+    void aPlaceholderNamingItsTokenAsABareWordIsAnError() {
+        Survey s = fixture();
+        // A rule carries NAME, so NAME is a token this survey uses; the text names it without brackets.
+        setText(s, STEP_TWO_QUESTION, "{Does NAME|Do you} have anything to add?");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "questions".equals(i.kind())
+                        && i.message().contains("without angle brackets")
+                        && i.message().contains("{Does <NAME>|Do you}")),
+                "the message should show the corrected placeholder: " + issues);
+    }
+
+    @Test
+    @TestTransaction
+    void aBracketedPlaceholderIsNotFlagged() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "{Does <NAME>|Do you} have anything to add?");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("without angle brackets")), issues.toString());
+    }
+
+    @Test
+    @TestTransaction
+    void aBareTokenNameInARulesOwnValueIsAnError() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        Relationship created = textRuleOntoStepTwo(s, "NAME");
+        // The value a rule puts in the slot is a placeholder in its own right, and needs brackets too.
+        em.createNativeQuery("UPDATE survey.relationships SET default_upstream_value = ?1 WHERE id = ?2")
+                .setParameter(1, "{NAME's|your} mother").setParameter(2, created.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("{<NAME>'s|your}")),
+                "a rule's own value is checked the same way: " + issues);
+    }
+
 }
