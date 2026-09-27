@@ -82,3 +82,28 @@ Running validation changes nothing in the survey.
 ### BR-005: Tokens are checked where they are shown
 
 A rule reaches its target and everything inside it (UC-019 BR-005), so a token in a question's text is filled when a rule carrying that token targets the question assignment, its section mount, or its step — checked for every mount of the section. A placeholder with no default that nothing fills is an error, because the runtime would show the respondent the raw placeholder; one with a default is a warning. A rule of any action whose token appears in no text it reaches is a warning (any rule may carry a token; UC-019 BR-005). A placeholder that names a token as a bare word rather than as `<TOKEN>` is an error: the runtime fills only the bracketed form, so the placeholder fills nothing and the respondent always reads its default, with nothing about the text looking wrong. It is reported with the corrected placeholder, and checked in a step's name, a section's name, a question's text and a rule's own default upstream value, which is itself a placeholder. Only a name the survey actually uses is reported -- one some rule carries, or one another text brackets -- matched as a whole word, so prose is never mistaken for a token. A rule whose token is fed by a display-only question — one that collects no answer, so only the rule's own default upstream value can fill the slot (UC-019 BR-006) — is an error when the rule has no such value, because nothing can ever fill the token, and a warning when it has one, because the rule works only by way of that constant.
+
+### BR-006: Every reference in a phrase must be a token some rule defines
+
+Filling a phrase is all or nothing: the runtime abandons the whole placeholder the moment one
+`<NAME>` in it has no value, and the respondent reads the default instead. So a reference no rule
+defines does not merely fail on its own — it stops the placeholder filling at all, permanently and
+invisibly, which is the same silent failure BR-005 exists for. Every `<NAME>` in a phrase is
+therefore an error unless some rule in the survey carries that token.
+
+Only the phrase is checked. The default after the bar is used verbatim and is never scanned for
+references, so a `<…>` there is just text.
+
+This is also how markup written inside a placeholder is caught. Markup belongs around a
+placeholder, not within it: `<b>{<NAME>|name}</b>`, not `{<b><NAME></b>|<b>name</b>}`. A tag in the
+phrase cannot be told from a token by its spelling — `<b>` is a well-formed token name, which is
+exactly why position is the rule — but it can be told by the survey defining no token `b`. The
+report names the undefined token and gives the fix, which is the same in both readings: move the
+tag outside the braces, `<b>{`. Written inside, the tag is also duplicated into both branches of a
+placeholder of which only one is ever chosen, so the pair can drift apart or straddle the bar and
+leave the page unbalanced.
+
+Checked in a step's name, a section's name, a question's text and a rule's own default upstream
+value, which is itself a placeholder. Translators are given the same rule, so a phrase handed over
+is prose and keys and never markup (UC-045 BR-003), and the hand-off's `html` flag means markup
+outside the placeholders rather than merely an angle bracket somewhere in the string.

@@ -276,6 +276,66 @@ public class ExportValidation {
             displayOnlySource(issues, r, tok, questions, sectionsQuestions);
         }
         undelimitedTokens(issues, steps, sections, questions, relationships);
+        undefinedReferences(issues, steps, sections, questions, relationships);
+    }
+
+    /**
+     * UC-007 BR-006: every {@code <NAME>} in a phrase must be a token some rule carries.
+     *
+     * <p>Filling a phrase is all or nothing — {@code QuestionManager.fillPhrase} returns null the
+     * moment one reference has no value — so a single reference nothing defines stops the whole
+     * placeholder filling, and the respondent reads its default forever. Nothing about the text
+     * looks wrong, which is the same silent failure the undelimited check exists for.</p>
+     *
+     * <p>This is also how markup written inside a placeholder is caught. {@code <b>} is a
+     * well-formed token name, so it cannot be told from a token by its spelling; it can be told by
+     * the survey defining no such token. The fix is the same either way — a tag belongs outside the
+     * braces, wrapping the placeholder — so the message says so.</p>
+     *
+     * <p>Only the phrase is checked. The default is used verbatim and is never scanned for
+     * references, so markup there renders as markup and fills nothing in.</p>
+     */
+    private static void undefinedReferences(List<ValidationIssue> issues, Map<Integer, Step> steps,
+                                            Map<Integer, Section> sections, Map<Integer, Question> questions,
+                                            List<Relationship> relationships) {
+        // What a rule carries is what the runtime can fill. Names harvested from the texts
+        // themselves would make a stray <b> define itself.
+        Set<String> defined = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        for (Relationship r : relationships) {
+            if (r.token != null && !r.token.isBlank()) {
+                defined.add(Tokens.bare(r.token.trim()));
+            }
+        }
+        for (Step s : steps.values()) {
+            undefinedHere(issues, "steps", s.stepId, "Step '" + s.name + "'", s.name, defined);
+        }
+        for (Section s : sections.values()) {
+            undefinedHere(issues, "sections", s.sectionId, "Section '" + s.name + "'", s.name, defined);
+        }
+        for (Question q : questions.values()) {
+            undefinedHere(issues, "questions", q.questionId, label(q), q.text, defined);
+        }
+        for (Relationship r : relationships) {
+            undefinedHere(issues, "relationships", r.relationshipId, "Rule '" + r.description + "'",
+                    r.defaultUpstreamValue, defined);
+        }
+    }
+
+    private static void undefinedHere(List<ValidationIssue> issues, String kind, Integer id, String where,
+                                      String text, Set<String> defined) {
+        for (Tokens.Placeholder ph : Tokens.placeholders(text)) {
+            for (String name : ph.tokens()) {
+                if (defined.contains(name)) {
+                    continue;
+                }
+                String ref = Tokens.reference(name);
+                issues.add(ValidationIssue.error(kind, id, where + " uses " + ref + " in " + ph.text()
+                        + ", but no rule defines the token " + name + ", so the placeholder never fills and"
+                        + " respondents always read "
+                        + (ph.defaultText() == null ? "it as written" : "\"" + ph.defaultText() + "\"")
+                        + ". If " + ref + " is markup, it belongs outside the braces: write " + ref + "{"));
+            }
+        }
     }
 
     /**

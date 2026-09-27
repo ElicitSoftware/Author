@@ -98,7 +98,9 @@ public class TranslationHandoff {
             item.put("context", row.context());
             item.put("max_length", TranslationBudget.of(row.elementType(), row.field(), row.baseText()));
             ArrayNode flags = item.putArray("flags");
-            if (row.baseText() != null && row.baseText().contains("<")) {
+            // Markup, not "contains an angle bracket": every token is written <NAME>, so the
+            // cruder test flagged every personalized string in the survey as HTML.
+            if (Tokens.hasMarkup(row.baseText())) {
                 flags.add("html");
             }
             ArrayNode tokens = item.putArray("tokens");
@@ -325,7 +327,9 @@ public class TranslationHandoff {
                 carry them.
 
                 Where "flags" contains "html", keep the tags and translate only the text between \
-                them. Respect "max_length": it already allows for the target language running \
+                them. Tags sit outside the braces and never inside one -- \
+                <b>{<NAME>|name}</b>, never {<b><NAME></b>|<b>name</b>} -- so leave them where \
+                they are; inside a placeholder every <...> is a token. Respect "max_length": it already allows for the target language running \
                 longer than the source, so it is a ceiling for the space the string is drawn in, \
                 not a length to fill. Option labels of one question must stay distinct from each \
                 other.
