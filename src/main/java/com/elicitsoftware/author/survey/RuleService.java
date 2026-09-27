@@ -13,6 +13,8 @@ package com.elicitsoftware.author.survey;
 
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.ConstraintViolationTranslator;
+import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.Step;
@@ -219,6 +221,15 @@ public class RuleService {
             if (r.token.length() > 10) {
                 throw new AuthoringException("Token names are at most 10 characters", "token");
             }
+            // UC-019 BR-006: a token holds an answer or the rule's own value. A display-only question
+            // has no answer to give, so a rule on one fills nothing unless it carries a value.
+            if (!upstreamCollectsAnswer(surveyId, r.upstreamSqId)
+                    && (r.defaultUpstreamValue == null || r.defaultUpstreamValue.isBlank())) {
+                throw new AuthoringException("A " + upstreamTypeName(surveyId, r.upstreamSqId)
+                        + " question collects no answer, so {" + r.token + "} would stay unfilled."
+                        + " Read from a question the respondent answers, or give the rule a default"
+                        + " upstream value to fill the token with", "upstreamSqId");
+            }
         }
         if ("REPEAT".equals(r.actionType.name) && r.target() == Relationship.Target.STEP) {
             throw new AuthoringException("Repeat applies to a section or a question, not a step", "downstream");
@@ -229,6 +240,37 @@ public class RuleService {
         if (r.description == null || r.description.isBlank()) {
             r.description = RelationshipQuery.condition(r);
         }
+    }
+
+    /**
+     * Whether the question a rule reads collects an answer at all, so a token on that rule can be
+     * filled from one (UC-019 BR-006). True when the upstream cannot be resolved: a missing
+     * assignment is reported by its own check, and this one should not double up on it.
+     */
+    public boolean upstreamCollectsAnswer(int surveyId, Integer upstreamSqId) {
+        QuestionType type = upstreamType(surveyId, upstreamSqId);
+        return type == null || Tokens.collectsAnswer(type);
+    }
+
+    /** The upstream question's type name for a message, or "display-only" when it cannot be resolved. */
+    private String upstreamTypeName(int surveyId, Integer upstreamSqId) {
+        QuestionType type = upstreamType(surveyId, upstreamSqId);
+        return type == null || type.name == null ? "display-only" : type.name;
+    }
+
+    private QuestionType upstreamType(int surveyId, Integer upstreamSqId) {
+        if (upstreamSqId == null) {
+            return null;
+        }
+        Optional<SectionsQuestion> sq = SectionsQuestion.find(
+                "surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3",
+                surveyId, upstreamSqId, StructuralElement.SENTINEL).firstResultOptional();
+        if (sq.isEmpty()) {
+            return null;
+        }
+        Optional<Question> question = Question.find("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3",
+                surveyId, sq.get().questionId, StructuralElement.SENTINEL).firstResultOptional();
+        return question.map(q -> q.questionType).orElse(null);
     }
 
     private static void copy(Relationship from, Relationship to) {

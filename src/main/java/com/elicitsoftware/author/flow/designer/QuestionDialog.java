@@ -271,7 +271,7 @@ public class QuestionDialog extends Dialog {
             preview.add(new Span(getTranslation("questionDialog.preview.chooseType")));
             return;
         }
-        if (PreviewFields.isDisplayOnly(t.name)) {
+        if (PreviewFields.isDisplayOnly(t)) {
             String content = text.getValue() == null || text.getValue().isBlank() ? null : substituteTokens(text.getValue());
             preview.add(PreviewFields.html(content));
             return;
@@ -317,7 +317,7 @@ public class QuestionDialog extends Dialog {
     void updateChoiceFields() {
         QuestionType t = questionType.getValue();
         String name = t == null ? "" : t.name.toUpperCase();
-        boolean html = PreviewFields.isDisplayOnly(name);
+        boolean html = PreviewFields.isDisplayOnly(t);
         boolean choice = t != null && ExportValidation.CHOICE_TYPES.contains(t.name);
         boolean numeric = "INTEGER".equals(name) || "DOUBLE".equals(name);
         boolean checkboxSingle = "CHECKBOX".equals(name);

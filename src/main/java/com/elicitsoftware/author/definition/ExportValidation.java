@@ -43,7 +43,8 @@ import java.util.function.Function;
 /**
  * Checks a survey's current elements before export (UC-007): dangling durable references,
  * relationships whose downstream path does not hold together or that point backwards (UC-033 A3), choice
- * questions without options, tokens no rule fills and Text rules nothing uses (BR-005), empty steps and
+ * questions without options, tokens no rule fills and Text rules nothing uses (BR-005), rules whose token
+ * is fed by a question that collects no answer (UC-019 BR-006), empty steps and
  * sections, duplicate ordering. Errors block export; warnings do not.
  * Read-only (UC-007 BR-004).
  */
@@ -272,6 +273,37 @@ public class ExportValidation {
                 issues.add(ValidationIssue.warning("relationships", r.relationshipId,
                         "Rule '" + r.description + "' fills {" + tok + "} but no text it reaches uses it"));
             }
+            displayOnlySource(issues, r, tok, questions, sectionsQuestions);
+        }
+    }
+
+    /**
+     * UC-019 BR-006: a token holds the respondent's answer or the rule's own default upstream value.
+     * A display-only question ({@code HTML}, {@code MODAL}) collects no answer, so a rule reading one
+     * has only its own value to give -- and with neither, the token is never filled at all and the
+     * respondent reads the placeholder's default. The Family History Survey drives the possessive on
+     * its Mother and Father steps this way, from {@code HTML} questions with a constant value, which
+     * is the idiom the warning is there to retire.
+     */
+    private static void displayOnlySource(List<ValidationIssue> issues, Relationship r, String tok,
+                                          Map<Integer, Question> questions, Map<Integer, SectionsQuestion> sectionsQuestions) {
+        SectionsQuestion up = sectionsQuestions.get(r.upstreamSqId);
+        Question upstream = up == null ? null : questions.get(up.questionId);
+        if (upstream == null || Tokens.collectsAnswer(upstream.questionType)) {
+            return;
+        }
+        String type = upstream.questionType == null ? "display-only" : upstream.questionType.name;
+        String rule = "Rule '" + r.description + "'";
+        if (r.defaultUpstreamValue == null || r.defaultUpstreamValue.isBlank()) {
+            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " fills {" + tok
+                    + "} from " + label(upstream) + ", a display-only " + type
+                    + " question that collects no answer, and carries no value of its own, so nothing ever fills {"
+                    + tok + "}"));
+        } else {
+            issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " fills {" + tok
+                    + "} from " + label(upstream) + ", a display-only " + type
+                    + " question that collects no answer; only the rule's own value fills the token."
+                    + " Read it from a question the respondent answers"));
         }
     }
 

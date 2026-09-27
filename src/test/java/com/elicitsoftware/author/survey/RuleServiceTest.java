@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -413,4 +414,65 @@ class RuleServiceTest {
         again.referenceValue = "N";
         assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, again)).field());
     }
+    // ---- UC-019 BR-006: a token source is a question that collects a value --------------------
+
+    /** FixtureQ1 is the fixture's HTML question (type_id 4), so it collects no answer. */
+    private Relationship displayOnlySourcedDraft(Survey s, String defaultUpstreamValue) {
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf("FixtureQ1").sectionsQuestionId;
+        draft.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
+        draft.operatorType = operator("FIELD_EXIST");
+        draft.actionType = action("TEXT");
+        draft.token = "S1";
+        draft.defaultUpstreamValue = defaultUpstreamValue;
+        return draft;
+    }
+
+    @Test
+    @TestTransaction
+    void create_tokenFedByADisplayOnlyQuestionWithNoValueOfItsOwn_isRefused() {
+        Survey s = fixture();
+
+        AuthoringException refused = assertThrows(AuthoringException.class,
+                () -> rules.create(s.id, displayOnlySourcedDraft(s, null)));
+
+        assertEquals("upstreamSqId", refused.field(), "the message points at the question the rule reads");
+        assertTrue(refused.getMessage().contains("HTML"), refused.getMessage());
+        assertTrue(refused.getMessage().contains("{S1}"), refused.getMessage());
+    }
+
+    @Test
+    @TestTransaction
+    void create_tokenFedByADisplayOnlyQuestionThatCarriesItsOwnValue_isAccepted() {
+        Survey s = fixture();
+
+        // The idiom the Family History Survey uses on its Mother and Father steps: the phrase is the
+        // rule's own constant, so it fills the slot without reading an answer. Warned about at export
+        // (UC-007 BR-005), not refused here -- the runtime does fill it.
+        Relationship created = rules.create(s.id, displayOnlySourcedDraft(s, "{G1's|your} mother"));
+
+        assertNotNull(created.relationshipId);
+        assertEquals("{G1's|your} mother", created.defaultUpstreamValue);
+    }
+
+    @Test
+    @TestTransaction
+    void create_tokenFedByAQuestionThatCollectsAnAnswer_isAccepted() {
+        Survey s = fixture();
+        Relationship draft = displayOnlySourcedDraft(s, null);
+        draft.upstreamSqId = assignmentOf("FixtureQ2").sectionsQuestionId; // TEXT
+
+        assertNotNull(rules.create(s.id, draft).relationshipId);
+    }
+
+    @Test
+    void upstreamCollectsAnswer_readsTheTypesDataTypeFlag() {
+        Survey s = fixture();
+
+        assertFalse(rules.upstreamCollectsAnswer(s.id, assignmentOf("FixtureQ1").sectionsQuestionId), "HTML");
+        assertTrue(rules.upstreamCollectsAnswer(s.id, assignmentOf("FixtureQ2").sectionsQuestionId), "TEXT");
+        assertTrue(rules.upstreamCollectsAnswer(s.id, assignmentOf("FixtureQ4").sectionsQuestionId), "INTEGER");
+        assertTrue(rules.upstreamCollectsAnswer(s.id, null), "an unresolvable upstream is reported by its own check");
+    }
+
 }

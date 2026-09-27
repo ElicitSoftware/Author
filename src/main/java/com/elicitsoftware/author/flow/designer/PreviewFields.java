@@ -13,6 +13,7 @@ package com.elicitsoftware.author.flow.designer;
 
 import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.survey.Tokens;
+import com.elicitsoftware.model.QuestionType;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasLabel;
 import com.vaadin.flow.component.HasPlaceholder;
@@ -108,8 +109,8 @@ final class PreviewFields {
      * True for the display-only types, which collect no value and whose text is rendered as HTML:
      * HTML inline on the page, MODAL in a dialog. Both preview the same way.
      */
-    static boolean isDisplayOnly(String typeName) {
-        return "HTML".equalsIgnoreCase(typeName) || "MODAL".equalsIgnoreCase(typeName);
+    static boolean isDisplayOnly(QuestionType type) {
+        return Tokens.isDisplayOnly(type);
     }
 
     /** An HTML question has no input; the respondent sees its text rendered as HTML. */

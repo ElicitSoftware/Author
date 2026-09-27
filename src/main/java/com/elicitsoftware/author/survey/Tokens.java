@@ -12,6 +12,7 @@ package com.elicitsoftware.author.survey;
  */
 
 import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.Section;
 import com.elicitsoftware.model.Step;
@@ -63,6 +64,30 @@ public final class Tokens {
     public static final int MAX_LENGTH = 10;
 
     private Tokens() { }
+
+    /**
+     * Whether a question collects nothing, so no rule reading it can fill a token from an answer:
+     * {@code HTML} renders text inline and {@code MODAL} in a dialog, and neither has an input.
+     * <p>
+     * Read off {@code question_types.data_type}, which the platform leaves empty for exactly those
+     * two and sets for all fourteen types that collect a value. The flag rather than the two names,
+     * because that is the same question the Survey runtime asks of the same row when it decides what
+     * a token holds (UC-002 BR-010), and a display-only type added later is covered in both modules
+     * without editing either. A null type is not display-only -- it is a question whose type the
+     * author has not chosen yet.
+     */
+    public static boolean isDisplayOnly(QuestionType type) {
+        return type != null && (type.dataType == null || type.dataType.isBlank());
+    }
+
+    /**
+     * Whether a rule reading this question can fill a token with the respondent's answer (UC-019
+     * BR-006). A display-only question cannot: the only thing a rule on one can put in a slot is the
+     * constant the author wrote on the rule itself.
+     */
+    public static boolean collectsAnswer(QuestionType type) {
+        return type != null && !isDisplayOnly(type);
+    }
 
     /** One placeholder as written: its phrase and its default, null when it has none. */
     public record Placeholder(String phrase, String defaultText) {
