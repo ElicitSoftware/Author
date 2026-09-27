@@ -314,11 +314,17 @@ public class TranslationHandoff {
                 Translate each item's "source" into its "translation" field, from %s into %s. \
                 Leave every other field exactly as it is; do not add, remove or reorder items.
 
-                A placeholder is written {phrase containing a TOKEN|default text}. The token is an \
-                upper-case key such as S1 or NAME, listed in that item's "tokens". Keep the key \
-                exactly as written, translate the phrase around it and the default after the bar, \
-                and move the key to where the language needs it. Keep the braces and the bar; \
-                never add or drop one. A translation must use exactly the tokens its source uses.
+                A placeholder is written {phrase containing a TOKEN|default text}. The token is \
+                the key listed in that item's "tokens", such as S1 or NAME; match it as written, \
+                though its case does not matter. Keep the key itself untranslated, translate the \
+                phrase around it, and translate the default after the bar -- the default is what a \
+                respondent reads when the survey has no value to fill in, so one left in the source \
+                language shows through in the middle of your sentence. Move the key to where the \
+                language needs it, and reshape the phrase where the language requires it: English \
+                "{name's|this person's} gender" becomes "el genero de {name|esta persona}" in a \
+                language that forms no possessive with 's. Keep the braces and the bar; never add \
+                or drop one. A translation must use exactly the tokens its source uses -- the keys, \
+                not the phrases that carry them.
 
                 Where "flags" contains "html", keep the tags and translate only the text between \
                 them. Respect "max_length": it already allows for the target language running \
