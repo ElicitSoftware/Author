@@ -64,7 +64,7 @@ The preamble states the rules in the document itself, so that an agent needs not
 
 ### BR-003: A token is a key inside a phrase
 
-A placeholder is written `{phrase containing a TOKEN|default text}`. The key is what the survey substitutes an earlier answer into; the phrase and the default around it are prose to be translated. The key must survive, the braces and the bar must survive, and the translation must use exactly the tokens the base text uses.
+A placeholder is written `{phrase containing a <TOKEN>|default text}`. The token is the upper-case key in angle brackets -- what the survey substitutes an earlier answer into; the phrase and the default around it are prose to be translated. The token must survive verbatim, brackets and all, the braces and the bar must survive, and the translation must use exactly the tokens the base text uses -- the bracketed keys, not the phrases that carry them.
 
 ### BR-004: The length budget is not the column width
 

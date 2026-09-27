@@ -154,8 +154,8 @@ class RuleServiceTest {
         draft.token = " NAME ";
         Relationship created = rules.create(s.id, draft);
         assertEquals("NAME", created.token);
-        assertEquals("exists {NAME}", RelationshipQuery.condition(created));
-        assertEquals("Replace {NAME}", RelationshipQuery.label(created, "ignored"), "TEXT reads Replace {token}");
+        assertEquals("exists <NAME>", RelationshipQuery.condition(created));
+        assertEquals("Replace <NAME>", RelationshipQuery.label(created, "ignored"), "TEXT reads Replace <TOKEN>");
     }
 
     /**
@@ -225,7 +225,7 @@ class RuleServiceTest {
         Relationship created = rules.create(s.id, draft);
         assertEquals("NAME", created.token, "the token is kept, trimmed, for a non-Text action");
         assertEquals("NAME", rules.current(s.id, created.relationshipId).orElseThrow().token, "and persisted");
-        assertEquals("exists {NAME}", RelationshipQuery.condition(created), "the tooltip shows the token for any action");
+        assertEquals("exists <NAME>", RelationshipQuery.condition(created), "the tooltip shows the token for any action");
         assertTrue(RelationshipQuery.label(created, "Q5").startsWith("Show "), "the label still reads the action");
 
         draft.token = "WAYTOOLONGTOKEN";

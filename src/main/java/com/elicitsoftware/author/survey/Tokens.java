@@ -40,8 +40,22 @@ public final class Tokens {
     /** Group 1 is the phrase, group 2 the default text (null when the placeholder has none). */
     public static final Pattern PLACEHOLDER = Pattern.compile("\\{([^{}|]+)(?:\\|([^{}]*))?}");
 
-    /** A phrase that is one bare word is the token itself: {@code {NAME}} or {@code {NAME|default}}. */
-    private static final Pattern BARE_NAME = Pattern.compile("[A-Za-z0-9_]+");
+    /**
+     * A token where it is used: {@code <NAME>}, inside a placeholder's phrase.
+     *
+     * <p>The brackets are the whole point. A token used to be recognized by
+     * {@code phrase.contains(token)}, which cannot tell a token from an ordinary word:
+     * {@code surname} contains {@code name} and {@code S10} contains {@code S1}, so a phrase
+     * mentioning a word as prose was indistinguishable from one naming the token. Delimited, a
+     * reference matches exactly or not at all.</p>
+     *
+     * <p>Read case-insensitively, so a definition written before the convention still parses; a
+     * name is required to be upper case where it is authored ({@link #TOKEN_NAME}).</p>
+     */
+    public static final Pattern TOKEN_REF = Pattern.compile("<([A-Za-z0-9_]+)>");
+
+    /** A well-formed token name: upper case, starting with a letter (FR-012). */
+    public static final Pattern TOKEN_NAME = Pattern.compile("[A-Z][A-Z0-9_]*");
 
     /** Runtime counters the Survey app fills itself. */
     public static final Set<String> BUILT_IN = Set.of("Q#", "S#");
@@ -53,9 +67,23 @@ public final class Tokens {
     /** One placeholder as written: its phrase and its default, null when it has none. */
     public record Placeholder(String phrase, String defaultText) {
 
-        /** Whether a rule carrying this token fills the placeholder — the runtime tests containment. */
+        /** Whether a rule carrying this token fills the placeholder: the phrase refers to it. */
         public boolean uses(String token) {
-            return token != null && !token.isBlank() && phrase.contains(token);
+            if (token == null || token.isBlank()) {
+                return false;
+            }
+            String wanted = bare(token);
+            return tokens().stream().anyMatch(t -> t.equalsIgnoreCase(wanted));
+        }
+
+        /** Every token this phrase refers to, in the order written. */
+        public Set<String> tokens() {
+            Set<String> used = new LinkedHashSet<>();
+            Matcher m = TOKEN_REF.matcher(phrase);
+            while (m.find()) {
+                used.add(m.group(1));
+            }
+            return used;
         }
 
         /** The placeholder as written, for messages. */
@@ -90,15 +118,44 @@ public final class Tokens {
         return placeholders(text).stream().filter(ph -> ph.uses(token)).allMatch(ph -> ph.defaultText() != null);
     }
 
-    /** Token names a text declares outright — bare-word phrases such as {@code {NAME|friend}}. */
+    /**
+     * Every token a text refers to, in the order written.
+     *
+     * <p>Every use declares its token now, which the old bare-word rule could not do: it saw
+     * {@code {NAME|friend}} but not {@code {NAME's|your}}, so a token only ever written inside a
+     * phrase was invisible to the designer and to the hand-off document.</p>
+     */
     public static Set<String> names(String text) {
         Set<String> names = new LinkedHashSet<>();
         for (Placeholder ph : placeholders(text)) {
-            if (BARE_NAME.matcher(ph.phrase()).matches()) {
-                names.add(ph.phrase());
-            }
+            names.addAll(ph.tokens());
         }
         return names;
+    }
+
+    /** {@code <NAME>} or {@code NAME}, either way: the name itself. */
+    public static String bare(String token) {
+        String trimmed = token == null ? "" : token.trim();
+        Matcher m = TOKEN_REF.matcher(trimmed);
+        return m.matches() ? m.group(1) : trimmed;
+    }
+
+    /** A token as it is written in a phrase. */
+    public static String reference(String token) {
+        return "<" + bare(token) + ">";
+    }
+
+    /** Token references whose name is not upper case, for validation (FR-012). */
+    public static Set<String> malformed(String text) {
+        Set<String> bad = new LinkedHashSet<>();
+        for (Placeholder ph : placeholders(text)) {
+            for (String token : ph.tokens()) {
+                if (!TOKEN_NAME.matcher(token).matches()) {
+                    bad.add(token);
+                }
+            }
+        }
+        return bad;
     }
 
     /**
