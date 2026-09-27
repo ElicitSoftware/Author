@@ -39,17 +39,17 @@ steps: 15|30012b4f-1a9a-5758-bc4b-480db86272e0|15|Thank you|Thank you||0|||fhhs-
 sections: 1|ccbb1e10-2f85-5610-9287-c7c702bd20c7|1|Introduction|Introduction||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
 sections: 2|0ea9abea-28d0-5ccc-ba06-4ccc4df9c999|2|Demographics|Demographics||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
 sections: 3|92755eff-8ba0-5a90-aab6-22ad9846596c|3|Proband|Proband||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 4|bd0bff95-4eda-546c-98c5-37b3f88d43f8|4|{CS2's\|Your} Cancers|Cancers||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 5|f221470a-98f6-59a9-8d31-f234522275aa|5|{G1's\|Your} Child {S#} - {S1}|Child||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 6|7a7cdf5a-d44d-549c-902e-8865bd20a498|6|{R1's\|Your} Sibling {S#} - {S1}|Sibling||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 7|c54aeaa9-3c67-5807-bce3-25d771c0601f|7|{G1's\|Your} Mother|Mother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 8|3e798e16-92f4-558f-99d5-9814047065e6|8|{G1's\|Your} Maternal Grandmother|Maternal Grandmother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 9|b1aa9db9-daa9-5f84-b76a-6832929a7049|9|{G1's\|Your} Maternal Grandfather|Maternal Grandfather||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 10|37058c25-97e4-5629-a084-ecf93e807649|10|{G1's\|Your} Mother's Siblings|Mother's Siblings||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 11|2900d4b0-e789-50d9-b71c-3e62f1c54b3c|11|{G1's\|Your} Father|Father||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 12|472996d3-8ea6-5308-95f2-0a15dffca364|12|{G1's\|Your} Paternal Grandmother|Paternal Grandmother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 13|7b90b72a-5eb9-5908-ba3e-6568da1e0d9d|13|{G1's\|Your} Paternal Grandfather|Paternal Grandfather||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
-sections: 14|89d7c6d9-83ce-54fa-8ccc-24808ede0b58|14|{G1's\|Your} Father's Siblings|Father's Siblings||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 4|bd0bff95-4eda-546c-98c5-37b3f88d43f8|4|{<CS2>'s\|Your} Cancers|Cancers||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 5|f221470a-98f6-59a9-8d31-f234522275aa|5|{<G1>'s\|Your} Child {S#} - {<S1>}|Child||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 6|7a7cdf5a-d44d-549c-902e-8865bd20a498|6|{<R1>'s\|Your} Sibling {S#} - {<S1>}|Sibling||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 7|c54aeaa9-3c67-5807-bce3-25d771c0601f|7|{<G1>'s\|Your} Mother|Mother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 8|3e798e16-92f4-558f-99d5-9814047065e6|8|{<G1>'s\|Your} Maternal Grandmother|Maternal Grandmother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 9|b1aa9db9-daa9-5f84-b76a-6832929a7049|9|{<G1>'s\|Your} Maternal Grandfather|Maternal Grandfather||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 10|37058c25-97e4-5629-a084-ecf93e807649|10|{<G1>'s\|Your} Mother's Siblings|Mother's Siblings||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 11|2900d4b0-e789-50d9-b71c-3e62f1c54b3c|11|{<G1>'s\|Your} Father|Father||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 12|472996d3-8ea6-5308-95f2-0a15dffca364|12|{<G1>'s\|Your} Paternal Grandmother|Paternal Grandmother||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 13|7b90b72a-5eb9-5908-ba3e-6568da1e0d9d|13|{<G1>'s\|Your} Paternal Grandfather|Paternal Grandfather||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
+sections: 14|89d7c6d9-83ce-54fa-8ccc-24808ede0b58|14|{<G1>'s\|Your} Father's Siblings|Father's Siblings||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
 sections: 15|ea83f118-cf9a-58c7-9d1f-ebb3b5864ad8|15|Thank you|Thank you||0|||fhhs-researcher|Transcribed from ElicitDesigner answers
 steps_sections: 101|672a5e3d-4b92-5e3d-a833-68b0f61847ea|1|1|1|1|0001-0001-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
 steps_sections: 102|572eefe3-c66e-5c80-95df-ad887084670e|2|2|2|1|0001-0002-0000-0001-0000-0000-0000|0|||fhhs-researcher|Transcribed from ElicitDesigner answers
