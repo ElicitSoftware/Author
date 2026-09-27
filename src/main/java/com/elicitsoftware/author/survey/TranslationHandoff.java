@@ -314,17 +314,18 @@ public class TranslationHandoff {
                 Translate each item's "source" into its "translation" field, from %s into %s. \
                 Leave every other field exactly as it is; do not add, remove or reorder items.
 
-                A placeholder is written {phrase containing a TOKEN|default text}. The token is \
-                the key listed in that item's "tokens", such as S1 or NAME; match it as written, \
-                though its case does not matter. Keep the key itself untranslated, translate the \
-                phrase around it, and translate the default after the bar -- the default is what a \
-                respondent reads when the survey has no value to fill in, so one left in the source \
-                language shows through in the middle of your sentence. Move the key to where the \
-                language needs it, and reshape the phrase where the language requires it: English \
-                "{name's|this person's} gender" becomes "el genero de {name|esta persona}" in a \
-                language that forms no possessive with 's. Keep the braces and the bar; never add \
-                or drop one. A translation must use exactly the tokens its source uses -- the keys, \
-                not the phrases that carry them.
+                A placeholder is written {phrase containing a <TOKEN>|default text}. The token is \
+                the upper-case key in angle brackets, listed in that item's "tokens"; copy \
+                <TOKEN> across exactly, brackets and all, and never translate what is inside them. \
+                Translate the phrase around it, and translate the default after the bar -- the \
+                default is what a respondent reads when the survey has no value to fill in, so one \
+                left in the source language shows through in the middle of your sentence. Move the \
+                token to where the language needs it, and reshape the phrase where the language \
+                requires it: English "{<NAME>'s|this person's} gender" becomes "el genero de \
+                {<NAME>|esta persona}" in a language that forms no possessive with 's. Keep the \
+                braces, the angle brackets and the bar; never add or drop one. A translation must \
+                use exactly the tokens its source uses -- the bracketed keys, not the phrases that \
+                carry them.
 
                 Where "flags" contains "html", keep the tags and translate only the text between \
                 them. Respect "max_length": it already allows for the target language running \

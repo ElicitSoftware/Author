@@ -105,7 +105,7 @@ class TranslationHandoffTest {
         assertEquals(TranslationHandoff.FORMAT, file.path("format").asText());
         assertEquals(String.valueOf(s.surveyKey), file.path("survey_key").asText());
         assertEquals(SPANISH, file.path("language").asText());
-        assertTrue(file.path("instructions").asText().contains("{phrase containing a TOKEN|default text}"),
+        assertTrue(file.path("instructions").asText().contains("{phrase containing a <TOKEN>|default text}"),
                 "the rules travel in the document, so an agent needs nothing else");
 
         JsonNode item = null;

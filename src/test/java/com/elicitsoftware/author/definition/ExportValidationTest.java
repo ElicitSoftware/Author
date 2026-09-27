@@ -212,31 +212,31 @@ class ExportValidationTest {
     @TestTransaction
     void aPlaceholderWithoutADefaultThatNoRuleFillsIsAnError() {
         Survey s = fixture();
-        setText(s, STEP_TWO_QUESTION, "Anything else, {NAME}?");
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>}?");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "questions".equals(i.kind())
-                && i.message().contains("uses {NAME} without a default and no rule fills it there")), issues.toString());
+                && i.message().contains("uses {<NAME>} without a default and no rule fills it there")), issues.toString());
     }
 
     @Test
     @TestTransaction
     void aPlaceholderWithADefaultThatNoRuleFillsIsAWarning() {
         Survey s = fixture();
-        setText(s, STEP_TWO_QUESTION, "Anything else, {NAME|friend}?");
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "questions".equals(i.kind())
-                && i.message().contains("uses {NAME|friend} but no rule fills it there")), issues.toString());
-        assertTrue(issues.stream().noneMatch(i -> i.isError() && i.message().contains("{NAME}")), issues.toString());
+                && i.message().contains("uses {<NAME>|friend} but no rule fills it there")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.isError() && i.message().contains("{<NAME>}")), issues.toString());
     }
 
     @Test
     @TestTransaction
     void aTextRuleOnTheStepFillsEveryQuestionInIt() {
         Survey s = fixture();
-        setText(s, STEP_TWO_QUESTION, "Anything else, {NAME}?");
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>}?");
         textRuleOntoStepTwo(s, "NAME");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("{NAME}")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("{<NAME>}")), issues.toString());
     }
 
     @Test
@@ -254,10 +254,10 @@ class ExportValidationTest {
     @TestTransaction
     void aShowRuleWithATokenFillsItAndIsWarnedWhenNothingUsesIt() {
         Survey s = fixture();
-        setText(s, STEP_TWO_QUESTION, "Anything else, {NAME}?");
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>}?");
         ruleOntoStepTwo(s, "SHOW", "NAME");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("{NAME}")), "a SHOW rule fills the token: " + issues);
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("{<NAME>}")), "a SHOW rule fills the token: " + issues);
 
         Relationship unused = ruleOntoStepTwo(s, "SHOW", "ZZZ");
         issues = validation.validate(Survey.findById(s.id));

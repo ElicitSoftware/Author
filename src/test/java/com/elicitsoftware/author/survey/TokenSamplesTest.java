@@ -69,8 +69,8 @@ class TokenSamplesTest {
     @Test
     void aRuleWithNothingToWriteStillFillsTheToken() {
         TokenSamples samples = TokenSamples.of(List.of(rule("TEXT", "NAME", null, 400, 10, null, null)), MOUNTS, ASSIGNMENTS, Map.of());
-        assertTrue(samples.fills(new Tokens.Placeholder("Has NAME been", "Were you"), 10, 200, 300), "validation sees the rule");
-        assertFalse(samples.fills(new Tokens.Placeholder("OTHER", null), 10, 200, 300));
+        assertTrue(samples.fills(new Tokens.Placeholder("Has <NAME> been", "Were you"), 10, 200, 300), "validation sees the rule");
+        assertFalse(samples.fills(new Tokens.Placeholder("<OTHER>", null), 10, 200, 300));
         assertFalse(samples.forMount(10, 200, 300).containsKey("NAME"), "the preview falls back to the placeholder's default");
     }
 

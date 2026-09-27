@@ -147,7 +147,7 @@ public class RelationshipQuery {
         return switch (action) {
             case "SHOW" -> "Show " + name;
             case "REPEAT" -> "Repeat " + name;
-            case "TEXT" -> "Replace " + (r.token != null && !r.token.isBlank() ? "{" + r.token + "}" : name);
+            case "TEXT" -> "Replace " + (r.token != null && !r.token.isBlank() ? Tokens.reference(r.token) : name);
             default -> (action.isBlank() ? "Rule" : action) + " " + name;
         };
     }
@@ -166,7 +166,7 @@ public class RelationshipQuery {
         };
         boolean unary = "is true".equals(op) || "exists".equals(op);
         String value = unary || r.referenceValue == null || r.referenceValue.isBlank() ? "" : " " + r.referenceValue;
-        String token = r.token != null && !r.token.isBlank() ? " {" + r.token + "}" : "";
+        String token = r.token != null && !r.token.isBlank() ? " " + Tokens.reference(r.token) : "";
         return op + value + token;
     }
 }
