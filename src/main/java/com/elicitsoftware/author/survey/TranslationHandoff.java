@@ -256,26 +256,23 @@ public class TranslationHandoff {
     }
 
     /**
-     * The tokens a string uses, as the runtime fills them.
+     * The tokens a string uses, as the runtime fills them: the {@code <TOKEN>} references inside its
+     * placeholders.
      * <p>
-     * Not {@code Tokens.names} alone: that sees only a bare-word placeholder such as
-     * {@code {NAME|friend}}, and the common form is a phrase carrying the token, such as
-     * {@code {S1's mother|your mother}}, which the runtime fills because the phrase <em>contains</em>
-     * the token. Validating on names alone would wave through a translation that dropped exactly
-     * the placeholders that matter most.
+     * The survey's own token list is not consulted, and does not need to be. A token declares itself
+     * by its brackets, so every use is visible in the string alone -- which is the point of the
+     * brackets. (This used to walk {@code Tokens.known(surveyId)} as well and keep any token the
+     * phrase <em>contained</em>, because a phrase carrying a bare name was the common form. Since a
+     * reference matches only in brackets, that pass could no longer add anything {@code names} had
+     * not already found. A bare name in a base text is reported at export instead, where it can be
+     * fixed: UC-007 BR-005.)
      *
-     * @param surveyId the survey whose rules name the tokens
+     * @param surveyId the survey the string belongs to, for callers' symmetry
      * @param text     the string to inspect
      * @return every token the string uses, ordered
      */
     static Set<String> tokensOf(int surveyId, String text) {
-        Set<String> used = new java.util.TreeSet<>(Tokens.names(text));
-        for (String token : Tokens.known(surveyId)) {
-            if (Tokens.uses(text, token)) {
-                used.add(token);
-            }
-        }
-        return used;
+        return new java.util.TreeSet<>(Tokens.names(text));
     }
 
     /** Every {@code &#123;} must be consumed by a placeholder, and none may nest. */

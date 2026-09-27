@@ -333,4 +333,53 @@ class ExportValidationTest {
         assertTrue(issues.stream().noneMatch(i -> i.message().contains("display-only")), issues.toString());
     }
 
+    // ---- UC-007 BR-005: a placeholder that names its token as a bare word ----------------------
+
+    @Test
+    @TestTransaction
+    void aPlaceholderNamingItsTokenAsABareWordIsAnError() {
+        Survey s = fixture();
+        // A rule carries NAME, so NAME is a token this survey uses; the text names it without brackets.
+        setText(s, STEP_TWO_QUESTION, "{Does NAME|Do you} have anything to add?");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "questions".equals(i.kind())
+                        && i.message().contains("without angle brackets")
+                        && i.message().contains("{Does <NAME>|Do you}")),
+                "the message should show the corrected placeholder: " + issues);
+    }
+
+    @Test
+    @TestTransaction
+    void aBracketedPlaceholderIsNotFlagged() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "{Does <NAME>|Do you} have anything to add?");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("without angle brackets")), issues.toString());
+    }
+
+    @Test
+    @TestTransaction
+    void aBareTokenNameInARulesOwnValueIsAnError() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        Relationship created = textRuleOntoStepTwo(s, "NAME");
+        // The value a rule puts in the slot is a placeholder in its own right, and needs brackets too.
+        em.createNativeQuery("UPDATE survey.relationships SET default_upstream_value = ?1 WHERE id = ?2")
+                .setParameter(1, "{NAME's|your} mother").setParameter(2, created.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("{<NAME>'s|your}")),
+                "a rule's own value is checked the same way: " + issues);
+    }
+
 }
