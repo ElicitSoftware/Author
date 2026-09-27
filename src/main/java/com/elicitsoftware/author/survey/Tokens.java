@@ -62,6 +62,9 @@ public final class Tokens {
     /** Runtime counters the Survey app fills itself. */
     public static final Set<String> BUILT_IN = Set.of("Q#", "S#");
 
+    /** Anything written between angle brackets, token reference or HTML tag alike. */
+    private static final Pattern ANGLED = Pattern.compile("<[^>]+>");
+
     public static final int MAX_LENGTH = 10;
 
     private Tokens() { }
@@ -157,6 +160,26 @@ public final class Tokens {
             names.addAll(ph.tokens());
         }
         return names;
+    }
+
+    /**
+     * Whether the text carries markup, counting only what lies outside its placeholders.
+     *
+     * <p>Markup belongs around a placeholder, never inside it: {@code <b>{<NAME>|name}</b>}, not
+     * {@code {<b><NAME></b>|<b>name</b>}}. Inside the braces every {@code <...>} is a token, so a
+     * plain {@code contains("<")} answers "has a token" rather than "has markup" and flags every
+     * personalized string in the survey.</p>
+     */
+    public static boolean hasMarkup(String text) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+        return ANGLED.matcher(outsidePlaceholders(text)).find();
+    }
+
+    /** The text with every placeholder removed, leaving what surrounds them. */
+    private static String outsidePlaceholders(String text) {
+        return PLACEHOLDER.matcher(text).replaceAll(" ");
     }
 
     /** {@code <NAME>} or {@code NAME}, either way: the name itself. */

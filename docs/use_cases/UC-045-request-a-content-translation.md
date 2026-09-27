@@ -66,6 +66,8 @@ The preamble states the rules in the document itself, so that an agent needs not
 
 A placeholder is written `{phrase containing a <TOKEN>|default text}`. The token is the upper-case key in angle brackets -- what the survey substitutes an earlier answer into; the phrase and the default around it are prose to be translated. The token must survive verbatim, brackets and all, the braces and the bar must survive, and the translation must use exactly the tokens the base text uses -- the bracketed keys, not the phrases that carry them.
 
+Everything between the braces is translatable except the tokens: the phrase, the default after the bar, and the word order and grammar the target language needs. Markup is not part of that, because it never appears inside a placeholder -- tags wrap the braces instead (UC-007 BR-006) -- so a phrase handed to a translator is prose and keys only, and the `html` flag speaks about the text around the placeholder. The translator may move a token and reshape the phrase around it: English `{<NAME>'s|this person's} gender` becomes `el genero de {<NAME>|esta persona}` in a language that forms no possessive with an apostrophe.
+
 ### BR-004: The length budget is not the column width
 
 The budget in each item allows the target language to run longer than the source, because a translation is stored in a column with no width; what it protects is the space the string is drawn in. A translator is never given a limit the import will not accept.

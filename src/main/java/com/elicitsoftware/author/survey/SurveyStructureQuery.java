@@ -116,12 +116,41 @@ public class SurveyStructureQuery {
         return out;
     }
 
+    /** A placeholder as the author wrote it, {@code {phrase|default}} — the phrase holds the tokens. */
+    private static final java.util.regex.Pattern PLACEHOLDER = java.util.regex.Pattern.compile("\\{[^{}]*}");
+
+    /**
+     * A question's text as a one-line label: markup removed, placeholders left as written.
+     *
+     * <p>A token is written {@code <NAME>} inside a placeholder's phrase (UC-045 BR-003), which is
+     * indistinguishable from an HTML tag on its own — {@code <b>} matches {@link Tokens#TOKEN_REF}
+     * just as well as {@code <NAME>} does. Stripping every {@code <…>} therefore erased the author's
+     * tokens from the structure tree, the question row and the breadcrumb: "How old is
+     * {@code {<NAME>|this person}}?" was shown as "How old is { |this person}?", leaving nothing on
+     * screen to say the text was personalized at all.
+     *
+     * <p>Position is what tells the two apart, and it is the same rule the runtime applies: a token
+     * means something only inside a placeholder, so markup is stripped outside the braces and
+     * whatever is between them is kept verbatim.</p>
+     */
     static String plain(String html) {
         if (html == null) {
             return "";
         }
-        String text = html.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim();
+        java.util.regex.Matcher placeholder = PLACEHOLDER.matcher(html);
+        StringBuilder kept = new StringBuilder();
+        int at = 0;
+        while (placeholder.find()) {
+            kept.append(stripMarkup(html.substring(at, placeholder.start()))).append(placeholder.group());
+            at = placeholder.end();
+        }
+        kept.append(stripMarkup(html.substring(at)));
+        String text = kept.toString().replaceAll("\\s+", " ").trim();
         return text.length() > 60 ? text.substring(0, 57) + "…" : text;
+    }
+
+    private static String stripMarkup(String html) {
+        return html.replaceAll("<[^>]+>", " ");
     }
 
     public static BigDecimal order(StructureNode n) {

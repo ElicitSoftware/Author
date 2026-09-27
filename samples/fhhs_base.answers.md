@@ -23,22 +23,22 @@ recreate the Family Health History Survey (FHHS) from memory of the running surv
 | 1 | Welcome | Welcome | Introduction=Introduction | |
 | 2 | Demographics | Demographics | Demographics=Demographics | |
 | 3 | Proband | Proband | Proband=Proband | |
-| 4 | Proband Cancer | Proband Cancer | {CS2's\|Your} Cancers=Cancers | |
-| 5 | Children | Child | {G1's\|Your} Child {S#} - {S1}=Child | {CS2's\|Your} Cancers |
-| 6 | Siblings | Sibling | {R1's\|Your} Sibling {S#} - {S1}=Sibling | {CS2's\|Your} Cancers |
-| 7 | Mother | Mother | {G1's\|Your} Mother=Mother | {CS2's\|Your} Cancers |
-| 8 | Maternal Grandmother | Maternal Grandmother | {G1's\|Your} Maternal Grandmother=Maternal Grandmother | {CS2's\|Your} Cancers |
-| 9 | Maternal Grandfather | Maternal Grandfather | {G1's\|Your} Maternal Grandfather=Maternal Grandfather | {CS2's\|Your} Cancers |
-| 10 | Mother's Siblings | Mother's Sibling | {G1's\|Your} Mother's Siblings=Mother's Siblings | {CS2's\|Your} Cancers |
-| 11 | Father | Father | {G1's\|Your} Father=Father | {CS2's\|Your} Cancers |
-| 12 | Paternal Grandmother | Paternal Grandmother | {G1's\|Your} Paternal Grandmother=Paternal Grandmother | {CS2's\|Your} Cancers |
-| 13 | Paternal Grandfather | Paternal Grandfather | {G1's\|Your} Paternal Grandfather=Paternal Grandfather | {CS2's\|Your} Cancers |
-| 14 | Father's Siblings | Father's Sibling | {G1's\|Your} Father's Siblings=Father's Siblings | {CS2's\|Your} Cancers |
+| 4 | Proband Cancer | Proband Cancer | {<CS2>'s\|Your} Cancers=Cancers | |
+| 5 | Children | Child | {<G1>'s\|Your} Child {S#} - {<S1>}=Child | {<CS2>'s\|Your} Cancers |
+| 6 | Siblings | Sibling | {<R1>'s\|Your} Sibling {S#} - {<S1>}=Sibling | {<CS2>'s\|Your} Cancers |
+| 7 | Mother | Mother | {<G1>'s\|Your} Mother=Mother | {<CS2>'s\|Your} Cancers |
+| 8 | Maternal Grandmother | Maternal Grandmother | {<G1>'s\|Your} Maternal Grandmother=Maternal Grandmother | {<CS2>'s\|Your} Cancers |
+| 9 | Maternal Grandfather | Maternal Grandfather | {<G1>'s\|Your} Maternal Grandfather=Maternal Grandfather | {<CS2>'s\|Your} Cancers |
+| 10 | Mother's Siblings | Mother's Sibling | {<G1>'s\|Your} Mother's Siblings=Mother's Siblings | {<CS2>'s\|Your} Cancers |
+| 11 | Father | Father | {<G1>'s\|Your} Father=Father | {<CS2>'s\|Your} Cancers |
+| 12 | Paternal Grandmother | Paternal Grandmother | {<G1>'s\|Your} Paternal Grandmother=Paternal Grandmother | {<CS2>'s\|Your} Cancers |
+| 13 | Paternal Grandfather | Paternal Grandfather | {<G1>'s\|Your} Paternal Grandfather=Paternal Grandfather | {<CS2>'s\|Your} Cancers |
+| 14 | Father's Siblings | Father's Sibling | {<G1>'s\|Your} Father's Siblings=Father's Siblings | {<CS2>'s\|Your} Cancers |
 | 15 | Thank you | Thank you | Thank you=Thank you | |
 
-The headings use the token syntax the Welcome step explains: `{G1's|Your}` reads
+The headings use the token syntax the Welcome step explains: `{<G1>'s|Your}` reads
 "Anna's" when someone is filling the survey in for Anna and "Your" otherwise; `{S#}`
-is the instance number and `{S1}` the name entered for that child or sibling.
+is the instance number and `{<S1>}` the name entered for that child or sibling.
 
 ## Delivery
 

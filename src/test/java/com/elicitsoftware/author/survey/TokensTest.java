@@ -112,4 +112,31 @@ class TokensTest {
         assertEquals(java.util.Set.of("G1"), Tokens.bareTokenNames("{<S1> and G1|you both}", KNOWN));
     }
 
+    /** UC-007 BR-006: a token is not markup, so a personalized string is not an HTML one. */
+    @Test
+    void markupIsWhatLiesOutsideThePlaceholders() {
+        assertTrue(Tokens.hasMarkup("<p>How old is {<NAME>|this person}?</p>"));
+        assertFalse(Tokens.hasMarkup("How old is {<NAME>|this person}?"), "a token is not markup");
+        assertFalse(Tokens.hasMarkup("{<G1>'s|Your} Mother"));
+        assertFalse(Tokens.hasMarkup(null));
+        assertTrue(Tokens.hasMarkup("Plain <b>bold</b> text"));
+    }
+
+    /**
+     * UC-007 BR-006: a tag inside a placeholder reads as a token reference, which is what makes it
+     * catchable -- the survey defines no such token. Only the phrase carries references; the
+     * default is used verbatim.
+     */
+    @Test
+    void aTagInsideAPlaceholderReadsAsATokenReference() {
+        assertEquals(java.util.Set.of("b", "NAME"),
+                Tokens.placeholders("{<b><NAME>|name}").get(0).tokens());
+        assertEquals(java.util.Set.of("NAME"),
+                Tokens.placeholders("Ask {<NAME>|<i>someone</i>}").get(0).tokens(),
+                "the default is never scanned for references");
+        assertEquals(java.util.Set.of("NAME"),
+                Tokens.placeholders("<b>{<NAME>|name}</b>").get(0).tokens(),
+                "a tag outside the braces is not a reference at all");
+    }
+
 }

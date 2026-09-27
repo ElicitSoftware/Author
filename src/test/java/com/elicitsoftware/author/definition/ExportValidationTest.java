@@ -363,6 +363,50 @@ class ExportValidationTest {
         assertTrue(issues.stream().noneMatch(i -> i.message().contains("without angle brackets")), issues.toString());
     }
 
+    // ---- UC-007 BR-006: a reference no rule defines, markup included ---------------------------
+
+    /** A tag in the phrase reads as a token reference, and filling is all or nothing. */
+    @Test
+    @TestTransaction
+    void aTagInsideAPlaceholderIsReportedAsAnUndefinedTokenWithTheTagMovedOut() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "{<b><NAME></b>|<b>name</b>}");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "questions".equals(i.kind())
+                        && i.message().contains("no rule defines the token b")
+                        && i.message().contains("write <b>{")),
+                "it should name <b> as undefined and suggest moving the tag out: " + issues);
+    }
+
+    /** Markup around the placeholder is how it is meant to be written. */
+    @Test
+    @TestTransaction
+    void aTagOutsideThePlaceholderIsNotFlagged() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "<b>{<NAME>|name}</b>");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule defines the token")), issues.toString());
+    }
+
+    /** The default is used verbatim, so a tag there fills nothing in and is not a reference. */
+    @Test
+    @TestTransaction
+    void aTagInTheDefaultIsNotAReference() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Ask {<NAME>|<i>someone</i>}");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule defines the token")), issues.toString());
+    }
+
     @Test
     @TestTransaction
     void aBareTokenNameInARulesOwnValueIsAnError() {
