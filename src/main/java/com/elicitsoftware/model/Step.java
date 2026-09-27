@@ -33,7 +33,7 @@ public class Step extends StructuralElement {
     @Column(name = "id", nullable = false)
     public Integer id;
 
-    /** NUMERIC so a step can be inserted between two neighbours without renumbering. */
+    /** NUMERIC so a step can be inserted between two neighbors without renumbering. */
     @Column(name = "display_order", nullable = false)
     public BigDecimal displayOrder;
 

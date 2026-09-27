@@ -39,6 +39,7 @@ erDiagram
     SURVEY ||--o{ STEPS_SECTION : "defines"
     SURVEY ||--o{ SECTIONS_QUESTION : "defines"
     SURVEY ||--o{ METADATA : "defines"
+    SURVEY ||--o{ TRANSLATION : "defines"
     QUESTION_TYPE ||--o{ QUESTION : "classifies"
     SELECT_GROUP ||--o{ SELECT_ITEM : "contains"
     SELECT_GROUP ||--o{ QUESTION : "constrains"
@@ -353,10 +354,35 @@ A link between one structural element (a step/section assignment, a question, or
 
 **Constraints:** `(steps_sections_id, question_id, sections_question_id, ontology_id, value)` is unique. Exactly one of `steps_sections_id`, `question_id`, `sections_question_id` must be set — the schema's check constraint does not enforce this (NULL arithmetic), so `ReportingService` does. Reassigning a question's ontology tag is a stakeholder-approved retroactive exception — it reclassifies historical answers as well as future ones.
 
+### TRANSLATION
+
+One field of one element in one language: the ninth Type 2 table and the first that is not structural (durable key: `translation_id`). It attaches to the element it translates by that element's `*_key` UUID and the name of the base column, not by any id, so it survives versioning at a site and import into another instance. Author holds one version-0 row per translation, retires by closing `effective_to`, and never renders a translation anywhere but the Translations page (UC-043).
+
+| Attribute         | Description                                                                                  | Data Type | Length/Precision | Validation Rules                                    |
+|-------------------|----------------------------------------------------------------------------------------------|-----------|-------------------|-----------------------------------------------------|
+| id                | Surrogate primary key of this specific version row                                            | Integer   | 10                | Primary Key, Sequence                               |
+| survey_id         | Survey this translation belongs to                                                            | Integer   | 10                | Not Null, Foreign Key (surveys.id)                  |
+| element_type      | Table the translated element lives in: `surveys`, `steps`, `sections`, `questions`, `select_items`, `relationships`, `reports` | String | 32 | Not Null, Check constraint |
+| element_key       | Element key of the translated element; never a surrogate or durable id                        | UUID      | 36                | Not Null                                            |
+| field             | Base column this row translates, from the translatable-field whitelist (C-015)                | String    | 32                | Not Null                                            |
+| language          | BCP-47 tag, as the mounted chrome bundles write it (`es-419`, `ar`)                           | String    | 35                | Not Null                                            |
+| value             | The translated text; a removal is a closed `effective_to`, never an empty value               | String    | Unlimited (text)  | Not Null                                            |
+| source_hash       | Lower-case hex SHA-256 of the UTF-8 bytes of the base text this was translated from           | String    | 64                | Not Null                                            |
+| source_text       | Authoring-only snapshot of that base text for the out-of-date diff; never exported (FR-036 precedent) | String | Unlimited (text) | Optional                                    |
+| translation_id    | Durable key shared by every version of this translation                                       | Integer   | 10                | Not Null                                            |
+| translation_key   | Element key: cross-deployment identity, minted once, copied to every version, never regenerated | UUID     | 36                | Not Null, Unique with version                       |
+| version           | Version number; always 0 in Author, incremented by Admin's update service at deployed sites   | Integer   | 10                | Not Null, Default: 0                                |
+| effective_from    | Start of validity; epoch in Author                                                            | DateTime  | -                 | Not Null, Default: 1970-01-01T00:00:00Z             |
+| effective_to      | `9999-12-31T23:59:59Z` = current; an earlier instant = removed in Author, closed at a site     | DateTime  | -                 | Not Null, Default: 9999-12-31T23:59:59Z             |
+| published_by      | Carried from the applied file; not set by Author                                              | String    | Unlimited (text)  | Optional                                            |
+| published_comment | Carried from the applied file; not set by Author                                              | String    | Unlimited (text)  | Optional                                            |
+
+**Constraints:** `(translation_id, version)` and `(translation_key, version)` are unique. At most one current row per `translation_id`, and at most one current row per `(survey_id, language, element_key, field)`. Retiring the translated element closes every current translation of it at the same instant; restoring it reopens them.
+
 ## Excluded from This Model
 
 `respondents`, `answers`, and `dependents` (respondent session and response data) and `respondent_psa` exist in the same `survey` schema but are out of Author's scope per `docs/vision.md` — Author neither creates nor edits them. In Author's local preview stack the Survey app may create them; Author's removal semantics (retire, never delete) keep them valid.
 
-`reports` and `post_survey_actions` are part of the `.elicit` format (`report_key`, `post_survey_action_key`) and will be modelled once Survey `V015` adds their element keys; until then Author exports them with zero records.
+`reports` and `post_survey_actions` are part of the `.elicit` format (`report_key`, `post_survey_action_key`) and will be modeled once Survey `V015` adds their element keys; until then Author exports them with zero records.
 
 `survey.survey_log` (Admin-owned; one row per apply attempt with `survey_key`, `action`, `outcome`, `performed_by`, `file_name`, `revision`) is the per-site audit trail of applied definitions. It does not exist in Author's database.

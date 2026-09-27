@@ -49,7 +49,7 @@ class SurveyDefinitionExporterTest {
     EntityManager em;
 
     /** Records keyed by table + element key, with local ids and display-key prefixes neutralised. */
-    static Map<String, String> normalised(String text) {
+    static Map<String, String> normalized(String text) {
         Map<String, String> out = new TreeMap<>();
         for (String line : text.split("\n")) {
             if (line.isBlank() || line.startsWith("#")) {
@@ -106,8 +106,8 @@ class SurveyDefinitionExporterTest {
         assertTrue(exported.contains(ElicitFormat.REVISION_HEADER + " " + result.revision()));
         assertEquals(SurveyDefinitionImporterTest.headerCounts().values().stream().mapToInt(Integer::intValue).sum(),
                 result.counts().values().stream().mapToInt(Integer::intValue).sum(), "every record written back");
-        Map<String, String> expectedRows = normalised(original);
-        Map<String, String> actualRows = normalised(exported);
+        Map<String, String> expectedRows = normalized(original);
+        Map<String, String> actualRows = normalized(exported);
         List<String> differences = new ArrayList<>();
         expectedRows.forEach((key, value) -> {
             String actual = actualRows.get(key);

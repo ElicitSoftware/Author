@@ -91,4 +91,4 @@ The manual is produced by the same build that produces the application image and
 
 ### BR-005: The manual is the default brand
 
-The manual is typeset in the Elicit default brand — its logo, colours and typefaces — regardless of which brand a deployment mounts, so that one document serves every site.
+The manual is typeset in the Elicit default brand — its logo, colors and typefaces — regardless of which brand a deployment mounts, so that one document serves every site.

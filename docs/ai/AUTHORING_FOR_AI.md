@@ -105,7 +105,8 @@ against records already read:
 
 `surveys` → `select_groups` → `select_items` → `steps` → `sections` →
 `steps_sections` → `questions` → `sections_questions` → `relationships` →
-`reports` → `post_survey_actions` → `dimensions` → `ontology` → `metadata`
+`reports` → `post_survey_actions` → `dimensions` → `ontology` → `metadata` →
+`translations`
 
 The `surveys` record must come first, and there must be **exactly one** of them —
 one survey per file.
@@ -149,11 +150,12 @@ Always write `0` for `version` and leave the other four empty: `0||||`
 | `dimensions` | 3 | `id \| dimension_key \| name` |
 | `ontology` | 5 | `id \| ontology_key \| name \| tag \| dimension` |
 | `metadata` | 7 | `id \| metadata_key \| steps_sections_id \| question_id \| sections_question_id \| ontology_id \| value` |
+| `translations` | 13 | `translation_id \| translation_key \| element_type \| element_key \| field \| language \| value \| source_hash \| ` + tail |
 
 **Omit the last five tables.** `reports`, `post_survey_actions`, `dimensions`,
 `ontology` and `metadata` are the reporting and integration layer. A person
 configures those in Author, where the consequences are visible. They are listed
-here only so you recognise them in an exported file.
+here only so you recognize them in an exported file.
 
 Notes on individual fields:
 
@@ -215,6 +217,13 @@ On the `surveys` record only, two fields are worth filling:
 
 If you want to record provenance — the model, the date, the request — put a short
 line in the survey's `description`, which a person can read and edit.
+
+The `surveys` record has two further trailing fields, `base_language` and
+`content_languages` (Survey V019), which you may leave off entirely: a record that
+stops at `published_comment` is read as English content publishing no translations,
+which is what a draft is. Do not write `translations` records. A translation belongs
+to wording that has been reviewed, and it is authored in Author's Translations view
+against the finished survey (UC-043).
 
 ---
 
@@ -282,7 +291,7 @@ it repeats. Put the count question in its own section before the repeating one.
 | 2 | `DATE_PICKER` | |
 | 3 | `COMBOBOX` | needs an answer list |
 | 4 | `HTML` | informational, not an input |
-| 5 | `INTEGER` | honours `min_value` / `max_value` |
+| 5 | `INTEGER` | honors `min_value` / `max_value` |
 | 6 | `DOUBLE` | |
 | 7 | `RADIO` | needs an answer list |
 | 8 | `TEXT` | single-line text |

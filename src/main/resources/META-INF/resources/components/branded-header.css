@@ -136,7 +136,7 @@
     }
 }
 
-/* Manual link (UC-039): sits at the far right of the header, in the header's own text colour
+/* Manual link (UC-039): sits at the far right of the header, in the header's own text color
    so it works on a light or a dark brand. Hidden below the designer's minimum viewport
    (NFR-013), where header space is scarce and the drawer carries the same link. */
 .branded-header .header-manual-link {
@@ -175,7 +175,7 @@
 
 /* Language switcher (UC-007). A Select in the header would otherwise keep Lumo's
    page-level tokens (dark body text on a translucent dark tint), so scope the
-   tokens it reads to the brand's header text colour. The overlay renders outside
+   tokens it reads to the brand's header text color. The overlay renders outside
    the header and keeps the normal page styling. */
 .branded-header .language-switcher {
     --lumo-body-text-color: var(--brand-header-text);

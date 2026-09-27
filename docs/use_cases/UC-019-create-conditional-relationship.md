@@ -21,7 +21,7 @@
 3. The author drops the arrowhead on the target: a step lane header, a section card header or a question row.
 4. The system opens the rule dialog with the upstream question, the action and the downstream target filled in; the card the row or header sits in tells the system which mount of a shared section is meant.
 5. The author chooses the operator, enters the reference value, optionally names the token the rule fills — picked from the names the survey already uses or typed new; optional for Show and Repeat, required for Text (BR-005) — and an optional description, and saves.
-6. The system creates the rule with a key minted once — stored question-only when the target sits in the upstream question's own section, otherwise with the step and section the target is shown in (BR-001) — draws the arrow labelled by its action and target (UC-020 BR-004), and refreshes validation.
+6. The system creates the rule with a key minted once — stored question-only when the target sits in the upstream question's own section, otherwise with the step and section the target is shown in (BR-001) — draws the arrow labeled by its action and target (UC-020 BR-004), and refreshes validation.
 
 ## Alternative Flows
 
@@ -30,7 +30,7 @@
 **Trigger:** The author chooses Add rule… from a question row's menu (step 1)  
 **Flow:**
 
-1. The system opens the rule dialog with the upstream question filled in; the author picks the downstream kind and target from lists, in which a section mounted in several steps appears once per mount, labelled by its path. A question is labelled by its path and its type — `welcome › Demographics › married (radio)` — in both the upstream and the target list, since the type is what decides the operators and values the rule can use.
+1. The system opens the rule dialog with the upstream question filled in; the author picks the downstream kind and target from lists, in which a section mounted in several steps appears once per mount, labeled by its path. A question is labeled by its path and its type — `welcome › Demographics › married (radio)` — in both the upstream and the target list, since the type is what decides the operators and values the rule can use.
 2. Use case continues at step 5.
 
 ### A2: Text action without a token

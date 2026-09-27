@@ -90,7 +90,7 @@ class ConnectionChecksTest {
         assertTrue(result.detail().contains("HTTP 200"));
     }
 
-    /** UC-037 step 4: the discovery document is recognised by its issuer. */
+    /** UC-037 step 4: the discovery document is recognized by its issuer. */
     @Test
     void discoveryDocumentIsUp() {
         CheckResult result = checks.check(new ConnectionChecks.Target("Identity provider", "oidc", base + "/realm/",

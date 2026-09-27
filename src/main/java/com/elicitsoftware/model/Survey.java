@@ -60,6 +60,21 @@ public class Survey extends PanacheEntityBase {
     @Column(name = "post_survey_url", length = 255)
     public String postSurveyUrl;
 
+    /**
+     * The language this survey's content is written in (Survey V019; UC-044). Every string falls
+     * back to it, and every translation is a translation <em>of</em> it.
+     */
+    @Column(name = "base_language", nullable = false, length = 35)
+    public String baseLanguage = "en";
+
+    /**
+     * Comma-separated BCP-47 tags this survey is published in (UC-044). The author's decision, not
+     * a count of what exists: a language may be complete and unpublished while it is reviewed, or
+     * published and incomplete with the gaps falling back.
+     */
+    @Column(name = "content_languages", length = 255)
+    public String contentLanguages;
+
     @Column(name = "published_by")
     public String publishedBy;
 

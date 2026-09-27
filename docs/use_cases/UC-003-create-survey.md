@@ -41,7 +41,7 @@
 
 1. The system marks the name field as already in use and names the existing survey.
 2. The author changes the name or cancels.
-3. Use case continues at step 4, or ends if cancelled.
+3. Use case continues at step 4, or ends if canceled.
 
 ### A3: Author cancels
 

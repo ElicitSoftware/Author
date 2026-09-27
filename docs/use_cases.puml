@@ -72,6 +72,12 @@ rectangle "Elicit Author" {
     ' Localization (FR-049..FR-055)
     usecase "UC-040\nAuthor Surveys in My Language" as UC040
     usecase "UC-041\nManage Languages" as UC041
+
+    ' Content Translation (FR-056..FR-060)
+    usecase "UC-043\nTranslate Survey Content" as UC043
+    usecase "UC-044\nManage Content Languages" as UC044
+    usecase "UC-045\nRequest a Content Translation" as UC045
+    usecase "UC-046\nImport Content Translations" as UC046
 }
 
 ' Access
@@ -146,6 +152,12 @@ author --> UC040
 admin --> UC040
 author --> UC041
 
+' Content translation
+author --> UC043
+author --> UC044
+author --> UC045
+author --> UC046
+
 ' Relationships worth calling out explicitly
 UC008 ..> UC007 : <<include>>
 UC009 ..> UC007 : <<extend>>
@@ -165,5 +177,11 @@ UC039 ..> UC029 : <<extend>> printable form of the guide
 UC041 ..> UC040 : <<extend>> adds a language to the selector
 UC042 ..> UC029 : <<extend>> the same model, written for an AI agent
 UC042 ..> UC005 : <<include>> the draft is opened by importing it
+UC045 ..> UC043 : <<extend>> the bulk path out of the grid
+UC046 ..> UC043 : <<extend>> the bulk path back in
+UC044 ..> UC043 : <<include>> a language must be declared to be translated
+UC043 ..> UC008 : <<extend>> translations travel in the definition file
+UC043 ..> UC007 : <<extend>> stale and missing counts are export warnings
+UC009 ..> UC043 : <<extend>> retiring an element retires its translations
 
 @enduml
