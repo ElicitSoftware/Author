@@ -33,6 +33,8 @@ import java.util.Set;
  * inner level overriding the outer — so a rule on a step reaches every section and question in it.
  * A rule's value is its default upstream value when it has one, else the sample answer recorded on
  * the question it reads (UC-011 BR-005); a rule with neither previews as the placeholder's default.
+ * A rule reading a display-only question has no sample to fall back on, because such a question
+ * collects nothing for a token to take (UC-019 BR-006).
  */
 public final class TokenSamples {
 
@@ -71,20 +73,35 @@ public final class TokenSamples {
 
     /** The survey's current rules, mounts and assignments, with each question's sample answer. */
     public static TokenSamples load(int surveyId) {
-        Map<Integer, String> samples = new HashMap<>();
-        for (Question q : Question.<Question>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
-            samples.put(q.questionId, q.sample);
-        }
         return of(Relationship.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL),
                 StepsSections.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL),
                 SectionsQuestion.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL),
-                samples);
+                samplesOf(Question.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)));
+    }
+
+    /**
+     * The sample answer of every question that has an answer to give. A display-only question
+     * collects none (UC-019 BR-006), so its sample is not a value any token can take: a rule reading
+     * one fills its token from the rule's own default upstream value or not at all, and where it has
+     * none the preview must fall back to the placeholder's default -- which is what the respondent
+     * would read. Previewing the sample there is what let a rule look as though it worked when it
+     * could not (ElicitSoftware/Author#10).
+     */
+    public static Map<Integer, String> samplesOf(Collection<Question> questions) {
+        Map<Integer, String> samples = new HashMap<>();
+        for (Question q : questions) {
+            if (Tokens.collectsAnswer(q.questionType)) {
+                samples.put(q.questionId, q.sample);
+            }
+        }
+        return samples;
     }
 
     /**
      * @param rules       current rules; only the ones carrying a token matter, whatever their action
      *                    (the runtime fills a token from any rule that names it)
-     * @param samples     sample answer by durable question id
+     * @param samples     sample answer by durable question id, for the questions that collect an
+     *                    answer -- see {@link #samplesOf(Collection)}
      */
     public static TokenSamples of(Collection<Relationship> rules, Collection<StepsSections> mounts,
                                   Collection<SectionsQuestion> assignments, Map<Integer, String> samples) {

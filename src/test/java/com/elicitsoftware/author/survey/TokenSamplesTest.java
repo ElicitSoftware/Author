@@ -12,6 +12,8 @@ package com.elicitsoftware.author.survey;
  */
 
 import com.elicitsoftware.model.ActionType;
+import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.StepsSections;
@@ -115,4 +117,49 @@ class TokenSamplesTest {
         sq.sectionId = sectionId;
         return sq;
     }
+    // ---- UC-019 BR-006: a display-only question has no sample a token could take ---------------
+
+    private static Question question(int questionId, String typeName, String dataType, String sample) {
+        QuestionType type = new QuestionType();
+        type.name = typeName;
+        type.dataType = dataType;
+        Question q = new Question();
+        q.questionId = questionId;
+        q.questionType = type;
+        q.sample = sample;
+        return q;
+    }
+
+    @Test
+    void aDisplayOnlyQuestionsSampleIsNotATokenValue() {
+        Map<Integer, String> samples = TokenSamples.samplesOf(List.of(
+                question(40, "HTML", "", "Your Mother"),
+                question(41, "MODAL", "", "Your Father"),
+                question(42, "TEXT", "Text", "Bob")));
+
+        assertFalse(samples.containsKey(40), "HTML collects nothing, so its sample fills no token");
+        assertFalse(samples.containsKey(41), "nor does MODAL's");
+        assertEquals("Bob", samples.get(42));
+    }
+
+    @Test
+    void aRuleReadingADisplayOnlyQuestionPreviewsThePlaceholdersDefault() {
+        // The rule has no default upstream value of its own, so nothing fills the slot -- which is
+        // what the respondent would see. Previewing the HTML question's sample is the lie #10 is about.
+        TokenSamples samples = TokenSamples.of(List.of(rule("TEXT", "NAME", null, 400, 10, null, null)),
+                MOUNTS, ASSIGNMENTS, TokenSamples.samplesOf(List.of(question(40, "HTML", "", "Your Mother"))));
+
+        assertNull(samples.forMount(10, 200, 300).get("NAME"));
+        assertTrue(samples.tokensAt(10, 200, 300).contains("NAME"), "the rule still reaches the text");
+    }
+
+    @Test
+    void aDisplayOnlyRuleWithItsOwnValueStillPreviewsThatValue() {
+        TokenSamples samples = TokenSamples.of(
+                List.of(rule("TEXT", "NAME", "{G1's|your} mother", 400, 10, null, null)),
+                MOUNTS, ASSIGNMENTS, TokenSamples.samplesOf(List.of(question(40, "HTML", "", "Your Mother"))));
+
+        assertEquals("{G1's|your} mother", samples.forMount(10, 200, 300).get("NAME"));
+    }
+
 }
