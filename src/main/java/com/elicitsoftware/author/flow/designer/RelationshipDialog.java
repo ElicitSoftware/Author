@@ -133,7 +133,15 @@ public class RelationshipDialog extends Dialog {
             }
             token.setValue(typed.isEmpty() ? null : typed);
         });
-        token.setHelperText(getTranslation("relationshipDialog.token.helper"));
+        // A display-only source can only fill the token from the rule's own default upstream value
+        // (UC-019 BR-006); say so here rather than let the author find out from the deployed survey.
+        Runnable tokenHelper = () -> {
+            StructureNode up = upstream.getValue();
+            boolean fromAnswer = up == null || up.assignmentId() == null
+                    || rules.upstreamCollectsAnswer(surveyId, up.assignmentId());
+            token.setHelperText(getTranslation(fromAnswer
+                    ? "relationshipDialog.token.helper" : "relationshipDialog.token.helper.displayOnly"));
+        };
         description.setMaxLength(255);
         defaultUpstreamValue.setMaxLength(255);
         overrideUpstreamValue.setMaxLength(255);
@@ -193,6 +201,8 @@ public class RelationshipDialog extends Dialog {
         for (var f : List.of(upstream, operator, action, target)) {
             f.addValueChangeListener(e -> updateSentence());
         }
+        upstream.addValueChangeListener(e -> tokenHelper.run());
+        tokenHelper.run(); // after the seed above, so editing an existing rule reads its own source
         referenceValue.addValueChangeListener(e -> updateSentence());
         token.addValueChangeListener(e -> updateSentence());
         updateSentence();

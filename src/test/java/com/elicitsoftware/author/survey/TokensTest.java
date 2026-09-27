@@ -69,4 +69,47 @@ class TokensTest {
         assertFalse(Tokens.alwaysDefaulted("Age when {<C1>} was diagnosed", "C1"));
         assertFalse(Tokens.alwaysDefaulted("{<S1>|you} and {<S1>}", "S1"));
     }
+    // ---- UC-007 BR-005: a token named as a bare word fills nothing ----------------------------
+
+    private static final java.util.List<String> KNOWN = java.util.List.of("S1", "G1", "CS2");
+
+    @Test
+    void aBareTokenNameInsideAPlaceholderIsReported() {
+        assertEquals(java.util.Set.of("S1"), Tokens.bareTokenNames("{Does S1|Do you} have cancer?", KNOWN));
+        assertEquals(java.util.Set.of("G1"), Tokens.bareTokenNames("{G1's|Your} mother", KNOWN));
+        assertEquals(java.util.Set.of("S1"), Tokens.bareTokenNames("Ask {S1}.", KNOWN));
+        assertEquals(java.util.Set.of("CS2"), Tokens.bareTokenNames("{Has CS2 been|Were you} diagnosed", KNOWN));
+    }
+
+    @Test
+    void abracketedTokenIsNotReported() {
+        assertTrue(Tokens.bareTokenNames("{Does <S1>|Do you} have cancer?", KNOWN).isEmpty());
+        assertTrue(Tokens.bareTokenNames("{<G1>'s|Your} mother", KNOWN).isEmpty());
+    }
+
+    @Test
+    void proseOutsideAPlaceholderIsNotReported() {
+        assertTrue(Tokens.bareTokenNames("Section S1 of the form", KNOWN).isEmpty(),
+                "only a placeholder's own text can name a token");
+    }
+
+    @Test
+    void aNameThatOnlyLooksLikeATokenIsNotReported() {
+        assertTrue(Tokens.bareTokenNames("{S10's|Your} record", KNOWN).isEmpty(),
+                "S1 is not S10: the match is a whole word");
+        assertTrue(Tokens.bareTokenNames("{G1X|Your} record", KNOWN).isEmpty());
+        assertTrue(Tokens.bareTokenNames("{Does S1|Do you} have cancer?", java.util.List.of()).isEmpty(),
+                "a survey with no tokens has nothing to report");
+    }
+
+    @Test
+    void bothSidesOfTheBarAreInspected() {
+        assertEquals(java.util.Set.of("S1"), Tokens.bareTokenNames("{Ask them|about S1}", KNOWN));
+    }
+
+    @Test
+    void aMixOfBracketedAndBareIsReportedForTheBareOneOnly() {
+        assertEquals(java.util.Set.of("G1"), Tokens.bareTokenNames("{<S1> and G1|you both}", KNOWN));
+    }
+
 }
