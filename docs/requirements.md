@@ -201,7 +201,7 @@ answers to generate a first-draft structure for a *different*, new survey.
 - **Type 1 element keys.** Survey `V015` added `report_key`, `post_survey_action_key`,
   `dimension_key`, `ontology_key` and `metadata_key`. Author maps and exports the last three (the
   reporting-tag tables); `reports` and `post_survey_actions` are still exported with zero records
-  until they are modelled.
+  until they are modeled.
 - **Ontology namespace.** `ontology.name` is a namespace the reporting ETL never reads;
   `(name, tag)` is unique across a database. Author writes the survey's name at tag creation and
   never rewrites it, so a later survey rename leaves earlier tags under the old namespace.

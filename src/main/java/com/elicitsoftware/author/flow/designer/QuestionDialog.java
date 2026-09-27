@@ -75,7 +75,7 @@ public class QuestionDialog extends Dialog {
     final Button save = new Button();
     final Button cancel = new Button();
 
-    /** Vaadin theme-variant names the Survey app honours on a question's input field. */
+    /** Vaadin theme-variant names the Survey app honors on a question's input field. */
     static final List<String> VARIANTS = List.of(
             TextFieldVariant.LUMO_SMALL.getVariantName(),
             ComboBoxVariant.LUMO_ALIGN_LEFT.getVariantName(),

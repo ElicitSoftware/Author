@@ -61,7 +61,7 @@ read model at the point of display.
   there for `DisplayedStringsSweepTest`). That attribute set is the work list,
   minus the reporting surfaces, whose strings are SQL identifiers.
 - **The dialogs get a paired field, not a language tab.** Each translatable field
-  grows a second input labelled with the content language, with the base string
+  grows a second input labeled with the content language, with the base string
   shown beneath it; the element's `Binder`, its working bean and its
   caller-supplied persist function are untouched, and the translations are
   written by a separate call keyed on the element key. This answers the objection
@@ -199,14 +199,14 @@ labels* say. It must not decide what the *survey* says, for three reasons:
 ### 3.2 The selection
 
 `author/i18n/ContentLanguageSelection`, an `@ApplicationScoped` bean storing the
-choice in the Vaadin session under `elicit.contentLanguage.<surveyId>`, modelled
+choice in the Vaadin session under `elicit.contentLanguage.<surveyId>`, modeled
 exactly on `LocaleSelection` (`LocaleSelection.java:28`, `:62-70`). Per survey,
 because a session may hold two surveys with different content languages; in the
 session, because like the chrome choice it is a working preference and not
 something to store against the author (UC-040 BR-007).
 
 `author/flow/ContentLanguageSelector`, a `Select<Locale>` whose items are "Base —
-English" plus the survey's content languages, labelled in their own language by
+English" plus the survey's content languages, labeled in their own language by
 the same `LanguageSwitcher.displayName` helper (`LanguageSwitcher.java:78-84`).
 It appears in two places: the `SurveyEditorView` toolbar beside **Design** and
 **Reporting** (`SurveyEditorView.java:70`), and the designer toolbar beside the
@@ -232,7 +232,7 @@ that renders translated text gets, on the element that already carries
   switch voice and dictionary mid-page (WCAG 3.1.2, under NFR-007); and
 - `dir` = `LocaleLayout.directionFor(contentLocale).getClientName()`
   (`LocaleLayout.java:45-47`), which already consults `LocaleDirectionConfig` and
-  therefore honours a deployment's `i18n-config.json` override.
+  therefore honors a deployment's `i18n-config.json` override.
 
 Both are dropped when the base language is selected. The designer board itself
 stays in the chrome's direction — an Arabic *preview* inside an English
@@ -456,7 +456,7 @@ language.** Concretely:
   `questions.default_value`, `mask`, `variant`, `sample`, `select_items.coded_value`,
   `relationships.token`, `reference_value` and `description` — none of which is on
   the whitelist (Survey §5.1), and `default_value` in particular is written into
-  `answers.text_value` and analysed, so translating it would fork stored data by
+  `answers.text_value` and analyzed, so translating it would fork stored data by
   language.
 - Notifications that confirm a save quote the element by its base name, because
   the next thing the author does with that name is find it in a file or a grid.
@@ -568,7 +568,7 @@ Rules that keep it there:
 
 - `lang` and `dir` per content subtree (3.3), which is WCAG 3.1.2 and is the part
   of this feature most likely to be forgotten.
-- The status dots are not colour alone: each carries a `title` and an
+- The status dots are not color alone: each carries a `title` and an
   `aria-label` with the status word, and the aria labels that already interpolate
   a node's label (`QuestionRow.java:44-45`, `SectionCard.java:101-103`) get the
   displayed label plus the status, so a screen-reader user hears "Question, ¿Ha
@@ -806,7 +806,7 @@ is still being built.
    translations it came from. It is out of scope here and should be refused in
    `SurveyMetadataDialog` until someone designs it.
 4. **Author's own chrome in a language it does not have.** Showing Japanese
-   content in an English tool is the intended behaviour (C-026), but the status
+   content in an English tool is the intended behavior (C-026), but the status
    words, captions and field labels around that Japanese text will be English.
    That is correct and should be said out loud in the manual, not fixed.
 5. **The possessive wart.** `QuestionManager.replaceTokens`' English possessive

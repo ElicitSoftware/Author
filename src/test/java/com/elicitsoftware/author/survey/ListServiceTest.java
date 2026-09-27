@@ -73,7 +73,7 @@ class ListServiceTest {
     @TestSecurity(user = "list.author", roles = {"elicit_author"})
     void create_mintsKeysAndOrdersOptions() {
         Survey s = fixture();
-        SelectGroup g = service.create(s.id, draft("Colours"), List.of(
+        SelectGroup g = service.create(s.id, draft("Colors"), List.of(
                 new OptionDraft(null, "Red", "R"), new OptionDraft(null, " Green ", ""), new OptionDraft(null, "Blue", "B")));
         assertNotNull(g.selectGroupKey, "C-017: key minted");
         assertEquals("Text", g.dataType);

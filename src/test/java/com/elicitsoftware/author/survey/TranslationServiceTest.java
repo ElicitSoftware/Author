@@ -168,7 +168,7 @@ class TranslationServiceTest {
 
     @Test
     @TestTransaction
-    void countsSummariseTheLanguage() {
+    void countsSummarizeTheLanguage() {
         Survey s = survey(SPANISH);
         Question q = question(s.id, "What is your name?");
         service.upsert(s.id, "questions", q.questionKey, "text", SPANISH, "¿Cómo se llama?");

@@ -155,7 +155,7 @@ Always write `0` for `version` and leave the other four empty: `0||||`
 **Omit the last five tables.** `reports`, `post_survey_actions`, `dimensions`,
 `ontology` and `metadata` are the reporting and integration layer. A person
 configures those in Author, where the consequences are visible. They are listed
-here only so you recognise them in an exported file.
+here only so you recognize them in an exported file.
 
 Notes on individual fields:
 
@@ -291,7 +291,7 @@ it repeats. Put the count question in its own section before the repeating one.
 | 2 | `DATE_PICKER` | |
 | 3 | `COMBOBOX` | needs an answer list |
 | 4 | `HTML` | informational, not an input |
-| 5 | `INTEGER` | honours `min_value` / `max_value` |
+| 5 | `INTEGER` | honors `min_value` / `max_value` |
 | 6 | `DOUBLE` | |
 | 7 | `RADIO` | needs an answer list |
 | 8 | `TEXT` | single-line text |

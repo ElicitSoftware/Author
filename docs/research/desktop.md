@@ -65,7 +65,7 @@ acts when a newly inserted row shares its durable id with an existing current
 row. Per `docs/entity_model.md`, in Author every element has exactly one row
 (`version = 0`, epoch `effective_from`, sentinel `effective_to`); version rows
 are created only by Admin's update service at deployed sites. The trigger can
-therefore be dropped from the desktop schema without changing behaviour.
+therefore be dropped from the desktop schema without changing behavior.
 
 ### What H2 handles unchanged
 
@@ -226,7 +226,7 @@ if the matrix becomes a burden.
 | Windows | Authenticode code-signing certificate | SmartScreen warning on every install; users can click through. |
 | Linux | None | n/a |
 
-Both certificates are a one-time organisational setup and become two secrets
+Both certificates are a one-time organizational setup and become two secrets
 in the release workflow.
 
 ### Delivery

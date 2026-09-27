@@ -459,7 +459,7 @@
     white-space: nowrap;
 }
 
-/* Children indent to the centre; the wide LEFT padding is the gutter where a rule between two
+/* Children indent to the center; the wide LEFT padding is the gutter where a rule between two
    children (e.g. two sections in a step) routes, so the arrow stays inside the box on the left. */
 .designer-lane-body {
     display: flex;
@@ -540,8 +540,8 @@
     cursor: pointer;
 }
 
-/* A light tint of the primary colour, not --brand-hover: brands define that as a solid menu
-   colour (UM: dark blue) that would swallow the row's dark label, type and tag badge. */
+/* A light tint of the primary color, not --brand-hover: brands define that as a solid menu
+   color (UM: dark blue) that would swallow the row's dark label, type and tag badge. */
 .designer-row:hover,
 .designer-row:focus-visible {
     background: var(--brand-primary-10pct, var(--lumo-primary-color-10pct));

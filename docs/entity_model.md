@@ -383,6 +383,6 @@ One field of one element in one language: the ninth Type 2 table and the first t
 
 `respondents`, `answers`, and `dependents` (respondent session and response data) and `respondent_psa` exist in the same `survey` schema but are out of Author's scope per `docs/vision.md` — Author neither creates nor edits them. In Author's local preview stack the Survey app may create them; Author's removal semantics (retire, never delete) keep them valid.
 
-`reports` and `post_survey_actions` are part of the `.elicit` format (`report_key`, `post_survey_action_key`) and will be modelled once Survey `V015` adds their element keys; until then Author exports them with zero records.
+`reports` and `post_survey_actions` are part of the `.elicit` format (`report_key`, `post_survey_action_key`) and will be modeled once Survey `V015` adds their element keys; until then Author exports them with zero records.
 
 `survey.survey_log` (Admin-owned; one row per apply attempt with `survey_key`, `action`, `outcome`, `performed_by`, `file_name`, `revision`) is the per-site audit trail of applied definitions. It does not exist in Author's database.

@@ -56,7 +56,7 @@ class ElicitFormatTest {
     }
 
     @Test
-    void retiredRows_recognisedByClosedEffectiveTo() {
+    void retiredRows_recognizedByClosedEffectiveTo() {
         String[] current = ElicitFormat.parseFields("1|k|n|d|Text|0|1970-01-01 00:00:00+00|9999-12-31 23:59:59+00|by|note");
         String[] retired = ElicitFormat.parseFields("1|k|n|d|Text|0|1970-01-01 00:00:00+00|2026-09-17 12:00:00+00|by|note");
         String[] blank = ElicitFormat.parseFields("1|k|n|d|Text|0|||by|note");

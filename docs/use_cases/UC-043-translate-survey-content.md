@@ -81,7 +81,7 @@ A translation names the element it belongs to by that element's `*_key` UUID and
 
 ### BR-002: Only whitelisted fields are translatable
 
-The translatable fields are the respondent-facing ones: a survey's title and description; a step's and section's name and description; a question's text, short text, tooltip, placeholder and validation text; a select item's display text; a relationship's default upstream value; a report's name and description. Identifiers, coded values, dimension names, tags, URLs, masks and a question's default value and sample are never translated, because they are read by machines or analysed as data.
+The translatable fields are the respondent-facing ones: a survey's title and description; a step's and section's name and description; a question's text, short text, tooltip, placeholder and validation text; a select item's display text; a relationship's default upstream value; a report's name and description. Identifiers, coded values, dimension names, tags, URLs, masks and a question's default value and sample are never translated, because they are read by machines or analyzed as data.
 
 ### BR-003: Editing base text never edits its translations
 

@@ -41,7 +41,7 @@
 
 ### A2: The file is malformed
 
-**Trigger:** A record is short of its required field count, references an id that has not appeared, or the file carries no recognised marker (step 7)  
+**Trigger:** A record is short of its required field count, references an id that has not appeared, or the file carries no recognized marker (step 7)  
 **Flow:**
 
 1. The system imports nothing — the import is all-or-nothing — and reports the failure with the line number.
