@@ -15,7 +15,7 @@ SURVEY_KEY = "7d4f2a9c-1e6b-5c83-9f47-2b8e6d1a4c55"
 
 def ek(name): return str(uuid.uuid5(NS, name))
 
-COUNTS = {"surveys": 10, "steps": 11, "sections": 11, "steps_sections": 12,
+COUNTS = {"surveys": 12, "steps": 11, "sections": 11, "steps_sections": 12,
           "reports": 6, "post_survey_actions": 6}
 
 def esc(v):
@@ -38,7 +38,10 @@ add("surveys", 1, SURVEY_KEY, "FamilyHistorySurvey", 1, "Family History",
     "uncles - this tool can support decisions about additional testing, personalize treatment, "
     "and ultimately improve care for you and your family.",
     f"{SURVEY_PREFIX}-0001-0000-0001-0000-0000-0000",
-    "", "fhhs-researcher", "Transcribed from ElicitDesigner answers")
+    "", "fhhs-researcher", "Transcribed from ElicitDesigner answers",
+    # V019: the language this content is written in, and the set it is published in. This
+    # skeleton publishes none; translations are authored in Author against the finished survey.
+    "en", "")
 
 # ----------------------------------------------------------------- structure
 # One row per step, straight from the answers table:
@@ -102,7 +105,7 @@ add("post_survey_actions", 1, ek("psa:Generate Family History Report"),
 ORDER = ["surveys", "steps", "sections", "steps_sections", "reports", "post_survey_actions"]
 HEADER = ["surveys","select_groups","select_items","steps","sections","steps_sections",
           "questions","sections_questions","relationships","reports","post_survey_actions",
-          "dimensions","ontology","metadata"]
+          "dimensions","ontology","metadata","translations"]
 
 out = ["# ELICIT_SURVEY_EXPORT_V1", "# survey_id: 1", f"# survey_key: {SURVEY_KEY}",
        "# survey_name: FamilyHistorySurvey"]

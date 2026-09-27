@@ -97,7 +97,7 @@ public class RelationshipDialog extends Dialog {
         remove.setText(getTranslation("relationshipDialog.removeRule"));
         cancel.setText(getTranslation("common.cancel"));
 
-        // Every mount is its own choice, labelled by its path (UC-019 BR-001): a rule names the mount
+        // Every mount is its own choice, labeled by its path (UC-019 BR-001): a rule names the mount
         // it fires from and the mount it targets, so a section shared by several steps lists each.
         for (StructureNode n : tree.all()) {
             if (n.retired()) {

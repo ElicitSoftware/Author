@@ -62,13 +62,17 @@ public class SurveyEditorView extends VerticalLayout implements BeforeEnterObser
     final Button exportButton = new Button(getTranslation("surveyEditorView.export"), VaadinIcon.DOWNLOAD.create());
     final Button design = new Button(getTranslation("surveyEditorView.design"), VaadinIcon.SITEMAP.create());
     final Button reporting = new Button(getTranslation("surveyEditorView.reporting"), VaadinIcon.TABLE.create());
+    final Button translations = new Button(getTranslation("surveyEditorView.translations"), VaadinIcon.GLOBE.create());
     final Div validationPanel = new Div();
 
     Survey survey;
     List<ValidationIssue> issues = List.of();
 
     public SurveyEditorView() {
-        HorizontalLayout toolbar = new HorizontalLayout(design, reporting, editDetails, exportButton);
+        HorizontalLayout toolbar = new HorizontalLayout(design, reporting, translations, editDetails, exportButton);
+        translations.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(
+                com.elicitsoftware.author.flow.translations.TranslationsView.class,
+                new com.vaadin.flow.router.RouteParameters(SURVEY_ID, String.valueOf(survey.id)))));
         reporting.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(com.elicitsoftware.author.flow.reporting.ReportingView.class,
                 new com.vaadin.flow.router.RouteParameters(SURVEY_ID, String.valueOf(survey.id)))));
         design.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(com.elicitsoftware.author.flow.designer.SurveyDesignerView.class,

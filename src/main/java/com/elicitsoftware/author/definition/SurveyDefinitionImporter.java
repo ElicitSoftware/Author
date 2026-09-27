@@ -11,6 +11,7 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.survey.TranslatableFields;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -154,6 +155,7 @@ public class SurveyDefinitionImporter {
                         case "dimensions" -> dimensionIdMap.put(parseLongOrNull(fields[0]), insertOrReuseDimension(fields));
                         case "ontology" -> ontologyIdMap.put(parseLongOrNull(fields[0]), insertOrReuseOntology(fields, surveyId, dimensionIdMap));
                         case "metadata" -> insertMetadata(fields, surveyId, stepsSectionIdMap, questionIdMap, sectionsQuestionIdMap, ontologyIdMap);
+                        case "translations" -> insertTranslation(fields, surveyId);
                         default -> throw new DefinitionException("unknown record type '" + table + "'");
                     }
                     counts.merge(table, 1, Integer::sum);
@@ -211,8 +213,8 @@ public class SurveyDefinitionImporter {
         Query q = em.createNativeQuery("""
                 INSERT INTO survey.surveys
                     (id, survey_key, name, display_order, title, description, initial_display_key, post_survey_url,
-                     published_by, published_comment)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+                     published_by, published_comment, base_language, content_languages)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
                 """);
         q.setParameter(1, newId);
         q.setParameter(2, surveyKey);
@@ -224,8 +226,69 @@ public class SurveyDefinitionImporter {
         q.setParameter(8, nullIfEmpty(f[7]));
         q.setParameter(9, nullIfEmpty(f[8]));
         q.setParameter(10, nullIfEmpty(f[9]));
+        // V019. A file written before the two fields existed leaves the survey on the column
+        // default, 'en', and publishes nothing.
+        String baseLanguage = f.length > 10 ? nullIfEmpty(f[10]) : null;
+        q.setParameter(11, baseLanguage != null ? baseLanguage : "en");
+        q.setParameter(12, f.length > 11 ? nullIfEmpty(f[11]) : null);
         q.executeUpdate();
         return newId;
+    }
+
+    /**
+     * Fields: {@code translation_id|translation_key|element_type|element_key|field|language|value|
+     * source_hash|version|effective_from|effective_to|published_by|published_comment}.
+     * <p>
+     * Both keys are parsed strictly rather than minted. A translation with no {@code element_key}
+     * names nothing, and one with no {@code translation_key} cannot be matched at a site on the
+     * next update, so either is a malformed record rather than something to default. The durable
+     * {@code translation_id} in the file is a local link at the exporting instance and is
+     * discarded; the sequence allocates a fresh one here.
+     *
+     * @param f        the record's fields
+     * @param surveyId the survey being imported into
+     */
+    private void insertTranslation(String[] f, Long surveyId) {
+        UUID translationKey = parseKeyStrict(f[1], "translation_key");
+        UUID targetKey = parseKeyStrict(f[3], "element_key");
+        String elementType = nullIfEmpty(f[2]);
+        String field = nullIfEmpty(f[4]);
+        if (!TranslatableFields.isTranslatable(elementType, field)) {
+            throw new DefinitionException("translations row targets a field that carries no "
+                    + "respondent-facing text: " + elementType + "." + field);
+        }
+        String value = nullIfEmpty(f[6]);
+        if (value == null) {
+            throw new DefinitionException("translations row for " + elementType + "." + field
+                    + " has an empty value; a removed translation is a closed effective_to, not a blank");
+        }
+        Query q = em.createNativeQuery("""
+                INSERT INTO survey.translations
+                    (id, survey_id, translation_key, element_type, element_key, field, language, value, source_hash)
+                VALUES (nextval('survey.translations_seq'), ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                """);
+        q.setParameter(1, surveyId);
+        q.setParameter(2, translationKey);
+        q.setParameter(3, elementType);
+        q.setParameter(4, targetKey);
+        q.setParameter(5, field);
+        q.setParameter(6, nullIfEmpty(f[5]));
+        q.setParameter(7, value);
+        q.setParameter(8, nullIfEmpty(f[7]));
+        q.executeUpdate();
+    }
+
+    /** A key the file must carry: unlike an element key on a structural row, this one is never minted. */
+    private static UUID parseKeyStrict(String raw, String what) {
+        String value = nullIfEmpty(raw);
+        if (value == null) {
+            throw new DefinitionException("translations row has no " + what);
+        }
+        try {
+            return UUID.fromString(value.trim());
+        } catch (IllegalArgumentException e) {
+            throw new DefinitionException("Invalid " + what + " in file: " + value);
+        }
     }
 
     private Long insertSelectGroup(String[] f, Long surveyId) {

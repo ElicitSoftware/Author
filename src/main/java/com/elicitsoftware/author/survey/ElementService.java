@@ -63,6 +63,13 @@ public class ElementService {
     @Inject
     EntityManager em;
 
+    /**
+     * A translation is linked to its element by that element's key alone, with no foreign key
+     * behind it, so every retirement and restore here has to carry them along (UC-043 A3).
+     */
+    @Inject
+    TranslationService translations;
+
     @Inject
     DisplayOrdering ordering;
 
@@ -177,7 +184,10 @@ public class ElementService {
                 List<SectionsQuestion> sqs = currentAssignmentsOfQuestion(surveyId, durableId);
                 relationshipsTouching(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(), null, null).forEach(r -> r.effectiveTo = now);
                 sqs.forEach(sq -> sq.effectiveTo = now);
-                question(surveyId, durableId).ifPresent(q -> q.effectiveTo = now);
+                question(surveyId, durableId).ifPresent(q -> {
+                    q.effectiveTo = now;
+                    translations.retireTranslationsOf(surveyId, q.questionKey, now);
+                });
             }
             case SECTION -> {
                 List<StepsSections> sss = currentStepAssignmentsOfSection(surveyId, durableId);
@@ -186,13 +196,19 @@ public class ElementService {
                         sss.stream().map(ss -> ss.stepsSectionsId).toList(), null).forEach(r -> r.effectiveTo = now);
                 sqs.forEach(sq -> sq.effectiveTo = now);
                 sss.forEach(ss -> ss.effectiveTo = now);
-                section(surveyId, durableId).ifPresent(s -> s.effectiveTo = now);
+                section(surveyId, durableId).ifPresent(s -> {
+                    s.effectiveTo = now;
+                    translations.retireTranslationsOf(surveyId, s.sectionKey, now);
+                });
             }
             case STEP -> {
                 List<StepsSections> sss = currentSectionAssignmentsOfStep(surveyId, durableId);
                 relationshipsTouching(surveyId, List.of(), sss.stream().map(ss -> ss.stepsSectionsId).toList(), durableId).forEach(r -> r.effectiveTo = now);
                 sss.forEach(ss -> ss.effectiveTo = now);
-                step(surveyId, durableId).ifPresent(s -> s.effectiveTo = now);
+                step(surveyId, durableId).ifPresent(s -> {
+                    s.effectiveTo = now;
+                    translations.retireTranslationsOf(surveyId, s.stepKey, now);
+                });
             }
             default -> throw new AuthoringException("Unsupported element kind " + kind);
         }
@@ -209,14 +225,21 @@ public class ElementService {
         }
         OffsetDateTime now = OffsetDateTime.now();
         SelectItem.<SelectItem>list("surveyId = ?1 and selectGroupId = ?2 and effectiveTo = ?3", surveyId, durableId, StructuralElement.SENTINEL)
-                .forEach(i -> i.effectiveTo = now);
+                .forEach(i -> {
+                    i.effectiveTo = now;
+                    translations.retireTranslationsOf(surveyId, i.selectItemKey, now);
+                });
+        // The group itself carries no respondent-facing text (UC-043 BR-002); its options do.
         selectGroup(surveyId, durableId).ifPresent(g -> g.effectiveTo = now);
         em.flush();
     }
 
     @Transactional
     public void removeSelectItem(int surveyId, int durableId) {
-        selectItem(surveyId, durableId).orElseThrow(() -> new AuthoringException("Option not found")).effectiveTo = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now();
+        SelectItem item = selectItem(surveyId, durableId).orElseThrow(() -> new AuthoringException("Option not found"));
+        item.effectiveTo = now;
+        translations.retireTranslationsOf(surveyId, item.selectItemKey, now);
         em.flush();
     }
 
@@ -287,6 +310,8 @@ public class ElementService {
         }
         OffsetDateTime closedAt = element.effectiveTo;
         element.effectiveTo = StructuralElement.SENTINEL;
+        // The translations closed with it share that instant, which is how they are found again.
+        translations.restoreTranslationsOf(surveyId, element.getElementKey(), closedAt);
         switch (kind) {
             case QUESTION -> {
                 List<SectionsQuestion> sqs = SectionsQuestion.list("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);

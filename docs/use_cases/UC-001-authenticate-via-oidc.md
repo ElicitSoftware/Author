@@ -27,7 +27,7 @@
 
 ## Alternative Flows
 
-### A1: Authentication is cancelled or fails at the identity provider
+### A1: Authentication is canceled or fails at the identity provider
 
 **Trigger:** The identity provider does not return a valid identity (step 4)  
 **Flow:**

@@ -24,6 +24,7 @@
 5. The system redisplays the current page in the chosen language, applies the matching layout direction, and remembers the choice for the rest of the browser session.
 6. The author works through the tool — the survey list, the designer, dialogs for questions, sections and rules, reporting tags, import and export.
 7. The system presents every page in the chosen language while the survey content the author writes (question text, options, step and section names, tags) is stored and exported exactly as entered, and the author completes their work in their language.
+8. Where the author has translated the survey's content (UC-043), those translations are stored and exported with the survey but are shown only on the Translations page; every other view keeps the survey's base language.
 
 ## Alternative Flows
 
@@ -89,9 +90,9 @@ Session choice, then browser preference, then English. A language that is not av
 
 Languages written right-to-left (Arabic, Hebrew, Persian, Urdu and similar) mirror the whole page, including the designer board, its lanes and the drawer; all other languages are laid out left-to-right. A deployment may declare the direction of a mounted language explicitly.
 
-### BR-005: Authored content keeps its entered language
+### BR-005: Authored content keeps its entered language in every view but one
 
-Question text, options, step and section names, tags and the exported definition file are stored and exported as entered, whatever language the tool chrome uses.
+Question text, options, step and section names and tags are stored and exported as entered, whatever language the tool chrome uses; the designer, the dialogs and the preview always show that base language, so an author edits what they see. The one exception is the Translations page (UC-043), which exists to show a survey's content beside its translations; a proposal to show a chosen content language in the editing surfaces too is held in `docs/research/i18n_survey.md` and is not adopted here. Translations are stored with the survey and exported in the definition file, but they are never substituted into the rest of the tool.
 
 ### BR-006: Brand names are localized by the brand
 
