@@ -20,7 +20,7 @@ import java.util.HexFormat;
  * The hash a content translation carries of the base text it was translated from (Survey V019).
  * <p>
  * Lower-case hex SHA-256 of the UTF-8 bytes of the exact stored string, with no trimming and no
- * normalisation. Identical to Survey's {@code com.elicitsoftware.i18n.ContentHash} and to the SQL
+ * normalization. Identical to Survey's {@code com.elicitsoftware.i18n.ContentHash} and to the SQL
  * form {@code encode(sha256(convert_to(text, 'UTF8')), 'hex')}; Survey's {@code ContentHashTest}
  * holds Java and PostgreSQL together, and {@code ContentHashParityTest} here holds this copy to
  * that one. Written here, compared there: drift would either serve a stale translation or hide a

@@ -96,7 +96,7 @@ public class DesignerPalette extends VerticalLayout {
         questionSlot.add(questionChip);
     }
 
-    /** A labelled row inside the tools card: a caption on the left, its draggable chips on the right. */
+    /** A labeled row inside the tools card: a caption on the left, its draggable chips on the right. */
     private static Div row(String caption, Component chips) {
         Div r = new Div(label(caption), chips);
         r.addClassName("designer-palette-row");

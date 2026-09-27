@@ -45,7 +45,7 @@ public final class ConstraintViolationTranslator {
     }
 
     /**
-     * @return an {@link AuthoringException} when {@code e} wraps a recognised constraint violation,
+     * @return an {@link AuthoringException} when {@code e} wraps a recognized constraint violation,
      *         otherwise {@code e} itself so the caller can rethrow it unchanged.
      */
     public static RuntimeException translate(RuntimeException e) {

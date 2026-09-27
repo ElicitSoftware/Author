@@ -163,7 +163,7 @@ public class AppConfig implements AppShellConfigurator {
     }
 
     /**
-     * Strips the {@code @import} rules for the colour and typography sheets from an inlined theme.
+     * Strips the {@code @import} rules for the color and typography sheets from an inlined theme.
      * Both sheets are inlined ahead of the theme already; left in, the relative URLs resolve against
      * the page instead of the brand directory and the browser requests /colors/brand-colors.css and
      * /typography/brand-typography.css, which nothing serves.

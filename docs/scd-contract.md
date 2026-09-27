@@ -90,7 +90,7 @@ that is not structural. It carries the core columns and the trigger unchanged,
 for the same reason the others do: a respondent who started under one wording
 keeps seeing it, and a corrected translation does not rewrite what earlier
 respondents read. What differs is how it attaches to the rest of the schema.
-The eight reference their neighbours by a durable id in a companion column with
+The eight reference their neighbors by a durable id in a companion column with
 a `_version` sentinel; a translation names what it translates by that element's
 **element key** alone, in a generic `(element_type, element_key, field,
 language)` target, and holds no durable id of any other table. So no FK

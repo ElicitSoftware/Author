@@ -5,7 +5,7 @@ application image. It is the printable form of the in-app `How surveys work`
 guide (UC-029), with the step-by-step procedure added.
 
 See [`../use_cases/UC-039-consult-the-authors-manual.md`](../use_cases/UC-039-consult-the-authors-manual.md)
-for the behaviour this implements, and FR-047 / NFR-016 in
+for the behavior this implements, and FR-047 / NFR-016 in
 [`../requirements.md`](../requirements.md).
 
 ## What is here
@@ -13,7 +13,7 @@ for the behaviour this implements, and FR-047 / NFR-016 in
 | Path | Committed? | What it is |
 | --- | --- | --- |
 | `elicit-author-manual.tex` | yes | the manual |
-| `elicit-brand.sty` | yes | the Elicit default brand as LaTeX — colours, IBM Plex, the page furniture and the call-out boxes (UC-039 BR-005) |
+| `elicit-brand.sty` | yes | the Elicit default brand as LaTeX — colors, IBM Plex, the page furniture and the call-out boxes (UC-039 BR-005) |
 | `images/` | yes | the captured screens, plus `elicit-logo.png` for the title page |
 | `capture/` | yes | `capture-screenshots.mjs` and its own `package.json`; regenerates `images/` from a running Author |
 | `build-manual.sh` | yes | typesets the PDF and puts it where the application packages it |

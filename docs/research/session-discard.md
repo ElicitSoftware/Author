@@ -58,7 +58,7 @@ the way they block export (`SurveyDefinitionExporter.java:51-55`), so the
 serializer needs a `validate=false` entry point; otherwise nothing new is
 needed on the write side.
 
-Restore is a new `SurveyCheckpointService.restore(surveyId)` modelled on
+Restore is a new `SurveyCheckpointService.restore(surveyId)` modeled on
 Admin's `SurveyDefinitionUpdateService.updateFromFile`
 (`SurveyDefinitionUpdateService.java:193`), which already parses the format,
 matches every row by element key, never by local id

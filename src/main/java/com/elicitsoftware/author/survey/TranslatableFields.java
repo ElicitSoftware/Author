@@ -25,7 +25,7 @@ import java.util.Set;
  * What is absent is as deliberate as what is present. A survey's {@code name} is an identifier used
  * in file names and console lists; {@code dimension_name} and ontology tags are reporting
  * identifiers ({@code ReportingNames}); a question's {@code default_value} is written into
- * {@code answers.text_value} and analysed, so translating it would fork stored data by language;
+ * {@code answers.text_value} and analyzed, so translating it would fork stored data by language;
  * {@code coded_value}, {@code url}, {@code mask}, {@code variant}, {@code sample}, {@code token}
  * and {@code reference_value} are read by machines. {@code override_upstream_value} has no runtime
  * reader. Nothing on {@code select_groups}, {@code post_survey_actions}, {@code ontology},

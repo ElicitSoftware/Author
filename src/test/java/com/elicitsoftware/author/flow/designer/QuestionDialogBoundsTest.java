@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * UC-011 BR-004: the minimum and maximum are offered for the types whose answers Survey actually bounds
- * by length, and labelled as lengths there.
+ * by length, and labeled as lengths there.
  */
 class QuestionDialogBoundsTest {
 
