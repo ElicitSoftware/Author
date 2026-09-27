@@ -32,6 +32,7 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.timepicker.TimePicker;
 
 import java.util.Collection;
 import java.util.List;
@@ -102,6 +103,14 @@ final class PreviewFields {
         return sb.toString();
     }
 
+    /**
+     * True for the display-only types, which collect no value and whose text is rendered as HTML:
+     * HTML inline on the page, MODAL in a dialog. Both preview the same way.
+     */
+    static boolean isDisplayOnly(String typeName) {
+        return "HTML".equalsIgnoreCase(typeName) || "MODAL".equalsIgnoreCase(typeName);
+    }
+
     /** An HTML question has no input; the respondent sees its text rendered as HTML. */
     static Component html(String content) {
         String body = content == null || content.isBlank() ? "<em>HTML content preview</em>" : content;
@@ -154,7 +163,8 @@ final class PreviewFields {
             case "EMAIL" -> new EmailField();
             case "PASSWORD" -> new PasswordField();
             case "DATE_PICKER" -> new DatePicker();
-            case "DATETIME" -> new DateTimePicker();
+            case "DATE_TIME_PICKER" -> new DateTimePicker();
+            case "TIME_PICKER" -> new TimePicker();
             case "CHECKBOX" -> new Checkbox();
             case "RADIO" -> {
                 RadioButtonGroup<String> group = new RadioButtonGroup<>();
