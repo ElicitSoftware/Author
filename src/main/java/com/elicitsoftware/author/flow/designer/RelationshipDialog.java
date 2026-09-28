@@ -126,7 +126,9 @@ public class RelationshipDialog extends Dialog {
         token.setItems(tokens);
         token.setAllowCustomValue(true);
         token.addCustomValueSetListener(e -> {
-            String typed = e.getDetail() == null ? "" : e.getDetail().trim();
+            // The name alone, upper case: the brackets belong to the text that names the token, and the
+            // runtime keys its values on the name (FR-012). A reference typed here settles on its name.
+            String typed = e.getDetail() == null ? "" : Tokens.canonical(e.getDetail());
             if (!typed.isEmpty() && !tokens.contains(typed)) {
                 tokens.add(typed);
                 token.setItems(tokens);
@@ -176,11 +178,13 @@ public class RelationshipDialog extends Dialog {
             action.setValue(seed.actionType);
             referenceValue.setValue(seed.referenceValue == null ? "" : seed.referenceValue);
             if (seed.token != null && !seed.token.isBlank()) {
-                if (!tokens.contains(seed.token.trim())) {
-                    tokens.add(seed.token.trim());
+                // The name the platform means, whatever an import stored: saving the rule corrects the row.
+                String seeded = Tokens.canonical(seed.token);
+                if (!tokens.contains(seeded)) {
+                    tokens.add(seeded);
                     token.setItems(tokens);
                 }
-                token.setValue(seed.token.trim());
+                token.setValue(seeded);
             }
             description.setValue(seed.description == null ? "" : seed.description);
             defaultUpstreamValue.setValue(seed.defaultUpstreamValue == null ? "" : seed.defaultUpstreamValue);
@@ -362,7 +366,9 @@ public class RelationshipDialog extends Dialog {
         String op = operator.getValue() == null ? getTranslation("relationshipDialog.sentence.noOperator") : operator.getValue().name;
         String act = action.getValue() == null ? getTranslation("relationshipDialog.sentence.noAction") : action.getValue().name;
         String val = referenceValue.getValue() == null || referenceValue.getValue().isBlank() ? "" : " " + referenceValue.getValue();
-        String tok = token.getValue() != null && !token.getValue().isBlank() ? " {" + token.getValue() + "}" : "";
+        // Written as a text writes it -- {<S1>} -- since a placeholder naming a bare word fills nothing.
+        String tok = token.getValue() != null && !token.getValue().isBlank()
+                ? " {" + Tokens.reference(token.getValue()) + "}" : "";
         sentence.removeAll();
         sentence.add(new Span(getTranslation("relationshipDialog.sentence",
                 up == null ? "…" : up.label(), op, val, act, tok, t == null ? "…" : t.label())));

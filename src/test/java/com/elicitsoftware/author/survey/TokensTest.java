@@ -139,4 +139,37 @@ class TokensTest {
                 "a tag outside the braces is not a reference at all");
     }
 
+    // ---- UC-007 BR-007 / UC-019 A2: a rule's token is a name, not a reference -----------------
+
+    @Test
+    void aTokenIsTheNameWhicheverWayItWasTyped() {
+        assertEquals("S1", Tokens.bare("<S1>"));
+        assertEquals("S1", Tokens.bare("  S1  "));
+        assertEquals("<S1", Tokens.bare("<S1"), "half a reference is not one, so it is left alone");
+        assertEquals("<S1>", Tokens.reference("<S1>"), "written as a phrase writes it, however it arrived");
+        assertEquals("<s1>", Tokens.reference("s1"), "reference reads a token back as written; canonical is what stores it");
+        assertEquals("S1", Tokens.canonical(" <s1> "), "the name alone, upper case (FR-012)");
+        assertEquals("GRANDMAMA", Tokens.canonical("<grandmama>"));
+        assertEquals("", Tokens.canonical(null));
+    }
+
+    /**
+     * A phrase names a token as {@code <NAME>}, so only a token spelled exactly as that name can ever
+     * be named -- {@code <S1>} cannot, because a phrase naming it would read {@code <<S1>>}.
+     */
+    @Test
+    void aPhraseCanOnlyNameAPlainName() {
+        assertTrue(Tokens.nameable("S1"));
+        assertTrue(Tokens.nameable("s1"), "case is free; the runtime matches without regard to it");
+        assertTrue(Tokens.nameable("A_1"));
+        assertTrue(Tokens.nameable(" S1 "), "trimmed, as the write path stores it");
+        assertFalse(Tokens.nameable("<S1>"), "the brackets belong to the text, not the token");
+        assertFalse(Tokens.nameable("S 1"));
+        assertFalse(Tokens.nameable("{S1}"));
+        assertFalse(Tokens.nameable("S-1"));
+        assertFalse(Tokens.nameable("Q#"), "a runtime counter is not a token");
+        assertFalse(Tokens.nameable("<>"));
+        assertFalse(Tokens.nameable(""));
+        assertFalse(Tokens.nameable(null));
+    }
 }

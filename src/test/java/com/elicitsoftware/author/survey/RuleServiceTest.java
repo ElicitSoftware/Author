@@ -26,6 +26,7 @@ import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -52,6 +53,9 @@ class RuleServiceTest {
 
     @Inject
     DesignerService designer;
+
+    @Inject
+    EntityManager em;
 
     private Survey fixture() {
         return Survey.find("name", "AuthorFixture").firstResult();
@@ -475,4 +479,77 @@ class RuleServiceTest {
         assertTrue(rules.upstreamCollectsAnswer(s.id, null), "an unresolvable upstream is reported by its own check");
     }
 
+    // ---- UC-019 A2 / FR-012: a rule's token is a name, not a reference ------------------------
+
+    private Relationship tokenDraft(Survey s, String token) {
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf("FixtureQ2").sectionsQuestionId;
+        draft.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
+        draft.operatorType = operator("FIELD_EXIST");
+        draft.actionType = action("TEXT");
+        draft.token = token;
+        return draft;
+    }
+
+    /**
+     * Author#21: the runtime keys a text's values on this column verbatim, so a token stored
+     * {@code <S1>} is asked for as {@code S1} and fills nothing. An author who types the reference, or
+     * the name in lower case, is saved from it.
+     */
+    @Test
+    @TestTransaction
+    void create_storesTheNameAloneUpperCase() {
+        Survey s = fixture();
+        Relationship fromReference = rules.create(s.id, tokenDraft(s, " <s1> "));
+        assertEquals("S1", fromReference.token, "the brackets belong to the text that names the token");
+        assertEquals("S1", rules.current(s.id, fromReference.relationshipId).orElseThrow().token, "and persisted");
+        assertEquals("exists <S1>", RelationshipQuery.condition(fromReference));
+
+        assertEquals("S1", rules.create(s.id, tokenDraft(s, "s1")).token, "FR-012: upper case where it is authored");
+    }
+
+    /** The limit counts the name, not brackets that are about to be dropped. */
+    @Test
+    @TestTransaction
+    void create_measuresTheLengthOfTheNameNotItsBrackets() {
+        Survey s = fixture();
+        assertEquals("GRANDMAMA", rules.create(s.id, tokenDraft(s, "<GRANDMAMA>")).token,
+                "eleven characters as typed, nine of name");
+        assertEquals("token", assertThrows(AuthoringException.class,
+                () -> rules.create(s.id, tokenDraft(s, "WAYTOOLONGTOKEN"))).field(),
+                "the " + Tokens.MAX_LENGTH + "-character limit still holds for the name itself");
+    }
+
+    /** A phrase names a token as {@code <NAME>}, so a token no phrase could spell fills nothing. */
+    @Test
+    @TestTransaction
+    void create_refusesATokenNoTextCouldName() {
+        Survey s = fixture();
+        for (String bad : List.of("S 1", "{S1}", "Q#", "S-1", "1S")) {
+            AuthoringException e = assertThrows(AuthoringException.class, () -> rules.create(s.id, tokenDraft(s, bad)),
+                    "UC-019 A2 should refuse '" + bad + "'");
+            assertEquals("token", e.field(), bad);
+        }
+    }
+
+    /**
+     * An import writes the column directly (UC-005), so a bracketed token can exist. Every write path
+     * runs through validate, so touching such a rule at all repairs it.
+     */
+    @Test
+    @TestTransaction
+    void repoint_repairsATokenAnImportBroughtIn() {
+        Survey s = fixture();
+        Relationship created = rules.create(s.id, tokenDraft(s, "S1"));
+        em.createNativeQuery("UPDATE survey.relationships SET token = '<S1>' WHERE id = ?1")
+                .setParameter(1, created.id).executeUpdate();
+        em.flush();
+        em.clear();
+        assertTrue(Tokens.known(s.id).contains("S1"), "known offers the name, whatever the column holds");
+        assertFalse(Tokens.known(s.id).contains("<S1>"), "and never a second entry for the same slot");
+
+        rules.repoint(s.id, created.relationshipId, RuleService.End.SOURCE, "sq-" + assignmentOf("FixtureQ3").sectionsQuestionId);
+
+        assertEquals("S1", rules.current(s.id, created.relationshipId).orElseThrow().token);
+    }
 }
