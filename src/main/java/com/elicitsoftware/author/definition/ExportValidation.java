@@ -44,7 +44,8 @@ import java.util.function.Function;
  * Checks a survey's current elements before export (UC-007): dangling durable references,
  * relationships whose downstream path does not hold together or that point backwards (UC-033 A3), choice
  * questions without options, tokens no rule fills and Text rules nothing uses (BR-005), rules whose token
- * is fed by a question that collects no answer (UC-019 BR-006), empty steps and
+ * is fed by a question that collects no answer (UC-019 BR-006), rules whose token is not a name a text
+ * could write between angle brackets (BR-007), empty steps and
  * sections, duplicate ordering. Errors block export; warnings do not.
  * Read-only (UC-007 BR-004).
  */
@@ -269,6 +270,11 @@ public class ExportValidation {
                 continue;
             }
             String tok = r.token.trim();
+            if (tokenSpelling(issues, r, tok)) {
+                // The token cannot be named at all, so "no text uses it" and "nothing fills it" are the
+                // same defect read out again. One finding, at its cause.
+                continue;
+            }
             if (!reachUses(r, tok, steps, sections, questions, stepsSections, sectionsQuestions, questionsBySection)) {
                 issues.add(ValidationIssue.warning("relationships", r.relationshipId,
                         "Rule '" + r.description + "' fills {" + tok + "} but no text it reaches uses it"));
@@ -294,6 +300,11 @@ public class ExportValidation {
      *
      * <p>Only the phrase is checked. The default is used verbatim and is never scanned for
      * references, so markup there renders as markup and fills nothing in.</p>
+     *
+     * <p>A rule whose token carries its own brackets counts as defining the name here, deliberately:
+     * {@code defined} is built from {@link Tokens#bare}, so {@code <S1>} defines {@code S1}. Reading
+     * the column strictly instead would report that one broken rule once for every text that names the
+     * token, and every report would block export. It is reported once, at its cause, by BR-007.</p>
      */
     private static void undefinedReferences(List<ValidationIssue> issues, Map<Integer, Step> steps,
                                             Map<Integer, Section> sections, Map<Integer, Question> questions,
@@ -366,6 +377,61 @@ public class ExportValidation {
                     + " question that collects no answer; only the rule's own value fills the token."
                     + " Read it from a question the respondent answers"));
         }
+    }
+
+    /**
+     * UC-007 BR-007: a rule's token is a name, not a reference.
+     *
+     * <p>The runtime keys a text's token values on {@code relationship.token} exactly as the column
+     * holds it, and asks for the name it parsed out of a reference. So a token stored {@code <S1>} is
+     * asked for as {@code S1}, never matches, and every placeholder meant to use it falls back to its
+     * default forever -- with the rule reading correctly in the designer (Author#21). A token holding
+     * a character a reference cannot spell is unnameable the same way.</p>
+     *
+     * <p>A name that is merely not the canonical spelling still fills, because every match ignores
+     * case, so it is a warning rather than an error: a survey that runs today must not be blocked from
+     * export over spelling. What it costs is the survey's token list, which then offers two names for
+     * one slot.</p>
+     *
+     * <p>{@link com.elicitsoftware.author.survey.RuleService} canonicalizes on the way in, so what
+     * this reports is what an import (UC-005) or an external draft (UC-042) wrote into the column
+     * directly.</p>
+     *
+     * @return true when no text could ever name the token, so the checks that ask which texts use it
+     *         would only read the same defect back out once per text
+     */
+    private static boolean tokenSpelling(List<ValidationIssue> issues, Relationship r, String tok) {
+        if (Tokens.TOKEN_NAME.matcher(tok).matches()) {
+            return false; // already the name alone, upper case: nothing to say
+        }
+        String name = Tokens.canonical(tok);
+        String rule = "Rule '" + r.description + "'";
+        if (!Tokens.bare(tok).equals(tok)) {
+            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " carries the token "
+                    + tok + ", written with the angle brackets a text uses to name it. A phrase naming "
+                    + tok + " asks for the token " + Tokens.bare(tok) + ", and " + tok + " is not "
+                    + Tokens.bare(tok) + ", so nothing this rule reaches ever fills. Write " + name));
+            return true;
+        }
+        if (!Tokens.nameable(tok)) {
+            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " carries the token "
+                    + tok + ", which no text can name: a token name holds letters, digits and underscores"
+                    + " only, so nothing this rule reaches ever fills"));
+            return true;
+        }
+        if (!Tokens.TOKEN_NAME.matcher(name).matches()) {
+            issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " carries the token "
+                    + tok + ", which does not start with a letter. It still fills "
+                    + Tokens.reference(tok) + ", but a token name reads as a name: rename it to start with"
+                    + " a letter"));
+            return false;
+        }
+        issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " carries the token "
+                + tok + " rather than " + name + ". It still fills " + Tokens.reference(tok)
+                + ", because the runtime matches a token's name without regard to case, but the survey's"
+                + " token list then offers " + tok + " and " + name + " as two names for one slot. Write "
+                + name));
+        return false;
     }
 
     /**
