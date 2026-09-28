@@ -65,6 +65,16 @@ final class PreviewFields {
      * {phrase|default} whose phrase contains a token with a value becomes the phrase with the token
      * replaced, else the default, else stays as written — then the runtime's own tidying: "Dennis's"
      * reads "Dennis'", and "her's"/"his's"/"Your's" lose the stray possessive.
+     *
+     * <p>That tidying is English-only and is applied with no locale check, exactly as the runtime
+     * applies it. It is reproduced here rather than corrected because the preview's job is to show
+     * the author what a respondent will actually read, warts included.</p>
+     *
+     * <p>The four replacements are an independent copy of the ones in
+     * {@code QuestionManager.replaceTokens} — two string literals with no shared constant, so a
+     * change to either side silently desynchronizes this preview from the runtime. Change one,
+     * change both. Two of them are load-bearing for the Family History Survey rather than
+     * cosmetic; see FHHS C-009 for what depends on them.</p>
      */
     static String substituteTokens(String text, Map<String, String> values) {
         if (text == null || text.isEmpty()) {
