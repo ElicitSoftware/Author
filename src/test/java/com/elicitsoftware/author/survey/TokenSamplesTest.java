@@ -62,10 +62,10 @@ class TokenSamplesTest {
 
     @Test
     void aDefaultUpstreamValueBeatsTheSampleAndAnyActionFills() {
-        // FHHS fills {S1} from SHOW rules whose default upstream value is "{G1's|your} mother".
-        TokenSamples samples = TokenSamples.of(List.of(rule("SHOW", "S1", "{G1's|your} mother", 400, 10, null, null)),
+        // FHHS fills {<S1>} from SHOW rules whose default upstream value is "{<G1>'s|your} mother".
+        TokenSamples samples = TokenSamples.of(List.of(rule("SHOW", "S1", "{<G1>'s|your} mother", 400, 10, null, null)),
                 MOUNTS, ASSIGNMENTS, Map.of(40, "Bob"));
-        assertEquals("{G1's|your} mother", samples.forMount(10, 200, 300).get("S1"));
+        assertEquals("{<G1>'s|your} mother", samples.forMount(10, 200, 300).get("S1"));
     }
 
     @Test
@@ -156,10 +156,10 @@ class TokenSamplesTest {
     @Test
     void aDisplayOnlyRuleWithItsOwnValueStillPreviewsThatValue() {
         TokenSamples samples = TokenSamples.of(
-                List.of(rule("TEXT", "NAME", "{G1's|your} mother", 400, 10, null, null)),
+                List.of(rule("TEXT", "NAME", "{<G1>'s|your} mother", 400, 10, null, null)),
                 MOUNTS, ASSIGNMENTS, TokenSamples.samplesOf(List.of(question(40, "HTML", "", "Your Mother"))));
 
-        assertEquals("{G1's|your} mother", samples.forMount(10, 200, 300).get("NAME"));
+        assertEquals("{<G1>'s|your} mother", samples.forMount(10, 200, 300).get("NAME"));
     }
 
 }
