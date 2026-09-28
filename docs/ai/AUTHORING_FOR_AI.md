@@ -52,17 +52,27 @@ There are three actions:
 - **REPEAT** — the target section or question is repeated as many times as the
   answer says, for example one "Child" section per child.
 - **TEXT** — the answer is written into the target's text wherever a
-  `{TOKEN|default}` placeholder appears, so a later question can say "your
+  `{<TOKEN>|default}` placeholder appears, so a later question can say "your
   daughter" rather than "your child".
 
 **There is no Hide rule.** Hiding is the same as not showing: give the element a
 SHOW rule and it stays hidden until that rule holds. When several rules point at
 the same target, **all** of them must hold.
 
-**Tokens are slots, not questions.** `{SUBJECT|the subject}` in a question's text
+**Tokens are slots, not questions.** `{<SUBJECT>|the subject}` in a question's text
 is a placeholder. A TEXT rule fills it with an earlier answer, so a later question
 can name what the respondent actually said. Without a filling rule the respondent
 reads the default after the `|`.
+
+**A token is named in angle brackets inside the placeholder, and stored without
+them.** The text writes `{<SUBJECT>|the subject}`, or a whole phrase around the
+reference — `{Has <SUBJECT> been|Were you}` — and the rule's `token` field holds the
+name alone, upper case: `SUBJECT`, never `<SUBJECT>`. The runtime looks a value up
+by that name, so a token written with its brackets in the `token` field fills
+nothing, and a placeholder naming a token as a bare word (`{SUBJECT|the subject}`)
+fills nothing either. Both are export errors. Markup belongs outside the braces:
+`<b>{<SUBJECT>|the subject}</b>`, never inside them. A name is at most ten
+characters, starts with a letter, and holds letters, digits and underscores only.
 
 ---
 
@@ -166,6 +176,9 @@ Notes on individual fields:
 - `coded_value` — what gets stored and what rules compare against, as opposed to
   `display_text`, which is what the respondent reads.
 - `data_type` on `select_groups` — `Text` unless you have reason otherwise.
+- `token` on `relationships` — the slot name alone, upper case, without the angle
+  brackets the text uses to name it: `SUBJECT`, not `<SUBJECT>`. At most ten
+  characters, starting with a letter.
 - `dimension_name` on steps and sections — the reporting name for that step or
   section. Use `lower_snake_case`. If you leave it empty it defaults to the
   display name, which usually contains spaces and capitals and makes for poor
@@ -261,15 +274,21 @@ can use and a draft they have to repair.
 8. **Every reference must resolve.** No assignment may point at a step, section or
    question that does not exist in the file.
 9. **`initial_display_key` must match one of your `steps_sections` display keys.**
-10. **A `{TOKEN}` with no default and no rule filling it is an error.** Either give
-    every placeholder a default (`{SUBJECT|the subject}`) or make sure a TEXT
+10. **A `{<TOKEN>}` with no default and no rule filling it is an error.** Either give
+    every placeholder a default (`{<SUBJECT>|the subject}`) or make sure a TEXT
     rule reaches it.
+11. **A rule's `token` must be the name alone.** Upper case, starting with a letter,
+    letters, digits and underscores only, at most ten characters — `SUBJECT`, not
+    `<SUBJECT>`, and not `Has SUBJECT been`.
+12. **Every `<NAME>` in a placeholder must be a token some rule carries.** A phrase
+    fills all or nothing, so one reference nothing defines stops the whole
+    placeholder filling.
 
 **Warnings — allowed, but a person will have to look at them:**
 
 - A survey with no steps, a step with no sections, a section with no questions.
 - Two elements sharing the same position.
-- A `{TOKEN|default}` that no rule fills — respondents always read the default.
+- A `{<TOKEN>|default}` that no rule fills — respondents always read the default.
 - A TEXT rule whose token no text it reaches actually uses.
 
 **REPEAT has one more constraint worth knowing:** a section cannot repeat itself.
@@ -390,7 +409,9 @@ the option's `coded_value`, not its `display_text`. And question 1 is a `RADIO`
      `sections_questions` id;
    - every choice question has a list with options;
    - `initial_display_key` matches a `steps_sections` display key;
-   - every `{TOKEN}` has a default or a rule that fills it.
+   - every `{<TOKEN>}` names its token in angle brackets and has a default or a
+     rule that fills it, and every rule's `token` is that name alone, upper case,
+     without the brackets.
 6. Say plainly what you left for the person to finish — reporting tags, tokens you
    were unsure about, anything you guessed.
 
