@@ -30,11 +30,13 @@ import java.util.regex.Pattern;
 /**
  * Token placeholders in respondent-facing text. The Survey runtime (QuestionManager.replaceTokens)
  * reads {@code {phrase|default}} or {@code {phrase}} in a question's text, a section's name or a
- * step's name: when a rule reaching the text carries a token the phrase <em>contains</em>, the
- * placeholder becomes the phrase with the token replaced by the rule's value — {@code {CS2's|Your}}
- * reads "Dennis'" or "Your", {@code {Has CS2 been|Were you}} reads "Has Dennis been" or "Were you";
- * otherwise it becomes the default. A token is a slot name, declared by being used: any rule that
- * carries it fills it, and one token may be filled from many questions (UC-019 BR-005).
+ * step's name. The phrase names its tokens as {@code <NAME>} (UC-045 BR-003): when a rule reaching
+ * the text carries a token the phrase refers to, the placeholder becomes the phrase with the
+ * reference replaced by the rule's value — {@code {<CS2>'s|Your}} reads "Dennis'" or "Your",
+ * {@code {Has <CS2> been|Were you}} reads "Has Dennis been" or "Were you"; otherwise it becomes the
+ * default. A phrase is filled all-or-nothing, so one it names with no value leaves the whole
+ * placeholder to its default. A token is a slot name, declared by being used: any rule that carries
+ * it fills it, and one token may be filled from many questions (UC-019 BR-005).
  * {@code {Q#}} and {@code {S#}} are the runtime's instance counters, not tokens.
  */
 public final class Tokens {
