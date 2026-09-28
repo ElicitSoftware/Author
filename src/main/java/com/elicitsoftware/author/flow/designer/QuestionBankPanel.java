@@ -59,7 +59,7 @@ public class QuestionBankPanel extends VerticalLayout {
             DragSource<Glyph> source = DragSource.create(glyph);
             source.setDragData(new BankQuestion(node.durableId(), node.label(), node.detail()));
             source.setEffectAllowed(EffectAllowed.COPY_MOVE);
-            source.addDragStartListener(e -> view.dragStarted());
+            source.addDragStartListener(e -> view.dragStarted(StructureNode.Kind.QUESTION));
             source.addDragEndListener(e -> view.dragEnded());
             label.setText(node.label());
             label.addClassName("designer-panel-label");
