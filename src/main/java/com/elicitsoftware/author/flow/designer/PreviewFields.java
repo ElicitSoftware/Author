@@ -39,9 +39,7 @@ import com.vaadin.flow.component.timepicker.TimePicker;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Builds the respondent's field for a question the way the Survey app's {@code Elicit*} input
@@ -55,26 +53,41 @@ final class PreviewFields {
     /** The options a choice field shows when the question has no list yet. */
     static final List<String> SAMPLE_OPTIONS = List.of("Option A", "Option B", "Option C");
 
-    /** A value may itself hold placeholders ("{G1's|your} mother"); the runtime resolves those too. */
+    /** A value may itself hold placeholders ("{<G1>'s|your} mother"); the runtime resolves those too. */
     private static final int MAX_NESTING = 5;
 
     private PreviewFields() { }
 
     /**
-     * Substitute placeholders the way the runtime does (QuestionManager.replaceTokens): a placeholder
-     * {phrase|default} whose phrase contains a token with a value becomes the phrase with the token
-     * replaced, else the default, else stays as written — then the runtime's own tidying: "Dennis's"
-     * reads "Dennis'", and "her's"/"his's"/"Your's" lose the stray possessive.
+     * Substitute placeholders the way the runtime does (QuestionManager.replaceTokens).
      *
-     * <p>That tidying is English-only and is applied with no locale check, exactly as the runtime
-     * applies it. It is reproduced here rather than corrected because the preview's job is to show
-     * the author what a respondent will actually read, warts included.</p>
+     * <p>A placeholder is {@code {phrase|default}}, and the phrase names its tokens as
+     * {@code <NAME>} (UC-045 BR-003). A phrase is filled all-or-nothing: every reference in it must
+     * have a value, or the placeholder falls back rather than filling partially. The fallback is
+     * the default where the placeholder has one -- {@code {<S1>|}} is an empty default, which is a
+     * default, and renders nothing -- and otherwise the phrase as written, brackets and all, which
+     * is what a respondent reads. {@code {Q#}} and {@code {S#}} are the runtime's own counters and
+     * are left exactly as written.</p>
+     *
+     * <p>A value may itself be a placeholder ({@code "{<G1>'s|your} mother"}), so the text is
+     * resolved repeatedly up to {@link #MAX_NESTING} passes, stopping at a fixed point.</p>
+     *
+     * <p>Then the runtime's own tidying: "Dennis's" reads "Dennis'", and "her's"/"his's"/"Your's"
+     * lose the stray possessive. That tidying is English-only and is applied with no locale check,
+     * exactly as the runtime applies it. It is reproduced here rather than corrected because the
+     * preview's job is to show the author what a respondent will actually read, warts included.</p>
      *
      * <p>The four replacements are an independent copy of the ones in
-     * {@code QuestionManager.replaceTokens} — two string literals with no shared constant, so a
+     * {@code QuestionManager.replaceTokens} -- two string literals with no shared constant, so a
      * change to either side silently desynchronizes this preview from the runtime. Change one,
      * change both. Two of them are load-bearing for the Family History Survey rather than
      * cosmetic; see FHHS C-009 for what depends on them.</p>
+     *
+     * <p>Two things the runtime does that the preview deliberately does not, because
+     * {@code TokenSamples} does not record whether a value is a rule's own constant or a question's
+     * sample answer standing in for a respondent: the runtime escapes a respondent-sourced value as
+     * HTML, and it never rescans one for placeholders. The preview escapes nothing and rescans
+     * every value.</p>
      */
     static String substituteTokens(String text, Map<String, String> values) {
         if (text == null || text.isEmpty()) {
@@ -93,26 +106,66 @@ final class PreviewFields {
     }
 
     private static String substituteOnce(String text, Map<String, String> values) {
-        Matcher m = Tokens.PLACEHOLDER.matcher(text);
-        StringBuilder sb = new StringBuilder();
-        while (m.find()) {
-            String phrase = m.group(1);
-            String def = m.group(2);
-            String replacement = null;
-            // Keys in sorted order, as the runtime's TreeMap walks them; every key the phrase holds is replaced.
-            for (String key : new TreeMap<>(values).keySet()) {
-                if (phrase.contains(key)) {
-                    phrase = phrase.replaceFirst(Pattern.quote(key), Matcher.quoteReplacement(values.get(key)));
-                    replacement = phrase;
-                }
+        Matcher placeholder = Tokens.PLACEHOLDER.matcher(text);
+        StringBuilder out = new StringBuilder();
+        while (placeholder.find()) {
+            String phrase = placeholder.group(1);
+            String defaultText = placeholder.group(2);
+            String replacement;
+            if (Tokens.BUILT_IN.contains(phrase.trim())) {
+                // {Q#} and {S#} are runtime counters, filled by the Survey app against the answer's own key.
+                replacement = placeholder.group();
+            } else {
+                String filled = fillPhrase(phrase, values);
+                replacement = filled != null ? filled : (defaultText == null ? phrase : defaultText);
             }
-            if (replacement == null) {
-                replacement = def != null ? def : m.group();
-            }
-            m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+            placeholder.appendReplacement(out, Matcher.quoteReplacement(replacement));
         }
-        m.appendTail(sb);
-        return sb.toString();
+        placeholder.appendTail(out);
+        return out.toString();
+    }
+
+    /**
+     * The phrase with every {@code <NAME>} replaced by its value, or null when it cannot be filled:
+     * when any reference has no value, and when the phrase names no token at all. Either way the
+     * caller falls back, so a phrase is never half filled.
+     */
+    private static String fillPhrase(String phrase, Map<String, String> values) {
+        Matcher ref = Tokens.TOKEN_REF.matcher(phrase);
+        StringBuilder filled = new StringBuilder();
+        boolean any = false;
+        while (ref.find()) {
+            any = true;
+            String value = valueOf(ref.group(1), values);
+            if (value == null) {
+                return null;
+            }
+            ref.appendReplacement(filled, Matcher.quoteReplacement(value));
+        }
+        ref.appendTail(filled);
+        return any ? filled.toString() : null;
+    }
+
+    /**
+     * A token's value, matched by name without regard to case, mirroring QuestionManager.valueOf.
+     *
+     * <p>The name is matched as the map holds it. A rule whose token was typed {@code <S1>} rather
+     * than {@code S1} is keyed that way here, and does not fill {@code <S1>} -- which is exactly
+     * what happens at runtime, where the values map is keyed on {@code relationship.token} verbatim
+     * too. The preview shows such a rule as unfilled because the deployed survey leaves it
+     * unfilled.</p>
+     */
+    private static String valueOf(String token, Map<String, String> values) {
+        String exact = values.get(token);
+        if (exact != null) {
+            return exact;
+        }
+        for (Map.Entry<String, String> e : values.entrySet()) {
+            if (e.getKey() != null && e.getKey().equalsIgnoreCase(token)) {
+                return e.getValue();
+            }
+        }
+        return null;
     }
 
     /**
