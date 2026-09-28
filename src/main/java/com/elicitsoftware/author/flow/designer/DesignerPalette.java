@@ -23,6 +23,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import io.quarkus.panache.common.Sort;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * The shape palette (UC-011 step 1, UC-015 A4, UC-016): one draggable glyph per kind of element
@@ -40,10 +41,10 @@ public class DesignerPalette extends VerticalLayout {
 
     private Glyph questionChip;
     private final Div questionSlot = new Div();
-    private final Runnable onDragStart;
+    private final Consumer<PaletteItem> onDragStart;
     private final Runnable onDragEnd;
 
-    public DesignerPalette(Runnable onDragStart, Runnable onDragEnd) {
+    public DesignerPalette(Consumer<PaletteItem> onDragStart, Runnable onDragEnd) {
         this.onDragStart = onDragStart;
         this.onDragEnd = onDragEnd;
         addClassName("designer-palette");
@@ -119,7 +120,7 @@ public class DesignerPalette extends VerticalLayout {
         // Board targets ask for the MOVE effect. Chromium cancels a drop whose target effect is
         // outside the source's allowed effects, so a COPY-only palette chip would never land.
         source.setEffectAllowed(EffectAllowed.COPY_MOVE);
-        source.addDragStartListener(e -> onDragStart.run());
+        source.addDragStartListener(e -> onDragStart.accept(item));
         source.addDragEndListener(e -> onDragEnd.run());
         glyph.getElement().setAttribute("aria-roledescription", getTranslation("designerPalette.roledescription"));
     }

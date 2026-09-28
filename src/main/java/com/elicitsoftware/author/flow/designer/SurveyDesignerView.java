@@ -81,6 +81,8 @@ import java.util.Set;
 public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasDynamicTitle {
 
     public static final String SELECT = "select";
+    /** What {@code dragging-<what>} says when a rule glyph is in flight; the kinds use their own names. */
+    private static final String RULE_DRAG = "rule";
 
     @Inject
     SurveyService surveyService;
@@ -174,7 +176,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }
         survey = found.get();
         if (palette == null) {
-            palette = new DesignerPalette(this::dragStarted, this::dragEnded);
+            palette = new DesignerPalette(this::paletteDragStarted, this::dragEnded);
             toolbox = new DesignerToolbox(this, palette);
             // The palette (add-tools + rule glyphs) now lives in the drawer, placed there by
             // MainLayout.syncWith; the in-view bar keeps only the back link and the view toggles.
@@ -261,7 +263,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
 
     private void rebuildBoard() {
         // A drop rebuilds the board, so the dragged element (and its dragend) never comes back.
-        board.removeClassName("dragging");
+        dragEnded();
         board.removeAll();
         lanes.clear();
         collectTagLabels();
@@ -442,12 +444,51 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         render();
     }
 
+    /** A drag whose payload nothing on the board highlights for (a list onto a choice question). */
     public void dragStarted() {
+        markDrag(null);
+    }
+
+    /**
+     * A drag of an element: only the insertion bars that accept this kind light up and lift.
+     *
+     * @see #markDrag(String)
+     */
+    public void dragStarted(StructureNode.Kind kind) {
+        markDrag(kind == null ? null : kind.name().toLowerCase());
+    }
+
+    /**
+     * A drag from the palette. A rule glyph is dropped on the question it reads from (UC-019), not
+     * on an insertion bar — {@link #onDrop} turns a rule away, because its {@code kind()} is null
+     * and so matches no spot — so it marks the board for rules and the question rows light up
+     * instead. Every other glyph marks the board for the kind it creates.
+     */
+    void paletteDragStarted(PaletteItem item) {
+        markDrag(item.isRule() ? RULE_DRAG : item.kind().name().toLowerCase());
+    }
+
+    /**
+     * Marks the board for the duration of a drag: {@code dragging}, plus {@code dragging-<what>}
+     * naming what is being dragged, when something on the board can take it.
+     * <p>
+     * That second class is what lets only the valid targets light up, and lift above the rule-arrow
+     * overlay — whose arrow hit bands and glyphs are themselves drag handles, and would otherwise be
+     * what the pointer finds over a target (UC-016, UC-019, UC-020).
+     */
+    private void markDrag(String what) {
         board.addClassName("dragging");
+        if (what != null) {
+            board.addClassName("dragging-" + what);
+        }
     }
 
     public void dragEnded() {
         board.removeClassName("dragging");
+        board.removeClassName("dragging-" + RULE_DRAG);
+        for (StructureNode.Kind kind : StructureNode.Kind.values()) {
+            board.removeClassName("dragging-" + kind.name().toLowerCase());
+        }
     }
 
     /** Central drop dispatcher: palette items create, nodes reorder within or copy across containers. */
