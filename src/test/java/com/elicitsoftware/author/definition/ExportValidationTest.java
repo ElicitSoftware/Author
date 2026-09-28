@@ -426,4 +426,79 @@ class ExportValidationTest {
                 "a rule's own value is checked the same way: " + issues);
     }
 
+    // ---- UC-007 BR-007: a rule's token is a name, not a reference ------------------------------
+
+    /** Plant a shape RuleService now refuses, the only way an import can carry it (UC-005). */
+    private void plantToken(Relationship created, String token) {
+        em.createNativeQuery("UPDATE survey.relationships SET token = ?1 WHERE id = ?2")
+                .setParameter(1, token).setParameter(2, created.id).executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    /**
+     * Author#21: the runtime keys a text's values on the column verbatim and asks for the name it
+     * parsed out of the reference, so {@code <NAME>} is asked for as {@code NAME} and never matches.
+     */
+    @Test
+    @TestTransaction
+    void aRuleWhoseTokenCarriesItsOwnBracketsIsAnError() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        plantToken(textRuleOntoStepTwo(s, "NAME"), "<NAME>");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("written with the angle brackets")
+                        && i.message().contains("Write NAME")),
+                "the rule is the cause and carries the fix: " + issues);
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule defines the token")),
+                "one finding at the cause, not one per text that names the token: " + issues);
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("but no text it reaches uses it")),
+                "and not the same defect read back as an unused token: " + issues);
+    }
+
+    @Test
+    @TestTransaction
+    void aRuleWhoseTokenHoldsACharacterNoReferenceCanIsAnError() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        plantToken(textRuleOntoStepTwo(s, "NAME"), "NA ME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("which no text can name")),
+                "no phrase could ever spell it: " + issues);
+    }
+
+    /** Every match ignores case, so a lower-case token fills -- it must not block an export. */
+    @Test
+    @TestTransaction
+    void aLowerCaseTokenIsAWarningBecauseItStillFills() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        plantToken(textRuleOntoStepTwo(s, "NAME"), "name");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("carries the token name rather than NAME")),
+                "FR-012 asks for upper case: " + issues);
+        assertTrue(issues.stream().noneMatch(ValidationIssue::isError), issues.toString());
+    }
+
+    @Test
+    @TestTransaction
+    void aTokenWrittenAsAPlainUpperCaseNameIsNotFlagged() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("carries the token")), issues.toString());
+    }
+
 }

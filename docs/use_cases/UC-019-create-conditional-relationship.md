@@ -33,13 +33,20 @@
 1. The system opens the rule dialog with the upstream question filled in; the author picks the downstream kind and target from lists, in which a section mounted in several steps appears once per mount, labeled by its path. A question is labeled by its path and its type — `welcome › Demographics › married (radio)` — in both the upstream and the target list, since the type is what decides the operators and values the rule can use.
 2. Use case continues at step 5.
 
-### A2: Text action without a token
+### A2: Text action without a token, or a token that is not a name
 
-**Trigger:** The action is Text and no token name is given, or it exceeds 10 characters (step 5)  
+**Trigger:** The action is Text and no token name is given; or a token is given that is not a name a
+text could write between angle brackets, or whose name exceeds 10 characters (step 5)  
 **Flow:**
 
-1. The system marks the token field and refuses to save.
-2. Use case continues at step 5.
+1. The system stores a token as the name alone, upper case: a token typed `<S1>` is saved as `S1`,
+   and one typed `s1` as `S1`. The brackets belong to the text that names the token, and the runtime
+   keys a text's values on this name, so a token stored with them fills nothing (UC-007 BR-007).
+   The name is what the length is measured against, so `<GRANDMAMA>` is nine characters, not eleven.
+2. What no normalizing can repair — a name holding a character a reference cannot spell (`S 1`,
+   `{S1}`, `Q#`), one that does not start with a letter, or one longer than ten characters — marks
+   the token field and refuses to save.
+3. Use case continues at step 5.
 
 ### A3: Repeat onto a step
 
@@ -95,7 +102,7 @@ The runtime applies a target's rules with AND; the board draws them as separate 
 
 ### BR-005: A rule reaches everything inside its target, and a token is a slot, not a question
 
-The runtime builds a text's token values from the rules that target its step, then its section, then the question itself, the inner overriding the outer. A Text rule on a step therefore fills its token in every section and question of that step; one rule per step, not one per element. A token is the name of a slot in a text, declared by being used: the same token may be filled by several rules from different questions, each where the text is shown (the Family History Survey fills `{S1}` from fifteen places), and a rule of any action that carries a token fills it. The token is therefore offered for every action, not only Text: a Show or Repeat rule may name the slot the upstream answer fills in the target's texts (the Family History Survey's step-showing Show rules carry `S1` and `CS2`), and a Text rule must name one (A2). The example answer a preview substitutes belongs to the question the rule reads (UC-011 BR-005), not to the rule.
+The runtime builds a text's token values from the rules that target its step, then its section, then the question itself, the inner overriding the outer. A Text rule on a step therefore fills its token in every section and question of that step; one rule per step, not one per element. A token is the name of a slot in a text, declared by being used: the same token may be filled by several rules from different questions, each where the text is shown (the Family History Survey fills `<S1>` from fifteen places), and a rule of any action that carries a token fills it. The token is therefore offered for every action, not only Text: a Show or Repeat rule may name the slot the upstream answer fills in the target's texts (the Family History Survey's step-showing Show rules carry `S1` and `CS2`), and a Text rule must name one (A2). The token is stored as the name alone, upper case (`S1`); the angle brackets belong to the text that names it, and a token stored with them is asked for under a name it does not have and fills nothing (A2, UC-007 BR-007). The example answer a preview substitutes belongs to the question the rule reads (UC-011 BR-005), not to the rule.
 
 ### BR-006: A token source is a question that collects a value
 

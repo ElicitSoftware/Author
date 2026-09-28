@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -67,6 +68,11 @@ public final class Tokens {
     /** Anything written between angle brackets, token reference or HTML tag alike. */
     private static final Pattern ANGLED = Pattern.compile("<[^>]+>");
 
+    /**
+     * The longest a token name may be, which is the width of the column that carries it:
+     * {@code survey.relationships.token} is {@code character varying(10)}. The write path refuses a
+     * longer name rather than letting the insert fail on the constraint.
+     */
     public static final int MAX_LENGTH = 10;
 
     private Tokens() { }
@@ -197,6 +203,32 @@ public final class Tokens {
     }
 
     /**
+     * A token as Author stores it: the name alone, upper case (FR-012).
+     *
+     * <p>The brackets belong to the text that names the token, never to the token itself. The Survey
+     * runtime keys a text's values on {@code relationship.token} exactly as the column holds it and
+     * asks for the name it parsed out of a reference, so a token stored {@code <S1>} is asked for
+     * under a name it does not have and fills nothing. Case is free -- every match ignores it -- but
+     * one spelling per slot keeps the survey's token list one entry per slot.</p>
+     */
+    public static String canonical(String token) {
+        return bare(token).toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Whether a phrase could name this token at all.
+     *
+     * <p>A reference is {@code <NAME>} and the name is what lies between the brackets, so only a
+     * token spelled exactly as that name can ever be named. {@link #TOKEN_REF} is the authority for
+     * which characters that is, so the question is asked by writing the brackets on and seeing
+     * whether the result is a reference: {@code S1} yes, {@code S 1} no, and {@code <S1>} no, because
+     * a phrase naming it would have to read {@code <<S1>>}.</p>
+     */
+    public static boolean nameable(String token) {
+        return token != null && TOKEN_REF.matcher("<" + token.trim() + ">").matches();
+    }
+
+    /**
      * The known token names a text names as bare words inside a placeholder rather than as
      * {@code <NAME>}, in the order written.
      *
@@ -245,15 +277,18 @@ public final class Tokens {
     }
 
     /**
-     * Every token the survey already knows, sorted: the ones its current rules carry and the bare
-     * names its current texts use. The rule dialog offers these so an author reuses a name instead
-     * of mistyping it (FR-012).
+     * Every token the survey already knows, sorted: the ones its current rules carry and the names its
+     * current texts use. The rule dialog offers these so an author reuses a name instead of mistyping
+     * it (FR-012).
+     *
+     * <p>A rule's token is offered as its {@link #canonical} name, so a rule an import saved with the
+     * brackets on does not add a second entry for a slot the survey already has.</p>
      */
     public static Set<String> known(int surveyId) {
         Set<String> names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         for (Relationship r : Relationship.<Relationship>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
             if (r.token != null && !r.token.isBlank()) {
-                names.add(r.token.trim());
+                names.add(canonical(r.token));
             }
         }
         for (Question q : Question.<Question>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {

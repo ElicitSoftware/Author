@@ -17,7 +17,7 @@
 ## Main Success Scenario
 
 1. The author opens the survey in the editor (UC-006) or chooses Export (UC-008).
-2. The system checks the current elements of the survey: every reference from one element to another resolves to a current element; every relationship has a downstream path that holds together (a step, a section mounted in it, a question assigned to that section; a question outside the upstream question's own section names its step and section) and a valid operator and action; every choice-type question refers to a select group that has at least one current item; every `{TOKEN}` a step name, section name or question text uses is filled by a rule that reaches it, and every token a rule carries, whatever its action, is used by a text it reaches; every step has at least one section and every section at least one question; ordering values are unique within their parent; the survey's initial display key names a current section assignment.
+2. The system checks the current elements of the survey: every reference from one element to another resolves to a current element; every relationship has a downstream path that holds together (a step, a section mounted in it, a question assigned to that section; a question outside the upstream question's own section names its step and section) and a valid operator and action; every choice-type question refers to a select group that has at least one current item; every `{TOKEN}` a step name, section name or question text uses is filled by a rule that reaches it, and every token a rule carries, whatever its action, is a name a text could write between angle brackets and is used by a text it reaches; every step has at least one section and every section at least one question; ordering values are unique within their parent; the survey's initial display key names a current section assignment.
 3. The system classifies each finding as an error (blocks export) or a warning (informational).
 4. The system adds a retroactivity warning for each step or section whose name changed since the last export and for each question whose ontology assignment changed since the last export.
 5. The system displays the findings in the validation panel, each linked to the element concerned.
@@ -107,3 +107,25 @@ Checked in a step's name, a section's name, a question's text and a rule's own d
 value, which is itself a placeholder. Translators are given the same rule, so a phrase handed over
 is prose and keys and never markup (UC-045 BR-003), and the hand-off's `html` flag means markup
 outside the placeholders rather than merely an angle bracket somewhere in the string.
+
+### BR-007: A rule's token is a name, not a reference
+
+The runtime keys a text's token values on `relationships.token` exactly as the column holds it, and
+asks for the name it parsed out of a reference. A token stored `<S1>` is therefore asked for as `S1`,
+never matches, and every placeholder meant to use it falls back to its default forever — while the
+rule reads correctly in the designer and in the arrow's tooltip, both of which show the token as
+`<S1>` whichever way it is stored. A token holding a character a reference cannot spell (`S 1`,
+`{S1}`, `Q#`) is unnameable the same way. Both are errors: nothing the rule reaches can ever fill.
+
+A name that merely is not the canonical spelling — lower case, or not starting with a letter — still
+fills, because every match ignores case, so it is a warning and not an error: a survey that runs
+today is not blocked from export over spelling. What it costs is the survey's token list, which then
+offers two names for one slot.
+
+An unnameable token is reported once, at the rule. The checks that ask which texts use a token stay
+quiet for it on purpose: BR-005 and BR-006 both read the name out of the brackets, so reading the
+column strictly there instead would report one broken rule once for every text that names the token,
+and every report would block export.
+
+UC-019 A2 canonicalizes a token on the way in, so what this reports is what an import (UC-005) or a
+definition drafted outside Author (UC-042) wrote into the column directly.
