@@ -65,7 +65,7 @@ public class StepLane extends Div {
         source.setDragData(node);
         source.setEffectAllowed(EffectAllowed.MOVE);
         source.setDraggable(!node.retired());
-        source.addDragStartListener(e -> view.dragStarted());
+        source.addDragStartListener(e -> view.dragStarted(node.kind()));
         source.addDragEndListener(e -> view.dragEnded());
         if (!node.retired()) {
             glyph.getElement().setAttribute("draggable", "true");
