@@ -810,9 +810,12 @@ is still being built.
    words, captions and field labels around that Japanese text will be English.
    That is correct and should be said out loud in the manual, not fixed.
 5. **The possessive wart.** `QuestionManager.replaceTokens`' English possessive
-   handling (`QuestionManager.java:99-101`) will make a preview and a runtime
+   handling (`QuestionManager.java:238-249`) will make a preview and a runtime
    agree on something wrong for other languages. This proposal reproduces the
-   runtime faithfully; fixing the runtime is Survey's to schedule.
+   runtime faithfully; fixing the runtime is Survey's to schedule. It is inert in
+   es-419 and ar today, and two of its four replacements are load-bearing for the
+   Family History Survey rather than cosmetic, so it cannot simply be deleted —
+   FHHS C-009 records what depends on it and what re-authoring its removal costs.
 6. **Scope creep into the Translations view.** The paired field and the grid
    overlap, and the temptation will be to grow the paired field into a
    mini-grid ("show all languages here"). BR-005 exists to hold that line: one
