@@ -16,7 +16,12 @@ import com.elicitsoftware.author.flow.StructureNavigationTree;
 import com.elicitsoftware.author.flow.SurveyEditorView;
 import com.elicitsoftware.author.flow.SurveysView;
 import com.elicitsoftware.author.survey.DisplayOrdering;
+import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
+import com.elicitsoftware.model.ActionType;
+import com.elicitsoftware.model.OperatorType;
+import com.elicitsoftware.model.Relationship;
+import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.Step;
 import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Question;
@@ -36,6 +41,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -54,6 +60,12 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
 
     @Inject
     DisplayOrdering ordering;
+
+    @Inject
+    EntityManager em;
+
+    @Inject
+    RuleService rules;
 
     private Survey fixture() {
         return Survey.find("name", "AuthorFixture").firstResult();
@@ -243,6 +255,74 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
 
         view.showPreview.setValue(false);
         assertFalse(view.preview.isVisible(), "the pane can be hidden to give the board the whole width");
+    }
+
+    /**
+     * UC-011 BR-004 / ElicitSoftware/Author#22: a sample answer reaches the preview escaped, because
+     * it stands in for words the respondent typed and the runtime escapes those. Splicing it raw
+     * previewed markup as markup where the site renders the tag itself, which is the one direction
+     * of divergence that matters -- the author signs off on a page the respondent never sees.
+     */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void aSampleAnswerIsPreviewedEscapedAsTheSiteRendersIt() {
+        Survey s = fixture();
+        setSample(s, "FixtureQ2", "<b>Bob</b>");
+        // Section C's one question, so the display-only path the issue is about has something to draw.
+        setColumn(s, "FixtureQ5", "type_id", "(SELECT id FROM survey.question_types WHERE name = 'HTML')");
+        setText(s, "FixtureQ5", "<p>Hello {<NAME>|friend}.</p>");
+        textRuleOntoStepTwo(s, "NAME");
+
+        SurveyDesignerView view = open(s);
+        view.toggleAndSelect(view.lanes.get(1).cards.get(0).node()); // Fixture Step Two: Section C
+        List<SectionPreview.Block> blocks = view.preview.blocks();
+        assertEquals(1, blocks.size());
+
+        assertEquals("<p>Hello &lt;b&gt;Bob&lt;/b&gt;.</p>", ((Html) blocks.get(0).field()).getInnerHtml(),
+                "the respondent reads the literal tag, so the author must see the literal tag");
+    }
+
+    private void setSample(Survey s, String shortText, String sample) {
+        em.createNativeQuery("UPDATE survey.questions SET sample = ?1 WHERE short_text = ?2 AND survey_id = ?3")
+                .setParameter(1, sample).setParameter(2, shortText).setParameter(3, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    private void setText(Survey s, String shortText, String text) {
+        em.createNativeQuery("UPDATE survey.questions SET text = ?1 WHERE short_text = ?2 AND survey_id = ?3")
+                .setParameter(1, text).setParameter(2, shortText).setParameter(3, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    /** @param valueExpression inlined SQL, not a parameter: this is test-only and the callers are literals. */
+    private void setColumn(Survey s, String shortText, String column, String valueExpression) {
+        em.createNativeQuery("UPDATE survey.questions SET " + column + " = " + valueExpression
+                        + " WHERE short_text = ?1 AND survey_id = ?2")
+                .setParameter(1, shortText).setParameter(2, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    /** A Text rule reading FixtureQ2 and landing on every question of step two. */
+    private void textRuleOntoStepTwo(Survey s, String token) {
+        SectionsQuestion upstream = SectionsQuestion.find(
+                "questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
+                "FixtureQ2", s.id, StructuralElement.SENTINEL).firstResult();
+        Step one = Step.find("name = ?1 and effectiveTo = ?2", "Fixture Step One", StructuralElement.SENTINEL).firstResult();
+        Step two = Step.find("name = ?1 and effectiveTo = ?2", "Fixture Step Two", StructuralElement.SENTINEL).firstResult();
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = upstream.sectionsQuestionId;
+        draft.upstreamStepId = one.stepId;
+        draft.downstreamStepId = two.stepId;
+        draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
+        draft.actionType = ActionType.find("name", "TEXT").firstResult();
+        draft.token = token;
+        rules.create(s.id, draft);
+        em.flush();
+        em.clear();
     }
 
     @Test

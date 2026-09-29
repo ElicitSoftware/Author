@@ -101,6 +101,35 @@ public final class Tokens {
         return type != null && !isDisplayOnly(type);
     }
 
+    /** Stored ISO form; the three types the respondent picks a moment with. Mirrors TokenSource. */
+    private static final Set<String> DATE_TYPES = Set.of("DATE_PICKER", "DATE_TIME_PICKER", "TIME_PICKER");
+
+    /**
+     * Whether the answer to this question outranks the constant an author wrote on a rule reading
+     * it, which is how the Survey runtime chooses between the two ({@code TokenSource.prefersAnswer}).
+     *
+     * <p>True when the answer is the respondent's own words or a moment they chose, false when it is
+     * an option's coded value or a bare figure, which would read as nonsense in a sentence and so
+     * loses to the author's prose. A question with a select group stores the chosen option's coded
+     * value whatever its {@code data_type} says, which is why the group is asked about separately.</p>
+     *
+     * <p>The designer's previews ask this of a question's sample answer, which stands in for a
+     * respondent's (UC-011 BR-004). Author cannot know whether a respondent will have answered, so
+     * the preview shows the case where they have -- a blank sample is the case where they have
+     * not, and falls back to the constant on its own.</p>
+     *
+     * @param selectGroupId the question's select group, null when it has none
+     */
+    public static boolean answerBeatsConstant(QuestionType type, Integer selectGroupId) {
+        if (!collectsAnswer(type)) {
+            return false;
+        }
+        if (DATE_TYPES.contains(type.name)) {
+            return true;
+        }
+        return "Text".equalsIgnoreCase(type.dataType) && selectGroupId == null;
+    }
+
     /** One placeholder as written: its phrase and its default, null when it has none. */
     public record Placeholder(String phrase, String defaultText) {
 
