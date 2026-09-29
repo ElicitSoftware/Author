@@ -17,7 +17,7 @@
 ## Main Success Scenario
 
 1. The author turns on Show rules.
-2. The system draws one arrow per current rule from the box of the element it reads to the box of the element it acts on, with the action glyph at the midpoint and a label that reads what the rule does — the action and the target's name ("Show Demographics", "Repeat Child Name", "Replace {token}"). The condition (operator and value) is on the arrow's tooltip.
+2. The system draws one arrow per current rule from the box of the element it reads to the box of the element it acts on, with the action glyph at the midpoint and a label that reads what the rule does — the action and the target's name ("Show Demographics", "Repeat Child Name", "Replace <S1>"). The condition (operator and value) is on the arrow's tooltip.
 3. Arrows leave and arrive on the boxes' left edge and run in a channel to the left of the fixed step spine, so a rule between two steps runs in the board's left gutter and a rule between two elements inside one step runs in that step's own gutter, staying inside its box.
 4. A rule whose two ends fall inside the same closed box is out of context and is not drawn; it reappears once that box is opened and the ends separate. With every step and section closed, only rules between steps are drawn.
 5. The author selects an element (a box, or a tree row); the system emphasizes the rules that touch it and fades the rest, so a dense graph stays readable.
