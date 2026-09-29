@@ -80,8 +80,12 @@ class DisplayedStringsSweepTest extends QuarkusBrowserlessTest {
             sweep("designer", problems);
             navigate(ReportingView.class, id);
             sweep("reporting", problems);
-            // Swept in both of its states: the fixture publishes no language, so this is the empty
-            // one. The grid itself is content (base text and translations), marked as such.
+            // The fixture publishes no language, so the picker renders with nothing selected and
+            // offers the common languages. Their names come from the JDK rather than the bundle,
+            // which is why the item label is built from a parameterised key: the pseudo-locale
+            // returns its marker before formatting parameters, so the whole label reads back as
+            // one marked string. The grid itself is content (base text and translations),
+            // marked as such.
             navigate(TranslationsView.class, id);
             sweep("translations", problems);
         } else {

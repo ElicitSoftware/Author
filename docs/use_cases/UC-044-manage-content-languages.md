@@ -16,11 +16,11 @@
 
 ## Main Success Scenario
 
-1. The author opens the survey's metadata dialog.
+1. The author opens the survey's metadata dialog, or the Translations page (UC-043).
 2. The system shows the base language, the language the survey's content is written in, beside the survey's name, title and description.
-3. The system shows the content languages, the set the survey is published in, each with its count of translated, missing and out-of-date strings.
-4. The author adds a language to the published set.
-5. The system records it with the survey and offers it on the Translations page (UC-043).
+3. The system shows the content languages, the set the survey is published in: as a comma-separated list in the metadata dialog, and as the Translations page's language picker, which also offers the languages the survey is not published in.
+4. The author adds a language to the published set, either by writing its tag in the metadata dialog or by choosing it on the Translations page.
+5. The system records it with the survey and shows its outstanding strings (UC-043), reporting how many the new language leaves untranslated.
 6. The author translates the survey (UC-043, UC-045, UC-046) and exports it (UC-008); every site that mounts that language for its own chrome now serves the survey in it.
 
 ## Alternative Flows
@@ -30,7 +30,7 @@
 **Trigger:** The author adds a language with missing or out-of-date strings to the published set (step 4)  
 **Flow:**
 
-1. The system accepts it and warns how many strings will fall back to the base language at every site.
+1. The system accepts it and warns how many strings will fall back to the base language at every site. The warning is repeated at export (UC-008).
 2. Use case continues at step 5.
 
 ### A2: The author withdraws a language
@@ -67,6 +67,8 @@
 
 A language is published because the author says so, not because translations exist for it. A language may be fully translated and unpublished while work is reviewed, or published and incomplete with the missing strings falling back.
 
+The per-language counts live on the Translations page, where the translating is done, and are reported again when a language is added (A1) and at export. The metadata dialog shows the set without them: a second copy of the same numbers, on a dialog that is mostly about a survey's name and address, would be one more thing to keep true.
+
 ### BR-002: A site serves a language only when its own chrome has it
 
 The published set says what the survey offers; what a respondent is offered at a given site is the intersection of that set with the languages mounted for the application's own texts there (Survey UC-009 BR-009). A site that has not adopted a language holds its rows without serving them, so one file suits every site.
@@ -82,3 +84,7 @@ A content language is a BCP-47 tag in the same form the mounted chrome bundles u
 ### BR-005: The base language is the fallback for every string
 
 Whatever a survey is published in, every untranslated and every out-of-date string is shown in the base language (Survey UC-009 BR-005). A survey is therefore never partly unreadable.
+
+### BR-006: A tag is validated and stored canonically
+
+A tag is accepted only when BCP-47 can parse it and its primary subtag names a real language: `zzz` is well-formed and means nothing, and `fr_CA` is not a tag at all. What is stored is the canonical form, so `ES-419` and `es-419` are one language rather than two, and the published set can be compared with a site's mount by equality. The base language is refused as a target wherever it is offered or typed, however it was itself written.
