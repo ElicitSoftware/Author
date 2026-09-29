@@ -101,7 +101,7 @@ relevant only once implementation code exists.
 ## Terminology
 
 - **Access code** = the respondent credential (Admin issues it). **Token** =
-  only a question-text placeholder (`{KEY|default}`, `relationships.token`).
+  only a question-text placeholder (`{<KEY>|default}`, `relationships.token`).
 - Versioning vocabulary: durable key, element key, version, current, retired,
   revision. Never `is_current`, `active`, or `is_draft`; never "publish" for a
   database state — the verb is **export**.

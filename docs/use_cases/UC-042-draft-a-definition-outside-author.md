@@ -83,7 +83,7 @@ The document must be usable by an agent with no access to Elicit's source, datab
 
 ### BR-002: The specification cannot drift
 
-Everything in the document that restates the implementation is verified against the code and the seeded lookup rows by automated test, and its worked example is imported and validated by that test (NFR-017).
+Everything in the document that restates the implementation is verified against the code and the seeded lookup rows by automated test, and its worked example is imported and validated by that test. Its prose is read the same way a survey's texts are: every placeholder it writes must name its token in angle brackets, so the document cannot teach a form the export refuses, and the prose and the worked example cannot drift apart (NFR-017).
 
 ### BR-003: A draft is not a deployable definition
 

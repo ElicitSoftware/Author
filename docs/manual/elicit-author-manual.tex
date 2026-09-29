@@ -112,7 +112,7 @@ There are three actions:
   \item \term{Repeat} — the target section or question is repeated as many times as the answer
         says, for example one \ui{Child} section per child.
   \item \term{Text} — the answer is written into the target's text wherever a
-        \texttt{\{TOKEN|default\}} placeholder appears, so a later question can say
+        \texttt{\{<TOKEN>|default\}} placeholder appears, so a later question can say
         ``your daughter'' rather than ``your child''.
 \end{itemize}
 
@@ -137,7 +137,7 @@ key.
 \begin{elicitnote}[Vocabulary]
 Author never uses ``publish'' for a state in the database — the verb is \emph{export}. The
 credential a respondent enters to reach a survey is the \term{access code}, never a token;
-``token'' means only the \texttt{\{KEY|default\}} placeholder in question text.
+``token'' means only the \texttt{\{<KEY>|default\}} placeholder in question text.
 \end{elicitnote}
 
 %% ------------------------------------------------------------------ 2
@@ -260,7 +260,7 @@ The fields worth knowing:
         the type, and the preview at the bottom shows the field the respondent will get.
   \item \ui{Short text} — the label on the board and in the structure tree. Keep it short.
   \item \ui{Question text} — what the respondent reads. This is where a
-        \texttt{\{TOKEN|default\}} placeholder goes if a Text rule is to fill it.
+        \texttt{\{<TOKEN>|default\}} placeholder goes if a Text rule is to fill it.
   \item \ui{Required} and \ui{Validation message} — whether an answer is compulsory, and what
         the respondent is told when it is missing.
   \item \ui{Sample answer} — previews what a Text rule reading this question would write

@@ -11,6 +11,7 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.survey.Tokens;
 import com.elicitsoftware.model.ActionType;
 import com.elicitsoftware.model.OperatorType;
 import com.elicitsoftware.model.QuestionType;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Keeps {@code docs/ai/AUTHORING_FOR_AI.md} honest (UC-042, NFR-019).
+ * Keeps {@code docs/ai/AUTHORING_FOR_AI.md} honest (UC-042, NFR-017).
  *
  * <p>The document tells an AI agent how to write a {@code .elicit} definition without access to
  * this source tree, so anything in it that restates the code can go stale silently and the only
@@ -76,11 +78,11 @@ class AuthoringForAiDocTest {
             int fields = Integer.parseInt(m.group(2));
             Integer required = ElicitFormat.REQUIRED_FIELDS.get(table);
             assertEquals(required, fields,
-                    "NFR-019: the document's field count for '" + table + "' disagrees with ElicitFormat.REQUIRED_FIELDS");
+                    "NFR-017: the document's field count for '" + table + "' disagrees with ElicitFormat.REQUIRED_FIELDS");
             documented.add(table);
         }
         assertTrue(documented.containsAll(ElicitFormat.TABLES),
-                "NFR-019: the document's layout table is missing " + ElicitFormat.TABLES.stream()
+                "NFR-017: the document's layout table is missing " + ElicitFormat.TABLES.stream()
                         .filter(t -> !documented.contains(t)).toList());
     }
 
@@ -95,7 +97,7 @@ class AuthoringForAiDocTest {
                 at = text.indexOf("`" + table + "`\n");
             }
             assertTrue(at > previous,
-                    "NFR-019: '" + table + "' does not appear in ElicitFormat.TABLES order in the record-order list");
+                    "NFR-017: '" + table + "' does not appear in ElicitFormat.TABLES order in the record-order list");
             previous = at;
         }
     }
@@ -105,11 +107,11 @@ class AuthoringForAiDocTest {
     void matchesTheFormatMarkers() throws IOException {
         String text = doc();
         assertTrue(text.contains(ElicitFormat.DRAFT_FORMAT_VERSION),
-                "NFR-019: the document must name " + ElicitFormat.DRAFT_FORMAT_VERSION);
+                "NFR-017: the document must name " + ElicitFormat.DRAFT_FORMAT_VERSION);
         assertFalse(ElicitFormat.DRAFT_FORMAT_VERSION.contains(ElicitFormat.FORMAT_VERSION),
                 "UC-042: the draft marker must not contain the export marker, or Admin's substring check lets it in");
         assertTrue(text.contains(String.valueOf(ElicitFormat.MAX_FILE_BYTES / (1024 * 1024)) + " MB"),
-                "NFR-019: the document's size cap disagrees with ElicitFormat.MAX_FILE_BYTES");
+                "NFR-017: the document's size cap disagrees with ElicitFormat.MAX_FILE_BYTES");
     }
 
     /**
@@ -133,17 +135,17 @@ class AuthoringForAiDocTest {
 
     private static void assertRow(Map<Integer, String> table, Integer id, String name, String what) {
         String row = table.get(id);
-        assertTrue(row != null, "NFR-019: the document's id table has no row for " + what + " " + id
+        assertTrue(row != null, "NFR-017: the document's id table has no row for " + what + " " + id
                 + " ('" + name + "')");
         assertTrue(row.contains("`" + name + "`"),
-                "NFR-019: " + what + " " + id + " is '" + name + "' in the database, but the document's row "
+                "NFR-017: " + what + " " + id + " is '" + name + "' in the database, but the document's row "
                         + "for that id says: " + row);
     }
 
     /** The {@code | id | ... |} rows of one id table, from its heading to the next heading. */
     private static Map<Integer, String> idTable(String text, String heading) {
         int from = text.indexOf(heading);
-        assertTrue(from > 0, "NFR-019: the document no longer has a '" + heading + "' table");
+        assertTrue(from > 0, "NFR-017: the document no longer has a '" + heading + "' table");
         int to = text.indexOf("\n### ", from + heading.length());
         String block = text.substring(from, to < 0 ? text.length() : to);
         Map<Integer, String> rows = new LinkedHashMap<>();
@@ -152,6 +154,29 @@ class AuthoringForAiDocTest {
             rows.put(Integer.valueOf(m.group(1)), m.group(2));
         }
         return rows;
+    }
+
+    /**
+     * UC-042 BR-002: the prose must teach the syntax the exporter accepts, not the one it rejects.
+     *
+     * <p>The worked example is validated below, but an agent follows the prose too, and the two can
+     * disagree: a paragraph left on the undelimited form has the agent emitting
+     * {@code {SUBJECT|the subject}}, which {@code ExportValidation} reports as an error the moment
+     * a rule carries that token. Judged by {@link Tokens}, so the document answers to the rule the
+     * exporter enforces rather than to a second pattern that can drift from it.</p>
+     */
+    @Test
+    void proseBracketsEveryTokenItNames() throws IOException {
+        String text = doc();
+        Set<String> known = Tokens.names(text);
+        List<String> bare = Tokens.placeholders(text).stream()
+                .filter(ph -> !Tokens.bareTokenNames(ph.text(), known).isEmpty())
+                .map(Tokens.Placeholder::text)
+                .toList();
+
+        assertTrue(bare.isEmpty(), "NFR-017: the document writes " + bare + ", naming a token without its"
+                + " angle brackets. An agent copying that prose writes a definition ExportValidation refuses;"
+                + " write the token as <NAME> inside the phrase (UC-045 BR-003)");
     }
 
     /**
@@ -195,7 +220,7 @@ class AuthoringForAiDocTest {
 
     private static String fencedBlockContaining(String text, String needle) {
         int at = text.indexOf(needle);
-        assertTrue(at > 0, "NFR-019: the document no longer contains a worked example starting '" + needle + "'");
+        assertTrue(at > 0, "NFR-017: the document no longer contains a worked example starting '" + needle + "'");
         int open = text.lastIndexOf("```", at);
         int start = text.indexOf('\n', open) + 1;
         int close = text.indexOf("```", start);

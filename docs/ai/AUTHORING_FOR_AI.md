@@ -69,8 +69,8 @@ them.** The text writes `{<SUBJECT>|the subject}`, or a whole phrase around the
 reference — `{Has <SUBJECT> been|Were you}` — and the rule's `token` field holds the
 name alone, upper case: `SUBJECT`, never `<SUBJECT>`. The runtime looks a value up
 by that name, so a token written with its brackets in the `token` field fills
-nothing, and a placeholder naming a token as a bare word (`{SUBJECT|the subject}`)
-fills nothing either. Both are export errors. Markup belongs outside the braces:
+nothing, and a phrase that writes `SUBJECT` without its angle brackets fills
+nothing either. Both are export errors. Markup belongs outside the braces:
 `<b>{<SUBJECT>|the subject}</b>`, never inside them. A name is at most ten
 characters, starts with a letter, and holds letters, digits and underscores only.
 

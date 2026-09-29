@@ -236,7 +236,7 @@ public class RuleService {
             if (!upstreamCollectsAnswer(surveyId, r.upstreamSqId)
                     && (r.defaultUpstreamValue == null || r.defaultUpstreamValue.isBlank())) {
                 throw new AuthoringException("A " + upstreamTypeName(surveyId, r.upstreamSqId)
-                        + " question collects no answer, so {" + r.token + "} would stay unfilled."
+                        + " question collects no answer, so {" + Tokens.reference(r.token) + "} would stay unfilled."
                         + " Read from a question the respondent answers, or give the rule a default"
                         + " upstream value to fill the token with", "upstreamSqId");
             }

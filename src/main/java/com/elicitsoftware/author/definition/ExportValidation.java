@@ -279,7 +279,8 @@ public class ExportValidation {
             }
             if (!reachUses(r, tok, steps, sections, questions, stepsSections, sectionsQuestions, questionsBySection)) {
                 issues.add(ValidationIssue.warning("relationships", r.relationshipId,
-                        "Rule '" + r.description + "' fills {" + tok + "} but no text it reaches uses it"));
+                        "Rule '" + r.description + "' fills {" + Tokens.reference(tok)
+                                + "} but no text it reaches uses it"));
             }
             displayOnlySource(issues, r, tok, questions, sectionsQuestions);
         }
@@ -369,13 +370,13 @@ public class ExportValidation {
         String type = upstream.questionType == null ? "display-only" : upstream.questionType.name;
         String rule = "Rule '" + r.description + "'";
         if (r.defaultUpstreamValue == null || r.defaultUpstreamValue.isBlank()) {
-            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " fills {" + tok
-                    + "} from " + label(upstream) + ", a display-only " + type
+            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " fills {"
+                    + Tokens.reference(tok) + "} from " + label(upstream) + ", a display-only " + type
                     + " question that collects no answer, and carries no value of its own, so nothing ever fills {"
-                    + tok + "}"));
+                    + Tokens.reference(tok) + "}"));
         } else {
-            issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " fills {" + tok
-                    + "} from " + label(upstream) + ", a display-only " + type
+            issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " fills {"
+                    + Tokens.reference(tok) + "} from " + label(upstream) + ", a display-only " + type
                     + " question that collects no answer; only the rule's own value fills the token."
                     + " Read it from a question the respondent answers"));
         }
