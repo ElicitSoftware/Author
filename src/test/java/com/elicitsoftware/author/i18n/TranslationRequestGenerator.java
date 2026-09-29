@@ -48,10 +48,10 @@ final class TranslationRequestGenerator {
         md.append("| Key | English | Where it appears | Max length | Notes |\n");
         md.append("|-----|---------|------------------|------------|-------|\n");
         for (Map.Entry<String, String> e : defaults.entrySet()) {
-            String[] ctx = context.getOrDefault(e.getKey(), " |  |  | ").split("\\|", -1);
-            String where = ctx.length > 1 ? (ctx[0].strip() + " · " + ctx[1].strip()) : ctx[0].strip();
-            String max = ctx.length > 2 ? ctx[2].strip() : "";
-            String notes = ctx.length > 3 ? ctx[3].strip() : "";
+            String[] ctx = splitContext(context.getOrDefault(e.getKey(), " |  |  | "));
+            String where = ctx[1].isBlank() ? ctx[0].strip() : (ctx[0].strip() + " · " + ctx[1].strip());
+            String max = ctx[2].strip();
+            String notes = ctx[3].strip();
             md.append("| `").append(e.getKey()).append("` | ")
               .append(cell(e.getValue())).append(" | ")
               .append(cell(where)).append(" | ")
@@ -64,6 +64,40 @@ final class TranslationRequestGenerator {
         }
         md.append("```\n");
         return md.toString();
+    }
+
+    /**
+     * The four fields of a context entry: {@code where | what | max length | notes}.
+     *
+     * <p>Split on every pipe and a note quoting a placeholder of its own -- {@code
+     * {<TOKEN>|default}}, {@code {Has <TOKEN> been|Were you}} -- shifts every field after it along,
+     * so the Max length column ends up holding prose and the real number falls off the end of the
+     * row. Escaping the pipe in the sidecar cannot fix it either: {@link #unescape} drops the
+     * backslash before this ever sees it, as a properties reader should.</p>
+     *
+     * <p>So the outer fields are anchored instead: the first pipe closes {@code where} and the last
+     * two close {@code max} and {@code notes}, leaving everything between them to {@code what},
+     * pipes and all. That is the field such notes are written in; {@code max} is a number and
+     * {@code notes} a short params line, neither of which carries one. A value with fewer than
+     * three pipes is malformed rather than pipe-bearing, and falls back to a plain split.</p>
+     */
+    static String[] splitContext(String value) {
+        int first = value.indexOf('|');
+        int last = value.lastIndexOf('|');
+        int penultimate = last <= 0 ? -1 : value.lastIndexOf('|', last - 1);
+        if (first < 0 || penultimate <= first) {
+            String[] plain = value.split("\\|", -1);
+            return new String[]{
+                    plain.length > 0 ? plain[0] : "",
+                    plain.length > 1 ? plain[1] : "",
+                    plain.length > 2 ? plain[2] : "",
+                    plain.length > 3 ? plain[3] : ""};
+        }
+        return new String[]{
+                value.substring(0, first),
+                value.substring(first + 1, penultimate),
+                value.substring(penultimate + 1, last),
+                value.substring(last + 1)};
     }
 
     private static String cell(String value) {
