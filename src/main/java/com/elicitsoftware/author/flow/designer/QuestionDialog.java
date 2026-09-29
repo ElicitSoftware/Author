@@ -89,7 +89,7 @@ public class QuestionDialog extends Dialog {
     private final int surveyId;
     /** Option texts per select group, read the first time the preview needs them. */
     private final Map<Integer, List<String>> optionTexts = new HashMap<>();
-    private final Map<String, String> tokenValues;
+    private final TokenSamples.Values tokenValues;
     private final Map<String, HasValidation> fieldsByProperty;
     private final com.elicitsoftware.author.survey.ListService lists;
 
