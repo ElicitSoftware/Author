@@ -89,7 +89,7 @@ public class QuestionDialog extends Dialog {
     private final int surveyId;
     /** Option texts per select group, read the first time the preview needs them. */
     private final Map<Integer, List<String>> optionTexts = new HashMap<>();
-    private final Map<String, String> tokenValues;
+    private final TokenSamples.Values tokenValues;
     private final Map<String, HasValidation> fieldsByProperty;
     private final com.elicitsoftware.author.survey.ListService lists;
 
@@ -126,7 +126,7 @@ public class QuestionDialog extends Dialog {
 
         // What the rules that reach this question — on its step, its section or itself — write into
         // its text, so the preview substitutes {TOKEN} placeholders the way the runtime will (FR-013).
-        tokenValues = existing == null ? Map.of() : TokenSamples.load(surveyId).forQuestion(existing.questionId);
+        tokenValues = existing == null ? TokenSamples.Values.NONE : TokenSamples.load(surveyId).forQuestion(existing.questionId);
 
         List<QuestionType> types = QuestionType.listAll(Sort.by("name"));
         questionType.setItems(types);
