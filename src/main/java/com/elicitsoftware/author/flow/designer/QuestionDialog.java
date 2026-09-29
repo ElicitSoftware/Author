@@ -125,7 +125,7 @@ public class QuestionDialog extends Dialog {
         cancel.setText(getTranslation("common.cancel"));
 
         // What the rules that reach this question — on its step, its section or itself — write into
-        // its text, so the preview substitutes {TOKEN} placeholders the way the runtime will (FR-013).
+        // its text, so the preview substitutes {<TOKEN>} placeholders the way the runtime will (FR-013).
         tokenValues = existing == null ? TokenSamples.Values.NONE : TokenSamples.load(surveyId).forQuestion(existing.questionId);
 
         List<QuestionType> types = QuestionType.listAll(Sort.by("name"));
@@ -299,7 +299,7 @@ public class QuestionDialog extends Dialog {
                         .toList());
     }
 
-    /** Replace {TOKEN} / {TOKEN|default} with what the rules reaching this question write, else the default. */
+    /** Replace {<TOKEN>} / {<TOKEN>|default} with what the rules reaching this question write, else the default. */
     private String substituteTokens(String text) {
         return PreviewFields.substituteTokens(text, tokenValues);
     }
