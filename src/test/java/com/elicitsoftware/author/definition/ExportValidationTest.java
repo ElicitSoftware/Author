@@ -300,7 +300,7 @@ class ExportValidationTest {
         Relationship r = textRuleOntoStepTwo(s, "ZZZ");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind()) && r.relationshipId.equals(i.durableId())
-                && i.message().contains("fills {ZZZ} but no text it reaches uses it")), issues.toString());
+                && i.message().contains("fills {<ZZZ>} but no text it reaches uses it")), issues.toString());
     }
 
     /** UC-007 BR-005 / UC-019 BR-005: a token is checked whatever the action of the rule carrying it. */
@@ -316,7 +316,7 @@ class ExportValidationTest {
         Relationship unused = ruleOntoStepTwo(s, "SHOW", "ZZZ");
         issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind()) && unused.relationshipId.equals(i.durableId())
-                && i.message().contains("fills {ZZZ} but no text it reaches uses it")), issues.toString());
+                && i.message().contains("fills {<ZZZ>} but no text it reaches uses it")), issues.toString());
     }
     // ---- UC-019 BR-006: a token fed by a question that collects no answer ----------------------
 
@@ -371,7 +371,7 @@ class ExportValidationTest {
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
-                        && i.message().contains("nothing ever fills {NAME}")),
+                        && i.message().contains("nothing ever fills {<NAME>}")),
                 "nothing can ever fill the slot: " + issues);
     }
 
