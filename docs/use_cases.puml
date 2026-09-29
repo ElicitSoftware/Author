@@ -24,9 +24,9 @@ rectangle "Elicit Author" {
     usecase "UC-010\nRestore Removed Element" as UC010
 
     ' Question Authoring (FR-010..FR-014)
+    ' Token authoring (FR-012) and its preview (FR-013) are specified as part of UC-011 rather
+    ' than as use cases of their own; they carried no specification of their own as UC-012/UC-013.
     usecase "UC-011\nAuthor Question" as UC011
-    usecase "UC-012\nAuthor Token Placeholders in Question Text" as UC012
-    usecase "UC-013\nPreview Token Replacement" as UC013
     usecase "UC-014\nManage Select Groups and Items" as UC014
 
     ' Section & Step Organization (FR-015..FR-018)
@@ -99,8 +99,6 @@ UC008 --> adminapp : .elicit file
 
 ' Question Authoring
 author --> UC011
-author --> UC012
-author --> UC013
 author --> UC014
 
 ' Section & Step Organization
@@ -183,5 +181,14 @@ UC044 ..> UC043 : <<include>> a language must be declared to be translated
 UC043 ..> UC008 : <<extend>> translations travel in the definition file
 UC043 ..> UC007 : <<extend>> stale and missing counts are export warnings
 UC009 ..> UC043 : <<extend>> retiring an element retires its translations
+
+' Not yet specified: UC-017 (FR-017), UC-025 (FR-027), UC-026 (FR-028), UC-027 (FR-029) and
+' UC-028 (FR-030) are declared here as planned scope. Their requirements are Open and they have no
+' file under docs/use_cases/ yet; every other use case on this diagram has one.
+note as N_planned
+  UC-017, UC-025, UC-026, UC-027 and UC-028
+  are planned scope: requirements Open, no
+  use case specification written yet.
+end note
 
 @enduml

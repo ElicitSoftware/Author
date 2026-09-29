@@ -122,7 +122,7 @@ survey updates the same rows at every site instead of installing a second copy.
 - **License:** PolyForm Noncommercial 1.0.0.
 - **Stack (do not deviate without explicit approval):**
   - Java 25
-  - Quarkus 3.39.2
+  - Quarkus 3.39.5
   - Vaadin 25.2.7 (Flow / server-side UI)
   - Hibernate ORM with Panache (JPA) — *not* jOOQ.
   - PostgreSQL. Author runs against **its own** database instance carrying the
