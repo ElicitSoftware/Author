@@ -1,12 +1,11 @@
-# Builds Author and runs whatever tests exist on every pull request and every push to main.
-# This is the gate that enforces the build stays green before code merges — the release
-# workflow (maven.yml) skips tests entirely and only runs at tag-push time, so without this
-# workflow nothing ever builds Author in CI.
+# Builds Author and runs its tests on every pull request into a long-lived branch and every
+# push to one. This is the gate that enforces the build stays green before code merges — the
+# release workflow (maven.yml) skips tests entirely and only runs at tag-push time, so without
+# this workflow nothing ever builds Author in CI.
 #
-# NOTE: Author currently has no src/test directory. `mvn clean verify` therefore builds and
-# packages but runs no tests, and the jacoco-check gate in pom.xml (LINE >= 0.70) passes
-# vacuously because JaCoCo skips when no execution data file is produced. Once tests are
-# added that gate becomes live and will start enforcing 70% line coverage.
+# Both main and i18n are gated. i18n is a long-lived line that is many commits ahead of main
+# and carries the delimited-token work; while it was ungated, PRs merged into it were never
+# compiled, let alone tested.
 
 name: CI
 
@@ -14,9 +13,11 @@ on:
   push:
     branches:
       - main
+      - i18n
   pull_request:
     branches:
       - main
+      - i18n
 
 jobs:
   test:
@@ -38,16 +39,31 @@ jobs:
       - name: Fetch the deployment translations from the umbrella repository
         # The language tests read ../elicit-i18n, exactly as the dev and test profiles do in a
         # local umbrella checkout (the application itself ships English only). Prefer the umbrella
-        # branch with the same name as this one, so a cross-repo change can be tested before merge.
+        # branch with the same name as this one, so a cross-repo change can be tested before merge,
+        # then fall back to the base branch, then to the umbrella's default.
+        #
+        # The base branch matters: elicit-i18n lives only on the umbrella's i18n branch, not on
+        # its default main. Without that fallback every PR into this repo's i18n — whose head
+        # branch the umbrella has never heard of — would clone umbrella main, sparse-check out
+        # nothing, and die on the ls below before compiling a line of Java.
         run: |
           UMBRELLA=https://github.com/ElicitSoftware/Elicit.git
-          BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
           REF=()
-          if git ls-remote --exit-code --heads "$UMBRELLA" "$BRANCH" >/dev/null 2>&1; then
-            REF=(--branch "$BRANCH")
-          fi
+          for BRANCH in "$GITHUB_HEAD_REF" "$GITHUB_BASE_REF" "$GITHUB_REF_NAME"; do
+            [ -n "$BRANCH" ] || continue
+            if git ls-remote --exit-code --heads "$UMBRELLA" "$BRANCH" >/dev/null 2>&1; then
+              REF=(--branch "$BRANCH")
+              break
+            fi
+          done
           git clone --depth 1 --filter=blob:none --sparse "${REF[@]}" "$UMBRELLA" "$RUNNER_TEMP/elicit"
           git -C "$RUNNER_TEMP/elicit" sparse-checkout set elicit-i18n
+          if [ ! -d "$RUNNER_TEMP/elicit/elicit-i18n" ]; then
+            echo "::error::The umbrella branch ${REF[1]:-<default>} carries no elicit-i18n directory," \
+                 "so the language tests have nothing to read. Merge the umbrella's translations" \
+                 "to that branch, or point this build at one that has them."
+            exit 1
+          fi
           ln -s "$RUNNER_TEMP/elicit/elicit-i18n" ../elicit-i18n
           ls ../elicit-i18n/
 
