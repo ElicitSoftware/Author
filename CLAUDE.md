@@ -35,12 +35,53 @@ and expresses removals as retirements (`effective_to` closed). See
   scripts (`src/test/resources/db/schema-mirror`, refreshed by
   `scripts/sync-survey-schema.sh`) into a Testcontainers Postgres.
 - PostgreSQL — Author's **own** database carrying the `survey` schema (the
-  `author` database in the umbrella repo's compose stack), never a deployed
+  `author` database in this repo's `docker-compose.yml`), never a deployed
   site's database. Connects as `survey_user`.
 - OIDC / Keycloak authorization (matches Admin's setup); client
   `elicit-author`, role `elicit_author` (not implied by `elicit_admin`).
   Dev port **8084**.
 - Docker for deployment
+
+## This repo is private, and nests inside the umbrella
+
+Author is **not** open source and is no longer cloned by the umbrella's
+`cloneAllProjects.sh`. It is still expected to sit at `Elicit/Author/`, where
+the umbrella's `.gitignore` hides it, because shared assets are kept in exactly
+one place — the umbrella — rather than duplicated here:
+
+| Lives in the umbrella | Lives here |
+| --- | --- |
+| `../elicit-brand`, `../sftp_ssh`, `../../FHHS/family-history-survey.elicit` | `docker-compose.yml`, `keycloak/`, `db-init/` |
+
+`keycloak/elicit-realm.json` is Author's own copy and deliberately diverges from
+the umbrella's: the umbrella's no longer carries the `elicit-author` client, its
+roles or the `author` user, and this one does. A realm change that matters to
+both has to be made twice.
+
+`docker-compose.yml` here runs the **whole platform** — Survey, Admin, FHHS and
+Pedigree alongside `author` and `author-survey` — because the end-to-end suites
+drive the site applications too. It cannot run at the same time as the
+umbrella's stack or either multi-site suite; they share host ports.
+
+## End-to-end suites
+
+`e2e-tests/`, `e2e_multisite/` and `e2e_multisite_multilingual/` are standalone
+Maven projects (no parent pom) holding the platform's Playwright tests. They
+moved here when Author went private, because all three drive Author and the two
+multi-site suites compile the Author page objects out of
+`e2e-tests/src/test/java` by relative path — which is why they must stay
+siblings.
+
+> **These run through `mvn`, not the Quarkus Dev MCP tools.** Each suite's
+> `run.sh` calls `mvn -DskipTests=false test` against an already-running stack
+> that it starts itself. The "never `mvn test`" rule below governs Author's own
+> module tests under `src/test/`; it does not apply here. Do not "fix" the
+> suites to use `devui-testing_runTests` — there is no dev-mode app to run them
+> in.
+
+They are opt-in (`skipTests` defaults to true) and need Docker images built
+first: Survey/Admin/FHHS/Pedigree from the umbrella's `buildDockerImages.sh`,
+Author from `./buildDockerImage.sh`.
 
 ## MCP Servers and Skills
 

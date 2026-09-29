@@ -1,6 +1,21 @@
 echo "Set java to 25"
 jenv local graalvm64-25.0.1
 export JAVA_HOME="$(jenv javahome)"
+
+# Survey, Admin and Author must agree on which languages Elicit carries, and each must declare
+# the bundles it actually ships. This is the authoritative run of that check: Author is the
+# module most likely to break the invariant -- a language Author has and Survey lacks lets an
+# author publish survey content no respondent could ever read (Author#40) -- and now that Author
+# lives outside the umbrella's clone script, this is the only build that sees all three modules.
+# It needs the surrounding umbrella checkout for ../Survey and ../Admin; SKIP_LANGUAGE_CHECK=1
+# builds without it, for a tree that has no umbrella around it.
+if [ "${SKIP_LANGUAGE_CHECK:-0}" != 1 ]; then
+    if ! ./checkLanguages.sh; then
+        echo "Aborting: the applications disagree on their languages (see above)." >&2
+        exit 1
+    fi
+fi
+
 echo "build Author"
 
 # The author's manual (UC-039) is typeset before the package step so the PDF is on the
