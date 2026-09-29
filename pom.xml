@@ -27,6 +27,15 @@
         <license.thirdPartyFilename>Notice.txt</license.thirdPartyFilename>
         <license.includeTransitiveDependencies>false</license.includeTransitiveDependencies>
         <license.excludedScopes>test,provided</license.excludedScopes>
+        <!--
+            vaadin-dev is a dev-mode tool and is not distributed: the vaadin-dev-tools profile
+            adds it only when quarkus.profile is unset, and the image build sets it to docker so
+            the jar never ships (see that profile). Without this exclusion the notice's contents
+            depend on which profile happens to be active: a plain `mvn test` regenerates
+            Notice.txt naming a dependency we do not distribute, while the image build regenerates
+            it without. Excluded outright so the file is the same either way and never claims it.
+        -->
+        <license.excludedArtifacts>^vaadin-dev$</license.excludedArtifacts>
         <license.outputDirectory>${project.basedir}</license.outputDirectory>
     </properties>
 
