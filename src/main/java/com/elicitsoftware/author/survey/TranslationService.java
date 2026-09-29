@@ -49,6 +49,9 @@ import java.util.UUID;
 public class TranslationService {
 
     @Inject
+    ContentLanguages languages;
+
+    @Inject
     EntityManager em;
 
     /**
@@ -302,7 +305,19 @@ public class TranslationService {
     public List<String> offerableLanguages(Survey survey) {
         return survey == null
                 ? List.of()
-                : LanguageTags.offerable(survey.baseLanguage, contentLanguages(survey));
+                : LanguageTags.offerable(survey.baseLanguage, contentLanguages(survey),
+                        languages.tags());
+    }
+
+    /**
+     * Whether content may be published in this language, for the caller that has to mark the ones
+     * a survey publishes but Elicit does not carry.
+     *
+     * @param tag a tag in any form
+     * @return true when the applications carry it
+     */
+    public boolean isSupportedLanguage(String tag) {
+        return languages.supports(tag);
     }
 
     private Translation current(int surveyId, UUID targetKey, String field, String language) {
