@@ -526,18 +526,31 @@ Example: 0001-0002-0001-0003-0002-0015-0001
 > in UI copy or code.
 
 #### Token System
-Dynamic text replacement for personalized questions:
-- `{S1|default}` - Subject/person identifier
-- `{G1|default}` - General relationship term
-- `{C1|default}` - Category/condition reference
-- `{CS2|default}` - Category-subject combination
-- `{R1|default}` - Relationship context
+Dynamic text replacement for personalized questions. A placeholder is written
+`{phrase containing a <TOKEN>|default text}` (UC-045 BR-003): the token is the
+upper-case name in angle brackets, and the phrase and the default around it are
+prose. A phrase is filled all-or-nothing — every reference in it must have a
+value, or the placeholder falls back to its default. A rule's `token` column
+stores the name alone, upper case (`S1`); the angle brackets belong to the text
+that names it, and a token stored with them fills nothing.
+
+The Family History Survey's tokens:
+- `{<S1>|default}` - Subject/person identifier
+- `{<G1>|default}` - General relationship term
+- `{<C1>|default}` - Category/condition reference
+- `{<CS2>|default}` - Category-subject combination
+- `{<R1>|default}` - Relationship context
 
 **Example:**
 ```
-Question: "What is {S1|your}'s age?"
+Question: "What is {<S1>'s|your} age?"
 Renders as: "What is John's age?" (when S1 = "John")
+           "What is your age?"    (when no rule fills S1)
 ```
+
+The undelimited `{S1|default}` form is obsolete. `ExportValidation` reports a
+placeholder that names a known token as a bare word as an **error** that blocks
+export.
 
 #### Conditional Logic
 - **Operators**: BOOLEAN, GREATER_THAN, EQUAL, NOT_EQUAL, FIELD_EXIST, CONTAINS
