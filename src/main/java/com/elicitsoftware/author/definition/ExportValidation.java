@@ -215,9 +215,11 @@ public class ExportValidation {
     }
 
     /**
-     * UC-007 BR-005 / FR-005: a token a text uses must be filled by a rule that reaches that text — a
+     * UC-007 BR-005 / FR-005: every token a text uses must be filled by a rule that reaches that text — a
      * rule reaches its target and everything inside it (UC-019 BR-005) — and the token a rule of any
-     * action carries must be used by a text it reaches. A placeholder with no default that nothing fills is an error: the
+     * action carries must be used by a text it reaches. Every token, because filling a phrase is all or
+     * nothing (BR-006): a phrase one of whose references nothing reaches fills no more than one where
+     * nothing reaches any. A placeholder with no default that nothing fills is an error: the
      * runtime would show the respondent the raw placeholder. One with a default is a warning.
      */
     private static void checkTokens(List<ValidationIssue> issues, Map<Integer, Step> steps, Map<Integer, Section> sections,

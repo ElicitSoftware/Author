@@ -76,6 +76,36 @@ class TokenSamplesTest {
         assertFalse(samples.forMount(10, 200, 300).containsKey("NAME"), "the preview falls back to the placeholder's default");
     }
 
+    /**
+     * UC-007 BR-005 / ElicitSoftware/Author#18: the Survey runtime abandons a phrase the moment one of
+     * its references has no value, so a phrase is filled only when every reference is reached. Reading
+     * it as "any reference is reached" passed a two-token phrase whose second token nothing fills, and
+     * the respondent read the default.
+     */
+    @Test
+    void aPhraseIsFilledOnlyWhenEveryReferenceIsReached() {
+        TokenSamples samples = TokenSamples.of(List.of(
+                rule("TEXT", "NAME", "Bob", 400, 10, null, null),
+                rule("TEXT", "OTHER", "Sue", 400, 11, null, null)), MOUNTS, ASSIGNMENTS, Map.of());
+        assertTrue(samples.fills(new Tokens.Placeholder("<NAME>", "you"), 10, 200, 300));
+        assertFalse(samples.fills(new Tokens.Placeholder("<NAME> and <OTHER>", "you both"), 10, 200, 300),
+                "the step 11 rule does not reach step 10, so the runtime would render \"you both\"");
+
+        TokenSamples both = TokenSamples.of(List.of(
+                rule("TEXT", "NAME", "Bob", 400, 10, null, null),
+                rule("TEXT", "OTHER", "Sue", 400, 10, null, null)), MOUNTS, ASSIGNMENTS, Map.of());
+        assertTrue(both.fills(new Tokens.Placeholder("<NAME> and <OTHER>", "you both"), 10, 200, 300),
+                "both references reached");
+    }
+
+    /** A phrase naming no token fills nothing: the runtime has nothing to substitute and falls back. */
+    @Test
+    void aPhraseWithNoReferenceIsNotFilled() {
+        TokenSamples samples = TokenSamples.of(List.of(rule("TEXT", "NAME", "Bob", 400, 10, null, null)),
+                MOUNTS, ASSIGNMENTS, Map.of());
+        assertFalse(samples.fills(new Tokens.Placeholder("Does NAME", "Do you"), 10, 200, 300));
+    }
+
     @Test
     void forQuestionUnitesEveryPlacement() {
         TokenSamples samples = TokenSamples.of(List.of(
