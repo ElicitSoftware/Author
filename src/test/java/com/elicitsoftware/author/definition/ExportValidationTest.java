@@ -13,7 +13,9 @@ package com.elicitsoftware.author.definition;
 
 import com.elicitsoftware.author.survey.DesignerService;
 import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.Section;
 import com.elicitsoftware.model.SectionsQuestion;
+import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.author.survey.RuleService;
@@ -190,6 +192,30 @@ class ExportValidationTest {
         return ruleOntoStepTwo(s, "TEXT", token);
     }
 
+    /**
+     * A rule landing on Fixture Section B, which the fixture mounts in step one only, so the token it
+     * carries is defined but never reaches step two's question.
+     */
+    private Relationship textRuleOntoSectionB(Survey s, String token) {
+        SectionsQuestion name = SectionsQuestion.find("questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
+                "FixtureQ2", s.id, StructuralElement.SENTINEL).firstResult();
+        Section sectionB = Section.find("name = ?1 and effectiveTo = ?2", "Fixture Section B", StructuralElement.SENTINEL).firstResult();
+        StepsSections mount = StepsSections.find("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3",
+                s.id, sectionB.sectionId, StructuralElement.SENTINEL).firstResult();
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = name.sectionsQuestionId;
+        draft.upstreamStepId = mount.stepId;
+        draft.downstreamStepId = mount.stepId;
+        draft.downstreamSsId = mount.stepsSectionsId;
+        draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
+        draft.actionType = ActionType.find("name", "TEXT").firstResult();
+        draft.token = token;
+        Relationship created = rules.create(s.id, draft);
+        em.flush();
+        em.clear();
+        return created;
+    }
+
     private Relationship ruleOntoStepTwo(Survey s, String action, String token) {
         SectionsQuestion name = SectionsQuestion.find("questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
                 "FixtureQ2", s.id, StructuralElement.SENTINEL).firstResult();
@@ -227,6 +253,34 @@ class ExportValidationTest {
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "questions".equals(i.kind())
                 && i.message().contains("uses {<NAME>|friend} but no rule fills it there")), issues.toString());
         assertTrue(issues.stream().noneMatch(i -> i.isError() && i.message().contains("{<NAME>}")), issues.toString());
+    }
+
+    /**
+     * UC-007 BR-005 / ElicitSoftware/Author#18: a phrase fills all or nothing, so a reference no rule
+     * reaches stops the whole placeholder. Asking whether <em>any</em> of them was reached called this
+     * filled and exported it, while the respondent read "you both".
+     */
+    @Test
+    @TestTransaction
+    void aPhraseWhoseSecondReferenceNothingReachesIsReported() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME> and <OTHER>|you both}?");
+        textRuleOntoStepTwo(s, "NAME");
+        textRuleOntoSectionB(s, "OTHER");
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "questions".equals(i.kind())
+                && i.message().contains("uses {<NAME> and <OTHER>|you both} but no rule fills it there")), issues.toString());
+    }
+
+    @Test
+    @TestTransaction
+    void aPhraseEveryReferenceOfWhichIsReachedIsFilled() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME> and <OTHER>|you both}?");
+        textRuleOntoStepTwo(s, "NAME");
+        textRuleOntoStepTwo(s, "OTHER");
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("you both")), issues.toString());
     }
 
     @Test
