@@ -21,6 +21,8 @@ import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -131,5 +133,128 @@ class SurveyServiceTest {
     void list_isOrderedByDisplayOrderAndContainsFixtures() {
         var names = service.list().stream().map(s -> s.name).toList();
         assertTrue(names.indexOf("AuthorFixture") < names.indexOf("AuthorFixtureEmpty"));
+    }
+
+    // ---- UC-044: publishing a content language from the Translations page ----
+
+    private Survey withLanguages(String name, String base, String published) {
+        Survey d = draft(name);
+        d.baseLanguage = base;
+        d.contentLanguages = published;
+        return service.create(d);
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_addsTheTagAndLeavesTheRestOfTheSetAlone() {
+        Survey s = withLanguages("UC044 add", "en", "ar,es-419");
+
+        Survey updated = service.publishLanguage(s.id, "fr");
+
+        assertEquals("ar,es-419,fr", updated.contentLanguages, "ordered and de-duplicated as stored");
+        assertEquals("author.one", updated.publishedBy, "UC-003 BR-004: last editor recorded");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_isTheFirstLanguageOfASurveyThatPublishedNone() {
+        Survey s = withLanguages("UC044 first", "en", null);
+        assertEquals("fr", service.publishLanguage(s.id, "fr").contentLanguages);
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_storesTheTagCanonically() {
+        Survey s = withLanguages("UC044 canon", "en", null);
+        assertEquals("pt-BR", service.publishLanguage(s.id, "  PT-br  ").contentLanguages,
+                "UC-044 BR-004: stored in the form the chrome mount uses");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesTheBaseLanguage() {
+        Survey s = withLanguages("UC044 base", "en", null);
+        AuthoringException e = assertThrows(AuthoringException.class,
+                () -> service.publishLanguage(s.id, "en"));
+        assertEquals("contentLanguages", e.field());
+        assertNull(Survey.<Survey>findById(s.id).contentLanguages, "nothing stored");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesTheBaseLanguageHoweverItWasStored() {
+        // copyMetadata only trims the base language, so "EN" is storable; the comparison
+        // canonicalizes both sides rather than assuming a form.
+        Survey s = withLanguages("UC044 base case", "EN", null);
+        assertThrows(AuthoringException.class, () -> service.publishLanguage(s.id, "en"));
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesATagItAlreadyPublishes() {
+        Survey s = withLanguages("UC044 dupe", "en", "fr");
+        AuthoringException e = assertThrows(AuthoringException.class,
+                () -> service.publishLanguage(s.id, "FR"));
+        assertEquals("contentLanguages", e.field());
+        assertEquals("fr", Survey.<Survey>findById(s.id).contentLanguages, "set unchanged");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesWhatIsNotALanguage() {
+        Survey s = withLanguages("UC044 junk", "en", null);
+        for (String bad : new String[]{"zzz", "fr_CA", "français", "", "   "}) {
+            AuthoringException e = assertThrows(AuthoringException.class,
+                    () -> service.publishLanguage(s.id, bad), "should refuse '" + bad + "'");
+            assertEquals("contentLanguages", e.field());
+        }
+        assertNull(Survey.<Survey>findById(s.id).contentLanguages);
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesASetThatWouldNotFitTheColumn() {
+        // content_languages is varchar(255). Forty-two five-character tags store as 251 characters
+        // (5 each plus 41 commas), so one more tag would not fit and must be refused rather than
+        // silently truncated.
+        List<String> many = new ArrayList<>();
+        for (char a = 'A'; many.size() < 42; a++) {
+            for (char b = 'A'; b <= 'Z' && many.size() < 42; b++) {
+                many.add("pt-" + a + b);
+            }
+        }
+        Survey s = withLanguages("UC044 full", "en", String.join(",", many));
+        assertEquals(251, Survey.<Survey>findById(s.id).contentLanguages.length(), "the set is full");
+
+        AuthoringException e = assertThrows(AuthoringException.class,
+                () -> service.publishLanguage(s.id, "zh-Hans"));
+        assertEquals("contentLanguages", e.field());
+        assertEquals(251, Survey.<Survey>findById(s.id).contentLanguages.length(), "set unchanged");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_unknownSurveyIsReported() {
+        AuthoringException e = assertThrows(AuthoringException.class,
+                () -> service.publishLanguage(-1, "fr"));
+        assertNull(e.field(), "not a field problem");
+    }
+
+    @Test
+    void normalizeLanguages_trimsDeduplicatesAndOrders() {
+        assertEquals("ar,es-419,fr", SurveyService.normalizeLanguages(" fr , ar ,es-419, fr "));
+        assertNull(SurveyService.normalizeLanguages("  "));
+        assertNull(SurveyService.normalizeLanguages(null));
+        assertEquals("en,fr", SurveyService.normalizeLanguages("en,fr"),
+                "it does not strip the base language, and its javadoc no longer claims to");
     }
 }
