@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -204,6 +205,59 @@ class TranslationServiceTest {
         Survey s = survey(" ar , es-419 ,, ");
         assertEquals(List.of("ar", "es-419"), service.contentLanguages(s));
         assertEquals(List.of(), service.contentLanguages(survey(null)));
+    }
+
+    // ---- UC-043 step 2 / UC-044: which languages the page offers ----
+
+    @Test
+    @TestTransaction
+    void offerableLanguages_startsWithThePublishedSetThenTheCommonOnes() {
+        Survey s = survey("ar,es-419");
+
+        List<String> offered = service.offerableLanguages(s);
+
+        assertEquals(List.of("ar", "es-419"), offered.subList(0, 2), "the survey's own languages first");
+        assertTrue(offered.contains("fr"), "and a language it does not publish yet");
+        assertEquals("zh-Hans", offered.get(2), "then the twenty in their ranking order");
+    }
+
+    @Test
+    @TestTransaction
+    void offerableLanguages_offersTheTwentyToASurveyThatPublishesNone() {
+        Survey s = survey(null);
+        List<String> offered = service.offerableLanguages(s);
+        assertEquals(LanguageTags.TOP_TWENTY.size() - 1, offered.size(), "all but the base language");
+        assertFalse(offered.contains("en"), "UC-044 BR-005: the base language is not a target");
+        assertTrue(offered.contains("fr"));
+    }
+
+    @Test
+    @TestTransaction
+    void offerableLanguages_keepsAPublishedTagOutsideTheTwenty() {
+        // Elicit's own bundles are es-419, which the twenty do not carry.
+        assertTrue(service.offerableLanguages(survey("es-419")).contains("es-419"));
+    }
+
+    @Test
+    void offerableLanguages_ofNoSurveyIsEmpty() {
+        assertEquals(List.of(), service.offerableLanguages(null));
+    }
+
+    @Test
+    @TestTransaction
+    void aFreshlyOfferedLanguageCanBeTranslatedAndCounted() {
+        // The claim the whole picker rests on: nothing in the write path needs the tag to be in the
+        // published set, so a language works the moment it is chosen (UC-043 step 3, UC-045).
+        Survey s = survey(null);
+        Question q = question(s.id, "What is your name?");
+        assertTrue(service.offerableLanguages(s).contains("fr"));
+
+        service.upsert(s.id, "questions", q.questionKey, "text", "fr", "Comment vous appelez-vous ?");
+
+        assertEquals("Comment vous appelez-vous ?", service.rows(s.id, "fr").stream()
+                .filter(r -> "questions".equals(r.elementType()) && "text".equals(r.field()))
+                .findFirst().orElseThrow().translation());
+        assertTrue(service.counts(s.id, "fr").translated() >= 1);
     }
 
     private TranslationService.Status statusOf(int surveyId, UUID key, String field) {

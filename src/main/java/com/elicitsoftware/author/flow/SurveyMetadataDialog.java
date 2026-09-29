@@ -80,8 +80,11 @@ public class SurveyMetadataDialog extends Dialog {
         binder.forField(surveyKey).bind(s -> s.surveyKey == null ? "" : s.surveyKey.toString(), (s, v) -> { });
         binder.forField(baseLanguage).bind(s -> s.baseLanguage, (s, v) -> s.baseLanguage = v);
         binder.forField(contentLanguages).bind(s -> s.contentLanguages, (s, v) -> s.contentLanguages = v);
+        // Both language fields are here so that a refused tag lands on the field it belongs to
+        // rather than in a notification across the middle of the screen (UC-044).
         fieldsByProperty = Map.of("name", name, "title", title, "description", description,
-                "initialDisplayKey", initialDisplayKey, "postSurveyUrl", postSurveyUrl);
+                "initialDisplayKey", initialDisplayKey, "postSurveyUrl", postSurveyUrl,
+                "baseLanguage", baseLanguage, "contentLanguages", contentLanguages);
 
         Survey bean = new Survey();
         if (!creating) {

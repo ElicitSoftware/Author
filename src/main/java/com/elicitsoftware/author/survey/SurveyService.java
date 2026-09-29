@@ -21,6 +21,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -93,6 +94,64 @@ public class SurveyService {
         return s;
     }
 
+    /**
+     * UC-044 step 4: adds one language to the survey's published set, from the Translations page
+     * (UC-043 step 2) rather than the metadata dialog. Idempotent in effect -- a tag already
+     * published is refused rather than silently re-added, so the author is told why nothing
+     * happened.
+     * <p>
+     * The tag is canonicalized before anything is compared or stored, which is also how the base
+     * language is recognized however it was typed (the stored base language is only trimmed).
+     *
+     * @param surveyId the survey
+     * @param tag      the language tag, as typed or as chosen
+     * @return the survey, with the language in its published set
+     * @throws AuthoringException if the tag is not a language, is the base language, or is already
+     *                            published
+     */
+    @Transactional
+    public Survey publishLanguage(int surveyId, String tag) {
+        Survey s = Survey.findById(surveyId);
+        if (s == null) {
+            throw new AuthoringException("Survey " + surveyId + " no longer exists");
+        }
+        String canonical = LanguageTags.canonical(tag);
+        if (canonical == null) {
+            throw new AuthoringException("'" + (tag == null ? "" : tag.strip())
+                    + "' is not a language tag. Use a tag such as fr or es-419.", "contentLanguages");
+        }
+        if (canonical.equals(LanguageTags.canonical(s.baseLanguage))) {
+            throw new AuthoringException(canonical
+                    + " is the language this survey is written in; it needs no translation.",
+                    "contentLanguages");
+        }
+        List<String> published = new ArrayList<>();
+        if (s.contentLanguages != null && !s.contentLanguages.isBlank()) {
+            for (String existing : s.contentLanguages.split(",")) {
+                String trimmed = existing.trim();
+                if (!trimmed.isEmpty()) {
+                    published.add(trimmed);
+                }
+            }
+        }
+        if (published.contains(canonical)) {
+            throw new AuthoringException(canonical
+                    + " is already one of this survey's published languages.", "contentLanguages");
+        }
+        published.add(canonical);
+        String set = normalizeLanguages(String.join(",", published));
+        // content_languages is varchar(255). Twenty tags is about seventy characters, so this is a
+        // guard against a silent truncation rather than a limit anyone meets.
+        if (set != null && set.length() > 255) {
+            throw new AuthoringException(
+                    "This survey already publishes as many languages as it can hold.", "contentLanguages");
+        }
+        s.contentLanguages = set;
+        s.publishedBy = currentUser.name();
+        em.flush();
+        return s;
+    }
+
     /** UC-008 step 4: record who exported and the release note. */
     @Transactional
     public Survey stampExport(int id, String releaseNote) {
@@ -130,8 +189,13 @@ public class SurveyService {
     }
 
     /**
-     * The published set as stored: trimmed, de-duplicated, ordered, and without the base language,
-     * which is the fallback rather than a translation of anything.
+     * The published set as stored: trimmed, de-duplicated and ordered.
+     * <p>
+     * It does <em>not</em> strip the base language, and has no way to -- it is handed the string
+     * alone. Keeping the base language out of the set is the caller's job:
+     * {@link #publishLanguage} refuses it, and {@link LanguageTags#offerable} never offers it. A
+     * survey whose set already contains its own base language keeps it, and it is harmless: every
+     * string in it falls back to that language anyway.
      */
     static String normalizeLanguages(String raw) {
         if (raw == null || raw.isBlank()) {
