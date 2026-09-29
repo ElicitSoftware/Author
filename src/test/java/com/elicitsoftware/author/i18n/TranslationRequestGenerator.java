@@ -48,7 +48,7 @@ final class TranslationRequestGenerator {
         md.append("| Key | English | Where it appears | Max length | Notes |\n");
         md.append("|-----|---------|------------------|------------|-------|\n");
         for (Map.Entry<String, String> e : defaults.entrySet()) {
-            String[] ctx = context.getOrDefault(e.getKey(), " |  |  | ").split("\\|", -1);
+            String[] ctx = contextFields(context.getOrDefault(e.getKey(), " |  |  | "));
             String where = ctx.length > 1 ? (ctx[0].strip() + " · " + ctx[1].strip()) : ctx[0].strip();
             String max = ctx.length > 2 ? ctx[2].strip() : "";
             String notes = ctx.length > 3 ? ctx[3].strip() : "";
@@ -64,6 +64,24 @@ final class TranslationRequestGenerator {
         }
         md.append("```\n");
         return md.toString();
+    }
+
+    /**
+     * The four fields of a context entry: {@code where | detail | max | notes}.
+     *
+     * <p>Taken from the ends inwards rather than by a plain split, because a detail may itself
+     * contain a pipe: two of them quote the placeholder syntax ({@code {<TOKEN>|default}}), and a
+     * plain split shifted every column right of the example -- the budget column showed a fragment
+     * of the note and the budget itself was dropped past the fourth field, so a translator was
+     * told nothing about length for exactly the two longest strings.</p>
+     */
+    static String[] contextFields(String value) {
+        String[] all = value.split("\\|", -1);
+        if (all.length <= 4) {
+            return all;
+        }
+        String detail = String.join("|", List.of(all).subList(1, all.length - 2));
+        return new String[]{all[0], detail, all[all.length - 2], all[all.length - 1]};
     }
 
     private static String cell(String value) {
