@@ -14,7 +14,7 @@
 ## Preconditions
 
 - An author account exists with the `elicit_author` role (Keycloak realm import `keycloak/elicit-realm.json`).
-- Spanish (`es-419`) and Arabic (`ar`) language files are mounted from the Elicit umbrella repository (`elicit-i18n/author/`, reached as `../elicit-i18n` in the test and dev profiles); the tool itself ships English only.
+- Spanish (`es-419`) and Arabic (`ar`) ship with the tool: the bundles live in `i18n/` and are packaged onto the classpath by the build, and `i18n.bundled.locales=en,ar,es-419` offers all three. Nothing is mounted, and no umbrella checkout is needed.
 - The browser's preferred language is set to Spanish (Latin America).
 
 ## Flow
