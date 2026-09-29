@@ -53,7 +53,7 @@ final class PreviewFields {
     /** The options a choice field shows when the question has no list yet. */
     static final List<String> SAMPLE_OPTIONS = List.of("Option A", "Option B", "Option C");
 
-    /** A value may itself hold placeholders ("{<G1>'s|your} mother"); the runtime resolves those too. */
+    /** A value may itself hold placeholders ("{&lt;G1&gt;'s|your} mother"); the runtime resolves those too. */
     private static final int MAX_NESTING = 5;
 
     private PreviewFields() { }
