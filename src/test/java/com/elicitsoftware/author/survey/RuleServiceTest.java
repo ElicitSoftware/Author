@@ -442,7 +442,7 @@ class RuleServiceTest {
 
         assertEquals("upstreamSqId", refused.field(), "the message points at the question the rule reads");
         assertTrue(refused.getMessage().contains("HTML"), refused.getMessage());
-        assertTrue(refused.getMessage().contains("{S1}"), refused.getMessage());
+        assertTrue(refused.getMessage().contains("{<S1>}"), refused.getMessage());
     }
 
     @Test
