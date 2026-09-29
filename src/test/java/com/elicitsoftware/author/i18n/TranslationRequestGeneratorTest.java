@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -26,6 +27,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * {@code target/i18n/TRANSLATION_REQUEST.md}; on drift, copy it over the committed file.
  */
 class TranslationRequestGeneratorTest {
+
+    /**
+     * UC-040: a note that quotes the placeholder syntax must not cost the row its budget.
+     *
+     * <p>{@code guideView.rules.text.desc} and {@code relationshipDialog.token.helper} both
+     * explain that {@code {<TOKEN>|default}} is a literal example, so their detail carries a pipe
+     * of its own. Split naively, the budget column showed a fragment of the note and the number
+     * fell off the end -- on the two longest strings in the bundle, which are the two a
+     * translator most needs a length for.</p>
+     */
+    @Test
+    void aContextNoteMayQuoteAPlaceholderWithoutLosingItsBudget() {
+        assertArrayEquals(new String[]{"Rule dialog ", " helper; {<TOKEN>|default} and more ", " 180 ", " "},
+                TranslationRequestGenerator.contextFields(
+                        "Rule dialog | helper; {<TOKEN>|default} and more | 180 | "),
+                "the pipe inside the example belongs to the detail, not to the field separators");
+    }
+
+    /** A note with no pipe of its own is untouched, so every other row reads exactly as before. */
+    @Test
+    void anOrdinaryContextNoteIsUnchanged() {
+        assertArrayEquals(new String[]{"Question dialog ", " field label ", " 40 ", " "},
+                TranslationRequestGenerator.contextFields("Question dialog | field label | 40 | "));
+    }
 
     @Test
     void committedHandoffDocument_isUpToDate() throws IOException {
