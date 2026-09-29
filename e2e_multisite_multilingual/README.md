@@ -15,7 +15,7 @@ Three complete stacks run side by side on this machine:
 | Keycloak | http://localhost:8180 (admin/admin) | uses USA's | uses USA's |
 | Mailpit | http://localhost:8025 | uses USA's | uses USA's |
 | PostgreSQL | localhost:5452 | localhost:5402 | localhost:5352 |
-| Translations mount | `i18n/usa` — **nothing** | `i18n/mexico` — `es-419` | `i18n/arabia` — `ar` |
+| Languages offered | `en` | `en`, `es-419` | `en`, `ar` |
 | Brand mount | `../../elicit-brand` — the default | `mexico/mexico_brand` | `arabia/arabia_brand` |
 | What a respondent reads | English | Latin American Spanish | Arabic, right to left |
 
@@ -218,9 +218,9 @@ bundles the images ship, which is also where the two navigation captions a respo
 - Docker Desktop, and the `survey` and `admin` images built from the umbrella root
   (`../../buildDockerImages.sh Survey Admin`) plus the `author` image from this repo
   (`../buildDockerImage.sh`). Pedigree and FHHS are not needed.
-- The umbrella checkout one level up, for `../../elicit-brand`. The realm and the authoring
+- The umbrella checkout around this repo, for `../../elicit-brand`. The realm and the authoring
   database script are Author's own (`../keycloak`, `../db-init`).
-  The definition itself lives here, not in `../samples` (see "The definition the master imports").
+  The definition itself lives here, not in `../../samples` (see "The definition the master imports").
 - Playwright's Chromium, installed once:
   `mvn exec:java -e -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install chromium"`
   (from `../e2e-tests`, or here after a first `mvn test-compile`).
@@ -477,21 +477,22 @@ the shape in question, not only this sample:
   `answer.question == null && answer.sectionInstance == 0`. A section title is exactly the row that
   carries no question; a REPEATed section's instances are numbered 1, 2, … and have a title row
   each, so they fell through to the question branch and threw an NPE, which `nextSection()` caught
-  and showed as a navigation error (FINDINGS 5a).
+  and showed as a navigation error (FINDINGS 4a).
 - **Survey `DisplayKey.getSectionString()`** zeroes the section instance, and
   `QuestionManager.getCurrentNavItem` matched navigation items with it. Navigation items are built
   from the respondent's own section-title answer rows, whose keys carry the real instance, so a
   repeated section never found its own item: no Previous/Next buttons and no title. The
   structure-naming form is unchanged and a `getSectionInstanceString()` was added for the
-  navigation lookup (FINDINGS 5b).
+  navigation lookup (FINDINGS 4b).
 - **The sample's own rules** chained steps 3, 4 and 6 on `FIELD_EXIST`, which returns `true`
   unconditionally, so the whole survey was built at once the moment its upstream step materialised.
   Those three rules now test the consent checkbox with `BOOLEAN`, an operator that actually reads a
   value; `FIELD_EXIST` is still used for the one thing it does express — one step instance per
   REPEATed answer row (FINDINGS 3).
 
-FINDINGS 4 (`questions.mask` is inert) and 6 (the English-only token fix-ups, and token values
-filling from only some question types) are untouched: neither blocks this journey. The English-only
+FINDINGS 5 (the English-only token fix-ups, and token values filling from only some question
+types) is untouched: it does not block this journey. Neither does the inert `questions.mask`,
+which now lives in this repo as `docs/research/question-mask-is-inert.md`. The English-only
 fix-ups in `QuestionManager.replaceTokens` are worth knowing about here, though — they run whatever
 the respondent's language is, so a Spanish or Arabic text whose token substitution lands next to an
 English possessive rule could come out subtly wrong. This survey's tokens do not hit that case.

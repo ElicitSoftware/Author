@@ -11,7 +11,7 @@
 # Everything else is the sample byte for byte, so the translation fixture keys still match. To
 # refresh it after the sample changes: copy the sample here and re-apply the fault to the
 # relationships record with id 3 -- downstream_step_id 3 -> 2, downstream_ss_id 5 -> 2 (fields 5
-# and 6). ../samples/validate-elicit.py replays Author's own checks and must report exactly one
+# and 6). ../../samples/validate-elicit.py replays Author's own checks and must report exactly one
 # error, the backwards rule.
 # ---------------------------------------------------------------------------------------------
 # survey_id: 1

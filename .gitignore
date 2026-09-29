@@ -64,17 +64,12 @@ src/main/resources/manual/
 docs/manual/capture/node_modules/
 docs/manual/capture/package-lock.json
 
-# The stack (docker-compose.yml) and the end-to-end suites: runtime state only.
-# The compose file, ./keycloak, ./db-init and the three suites themselves are committed.
+# Runtime state of the stack in docker-compose.yml. The compose file itself, ./keycloak and
+# ./db-init are committed. The three e2e suites carry their own .gitignore for target/, data/,
+# exports/ and __pycache__, so nothing for them is needed here.
 /postgresql/
 /mailpit_data/
 /sftp_data/
 /keycloak/db/
 /keycloak/certs/
-/keycloak/elicit-realm-export.json
-/e2e-tests/target/
-/e2e_multisite/target/
-/e2e_multisite/data/
-/e2e_multisite/exports/
-/e2e_multisite_multilingual/target/
-/e2e_multisite_multilingual/data/
+/keycloak/elicit_*.json

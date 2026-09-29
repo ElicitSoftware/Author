@@ -4,7 +4,17 @@
 
 set -e
 
-CONTAINER_NAME="elicit-keycloak-1"
+# Resolved from this repo's compose project rather than hard-coded. The name differs between
+# stacks -- `elicit-author-keycloak-1` here, `elicit-keycloak-1` in the umbrella -- and a
+# hard-coded one either finds nothing or, worse, exports the umbrella's realm into this repo.
+COMPOSE_FILE="$(cd "$(dirname "$0")/.." && pwd)/docker-compose.yml"
+CONTAINER_NAME="${KEYCLOAK_CONTAINER:-$(docker compose -f "$COMPOSE_FILE" ps -q keycloak 2>/dev/null | head -1)}"
+if [ -z "$CONTAINER_NAME" ]; then
+	echo "Keycloak is not running for $COMPOSE_FILE." >&2
+	echo "Start it with 'docker compose up -d keycloak' from the repository root," >&2
+	echo "or set KEYCLOAK_CONTAINER to the container to export from." >&2
+	exit 1
+fi
 
 # Set export directory and filename with date
 EXPORT_DIR="$(pwd)"
