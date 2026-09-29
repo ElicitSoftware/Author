@@ -171,8 +171,25 @@ public final class TokenSamples {
         return tokens;
     }
 
-    /** Whether a rule reaching that place fills the placeholder (UC-007 BR-005). */
+    /**
+     * Whether the rules reaching that place fill the placeholder (UC-007 BR-005).
+     *
+     * <p>Every reference the phrase makes has to be reached, not just one of them. Filling a phrase
+     * is all or nothing -- {@code QuestionManager.fillPhrase} abandons the whole placeholder the
+     * moment one {@code <NAME>} in it has no value -- so {@code {<G1> and <S1>|you both}} with a rule
+     * reaching only {@code G1} renders "you both" to the respondent, exactly as though nothing filled
+     * it. Asking whether <em>any</em> reference was reached called that filled and let it export
+     * silently.</p>
+     *
+     * <p>A phrase making no reference at all is not filled either: the runtime has nothing to
+     * substitute and falls back the same way.</p>
+     */
     public boolean fills(Tokens.Placeholder placeholder, Integer stepId, Integer ssId, Integer sqId) {
-        return tokensAt(stepId, ssId, sqId).stream().anyMatch(placeholder::uses);
+        Set<String> used = placeholder.tokens();
+        if (used.isEmpty()) {
+            return false;
+        }
+        Set<String> reaching = tokensAt(stepId, ssId, sqId);
+        return used.stream().allMatch(name -> reaching.stream().anyMatch(token -> Tokens.bare(token).equalsIgnoreCase(name)));
     }
 }
