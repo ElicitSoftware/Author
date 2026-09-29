@@ -136,7 +136,11 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
 
         // Every language the survey could be translated into, not only the ones it already
         // publishes: choosing one of the others publishes it (UC-044), which is what lets a
-        // translation be started from the page where translating is done.
+        // translation be started from the page where translating is done. The list is the curated
+        // set (author.content.languages) -- Elicit only renders a survey in a language it also has
+        // application text for, so offering more would invite work no respondent could ever see.
+        // Custom values stay allowed, not to accept them but so that a tag typed anyway reaches
+        // publish() and is refused with the route to getting one, rather than being ignored.
         language.setLabel(getTranslation("translationsView.language"));
         language.setPlaceholder(getTranslation("translationsView.language.placeholder"));
         language.setHelperText(getTranslation("translationsView.language.helper"));
@@ -222,9 +226,17 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
      * would sit on every row alike and say nothing.
      */
     private String languageLabel(String tag) {
-        String key = publishedTags.isEmpty() || publishedTags.contains(tag)
-                ? "translationsView.language.option"
-                : "translationsView.language.option.new";
+        String key;
+        if (!translations.isSupportedLanguage(tag)) {
+            // Only reachable for a tag the survey already publishes -- an imported definition, or
+            // one added before the set was curated. It stays in the list so that it can be seen
+            // and taken back out (UC-044 BR-004).
+            key = "translationsView.language.option.unsupported";
+        } else if (publishedTags.isEmpty() || publishedTags.contains(tag)) {
+            key = "translationsView.language.option";
+        } else {
+            key = "translationsView.language.option.new";
+        }
         return getTranslation(key, tag, LanguageTags.displayName(tag, getLocale()));
     }
 

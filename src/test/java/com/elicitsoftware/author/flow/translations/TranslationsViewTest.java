@@ -12,7 +12,6 @@ package com.elicitsoftware.author.flow.translations;
  */
 
 import com.elicitsoftware.author.flow.SurveyEditorView;
-import com.elicitsoftware.author.survey.LanguageTags;
 import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
@@ -73,13 +72,13 @@ class TranslationsViewTest extends QuarkusBrowserlessTest {
         TranslationsView view = open(survey(null));
 
         List<String> offered = test(view.language).getSuggestionItems();
-        assertEquals(LanguageTags.TOP_TWENTY.size() - 1, offered.size(),
-                "the twenty, less the base language");
+        assertEquals(List.of("ar", "es-419"), offered,
+                "the curated set, less the base language");
         assertFalse(offered.contains("en"), "UC-044 BR-005: the base language is not a target");
-        assertTrue(offered.contains("fr"));
+        assertFalse(offered.contains("fr"), "UC-044 BR-004: Elicit carries no French");
 
-        assertEquals(view.getTranslation("translationsView.language.option", "fr", "French"),
-                suggestionFor(view, "fr"),
+        assertEquals(view.getTranslation("translationsView.language.option", "ar", "Arabic"),
+                suggestionFor(view, "ar"),
                 "with nothing published, the 'not published yet' note would sit on every row alike");
         assertNull(view.language.getValue(), "nothing to preselect");
         assertEquals(view.getTranslation("translationsView.noLanguages"), view.counts.getText(),
@@ -107,38 +106,38 @@ class TranslationsViewTest extends QuarkusBrowserlessTest {
     void choosingAnUnpublishedLanguagePublishesItAndShowsItsStrings() {
         Survey s = survey("ar");
         TranslationsView view = open(s);
-        String french = suggestionFor(view, "fr");
-        assertEquals(view.getTranslation("translationsView.language.option.new", "fr", "French"), french,
+        String spanish = suggestionFor(view, "es-419");
+        assertEquals(view.getTranslation("translationsView.language.option.new", "es-419", "Spanish (Latin America)"), spanish,
                 "offered, and marked as one the survey does not publish yet");
         assertEquals(view.getTranslation("translationsView.language.option", "ar", "Arabic"),
                 suggestionFor(view, "ar"), "while a published one carries no note");
 
-        test(view.language).selectItem(french);
+        test(view.language).selectItem(spanish);
 
-        assertEquals("fr", view.language.getValue());
-        assertEquals("ar,fr", Survey.<Survey>findById(s.id).contentLanguages,
+        assertEquals("es-419", view.language.getValue());
+        assertEquals("ar,es-419", Survey.<Survey>findById(s.id).contentLanguages,
                 "UC-044 step 4: recorded with the survey, beside the one it already published");
-        assertTrue(view.publishedTags.contains("fr"));
+        assertTrue(view.publishedTags.contains("es-419"));
         assertTrue(view.request.isVisible(), "UC-045 is reachable straight away");
         assertTrue(view.grid.getGenericDataView().getItems().count() > 0);
-        assertEquals(view.getTranslation("translationsView.language.option", "fr", "French"),
-                suggestionFor(view, "fr"), "the label drops the 'not published yet' note");
+        assertEquals(view.getTranslation("translationsView.language.option", "es-419", "Spanish (Latin America)"),
+                suggestionFor(view, "es-419"), "the label drops the 'not published yet' note");
     }
 
     @Test
     @TestTransaction
     @TestSecurity(user = "translations.author", roles = {"elicit_author"})
-    void aTypedTagOutsideTheTwentyIsAcceptedAndSelected() {
-        Survey s = survey(null);
+    void aTypedTagElicitDoesNotCarryIsRefused() {
+        Survey s = survey("ar");
         TranslationsView view = open(s);
-        assertFalse(test(view.language).getSuggestionItems().contains("es-419"), "not one of the twenty");
+        assertFalse(test(view.language).getSuggestionItems().contains("fr"), "not one of the curated set");
 
-        view.publish("  ES-419  ", null);
+        view.publish("  FR  ", "ar");
 
-        assertEquals("es-419", view.language.getValue(), "canonicalized on the way in");
-        assertEquals("es-419", Survey.<Survey>findById(s.id).contentLanguages);
-        assertTrue(test(view.language).getSuggestionItems().contains("es-419"), "added to the list");
-        assertTrue(view.grid.getGenericDataView().getItems().count() > 0);
+        assertEquals("ar", view.language.getValue(), "the previous selection is restored");
+        assertEquals("ar", Survey.<Survey>findById(s.id).contentLanguages, "set unchanged");
+        assertFalse(test(view.language).getSuggestionItems().contains("fr"),
+                "custom values stay allowed only so a typed tag can be refused, not accepted");
     }
 
     @Test
@@ -179,6 +178,24 @@ class TranslationsViewTest extends QuarkusBrowserlessTest {
 
         assertEquals("es-419", view.language.getValue());
         assertEquals("ar,es-419", Survey.<Survey>findById(s.id).contentLanguages, "set unchanged");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "translations.author", roles = {"elicit_author"})
+    void aPublishedTagElicitDoesNotCarryIsStillOfferedAsUnsupported() {
+        Survey s = survey("ar");
+        // Seeded on the column directly: publishLanguage would refuse "fr" (UC-044 BR-004), but an
+        // imported definition, or a survey published before the set was curated, can already carry it.
+        s.contentLanguages = "ar,fr";
+
+        TranslationsView view = open(s);
+
+        assertTrue(test(view.language).getSuggestionItems().contains("fr"),
+                "UC-044 BR-004: kept in the list so it can be seen and taken back out");
+        assertEquals(view.getTranslation("translationsView.language.option.unsupported", "fr", "French"),
+                suggestionFor(view, "fr"),
+                "checked before the published/new distinction, so an unsupported tag never reads as new");
     }
 
     @Test

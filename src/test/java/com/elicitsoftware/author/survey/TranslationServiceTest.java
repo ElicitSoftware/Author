@@ -211,31 +211,39 @@ class TranslationServiceTest {
 
     @Test
     @TestTransaction
-    void offerableLanguages_startsWithThePublishedSetThenTheCommonOnes() {
-        Survey s = survey("ar,es-419");
+    void offerableLanguages_startsWithThePublishedSetThenTheCuratedOnes() {
+        Survey s = survey("es-419");
 
         List<String> offered = service.offerableLanguages(s);
 
-        assertEquals(List.of("ar", "es-419"), offered.subList(0, 2), "the survey's own languages first");
-        assertTrue(offered.contains("fr"), "and a language it does not publish yet");
-        assertEquals("zh-Hans", offered.get(2), "then the twenty in their ranking order");
+        assertEquals("es-419", offered.get(0), "the survey's own languages first");
+        assertEquals("ar", offered.get(1), "then the curated set it does not publish yet");
+        assertFalse(offered.contains("fr"), "UC-044 BR-004: Elicit carries no French application text");
     }
 
     @Test
     @TestTransaction
-    void offerableLanguages_offersTheTwentyToASurveyThatPublishesNone() {
+    void offerableLanguages_offersTheCuratedSetToASurveyThatPublishesNone() {
         Survey s = survey(null);
         List<String> offered = service.offerableLanguages(s);
-        assertEquals(LanguageTags.TOP_TWENTY.size() - 1, offered.size(), "all but the base language");
+        assertEquals(List.of("ar", "es-419"), offered, "the curated set, less the base language");
         assertFalse(offered.contains("en"), "UC-044 BR-005: the base language is not a target");
-        assertTrue(offered.contains("fr"));
     }
 
     @Test
     @TestTransaction
-    void offerableLanguages_keepsAPublishedTagOutsideTheTwenty() {
-        // Elicit's own bundles are es-419, which the twenty do not carry.
-        assertTrue(service.offerableLanguages(survey("es-419")).contains("es-419"));
+    void offerableLanguages_keepsAPublishedTagElicitDoesNotCarry() {
+        // UC-044 BR-004: an imported definition can publish anything. It stays offered so that an
+        // author can see it and remove it, and isSupportedLanguage is how the view marks it.
+        // Written straight onto the entity: create() now refuses an uncurated tag, so the only
+        // way a survey holds one is the way a real one does -- it arrived with a definition.
+        Survey s = survey(null);
+        s.contentLanguages = "hi";
+        em.flush();
+        assertTrue(service.offerableLanguages(s).contains("hi"));
+        assertFalse(service.isSupportedLanguage("hi"));
+        assertTrue(service.isSupportedLanguage("ar"));
+        assertTrue(service.isSupportedLanguage("es_419"), "either spelling of a tag");
     }
 
     @Test
@@ -247,17 +255,30 @@ class TranslationServiceTest {
     @TestTransaction
     void aFreshlyOfferedLanguageCanBeTranslatedAndCounted() {
         // The claim the whole picker rests on: nothing in the write path needs the tag to be in the
-        // published set, so a language works the moment it is chosen (UC-043 step 3, UC-045).
+        // published set, so a language works the moment it is chosen (UC-043 step 3, UC-045). "ar"
+        // is curated, so a survey that publishes nothing yet still offers it.
         Survey s = survey(null);
         Question q = question(s.id, "What is your name?");
-        assertTrue(service.offerableLanguages(s).contains("fr"));
+        assertTrue(service.offerableLanguages(s).contains("ar"));
 
-        service.upsert(s.id, "questions", q.questionKey, "text", "fr", "Comment vous appelez-vous ?");
+        service.upsert(s.id, "questions", q.questionKey, "text", "ar", "ما اسمك؟");
 
-        assertEquals("Comment vous appelez-vous ?", service.rows(s.id, "fr").stream()
+        assertEquals("ما اسمك؟", service.rows(s.id, "ar").stream()
                 .filter(r -> "questions".equals(r.elementType()) && "text".equals(r.field()))
                 .findFirst().orElseThrow().translation());
-        assertTrue(service.counts(s.id, "fr").translated() >= 1);
+        assertTrue(service.counts(s.id, "ar").translated() >= 1);
+    }
+
+    @Test
+    void isSupportedLanguage_matchesTheCuratedSetEitherSpelling() {
+        // UC-044 BR-004: the view uses this to mark an offered tag as one Elicit actually carries,
+        // independent of what the survey itself publishes.
+        assertTrue(service.isSupportedLanguage("ar"));
+        assertTrue(service.isSupportedLanguage("es-419"));
+        assertTrue(service.isSupportedLanguage("es_419"), "the underscore spelling the bundle files use");
+        assertFalse(service.isSupportedLanguage("fr"), "no longer curated");
+        assertFalse(service.isSupportedLanguage(null));
+        assertFalse(service.isSupportedLanguage("not-a-tag"));
     }
 
     private TranslationService.Status statusOf(int surveyId, UUID key, String field) {
