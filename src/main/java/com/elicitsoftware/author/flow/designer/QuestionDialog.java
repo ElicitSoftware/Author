@@ -126,7 +126,7 @@ public class QuestionDialog extends Dialog {
 
         // What the rules that reach this question — on its step, its section or itself — write into
         // its text, so the preview substitutes {<TOKEN>} placeholders the way the runtime will (FR-013).
-        tokenValues = existing == null ? Map.of() : TokenSamples.load(surveyId).forQuestion(existing.questionId);
+        tokenValues = existing == null ? TokenSamples.Values.NONE : TokenSamples.load(surveyId).forQuestion(existing.questionId);
 
         List<QuestionType> types = QuestionType.listAll(Sort.by("name"));
         questionType.setItems(types);
