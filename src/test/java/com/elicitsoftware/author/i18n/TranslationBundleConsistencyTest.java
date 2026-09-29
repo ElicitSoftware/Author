@@ -46,6 +46,8 @@ class TranslationBundleConsistencyTest {
     static final Path BUNDLE_DIR = Path.of("src/main/resources/vaadin-i18n");
     /** The deployment translations directory the test profile mounts ({@code %test.i18n.file.system.path}). */
     static final Path MOUNT_DIR = Path.of("../elicit-i18n/author");
+    /** Readable copies of the deployment translations, beside the translator hand-off document. */
+    static final Path HANDOFF_DIR = Path.of("i18n");
     private static final Pattern LOCALE_FILE = Pattern.compile("translations_([A-Za-z0-9_]+)\\.properties");
     /** Keys passed straight to the translation API; these must exist. */
     private static final Pattern STRICT_REF = Pattern.compile(
@@ -77,6 +79,21 @@ class TranslationBundleConsistencyTest {
             collectLocales(mount, locales, problems);
             if (locales.isEmpty()) {
                 problems.add("no translations_<tag>.properties found in " + mount);
+            }
+            // The copies in i18n/ are for a reader, not for the runtime: i18n.local.path resolves to
+            // i18n/<i18n.app.name>, so files sitting directly in i18n/ are never loaded. They are
+            // still worth gating -- a stale copy beside TRANSLATION_REQUEST.md misleads exactly the
+            // translator it is there for.
+            Path readable = root.resolve(HANDOFF_DIR).normalize();
+            for (String name : listBundleFiles(mount, problems)) {
+                Path copy = readable.resolve(name);
+                if (!Files.isRegularFile(copy)) {
+                    problems.add("i18n/" + name + " is missing; copy it from " + mount.resolve(name)
+                            + " so the published translations can be read beside TRANSLATION_REQUEST.md");
+                } else if (!load(copy, problems).equals(load(mount.resolve(name), problems))) {
+                    problems.add("i18n/" + name + " has drifted from " + mount.resolve(name)
+                            + "; copy the mount's file over it");
+                }
             }
         }
         if (!problems.isEmpty()) {
@@ -142,6 +159,18 @@ class TranslationBundleConsistencyTest {
 
         assertTrue(problems.isEmpty(), problems.size() + " translation bundle problem(s):\n  "
                 + String.join("\n  ", problems));
+    }
+
+    /** {@code translations.properties} and every {@code translations_<tag>.properties} in a directory. */
+    private static List<String> listBundleFiles(Path dir, List<String> problems) {
+        try (Stream<Path> files = Files.list(dir)) {
+            return files.map(f -> f.getFileName().toString())
+                    .filter(n -> n.equals("translations.properties") || LOCALE_FILE.matcher(n).matches())
+                    .sorted().toList();
+        } catch (IOException e) {
+            problems.add("could not list " + dir + ": " + e.getMessage());
+            return List.of();
+        }
     }
 
     /** Keys completed with a suffix in code, e.g. {@code getTranslation(prefix + ".term")}. */
