@@ -134,7 +134,7 @@ public class SectionPreview extends Div {
                       TokenSamples samples, Set<String> ruleShown) {
         // What the runtime substitutes here: the step's rules, then the section mount's, then the assignment's own.
         StructureNode section = row.parent();
-        Map<String, String> values = samples.forMount(stepOf(row), section == null ? null : section.assignmentId(), row.assignmentId());
+        TokenSamples.Values values = samples.forMount(stepOf(row), section == null ? null : section.assignmentId(), row.assignmentId());
         Div box = new Div();
         box.addClassName("designer-preview-question");
         box.getElement().setAttribute("data-node-id", "sq-" + row.assignmentId());
