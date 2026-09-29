@@ -15,6 +15,7 @@ import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.flow.MainLayout;
 import com.elicitsoftware.author.flow.SurveyEditorView;
 import com.elicitsoftware.author.security.AuthorRoles;
+import com.elicitsoftware.author.survey.LanguageTags;
 import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.author.survey.TranslationBudget;
 import com.elicitsoftware.author.survey.TranslationHandoff;
@@ -25,6 +26,7 @@ import com.elicitsoftware.model.Survey;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
@@ -35,7 +37,6 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
@@ -52,7 +53,9 @@ import jakarta.inject.Inject;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * UC-043: one page listing every translatable string of a survey beside its translation in a
@@ -80,7 +83,7 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
 
     final H2 heading = new H2();
     final Button overview = new Button(VaadinIcon.ARROW_LEFT.create());
-    final Select<String> language = new Select<>();
+    final ComboBox<String> language = new ComboBox<>();
     final Checkbox onlyOutstanding = new Checkbox();
     final Span counts = new Span();
     final Grid<Row> grid = new Grid<>();
@@ -90,6 +93,12 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
 
     Survey survey;
     List<Row> rows = new ArrayList<>();
+    /** The languages the survey publishes, to tell an offered language from an adopted one. */
+    Set<String> publishedTags = new HashSet<>();
+    /** Set while this view is changing the picker itself, so its own listeners stand down. */
+    private boolean updating;
+    /** The listeners are registered once; {@code build()} runs again on every navigation in. */
+    private boolean wired;
 
     public TranslationsView() {
         setWidthFull();
@@ -118,44 +127,45 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
         removeAll();
         overview.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         overview.setTooltipText(getTranslation("translationsView.backToOverview"));
-        overview.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
-                new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id)))));
         heading.setText(getTranslation("translationsView.heading",
                 survey.title == null || survey.title.isBlank() ? survey.name : survey.title));
         heading.getElement().setAttribute("data-i18n-content", ""); // the survey's own title
 
         List<String> published = translations.contentLanguages(survey);
-        if (published.isEmpty()) {
-            add(new HorizontalLayout(overview, heading));
-            Paragraph none = new Paragraph(getTranslation("translationsView.noLanguages"));
-            Button openMetadata = new Button(getTranslation("translationsView.manageLanguages"),
-                    e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
-                            new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id)))));
-            openMetadata.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-            add(none, openMetadata);
-            return;
-        }
+        publishedTags = new HashSet<>(published);
 
+        // Every language the survey could be translated into, not only the ones it already
+        // publishes: choosing one of the others publishes it (UC-044), which is what lets a
+        // translation be started from the page where translating is done.
         language.setLabel(getTranslation("translationsView.language"));
-        language.setItems(published);
-        if (language.getValue() == null || !published.contains(language.getValue())) {
-            language.setValue(published.get(0));
+        language.setPlaceholder(getTranslation("translationsView.language.placeholder"));
+        language.setHelperText(getTranslation("translationsView.language.helper"));
+        language.setAllowCustomValue(true);
+        language.setItemLabelGenerator(this::languageLabel);
+        // Wide enough for the placeholder and for a label like "es-419 - Spanish (Latin America)";
+        // the default width truncates both and wraps the helper text onto two lines.
+        language.setMinWidth("22em");
+        updating = true;
+        try {
+            // A mutable copy: select() appends a typed tag through the list data view, which
+            // writes into the collection setItems was handed.
+            language.setItems(new ArrayList<>(translations.offerableLanguages(survey)));
+            language.setValue(published.isEmpty() ? null : published.get(0));
+        } finally {
+            updating = false;
         }
-        language.addValueChangeListener(e -> load());
 
         onlyOutstanding.setLabel(getTranslation("translationsView.onlyOutstanding"));
-        onlyOutstanding.addValueChangeListener(e -> load());
 
         request.setText(getTranslation("translationsView.request"));
         request.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        request.addClickListener(e -> downloadRequest());
 
         upload.setAcceptedFileTypes("application/json", ".json");
         upload.setMaxFiles(1);
         upload.setDropAllowed(false);
         upload.setUploadButton(new Button(getTranslation("translationsView.import")));
-        upload.addSucceededListener(e -> importReturned());
 
+        wireOnce();
         buildGrid();
 
         HorizontalLayout controls = new HorizontalLayout(language, onlyOutstanding, request, upload);
@@ -167,6 +177,113 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
 
         add(new HorizontalLayout(overview, heading), intro, controls, counts, grid);
         load();
+    }
+
+    /**
+     * Listeners are registered exactly once. {@code build()} runs from {@code beforeEnter}, which
+     * fires again on every navigation into a view instance the router has kept, so registering here
+     * would stack a second copy of each listener and run {@code load()} once per copy.
+     */
+    private void wireOnce() {
+        if (wired) {
+            return;
+        }
+        wired = true;
+        overview.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
+                new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id)))));
+        language.addValueChangeListener(e -> {
+            if (updating) {
+                return;
+            }
+            String tag = e.getValue();
+            if (tag == null || publishedTags.contains(tag)) {
+                load();
+            } else {
+                publish(tag, e.getOldValue());
+            }
+        });
+        // A tag the list does not carry is typed straight into the box, as a reporting dimension and
+        // a rule token already are (TagDialog, RelationshipDialog).
+        language.addCustomValueSetListener(e -> {
+            if (!updating) {
+                publish(e.getDetail(), language.getValue());
+            }
+        });
+        onlyOutstanding.addValueChangeListener(e -> load());
+        request.addClickListener(e -> downloadRequest());
+        upload.addSucceededListener(e -> importReturned());
+    }
+
+    /**
+     * {@code fr — French}: the tag, because it is what a site's mount has to match, and the name.
+     * <p>
+     * The "not published yet" note is only added when the survey publishes something, where it
+     * separates the author's own languages from the rest. On a survey that publishes nothing it
+     * would sit on every row alike and say nothing.
+     */
+    private String languageLabel(String tag) {
+        String key = publishedTags.isEmpty() || publishedTags.contains(tag)
+                ? "translationsView.language.option"
+                : "translationsView.language.option.new";
+        return getTranslation(key, tag, LanguageTags.displayName(tag, getLocale()));
+    }
+
+    /**
+     * Adds the language to the survey's published set and shows it (UC-044 step 4, then UC-043
+     * step 3). A tag the survey already publishes is simply selected.
+     * <p>
+     * Package-private so that the typed-tag paths can be tested without simulating the client's
+     * {@code custom-value-set} event, which is the one line that reaches this.
+     *
+     * @param typed    the chosen or typed tag
+     * @param previous the value to fall back to when the tag is refused
+     */
+    void publish(String typed, String previous) {
+        String canonical = LanguageTags.canonical(typed);
+        if (canonical != null && publishedTags.contains(canonical)) {
+            select(canonical);
+            load();
+            return;
+        }
+        try {
+            survey = surveyService.publishLanguage(survey.id, typed);
+            publishedTags = new HashSet<>(translations.contentLanguages(survey));
+            select(canonical);
+            load();
+            // UC-044 A1: publishing an incomplete language is allowed, and says how much of it
+            // will fall back to the survey's own language at every site until it is translated.
+            Notification.show(getTranslation("translationsView.language.published",
+                            canonical, String.valueOf(translations.counts(survey.id, canonical).missing())),
+                            6000, Notification.Position.BOTTOM_START)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        } catch (AuthoringException e) {
+            Notification n = Notification.show(e.getMessage(), 6000, Notification.Position.MIDDLE);
+            n.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            select(previous);
+        }
+    }
+
+    /**
+     * Selects a tag without re-entering the listeners. {@code setItems} would reset the value, so a
+     * tag new to the list is appended to the data view instead; one already in it is refreshed, so
+     * that its label drops the "not published yet" note.
+     */
+    private void select(String tag) {
+        updating = true;
+        try {
+            if (tag != null) {
+                if (language.getListDataView().getItems().anyMatch(tag::equals)) {
+                    language.getListDataView().refreshItem(tag);
+                } else {
+                    language.getListDataView().addItem(tag);
+                }
+            }
+            // Cleared first, so a rejected tag does not stay behind in the input as typed text.
+            language.clear();
+            language.setValue(tag);
+        } finally {
+            updating = false;
+        }
     }
 
     private void buildGrid() {
@@ -217,6 +334,20 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
 
     void load() {
         String tag = language.getValue();
+        // A survey that publishes nothing yet selects nothing: the picker is the invitation, and
+        // there is no language to count or to hand to a translator until one is chosen.
+        if (tag == null) {
+            rows = new ArrayList<>();
+            counts.setText(getTranslation("translationsView.noLanguages"));
+            grid.setItems(rows);
+            // Hidden rather than disabled: Aura renders a disabled primary button at full opacity,
+            // so it would read as a live control that silently does nothing.
+            request.setVisible(false);
+            upload.setVisible(false);
+            return;
+        }
+        request.setVisible(true);
+        upload.setVisible(true);
         rows = translations.rows(survey.id, tag);
         TranslationService.Counts c = translations.counts(survey.id, tag);
         counts.setText(getTranslation("translationsView.counts",

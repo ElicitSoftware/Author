@@ -12,7 +12,7 @@
 ## Preconditions
 
 - The author is authenticated (UC-001) and the survey is open on the Translations page (UC-043).
-- The survey declares a base language and the target language (UC-044).
+- The survey declares a base language and the target language (UC-044). The target may have been added on the Translations page itself, immediately before the request.
 
 ## Main Success Scenario
 

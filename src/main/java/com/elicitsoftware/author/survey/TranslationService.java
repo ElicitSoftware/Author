@@ -287,6 +287,24 @@ public class TranslationService {
                 .map(String::trim).filter(t -> !t.isEmpty()).sorted(Comparator.naturalOrder()).toList();
     }
 
+    /**
+     * Every language this survey can be worked on (UC-043 step 2): the ones it publishes, then the
+     * common ones it does not, never the base language.
+     * <p>
+     * Offering a language the survey does not publish yet is what lets the Translations page start
+     * one. Nothing here needs the published set -- {@link #rows}, {@link #counts} and
+     * {@link #upsert} all work for any tag -- but choosing one publishes it, so that the work
+     * reaches every site at the next export (UC-044).
+     *
+     * @param survey the survey
+     * @return canonical tags in offer order
+     */
+    public List<String> offerableLanguages(Survey survey) {
+        return survey == null
+                ? List.of()
+                : LanguageTags.offerable(survey.baseLanguage, contentLanguages(survey));
+    }
+
     private Translation current(int surveyId, UUID targetKey, String field, String language) {
         return Translation.<Translation>find(
                         "surveyId = ?1 and targetKey = ?2 and field = ?3 and language = ?4 and effectiveTo = ?5",
