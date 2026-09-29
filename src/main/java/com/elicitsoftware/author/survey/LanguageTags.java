@@ -22,24 +22,13 @@ import java.util.Set;
  * Language tags for a survey's content languages (UC-044): which ones to offer, how to write one,
  * and how to name one for a human.
  * <p>
- * A content language is a BCP-47 tag in the same form the mounted chrome bundles use, so that the
- * survey's published set and a site's own mount can be intersected without guessing (UC-044
- * BR-004). That is why a tag is canonicalized on the way in rather than stored as typed.
+ * A content language is a BCP-47 tag in the same form the shipped chrome bundles use, so that the
+ * survey's published set and the languages a site offers can be intersected without guessing
+ * (UC-044 BR-004). That is why a tag is canonicalized on the way in rather than stored as typed.
+ * <p>
+ * Which tags may be offered is not decided here: see {@link ContentLanguages}.
  */
 public final class LanguageTags {
-
-    /**
-     * The twenty most used languages on the internet, in that order: English, Chinese
-     * (Simplified), Spanish, Arabic, Portuguese, Indonesian, French, Japanese, Russian, German,
-     * Korean, Turkish, Italian, Vietnamese, Hindi, Polish, Dutch, Persian, Thai, Ukrainian.
-     * <p>
-     * Keep the names in this comment: a bare column of tags is exactly what an author cannot read,
-     * which is the complaint the picker answers. Chinese is Simplified only; an author who wants
-     * Traditional types {@code zh-Hant}, which {@link #canonical} accepts.
-     */
-    public static final List<String> TOP_TWENTY = List.of(
-            "en", "zh-Hans", "es", "ar", "pt", "id", "fr", "ja", "ru", "de",
-            "ko", "tr", "it", "vi", "hi", "pl", "nl", "fa", "th", "uk");
 
     /** ISO 639-1, the two-letter codes; see {@link #canonical} for why it is not the whole test. */
     private static final Set<String> ISO_639_1 = Set.of(Locale.getISOLanguages());
@@ -70,7 +59,12 @@ public final class LanguageTags {
         if (raw == null) {
             return null;
         }
-        String trimmed = raw.strip();
+        // Bundle files spell a tag with underscores (translations_es_419.properties) while every
+        // tag in the database, the config and the runtime uses hyphens. Both spellings reach this
+        // method -- from a file name, from a property, from an author typing what they saw -- and
+        // Locale.Builder rejects the underscore outright, so the two are reconciled here rather
+        // than at each of the half-dozen call sites.
+        String trimmed = raw.strip().replace('_', '-');
         if (trimmed.isEmpty() || trimmed.length() > MAX_LENGTH) {
             return null;
         }
@@ -114,23 +108,29 @@ public final class LanguageTags {
 
     /**
      * Every language a survey can be worked on: the ones it already publishes, then the rest of
-     * {@link #TOP_TWENTY}. The base language is in neither -- it is the fallback every string has,
-     * not a translation of anything (UC-044 BR-005).
+     * the curated set. The base language is in neither -- it is the fallback every string has, not
+     * a translation of anything (UC-044 BR-005).
      * <p>
-     * Published first, and the twenty in their own ranking order rather than alphabetically: the
-     * picker filters as the author types, which makes alphabetical order nearly worthless, so the
-     * ordering is spent on what an author is likely to want. Sorting by display name would also
-     * make the order depend on who is looking.
+     * Published first so that an author's own languages sit at the top, and the curated set in the
+     * order it was configured rather than alphabetically, which would make the order depend on who
+     * is looking.
+     * <p>
+     * A published tag the applications do not carry is kept rather than dropped. It can only have
+     * arrived from an imported definition or from before the set was curated, and hiding it would
+     * leave the survey publishing a language its author can neither see nor remove. The caller
+     * marks it; {@link ContentLanguages#supports} is how it is recognized.
      *
      * @param baseLanguage the survey's base language, in any form
      * @param published    the survey's published set
+     * @param supported    the curated tags, from {@link ContentLanguages#tags()}
      * @return canonical tags, in offer order, without duplicates
      */
-    public static List<String> offerable(String baseLanguage, List<String> published) {
+    public static List<String> offerable(String baseLanguage, List<String> published,
+                                         List<String> supported) {
         String base = canonical(baseLanguage);
         Set<String> ordered = new LinkedHashSet<>();
         List<String> segments = new ArrayList<>(published == null ? List.of() : published);
-        segments.addAll(TOP_TWENTY);
+        segments.addAll(supported == null ? List.of() : supported);
         for (String tag : segments) {
             String c = canonical(tag);
             if (c != null && !c.equals(base)) {

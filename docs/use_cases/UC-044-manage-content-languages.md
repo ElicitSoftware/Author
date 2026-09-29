@@ -18,7 +18,7 @@
 
 1. The author opens the survey's metadata dialog, or the Translations page (UC-043).
 2. The system shows the base language, the language the survey's content is written in, beside the survey's name, title and description.
-3. The system shows the content languages, the set the survey is published in: as a comma-separated list in the metadata dialog, and as the Translations page's language picker, which also offers the languages the survey is not published in.
+3. The system shows the content languages, the set the survey is published in: as a picker in the metadata dialog, and as the Translations page's language picker, which also offers the curated languages the survey is not published in. Both offer the same set, and both name a language rather than only showing its tag.
 4. The author adds a language to the published set, either by writing its tag in the metadata dialog or by choosing it on the Translations page.
 5. The system records it with the survey and shows its outstanding strings (UC-043), reporting how many the new language leaves untranslated.
 6. The author translates the survey (UC-043, UC-045, UC-046) and exports it (UC-008); every site that mounts that language for its own chrome now serves the survey in it.
@@ -77,9 +77,15 @@ The published set says what the survey offers; what a respondent is offered at a
 
 The definition file carries every language the survey publishes. There is no per-site export: one revision is one file, distributed to every site, and a site's own mount decides what its respondents see.
 
-### BR-004: Language tags are written as the chrome writes them
+### BR-004: Only a language Elicit carries may be published
 
-A content language is a BCP-47 tag in the same form the mounted chrome bundles use (`es-419`, `ar`), so the two sets can be intersected without guessing.
+A content language must be one of the languages the applications themselves are translated into, named by `author.content.languages` and curated by ElicitSoftware. The reason is BR-002: a language the chrome does not have is never served, so content published in one would reach no respondent at any site. Offering the author a free choice invites work that is accepted, exported, distributed and then silently never shown.
+
+A language Elicit does not carry is refused wherever it is chosen or typed, with the route to getting one: ElicitSoftware translates it, and it becomes available in the next release. An author cannot get ahead of a release, which is the cost of never producing unshowable work.
+
+One exception, and it is about removal rather than authoring: a survey that already publishes a language Elicit does not carry — from an imported definition, or from before the set was curated — keeps showing it, marked, so that an author can see what the survey publishes and take it back out. Saving such a survey is allowed; adding such a language is not.
+
+A tag is written in the same form the chrome bundles use (`es-419`, `ar`), so the two sets can be intersected without guessing.
 
 ### BR-005: The base language is the fallback for every string
 
@@ -87,4 +93,8 @@ Whatever a survey is published in, every untranslated and every out-of-date stri
 
 ### BR-006: A tag is validated and stored canonically
 
-A tag is accepted only when BCP-47 can parse it and its primary subtag names a real language: `zzz` is well-formed and means nothing, and `fr_CA` is not a tag at all. What is stored is the canonical form, so `ES-419` and `es-419` are one language rather than two, and the published set can be compared with a site's mount by equality. The base language is refused as a target wherever it is offered or typed, however it was itself written.
+A tag is accepted only when BCP-47 can parse it and its primary subtag names a real language: `zzz` is well-formed and means nothing. What is stored is the canonical form, so `ES-419` and `es-419` are one language rather than two, and the published set can be compared with a site's own languages by equality.
+
+The underscore spelling is read rather than refused: `es_419` is not BCP-47, but it is how the translation bundle files are named, so it is the form an author is most likely to have in front of them. It is normalized on the way in, not stored.
+
+The base language is refused as a target wherever it is offered or typed, however it was itself written.

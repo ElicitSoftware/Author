@@ -45,6 +45,20 @@ public class SurveyService {
     @Inject
     ReportingChangeLedger reportingChanges;
 
+    @Inject
+    ContentLanguages contentLanguages;
+
+    /**
+     * The languages a survey may publish content in (UC-044 BR-004), for the controls that offer
+     * them. Delegated so that a Vaadin dialog already holding this service need not also be handed
+     * {@link ContentLanguages}.
+     *
+     * @return the curated tags, never empty
+     */
+    public List<String> supportedContentLanguages() {
+        return contentLanguages.tags();
+    }
+
     public List<Survey> list() {
         return Survey.listAll(Sort.by("displayOrder"));
     }
@@ -118,12 +132,15 @@ public class SurveyService {
         String canonical = LanguageTags.canonical(tag);
         if (canonical == null) {
             throw new AuthoringException("'" + (tag == null ? "" : tag.strip())
-                    + "' is not a language tag. Use a tag such as fr or es-419.", "contentLanguages");
+                    + "' is not a language tag. Choose one of the languages Elicit carries.", "contentLanguages");
         }
         if (canonical.equals(LanguageTags.canonical(s.baseLanguage))) {
             throw new AuthoringException(canonical
                     + " is the language this survey is written in; it needs no translation.",
                     "contentLanguages");
+        }
+        if (!contentLanguages.supports(canonical)) {
+            throw new AuthoringException(unsupported(canonical), "contentLanguages");
         }
         List<String> published = new ArrayList<>();
         if (s.contentLanguages != null && !s.contentLanguages.isBlank()) {
@@ -211,7 +228,20 @@ public class SurveyService {
         return tags.isEmpty() ? null : String.join(",", tags);
     }
 
-    private static void validate(Survey s) {
+    /**
+     * A tag the applications do not carry, refused with the one route to getting one.
+     * <p>
+     * English, like every other message this class raises: service-layer exceptions are not
+     * translated here yet, and a lone translated string among them would be the odd one out. The
+     * author-facing guidance that is translated sits on the controls themselves.
+     */
+    private static String unsupported(String canonical) {
+        return canonical + " is not one of the languages Elicit carries, so no site could show it."
+                + " Contact ElicitSoftware to have it translated; it becomes available in the next"
+                + " release.";
+    }
+
+    private void validate(Survey s) {
         if (s.name == null || s.name.isBlank()) {
             throw new AuthoringException("Name is required", "name");
         }
@@ -233,6 +263,41 @@ public class SurveyService {
         if (s.postSurveyUrl != null && s.postSurveyUrl.length() > 255) {
             throw new AuthoringException("Post-survey address must be 255 characters or fewer", "postSurveyUrl");
         }
+        // UC-044 BR-004. The metadata dialog is the other way into the published set, and until
+        // now the only checked path was publishLanguage -- a tag typed here was stored unexamined.
+        // A tag already on the survey is left alone: it can only have come from an imported
+        // definition, and refusing to save the survey would leave the author unable to remove it.
+        if (s.contentLanguages != null && !s.contentLanguages.isBlank()) {
+            List<String> already = s.id == null ? List.of() : publishedTags(Survey.findById(s.id));
+            for (String raw : s.contentLanguages.split(",")) {
+                if (raw.isBlank()) {
+                    continue;
+                }
+                String canonical = LanguageTags.canonical(raw);
+                if (canonical == null) {
+                    throw new AuthoringException("'" + raw.strip()
+                            + "' is not a language tag. Choose one of the languages Elicit carries.", "contentLanguages");
+                }
+                if (!contentLanguages.supports(canonical) && !already.contains(canonical)) {
+                    throw new AuthoringException(unsupported(canonical), "contentLanguages");
+                }
+            }
+        }
+    }
+
+    /** The survey's published set as canonical tags; empty for a survey that has none. */
+    private static List<String> publishedTags(Survey s) {
+        if (s == null || s.contentLanguages == null || s.contentLanguages.isBlank()) {
+            return List.of();
+        }
+        List<String> tags = new ArrayList<>();
+        for (String raw : s.contentLanguages.split(",")) {
+            String canonical = LanguageTags.canonical(raw);
+            if (canonical != null) {
+                tags.add(canonical);
+            }
+        }
+        return tags;
     }
 
     private static String blankToNull(String v) {
