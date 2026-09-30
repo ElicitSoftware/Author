@@ -28,7 +28,7 @@ public class NodeMenu extends MenuBar {
     public NodeMenu(String accessibleName) {
         addThemeVariants(MenuBarVariant.LUMO_TERTIARY_INLINE, MenuBarVariant.LUMO_SMALL);
         addClassName("designer-node-menu");
-        MenuItem root = addItem(VaadinIcon.ELLIPSIS_DOTS_V.create());
+        MenuItem root = addItem(VaadinIcon.ELLIPSIS_V.create());
         root.setAriaLabel(accessibleName);
         items = root.getSubMenu();
         // The menu sits inside a clickable header/row: its clicks and keys must not select or

@@ -146,7 +146,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         manualLink.setTarget(AnchorTarget.BLANK);
         manualLink.setTitle(getTranslation("mainLayout.header.manualTitle"));
         manualLink.addClassName("header-manual-link");
-        manualLink.getElement().insertChild(0, VaadinIcon.FILE_TEXT_O.create().getElement());
+        manualLink.getElement().insertChild(0, VaadinIcon.FILE_TEXT.create().getElement());
         headerContainer.add(manualLink);
     }
 
@@ -157,7 +157,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
             nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.surveys"), SurveysView.class, VaadinIcon.LIST.create()));
             nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.guide"), SurveyModelGuideView.class, VaadinIcon.OPEN_BOOK.create()));
             if (manual != null && manual.isAvailable()) {
-                SideNavItem manualItem = new SideNavItem(getTranslation("mainLayout.nav.manual"), "/api/manual", VaadinIcon.FILE_TEXT_O.create());
+                SideNavItem manualItem = new SideNavItem(getTranslation("mainLayout.nav.manual"), "/api/manual", VaadinIcon.FILE_TEXT.create());
                 manualItem.setRouterIgnore(true);
                 manualItem.setOpenInNewBrowserTab(true);
                 nav.addItem(manualItem);

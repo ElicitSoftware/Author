@@ -56,7 +56,7 @@ public class SurveyModelGuideView extends VerticalLayout implements HasDynamicTi
         figure.addClassName("survey-guide-diagram");
         add(figure);
 
-        section(VaadinIcon.ROAD_BRANCH.create(), getTranslation("guideView.tree.h"),
+        section(VaadinIcon.BRANCH.create(), getTranslation("guideView.tree.h"),
                 new Paragraph(getTranslation("guideView.tree.p1")));
 
         section(Glyph.step(1), getTranslation("guideView.containers.h"),

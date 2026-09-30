@@ -27,8 +27,8 @@ and expresses removals as retirements (`effective_to` closed). See
 
 ## Stack
 
-- Java 25, Quarkus 3.39.5, Maven build
-- Vaadin 25.2.7 (Flow, server-side UI)
+- Java 25, Quarkus 3.40.1 LTS, Maven build
+- Vaadin 25.3.0 (Flow, server-side UI)
 - Hibernate ORM with Panache (JPA) — **not jOOQ**. Author owns **no
   production Flyway migrations**; it maps entities onto the `survey` schema that
   Survey's `db/migration` creates. Tests replay a verbatim mirror of those
