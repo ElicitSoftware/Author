@@ -62,29 +62,63 @@ public class TranslationsPage extends AuthorPageObject {
     }
 
     /**
-     * The language tags the page offers, i.e. the survey's published set (UC-044).
+     * Every language tag the page offers (UC-043 step 2), in offer order.
      *
-     * <p>Read from the {@code vaadin-select-list-box}, which is where a {@code vaadin-select} keeps
-     * its items -- in the host's own light DOM, in a {@code div[slot=overlay]} that the open
-     * {@code vaadin-select-overlay} only portals visually (confirmed against the live app). Two
-     * consequences: the items are readable without opening the select, and an unscoped
-     * {@code vaadin-select-item} lookup also returns the copy of the selected item that the
-     * {@code vaadin-select-value-button} renders, which is the chosen tag a second time.</p>
+     * <p>This is {@code TranslationService.offerableLanguages}: the tags the survey publishes
+     * first, then every other language Elicit carries, never the base language. It is deliberately
+     * wider than the published set -- offering a language is what lets an author start one
+     * (UC-044) -- so a survey publishing two of the twenty Elicit carries offers all twenty. Use
+     * {@link #publishedLanguages()} for the survey's own set.</p>
      */
     public List<String> languages() {
-        Locator items = languageSelect().locator("vaadin-select-list-box vaadin-select-item");
-        items.first().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.ATTACHED));
-        return items.allInnerTexts().stream().map(String::trim).toList();
+        return offeredLabels().stream().map(TranslationsPage::tagOf).toList();
     }
 
-    /** Chooses the language whose tag is {@code tag} and waits for the grid to reload. */
+    /**
+     * The tags the survey publishes, i.e. the offered ones the page does not mark as new.
+     *
+     * <p>{@code TranslationsView.languageLabel} appends "not published yet" to a language Elicit
+     * carries that this survey has not adopted, and nothing (or "not carried by Elicit") to one it
+     * publishes -- so the absence of that marker is the published set, read off the same list.</p>
+     */
+    public List<String> publishedLanguages() {
+        return offeredLabels().stream()
+                .filter(label -> !label.contains("not published yet"))
+                .map(TranslationsPage::tagOf)
+                .toList();
+    }
+
+    /**
+     * Chooses the language whose tag is {@code tag} and waits for the grid to reload.
+     *
+     * <p>Types the tag first so the list is filtered down to a few items. The list is long enough
+     * that the scroller would otherwise be free to virtualize an item out of the DOM, and the
+     * filter is how a person picks from it anyway. The match is then made on the tag rather than
+     * on the label, because the label carries the language's display name too -- and the item is
+     * <em>clicked</em>, never committed with Enter: the field takes a custom value (UC-044), so
+     * Enter on unmatched text would publish a new language rather than select an existing one.</p>
+     */
     public void chooseLanguage(String tag) {
-        Locator select = languageSelect();
-        select.click(); // the items only become clickable once the overlay is open
-        Locator item = select.locator("vaadin-select-list-box vaadin-select-item")
-                .filter(new Locator.FilterOptions().setHasText(tag)).first();
-        item.waitFor();
-        item.click();
+        Locator combo = languageCombo();
+        openLanguageOverlay();
+        Locator input = combo.locator("input");
+        input.fill(tag);
+        page.waitForTimeout(500); // the filter is applied client-side
+        List<String> labels = languageItems().allInnerTexts().stream().map(String::trim).toList();
+        int index = -1;
+        for (int i = 0; i < labels.size(); i++) {
+            if (tag.equals(tagOf(labels.get(i)))) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) {
+            // Leave nothing typed behind: blurring unmatched text would publish it as a language.
+            closeLanguageOverlay();
+            throw new IllegalStateException("The Language list offers no '" + tag + "'; typing it"
+                    + " narrowed the list to " + labels.stream().map(TranslationsPage::tagOf).toList());
+        }
+        languageItems().nth(index).click();
         page.waitForTimeout(800); // the grid and the counts are reloaded server-side
     }
 
@@ -196,10 +230,73 @@ public class TranslationsPage extends AuthorPageObject {
 
     // ---- locators -----------------------------------------------------------------------------
 
-    private Locator languageSelect() {
-        Locator select = page.locator("vaadin-select:has(label:text-is(\"Language\"))").first();
-        select.waitFor();
-        return select;
+    private Locator languageCombo() {
+        Locator combo = page.locator("vaadin-combo-box:has(label:text-is(\"Language\"))").first();
+        combo.waitFor();
+        return combo;
+    }
+
+    /** The offered items' labels, read with the list open and left closed again. */
+    private List<String> offeredLabels() {
+        openLanguageOverlay();
+        List<String> labels = languageItems().allInnerTexts().stream().map(String::trim).toList();
+        closeLanguageOverlay();
+        return labels;
+    }
+
+    /**
+     * Opens the Language list and waits for its items.
+     *
+     * <p>Clicked on the toggle button, whose {@code part} is the two-valued
+     * {@code "field-button toggle-button"} -- so it takes {@code [part~=...]}, not the exact-match
+     * {@code [part=...]} that works elsewhere. The button lives in the combo box's shadow root,
+     * which Playwright pierces for a plain CSS selector.</p>
+     */
+    private void openLanguageOverlay() {
+        Locator combo = languageCombo();
+        if (languageItems().count() == 0) {
+            combo.locator("[part~=\"toggle-button\"]").click();
+        }
+        languageItems().first().waitFor();
+    }
+
+    private void closeLanguageOverlay() {
+        page.keyboard().press("Escape");
+        // Hidden, not detached: closing the list leaves every item in the DOM with a `hidden`
+        // attribute, and filtering hides the non-matching ones the same way. Nothing here ever
+        // waits for one to go away, and "is it open?" is a question about visibility.
+        allLanguageItems().first().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+    }
+
+    /**
+     * The items the list is currently showing.
+     *
+     * <p>Scoped to the host, not to the document: unlike most overlays this one is not portaled to
+     * {@code body}. The {@code vaadin-combo-box-overlay} sits in the combo box's shadow root and
+     * the items are rendered into a {@code vaadin-combo-box-scroller} in the host's own light DOM,
+     * which the overlay slots.</p>
+     *
+     * <p>{@code :visible} is what makes this the <em>shown</em> items: the elements outlive both
+     * closing the list and filtering it, so an unscoped lookup returns items no one can click.</p>
+     */
+    private Locator languageItems() {
+        return languageCombo().locator("vaadin-combo-box-item:visible");
+    }
+
+    /** Every item element, shown or not -- only for waiting on the transition to hidden. */
+    private Locator allLanguageItems() {
+        return languageCombo().locator("vaadin-combo-box-item");
+    }
+
+    /**
+     * The tag out of an item label. {@code TranslationsView.languageLabel} renders
+     * "{@code es-419 — Latin American Spanish}", and appends " · not published yet" or
+     * " · not carried by Elicit" to the languages that warrant it; the tag is what precedes the
+     * em dash in every case.
+     */
+    private static String tagOf(String label) {
+        int dash = label.indexOf('—');
+        return (dash < 0 ? label : label.substring(0, dash)).trim();
     }
 
     private Locator countsSpan() {
