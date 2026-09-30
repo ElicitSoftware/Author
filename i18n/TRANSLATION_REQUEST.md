@@ -85,6 +85,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `mainLayout.nav.manual` | Manual (PDF) | Navigation drawer · menu item opening the author's manual PDF in a new tab; PDF stays | 25 | identical |
 | `mainLayout.header.manual` | Manual | Header · link opening the author's manual PDF in a new tab | 15 | identical |
 | `mainLayout.header.manualTitle` | Open the author's manual (PDF) in a new tab | Header · tooltip of the manual link; PDF stays | 60 |  |
+| `mainLayout.nav.aiDraft` | Draft with AI | Navigation drawer · menu item | 25 |  |
 | `mainLayout.nav.importDefinition` | Import definition | Navigation drawer · menu item | 25 |  |
 | `mainLayout.nav.logout` | Logout | Navigation drawer · menu item | 20 |  |
 | `loginView.redirecting` | Redirecting to sign-in… | Sign-in redirect page (rarely visible) · paragraph | 40 |  |
@@ -97,6 +98,8 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `surveysView.pageTitle` | Surveys | Surveys list · browser tab title | 20 |  |
 | `surveysView.title` | Surveys | Surveys list · heading | 20 |  |
 | `surveysView.newSurvey` | New survey | Surveys list · primary button | 20 |  |
+| `surveysView.aiDraft` | Draft with AI | Surveys list · secondary button beside New survey | 20 |  |
+| `surveysView.aiDraftTitle` | Have an AI agent write a first draft of a survey, then import it here | Surveys list · tooltip on that button | 90 |  |
 | `surveysView.grid.name` | Name | Surveys list · grid column header | 15 |  |
 | `surveysView.grid.title` | Title | Surveys list · grid column header | 15 |  |
 | `surveysView.grid.order` | Order | Surveys list · grid column header (display order) | 15 |  |
@@ -146,6 +149,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `importDefinitionView.title` | Import definition | Import page · heading | 25 |  |
 | `importDefinitionView.intro` | Upload an ELICIT_SURVEY_EXPORT_V1 (.elicit) file to open it in Author as a working copy. Every survey and element key in the file is kept exactly as it is, so a later export updates the same rows at every site that already applied it. A survey whose key is already open here is refused. | Import page · paragraph; ELICIT_SURVEY_EXPORT_V1 and .elicit are technical names | 400 |  |
 | `importDefinitionView.introDraft` | An ELICIT_SURVEY_DRAFT_V1 file is accepted too -- a definition drafted outside Author, which leaves its keys blank for Author to mint. Only Author reads that marker, so a draft cannot be installed at a site until it passes validation here and is exported. | Import page · second intro paragraph; ELICIT_SURVEY_DRAFT_V1 is a technical name | 300 |  |
+| `importDefinitionView.aiDraftLink` | No draft yet? Have an AI agent write one | Import page · link to the page that hands out the AI specification | 60 |  |
 | `importDefinitionView.imported` | Imported {0} | Import page · heading after import | 40 | params: {0} = survey name |
 | `importDefinitionView.draftNotice` | This came from an {0} draft, so its keys were minted here. Review it, fix anything validation reports, then export it to get a file a site can apply. | Import page · paragraph shown only when the imported file was a draft | 220 | params: {0} = the draft format marker |
 | `importDefinitionView.surveyKey` | Survey key {0} | Import page · first part of the result sentence | 40 | params: {0} = survey key |
@@ -154,6 +158,23 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `importDefinitionView.retiredSkipped` | , {0} retired record(s) skipped | Import page · optional clause appended to the result sentence (keep the leading comma) | 40 | params: {0} = count |
 | `importDefinitionView.openInEditor` | Open in editor | Import page · primary button | 20 |  |
 | `importDefinitionView.importFailed` | Import failed: {0} | Import page · error paragraph | 80 | params: {0} = reason |
+| `aiDraftView.pageTitle` | Draft with AI | AI draft page · browser tab title | 25 |  |
+| `aiDraftView.title` | Draft a survey with an AI agent | AI draft page · heading | 45 |  |
+| `aiDraftView.intro` | A survey can start from a draft written somewhere else. Take the specification to any AI session, describe the survey you want, and bring back the file it writes. Nothing leaves this installation on its own: you carry the specification out, and you carry the draft back. | AI draft page · intro paragraph | 350 |  |
+| `aiDraftView.step1` | Copy the prompt into an AI session, or download the specification and attach the file. | AI draft page · numbered step 1 of 4 | 110 |  |
+| `aiDraftView.step2` | Describe the survey you want. The agent asks about whatever decides structure: the topics to cover, what repeats per person or item, what has to be conditional. | AI draft page · numbered step 2 of 4 | 200 |  |
+| `aiDraftView.step3` | Save the .elicit file the agent writes. | AI draft page · numbered step 3 of 4; .elicit is a file extension, keep it | 60 |  |
+| `aiDraftView.step4` | Import it here. Author mints every key on import, so the draft arrives as an ordinary working copy. | AI draft page · numbered step 4 of 4 | 130 |  |
+| `aiDraftView.copy` | Copy prompt to clipboard | AI draft page · primary button; copies the instruction plus the specification | 30 |  |
+| `aiDraftView.download` | Download the specification | AI draft page · link that downloads the specification file | 30 |  |
+| `aiDraftView.copied` | Prompt copied. Paste it into your AI session. | AI draft page · notification after a successful copy | 60 |  |
+| `aiDraftView.copyFailed` | Could not copy to the clipboard. Download the specification instead. | AI draft page · notification when the browser refused the clipboard write | 80 |  |
+| `aiDraftView.unavailable` | This build does not carry the specification, so there is nothing to copy or download. | AI draft page · paragraph shown only by a build that packaged no specification | 100 |  |
+| `aiDraftView.whatComesBack.h` | What comes back | AI draft page · section heading | 25 |  |
+| `aiDraftView.whatComesBack.p1` | A draft is not a deployable definition. It carries a marker only Author reads, so it cannot be installed at a site until you have reviewed it here and exported it. | AI draft page · paragraph | 220 |  |
+| `aiDraftView.whatComesBack.p2` | Expect to fix things. Open the imported survey, read the validation panel and correct what it reports, or send those messages back to the agent and import a corrected draft. | AI draft page · paragraph | 220 |  |
+| `aiDraftView.goToImport` | Go to Import definition | AI draft page · link to the import page; match the wording of mainLayout.nav.importDefinition | 30 |  |
+| `aiDraftView.promptPreamble` | I want to write a survey definition for the Elicit survey platform. The specification below tells you the survey model and the exact file format. Read it, ask me whatever you need to know about the survey I want, and then write me a complete .elicit draft file. | AI draft page · NOT shown on screen: the sentence copied to the clipboard in front of the specification, addressed by the author to an AI agent. The specification that follows it stays in English. | 300 |  |
 | `guideView.pageTitle` | How a survey is put together | Guide page · browser tab title | 40 |  |
 | `guideView.title` | How a survey is put together | Guide page · heading | 40 |  |
 | `guideView.diagram.alt` | The designer board for a small survey called Family history: two step cards, About you and Each child, each holding section cards (You and Children, then Child) with question rows inside them, and a Show rule drawn from the question 'Has children' to the question 'Child count'. | Guide page · alternative text of the designer screenshot; Family history, About you, Each child, You, Children, Child, Has children and Child count are the names shown in the picture and stay in English | 400 |  |
@@ -848,6 +869,7 @@ mainLayout.nav.guide=How surveys work
 mainLayout.nav.manual=Manual (PDF)
 mainLayout.header.manual=Manual
 mainLayout.header.manualTitle=Open the author's manual (PDF) in a new tab
+mainLayout.nav.aiDraft=Draft with AI
 mainLayout.nav.importDefinition=Import definition
 mainLayout.nav.logout=Logout
 loginView.redirecting=Redirecting to sign-in…
@@ -860,6 +882,8 @@ structureNavigationTree.header=Survey structure
 surveysView.pageTitle=Surveys
 surveysView.title=Surveys
 surveysView.newSurvey=New survey
+surveysView.aiDraft=Draft with AI
+surveysView.aiDraftTitle=Have an AI agent write a first draft of a survey, then import it here
 surveysView.grid.name=Name
 surveysView.grid.title=Title
 surveysView.grid.order=Order
@@ -909,6 +933,7 @@ importDefinitionView.pageTitle=Import definition
 importDefinitionView.title=Import definition
 importDefinitionView.intro=Upload an ELICIT_SURVEY_EXPORT_V1 (.elicit) file to open it in Author as a working copy. Every survey and element key in the file is kept exactly as it is, so a later export updates the same rows at every site that already applied it. A survey whose key is already open here is refused.
 importDefinitionView.introDraft=An ELICIT_SURVEY_DRAFT_V1 file is accepted too -- a definition drafted outside Author, which leaves its keys blank for Author to mint. Only Author reads that marker, so a draft cannot be installed at a site until it passes validation here and is exported.
+importDefinitionView.aiDraftLink=No draft yet? Have an AI agent write one
 importDefinitionView.imported=Imported {0}
 importDefinitionView.draftNotice=This came from an {0} draft, so its keys were minted here. Review it, fix anything validation reports, then export it to get a file a site can apply.
 importDefinitionView.surveyKey=Survey key {0}
@@ -917,6 +942,23 @@ importDefinitionView.recordsImported={0} records imported from {1}
 importDefinitionView.retiredSkipped=, {0} retired record(s) skipped
 importDefinitionView.openInEditor=Open in editor
 importDefinitionView.importFailed=Import failed: {0}
+aiDraftView.pageTitle=Draft with AI
+aiDraftView.title=Draft a survey with an AI agent
+aiDraftView.intro=A survey can start from a draft written somewhere else. Take the specification to any AI session, describe the survey you want, and bring back the file it writes. Nothing leaves this installation on its own: you carry the specification out, and you carry the draft back.
+aiDraftView.step1=Copy the prompt into an AI session, or download the specification and attach the file.
+aiDraftView.step2=Describe the survey you want. The agent asks about whatever decides structure: the topics to cover, what repeats per person or item, what has to be conditional.
+aiDraftView.step3=Save the .elicit file the agent writes.
+aiDraftView.step4=Import it here. Author mints every key on import, so the draft arrives as an ordinary working copy.
+aiDraftView.copy=Copy prompt to clipboard
+aiDraftView.download=Download the specification
+aiDraftView.copied=Prompt copied. Paste it into your AI session.
+aiDraftView.copyFailed=Could not copy to the clipboard. Download the specification instead.
+aiDraftView.unavailable=This build does not carry the specification, so there is nothing to copy or download.
+aiDraftView.whatComesBack.h=What comes back
+aiDraftView.whatComesBack.p1=A draft is not a deployable definition. It carries a marker only Author reads, so it cannot be installed at a site until you have reviewed it here and exported it.
+aiDraftView.whatComesBack.p2=Expect to fix things. Open the imported survey, read the validation panel and correct what it reports, or send those messages back to the agent and import a corrected draft.
+aiDraftView.goToImport=Go to Import definition
+aiDraftView.promptPreamble=I want to write a survey definition for the Elicit survey platform. The specification below tells you the survey model and the exact file format. Read it, ask me whatever you need to know about the survey I want, and then write me a complete .elicit draft file.
 guideView.pageTitle=How a survey is put together
 guideView.title=How a survey is put together
 guideView.diagram.alt=The designer board for a small survey called Family history: two step cards, About you and Each child, each holding section cards (You and Children, then Child) with question rows inside them, and a Show rule drawn from the question 'Has children' to the question 'Child count'.

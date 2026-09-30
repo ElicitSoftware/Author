@@ -294,6 +294,28 @@
                     <include>translations_*.properties</include>
                 </includes>
             </resource>
+            <!--
+              The AI authoring specification (UC-042). It is written and reviewed as a document
+              under docs/, and packaged here so that Author can hand it to an author who has no
+              checkout of this repository: the whole point of the path is that the specification
+              travels to an AI session, and an author cannot copy what they cannot reach.
+
+              targetPath is ai/, deliberately not META-INF/resources, which Quarkus would serve
+              to anyone without a role check. It reaches the browser only through
+              AuthoringSpecificationResource, which requires the authoring role, exactly as the
+              manual does.
+
+              filtering must stay false: the specification's worked example contains ${...}-like
+              sequences and token syntax that a filtered copy would mangle.
+            -->
+            <resource>
+                <directory>docs/ai</directory>
+                <targetPath>ai</targetPath>
+                <filtering>false</filtering>
+                <includes>
+                    <include>AUTHORING_FROM_AI.md</include>
+                </includes>
+            </resource>
         </resources>
         <plugins>
             <plugin>

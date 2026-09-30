@@ -190,6 +190,45 @@ with no steps, a choice question with no list, a rule that points backwards — 
 ``Ready to export: no findings'' before the export is worth doing.
 
 %% ------------------------------------------------------------------ 4
+\section{Starting from an AI draft}
+\markboth{Starting from an AI draft}{}
+
+There is a third way to start, beside the empty form and importing a file someone sent you: have
+an AI agent write the first draft. Choose \ui{Draft with AI}, beside \ui{New survey} on the
+surveys list and in the navigation.
+
+Author does none of the drafting. What the page gives you is the \emph{specification} --- one
+self-contained document that teaches an agent the survey model and the exact record format of a
+\texttt{.elicit} file --- and the four steps of the round trip:
+
+\begin{enumerate}
+  \item \ui{Copy prompt to clipboard} puts a short instruction and the whole specification on
+        your clipboard, ready to paste into any AI session. \ui{Download the specification}
+        saves the same document as a file, for an agent you would rather attach it to.
+  \item Describe the survey you want. A good agent will ask you the questions that decide
+        structure: the topics to cover, what repeats per person or per item, what has to be
+        conditional.
+  \item Save the \texttt{.elicit} file it writes.
+  \item Bring it back to \ui{Import definition}. The two pages link to each other.
+\end{enumerate}
+
+\begin{elicitnote}[Nothing leaves the building on its own]
+Author sends nothing to any AI service and needs no account with one. You carry the
+specification out and you carry the draft back, so this works with whatever agent you already
+use, and a deployment with no outbound network access loses nothing.
+\end{elicitnote}
+
+A draft is not a deployable definition. It is marked so that only Author will read it --- the
+Admin console refuses it --- and it arrives here with no keys of its own: Author mints the
+survey key and every element key on import, so what you get is an ordinary working copy, exactly
+like one you had typed yourself.
+
+Expect to correct things. Open the imported survey and read the validation panel: an agent that
+has never seen your data will get some rules backwards and leave some lists empty. Fix them in
+the designer, or hand the findings back to the agent and import a corrected draft as a second
+survey. Nothing is deployed until you export it yourself.
+
+%% ------------------------------------------------------------------ 5
 \section{Laying out steps and sections}
 \markboth{Laying out steps and sections}{}
 
@@ -229,7 +268,7 @@ A step with no sections shows the respondent nothing. Add one from the step's me
 One click on a lane opens it to reveal its section cards; one click on a card opens it to reveal
 its question rows. A double click on any of them opens its editor.
 
-%% ------------------------------------------------------------------ 5
+%% ------------------------------------------------------------------ 6
 \section{Giving choice questions their options}
 \markboth{Giving choice questions their options}{}
 
@@ -243,7 +282,7 @@ A list belongs to the survey, not to one question, so several questions can offe
 options. Drag a list's glyph onto a question to give it those options, or pick the list in the
 question's own editor.
 
-%% ------------------------------------------------------------------ 6
+%% ------------------------------------------------------------------ 7
 \section{Adding questions}
 \markboth{Adding questions}{}
 
@@ -288,7 +327,7 @@ change to its text reaches every section it is in.
 \screenshot{15-question-bank}{The Questions panel. Each question appears once, with how many
 sections use it; the search box narrows the panel as you type.}
 
-%% ------------------------------------------------------------------ 7
+%% ------------------------------------------------------------------ 8
 \section{Connecting questions with rules}
 \markboth{Connecting questions with rules}{}
 
@@ -314,7 +353,7 @@ Rules are drawn on the board as arrows from the question that is read to the ele
 acted on, labeled with the action. Untick \ui{Show rules} at the top of the board to hide them
 while you work on structure.
 
-%% ------------------------------------------------------------------ 8
+%% ------------------------------------------------------------------ 9
 \section{Tagging for reporting}
 \markboth{Tagging for reporting}{}
 
@@ -341,7 +380,7 @@ recorded, once the survey is exported and applied. Historical reports change wit
 tag change as a decision about past data, not only about future data.
 \end{elicitcaution}
 
-%% ------------------------------------------------------------------ 9
+%% ------------------------------------------------------------------ 10
 \section{Checking and exporting}
 \markboth{Checking and exporting}{}
 
@@ -366,13 +405,15 @@ Author for further editing, keeping every key. That is how you pick up a survey 
 exported, or start from one of the sample definitions.
 \end{elicitnote}
 
-%% ------------------------------------------------------------------ 10
+%% ------------------------------------------------------------------ 11
 \section{Where to look next}
 \markboth{Where to look next}{}
 
 \begin{itemize}
   \item \ui{How surveys work} in the application navigation — this manual's first section, drawn
         live with the real glyphs.
+  \item \ui{Draft with AI} — the specification that lets an AI agent write a first draft,
+        and the round trip it belongs to.
   \item \ui{Import definition} — bring an existing \texttt{.elicit} file into Author.
   \item \ui{System} (for administrators) — version, database, branding, connections and OIDC
         diagnostics for a deployment.

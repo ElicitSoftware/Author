@@ -39,7 +39,7 @@ public final class ElicitFormat {
     public static final String FORMAT_VERSION = "ELICIT_SURVEY_EXPORT_V1";
     /**
      * Marker for a definition drafted outside Author -- an AI session writing straight to the
-     * format, guided by {@code docs/ai/AUTHORING_FOR_AI.md}. Author imports it; Admin refuses it,
+     * format, guided by {@code docs/ai/AUTHORING_FROM_AI.md}. Author imports it; Admin refuses it,
      * because Admin's readers gate on {@link #FORMAT_VERSION} as a substring and this deliberately
      * does not contain it. A draft therefore cannot reach a deployed site: it must be reviewed in
      * Author and re-exported under {@link #FORMAT_VERSION} first. Author never writes this marker.

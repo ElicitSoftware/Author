@@ -789,7 +789,7 @@ is still being built.
    (the `TRANSLATION` entity arrives with the Survey change set); the author's
    manual (`docs/manual/elicit-author-manual.tex`) gains a section on working in
    a content language, with a screenshot of the paired field and one of an RTL
-   preview; `docs/ai/AUTHORING_FOR_AI.md` is untouched by this proposal, since
+   preview; `docs/ai/AUTHORING_FROM_AI.md` is untouched by this proposal, since
    the file format does not change here (NFR-017's test stays green).
 
 ## 13. Open questions and risks

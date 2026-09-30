@@ -165,10 +165,14 @@ relevant only once implementation code exists.
 ## Reference
 
 - Vision: `docs/vision.md`
-- AI authoring spec: `docs/ai/AUTHORING_FOR_AI.md` — the survey model and the `.elicit`
+- AI authoring spec: `docs/ai/AUTHORING_FROM_AI.md` — the survey model and the `.elicit`
   record format written for an AI agent, so an author can get a draft definition out of an
   AI session without Author running (UC-042, FR-048). Drafts carry `ELICIT_SURVEY_DRAFT_V1`,
-  which only Author reads; `AuthoringForAiDocTest` gates the document against the code
+  which only Author reads; `AuthoringFromAiDocTest` gates the document against the code
   (NFR-017), so change the document whenever the format, the lookup ids or validation change.
+  The same file is packaged onto the classpath at `ai/` by a `<resource>` block in `pom.xml`
+  and served role-gated at `/api/authoring-spec`, so `AiDraftView` (route `ai-draft`, FR-063)
+  can hand it to an author who has no checkout — the third way to start a survey, beside the
+  blank form and importing a definition. Edit the document under `docs/ai/`, never a copy.
 - Reference deployment: [FHHS](https://github.com/ElicitSoftware/FHHS)
 - Marketplace: https://github.com/AI-Unified-Process/marketplace
