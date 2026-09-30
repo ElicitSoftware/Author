@@ -117,6 +117,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `surveyEditorView.readyToExport` | Ready to export: no findings. | Survey overview · paragraph when validation finds nothing | 40 |  |
 | `surveyEditorView.issue.error` | Error: {0} | Survey overview · validation list item | 100 | params: {0} = finding text identical |
 | `surveyEditorView.issue.warning` | Warning: {0} | Survey overview · validation list item | 100 | params: {0} = finding text |
+| `validation.finding.location` | — in {0} | Survey overview and export dialog · where a validation finding's element sits, appended to the finding | 40 | params: {0} = path of step/section/question names, already joined |
 | `surveyMetadataDialog.newSurvey` | New survey | Survey details dialog · dialog title when creating | 20 |  |
 | `surveyMetadataDialog.editSurvey` | Edit survey | Survey details dialog · dialog title when editing | 20 |  |
 | `surveyMetadataDialog.name` | Name | Survey details dialog · field label | 20 |  |
@@ -872,6 +873,7 @@ surveyEditorView.validation=Validation
 surveyEditorView.readyToExport=Ready to export: no findings.
 surveyEditorView.issue.error=Error: {0}
 surveyEditorView.issue.warning=Warning: {0}
+validation.finding.location=— in {0}
 surveyMetadataDialog.newSurvey=New survey
 surveyMetadataDialog.editSurvey=Edit survey
 surveyMetadataDialog.name=Name

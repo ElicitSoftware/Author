@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Learn, before exporting, which problems would make the definition fail or behave unexpectedly at a deployed site, and which edits will apply retroactively there.  
 **Status:** Draft  
-**Requirements:** [FR-005, FR-022, FR-018, FR-024, C-011, C-012](../requirements.md)
+**Requirements:** [FR-005, FR-022, FR-018, FR-024, FR-061, C-011, C-012](../requirements.md)
 
 ## Preconditions
 
@@ -20,8 +20,8 @@
 2. The system checks the current elements of the survey: every reference from one element to another resolves to a current element; every relationship has a downstream path that holds together (a step, a section mounted in it, a question assigned to that section; a question outside the upstream question's own section names its step and section) and a valid operator and action; every choice-type question refers to a select group that has at least one current item; every `{<TOKEN>}` a step name, section name or question text uses is filled by a rule that reaches it, and every token a rule carries, whatever its action, is a name a text could write between angle brackets and is used by a text it reaches; every step has at least one section and every section at least one question; ordering values are unique within their parent; the survey's initial display key names a current section assignment.
 3. The system classifies each finding as an error (blocks export) or a warning (informational).
 4. The system adds a retroactivity warning for each step or section whose name changed since the last export and for each question whose ontology assignment changed since the last export.
-5. The system displays the findings in the validation panel, each linked to the element concerned.
-6. The author selects a finding and the system navigates to the element so that it can be corrected; with no errors present, the goal is achieved and export is allowed.
+5. The system displays the findings in the validation panel, each naming where in the survey its element sits and, where an element can be opened, linked to it.
+6. The author selects a finding and the system opens the element in the designer, selected on the board and in the structure tree, so that it can be corrected; with no errors present, the goal is achieved and export is allowed.
 
 ## Alternative Flows
 
@@ -38,8 +38,8 @@
 **Trigger:** At least one error exists and the author is in the export flow (step 5)  
 **Flow:**
 
-1. The system disables Export and lists the errors in the export dialog.
-2. The author corrects the elements and re-runs validation.
+1. The system disables Export and lists the errors in the export dialog, each with the same location line as the panel.
+2. The author closes the dialog, corrects the elements and re-runs validation.
 3. Use case continues at step 2.
 
 ### A3: No previous export to compare with
@@ -54,7 +54,7 @@
 
 ### Success Postconditions
 
-- The author has an up-to-date list of errors and warnings, each pointing to its element.
+- The author has an up-to-date list of errors and warnings, each saying where its element sits and, where the element can be opened, linking to it.
 - Export is enabled exactly when no errors exist.
 
 ### Failure Postconditions
@@ -129,3 +129,40 @@ and every report would block export.
 
 UC-019 A2 canonicalizes a token on the way in, so what this reports is what an import (UC-005) or a
 definition drafted outside Author (UC-042) wrote into the column directly.
+
+### BR-008: A finding says where its element sits
+
+A finding names an element by name — a step, a section, a question, a rule — and a name is not a
+place: the same section name can be mounted in two steps, and a rule's own name says nothing about
+where in the survey it fires. Every finding therefore carries the path to what it concerns, written
+the way the designer's breadcrumb writes it.
+
+What the path holds depends on what the finding is about:
+
+- a step: nothing, because a step is the outermost thing there is and the message already names it;
+- a section or a question: the containers it sits in — the step for a section, the step and section
+  for a question — since the message already names the element itself;
+- a rule: the full path to the element the rule targets, because a rule has no place of its own. It
+  is the one finding whose message says nothing about where to look.
+
+A finding about the survey as a whole, about a list of options, or about the ontology carries no
+path, because it is not about a place in the structure.
+
+### BR-009: A finding opens the element it is about
+
+Every finding whose element the designer can show is a link. Following it opens the designer with
+that element selected — on the board, in the breadcrumb and in the structure tree — exactly as the
+address selects an element (UC-006 BR-003). Three kinds of finding link elsewhere, because their
+element does not live on the board:
+
+- a rule opens the designer with the rule's *target* selected and the rule's own editor open over
+  it, which is where the token, the operator and the action are corrected;
+- a finding about an ontology tag or one of its assignments opens the survey's Reporting page
+  (UC-023);
+- a finding about a missing or out-of-date translation opens the survey's Translations page
+  (UC-043).
+
+A finding with nothing to open — the survey has no steps, an option belongs to a removed list —
+stays plain text. It is never a dead link: a finding is a link exactly when following it lands
+somewhere, so an element the designer cannot currently show (a retired one, which the board hides
+until Show removed is on) is reported without one.

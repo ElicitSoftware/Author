@@ -12,6 +12,7 @@ package com.elicitsoftware.author.survey;
  */
 
 import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.Section;
 import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.Step;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -53,6 +55,49 @@ public class SurveyStructureQuery {
                 }
             }
             return out;
+        }
+
+        /**
+         * The node for an element, preferring the container the assignment names. A section mounted in
+         * two steps, or a question assigned to two sections, is two nodes; with no assignment named —
+         * or one this tree does not hold — the element's first place is returned.
+         */
+        public StructureNode find(StructureNode.Kind kind, Integer durableId, Integer assignmentId) {
+            return all().stream()
+                    .filter(n -> n.kind() == kind && Objects.equals(n.durableId(), durableId))
+                    .filter(n -> assignmentId == null || Objects.equals(n.assignmentId(), assignmentId))
+                    .findFirst()
+                    .orElseGet(() -> assignmentId == null ? null : find(kind, durableId, null));
+        }
+
+        /** The node an assignment created: the section in that step, or the question in that section. */
+        public StructureNode findByAssignment(StructureNode.Kind kind, Integer assignmentId) {
+            return assignmentId == null ? null : all().stream()
+                    .filter(n -> n.kind() == kind && Objects.equals(n.assignmentId(), assignmentId))
+                    .findFirst().orElse(null);
+        }
+
+        /**
+         * The element a rule points at — the innermost of its downstream path, in the mount the path
+         * names (UC-019 BR-001). A rule whose path no longer resolves has no node.
+         */
+        public StructureNode target(Relationship r) {
+            if (r == null) {
+                return null;
+            }
+            if (r.downstreamSqId != null) {
+                List<StructureNode> rows = all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION
+                        && Objects.equals(n.assignmentId(), r.downstreamSqId)).toList();
+                return rows.stream().filter(n -> n.parent() != null && Objects.equals(n.parent().assignmentId(), r.downstreamSsId))
+                        .findFirst().orElse(rows.isEmpty() ? null : rows.get(0));
+            }
+            if (r.downstreamSsId != null) {
+                return findByAssignment(StructureNode.Kind.SECTION, r.downstreamSsId);
+            }
+            if (r.downstreamStepId != null) {
+                return find(StructureNode.Kind.STEP, r.downstreamStepId, null);
+            }
+            return null;
         }
     }
 

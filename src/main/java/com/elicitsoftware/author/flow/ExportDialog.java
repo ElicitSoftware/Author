@@ -16,6 +16,7 @@ import com.elicitsoftware.author.definition.DefinitionException;
 import com.elicitsoftware.author.definition.ExportResult;
 import com.elicitsoftware.author.definition.SurveyDefinitionExporter;
 import com.elicitsoftware.author.definition.ValidationIssue;
+import com.elicitsoftware.author.definition.ValidationTargets;
 import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.model.Survey;
 import com.vaadin.flow.component.button.Button;
@@ -45,7 +46,7 @@ public class ExportDialog extends Dialog {
     final Div outcome = new Div();
 
     public ExportDialog(SurveyService surveyService, SurveyDefinitionExporter exporter, Survey survey,
-                        List<ValidationIssue> issues, Consumer<Survey> onExported) {
+                        List<ValidationIssue> issues, ValidationTargets.Resolver targets, Consumer<Survey> onExported) {
         releaseNote.setLabel(getTranslation("exportDialog.releaseNote"));
         export.setText(getTranslation("exportDialog.export"));
         cancel.setText(getTranslation("common.close"));
@@ -55,12 +56,10 @@ public class ExportDialog extends Dialog {
 
         long errors = issues.stream().filter(ValidationIssue::isError).count();
         if (!issues.isEmpty()) {
-            UnorderedList list = new UnorderedList();
-            issues.forEach(i -> {
-                ListItem li = new ListItem(getTranslation(i.isError() ? "exportDialog.issue.error" : "exportDialog.issue.warning", i.message()));
-                li.addClassName(i.isError() ? LumoUtility.TextColor.ERROR : LumoUtility.TextColor.WARNING);
-                list.add(li);
-            });
+            // UC-007 A2: the same findings the panel shows, each saying where its element sits.
+            // They are not links here: the dialog is modal, so a link followed from it would leave
+            // the dialog standing over the page it opened (UC-007 BR-009).
+            ValidationFindings list = new ValidationFindings(survey.id, issues, targets, false, "exportDialog.issue");
             findings.add(new Paragraph(errors > 0
                     ? getTranslation("exportDialog.errorsBlock", String.valueOf(errors))
                     : getTranslation("exportDialog.warningsDoNotBlock")), list);

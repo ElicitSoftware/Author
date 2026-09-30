@@ -17,6 +17,7 @@ import com.elicitsoftware.author.flow.MainLayout;
 import com.elicitsoftware.author.flow.SurveyEditorView;
 import com.elicitsoftware.author.flow.SurveyModelGuideView;
 import com.elicitsoftware.author.security.AuthorRoles;
+import com.elicitsoftware.author.survey.DesignerAddress;
 import com.elicitsoftware.author.survey.DesignerService;
 import com.elicitsoftware.author.survey.ElementService;
 import com.elicitsoftware.author.survey.RelationshipQuery;
@@ -187,10 +188,15 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
             add(breadcrumb, toolbar, split);
         }
         List<String> select = event.getLocation().getQueryParameters().getParameters().getOrDefault(SELECT, List.of());
+        DesignerAddress address = select.isEmpty() ? null : DesignerAddress.parse(select.get(0)).orElse(null);
         tree = structureQuery.tree(survey.id, Boolean.TRUE.equals(showRemoved.getValue()));
-        selected = select.isEmpty() ? null : resolve(select.get(0));
+        selected = address == null ? null : resolve(address);
         openAncestors(selected);
         render();
+        if (address != null && DesignerAddress.RULE.equals(address.kind())) {
+            // UC-007 BR-009: an address naming a rule opens the rule's editor over its target.
+            editRule(address.id());
+        }
     }
 
     // ---- state -----------------------------------------------------------------------------
@@ -340,25 +346,26 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         return ui == null ? Optional.empty() : ui.getChildren().filter(MainLayout.class::isInstance).map(MainLayout.class::cast).findFirst();
     }
 
-    private StructureNode resolve(String selectParam) {
-        String[] parts = selectParam.split(":");
-        if (parts.length < 2) {
-            return null;
-        }
-        try {
-            StructureNode.Kind kind = StructureNode.Kind.valueOf(parts[0].toUpperCase());
-            return find(kind, Integer.parseInt(parts[1]), null);
-        } catch (IllegalArgumentException e) {
-            return null;
+    /** UC-006 BR-003: what the address selects — an element, an element in one container, or a rule's target. */
+    private StructureNode resolve(DesignerAddress address) {
+        switch (address.kind()) {
+            case DesignerAddress.MOUNT:
+                return tree.findByAssignment(StructureNode.Kind.SECTION, address.id());
+            case DesignerAddress.ASSIGNMENT:
+                return tree.findByAssignment(StructureNode.Kind.QUESTION, address.id());
+            case DesignerAddress.RULE:
+                return tree.target(rules.any(survey.id, address.id()).orElse(null));
+            default:
+                try {
+                    return find(StructureNode.Kind.valueOf(address.kind().toUpperCase()), address.id(), null);
+                } catch (IllegalArgumentException e) {
+                    return null;
+                }
         }
     }
 
     private StructureNode find(StructureNode.Kind kind, Integer durableId, Integer assignmentId) {
-        return tree.all().stream()
-                .filter(n -> n.kind() == kind && Objects.equals(n.durableId(), durableId))
-                .filter(n -> assignmentId == null || Objects.equals(n.assignmentId(), assignmentId))
-                .findFirst()
-                .orElseGet(() -> assignmentId == null ? null : find(kind, durableId, null));
+        return tree.find(kind, durableId, assignmentId);
     }
 
     private void openAncestors(StructureNode node) {
@@ -915,20 +922,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
 
     /** The downstream element a rule points at — the innermost of its path, in the mount the path names — resolved to a board node. */
     private StructureNode targetNode(Relationship r) {
-        if (r.downstreamSqId != null) {
-            List<StructureNode> rows = tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION
-                    && Objects.equals(n.assignmentId(), r.downstreamSqId)).toList();
-            return rows.stream().filter(n -> n.parent() != null && Objects.equals(n.parent().assignmentId(), r.downstreamSsId))
-                    .findFirst().orElse(rows.isEmpty() ? null : rows.get(0));
-        }
-        if (r.downstreamSsId != null) {
-            return tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.SECTION
-                    && Objects.equals(n.assignmentId(), r.downstreamSsId)).findFirst().orElse(null);
-        }
-        if (r.downstreamStepId != null) {
-            return find(StructureNode.Kind.STEP, r.downstreamStepId, null);
-        }
-        return null;
+        return tree.target(r);
     }
 
     void repoint(int relationshipId, String end, String targetAnchor, String mountAnchor) {

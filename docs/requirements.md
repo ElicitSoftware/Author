@@ -35,6 +35,7 @@ Roles referenced below:
 | FR-007 | Remove Structural Element          | As a survey author, I want to remove a step, section, question, select group, select item, relationship, or assignment so that it disappears from the survey — implemented as **retire** (close `effective_to`), cascading to dependent assignments and relationships, never as a physical delete, so that sites applying the export close the element and keep recorded answers. | High     | Open   |
 | FR-008 | Restore Removed Element            | As a survey author, I want to see removed elements and restore one (reopen its validity window) as long as its parents are current, so that a mistaken removal is recoverable before or after export.                            | Medium   | Open   |
 | FR-009 | Preserve Element Identity          | As a survey author, I want every element's key to be minted once when it is created and never regenerated, so that re-exporting matches existing rows at every deployed site instead of installing duplicates.                 | High     | Open   |
+| FR-061 | Navigate from a Validation Finding  | As a survey author, I want every validation finding to say where its element sits in the survey and to be a link that opens that element in the designer — a rule opening its own editor over the element it targets — so that I can correct a finding without hunting the survey for the name it mentions. | High     | Open   |
 
 ### Question Authoring
 

@@ -83,6 +83,14 @@ Steps, sections and questions appear in the order respondents would meet them, u
 
 Every element the tree can show has its own address within the survey, so the highlighted row is derived from the address, not from click history.
 
+The address names the element by kind and durable id — a step, a section, a question — and also
+accepts the two forms a reference elsewhere in Author naturally has: an *assignment* (a section's
+mount in a step, a question's place in a section), which selects that element in that container
+rather than in whichever container happens to come first; and a *rule*, which selects the element
+the rule targets and opens the rule's editor over it (UC-007 BR-009). An address naming something
+the tree is not currently showing selects nothing and shows the survey as it would with no
+selection (A2); it is never an error page.
+
 ### BR-004: On the designer the tree and board share a selection
 
 While the designer is open, the drawer holds the tools palette above the structure tree and is resizable. Selecting an element on the board selects and scrolls to its tree row, and selecting a tree row selects that element on the board, so the two views always agree.
