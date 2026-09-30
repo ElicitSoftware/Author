@@ -36,6 +36,7 @@ Roles referenced below:
 | FR-008 | Restore Removed Element            | As a survey author, I want to see removed elements and restore one (reopen its validity window) as long as its parents are current, so that a mistaken removal is recoverable before or after export.                            | Medium   | Open   |
 | FR-009 | Preserve Element Identity          | As a survey author, I want every element's key to be minted once when it is created and never regenerated, so that re-exporting matches existing rows at every deployed site instead of installing duplicates.                 | High     | Open   |
 | FR-061 | Navigate from a Validation Finding  | As a survey author, I want every validation finding to say where its element sits in the survey and to be a link that opens that element in the designer — a rule opening its own editor over the element it targets — so that I can correct a finding without hunting the survey for the name it mentions. | High     | Open   |
+| FR-062 | Reach an Element That Is Not Placed | As a survey author, I want a section that is in no step, and a question that is in no section, to be listed in the drawer's Sections and Questions panels and reported by validation, so that an element an import left unplaced can be named, placed or removed instead of riding into every export unseen. | High     | Open   |
 
 ### Question Authoring
 

@@ -264,6 +264,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `questionBankPanel.roledescription` | draggable question | Designer toolbox, Questions panel · aria-roledescription of a question glyph (lower case) | 30 |  |
 | `questionBankPanel.uses.one` | in 1 section | Designer toolbox, Questions panel · where the question is placed | 20 |  |
 | `questionBankPanel.uses.many` | in {0} sections | Designer toolbox, Questions panel · where the question is placed | 20 | params: {0} = number of sections (0 or 2+) |
+| `questionBankPanel.uses.none` | in no section | Designer toolbox, Questions panel · badge on a question no section holds | 20 |  |
 | `questionBankPanel.menu.aria` | Actions for question {0} | Designer toolbox, Questions panel · accessible name of the row menu button | 40 | params: {0} = question name |
 | `questionBankPanel.menu.addToSection` | Add to section… | Designer toolbox, Questions panel · menu item | 25 |  |
 | `questionBankPanel.empty` | No questions yet. Questions you add appear here and can be reused in other sections. | Designer toolbox, Questions panel · empty-state text | 110 |  |
@@ -279,6 +280,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `sectionBankPanel.roledescription` | draggable section | Designer toolbox, Sections panel · aria-roledescription of a section glyph (lower case) | 30 |  |
 | `sectionBankPanel.uses.one` | in 1 step | Designer toolbox, Sections panel · where the section is mounted | 20 |  |
 | `sectionBankPanel.uses.many` | in {0} steps | Designer toolbox, Sections panel · where the section is mounted | 20 | params: {0} = number of steps (0 or 2+) |
+| `sectionBankPanel.uses.none` | in no step | Designer toolbox, Sections panel · badge on a section no step holds | 20 |  |
 | `sectionBankPanel.menu.aria` | Actions for section {0} | Designer toolbox, Sections panel · accessible name of the row menu button | 40 | params: {0} = section name |
 | `sectionBankPanel.menu.mountInStep` | Mount in step… | Designer toolbox, Sections panel · menu item | 25 |  |
 | `sectionBankPanel.empty` | No sections yet. Sections you add appear here and can be mounted in other steps. | Designer toolbox, Sections panel · empty-state text | 110 |  |
@@ -356,6 +358,11 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `surveyDesignerView.removeStep.text` | Remove step ''{0}''?{1} It can be restored from its details page. | Designer, remove-step confirmation · dialog text | 100 | params: {0} = step name, {1} = empty or a space plus surveyDesignerView.removeStep.dependents |
 | `surveyDesignerView.removeStep.dependents` | Removed with it: {0}. | Designer, remove-step confirmation · sentence listing what goes with the step | 60 | params: {0} = list of dependents separated by "; " |
 | `surveyDesignerView.removedStep` | Removed step ''{0}'' | Designer · success notification | 50 | params: {0} = step name |
+| `surveyDesignerView.removeUnplaced.title` | Remove element | Designer, remove-element confirmation · dialog title | 25 |  |
+| `surveyDesignerView.removeUnplaced.text` | ''{0}'' is in no step or section. Remove it from the survey? | Designer, remove-element confirmation · dialog body | 120 | params: {0} = element name |
+| `surveyDesignerView.removedUnplaced` | Removed ''{0}'' | Designer · success notification | 50 | params: {0} = element name |
+| `surveyDesignerView.revealedUnplacedSection` | This section is in no step, so the board cannot show it. It is marked in the Sections panel. | Designer · notification after following a validation finding | 140 |  |
+| `surveyDesignerView.revealedUnplacedQuestion` | This question is in no section, so the board cannot show it. It is marked in the Questions panel. | Designer · notification after following a validation finding | 140 |  |
 | `surveyDesignerView.dropArrowHint` | Drop the arrow on a step, a section or a question | Designer · info notification when a rule arrow is dropped nowhere useful | 70 |  |
 | `surveyDesignerView.ruleGone` | This rule no longer exists | Designer · info notification | 40 |  |
 | `surveyDesignerView.ruleRepointed` | Rule re-pointed | Designer · success notification after moving a rule arrow end | 30 |  |
@@ -1020,6 +1027,7 @@ questionBankPanel.search.aria=Search questions by name, text or type
 questionBankPanel.roledescription=draggable question
 questionBankPanel.uses.one=in 1 section
 questionBankPanel.uses.many=in {0} sections
+questionBankPanel.uses.none=in no section
 questionBankPanel.menu.aria=Actions for question {0}
 questionBankPanel.menu.addToSection=Add to section…
 questionBankPanel.empty=No questions yet. Questions you add appear here and can be reused in other sections.
@@ -1035,6 +1043,7 @@ sectionBankPanel.search.aria=Search sections by name or description
 sectionBankPanel.roledescription=draggable section
 sectionBankPanel.uses.one=in 1 step
 sectionBankPanel.uses.many=in {0} steps
+sectionBankPanel.uses.none=in no step
 sectionBankPanel.menu.aria=Actions for section {0}
 sectionBankPanel.menu.mountInStep=Mount in step…
 sectionBankPanel.empty=No sections yet. Sections you add appear here and can be mounted in other steps.
@@ -1112,6 +1121,11 @@ surveyDesignerView.removeStep.title=Remove step
 surveyDesignerView.removeStep.text=Remove step ''{0}''?{1} It can be restored from its details page.
 surveyDesignerView.removeStep.dependents=Removed with it: {0}.
 surveyDesignerView.removedStep=Removed step ''{0}''
+surveyDesignerView.removeUnplaced.title=Remove element
+surveyDesignerView.removeUnplaced.text=''{0}'' is in no step or section. Remove it from the survey?
+surveyDesignerView.removedUnplaced=Removed ''{0}''
+surveyDesignerView.revealedUnplacedSection=This section is in no step, so the board cannot show it. It is marked in the Sections panel.
+surveyDesignerView.revealedUnplacedQuestion=This question is in no section, so the board cannot show it. It is marked in the Questions panel.
 surveyDesignerView.dropArrowHint=Drop the arrow on a step, a section or a question
 surveyDesignerView.ruleGone=This rule no longer exists
 surveyDesignerView.ruleRepointed=Rule re-pointed

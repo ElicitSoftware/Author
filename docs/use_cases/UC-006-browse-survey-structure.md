@@ -91,6 +91,15 @@ the rule targets and opens the rule's editor over it (UC-007 BR-009). An address
 the tree is not currently showing selects nothing and shows the survey as it would with no
 selection (A2); it is never an error page.
 
+### BR-003a: The board shows the structure; the panels show the survey
+
+The board, the breadcrumb and the structure tree are the survey's *structure* — what a respondent
+would walk through — so they draw an element where it is placed, and an element that is placed
+nowhere appears in none of them. The drawer's Sections and Questions panels are the survey's
+*contents*: every current section and question once, placed or not (UC-015 A7, UC-011 A7). Without
+that, an unplaced element would exist in the database and in the export while being unreachable in
+the tool, which is how one survives an import unnoticed.
+
 ### BR-004: On the designer the tree and board share a selection
 
 While the designer is open, the drawer holds the tools palette above the structure tree and is resizable. Selecting an element on the board selects and scrolls to its tree row, and selecting a tree row selects that element on the board, so the two views always agree.

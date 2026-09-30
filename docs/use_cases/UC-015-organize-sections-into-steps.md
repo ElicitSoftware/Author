@@ -76,6 +76,15 @@
 2. If the target step already holds the section, the system refuses and explains (A2).
 3. Use case continues at step 3.
 
+### A7: A section that is in no step
+
+**Trigger:** The survey holds a current section that no step mounts — an import carried it in, or its last mount was removed while it was restored afterwards (step 1)  
+**Flow:**
+
+1. The system lists the section in the Sections panel like any other, marked as being in no step, and gives it the same Edit… and Mount in step… actions plus Remove, since it has no assignment whose removal could retire it.
+2. Validation reports it (UC-007), and the finding links to it here, because the board cannot show a section no lane holds.
+3. Use case continues at step 1.
+
 ## Postconditions
 
 ### Success Postconditions

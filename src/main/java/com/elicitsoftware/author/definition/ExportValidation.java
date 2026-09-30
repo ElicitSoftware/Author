@@ -26,6 +26,7 @@ import com.elicitsoftware.author.survey.ReportingChangeLedger;
 import com.elicitsoftware.author.survey.ReportingService;
 import com.elicitsoftware.author.survey.RuleOrdering;
 import com.elicitsoftware.author.survey.RulePath;
+import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.TokenSamples;
 import com.elicitsoftware.author.survey.Tokens;
 import com.elicitsoftware.author.survey.TranslationService;
@@ -45,8 +46,8 @@ import java.util.function.Function;
  * relationships whose downstream path does not hold together or that point backwards (UC-033 A3), choice
  * questions without options, tokens no rule fills and Text rules nothing uses (BR-005), rules whose token
  * is fed by a question that collects no answer (UC-019 BR-006), rules whose token is not a name a text
- * could write between angle brackets (BR-007), empty steps and
- * sections, duplicate ordering. Errors block export; warnings do not.
+ * could write between angle brackets (BR-007), empty steps and sections, sections in no step and
+ * questions in no section (BR-010), duplicate ordering. Errors block export; warnings do not.
  * Read-only (UC-007 BR-004).
  */
 @ApplicationScoped
@@ -85,6 +86,8 @@ public class ExportValidation {
 
         Set<Integer> stepsWithSections = new HashSet<>();
         Set<Integer> sectionsWithQuestions = new HashSet<>();
+        Set<Integer> mountedSections = new HashSet<>();
+        Set<Integer> assignedQuestions = new HashSet<>();
         Set<Integer> groupsWithItems = new HashSet<>();
         items.forEach(i -> groupsWithItems.add(i.selectGroupId));
 
@@ -96,6 +99,7 @@ public class ExportValidation {
                 issues.add(ValidationIssue.error("steps_sections", ss.stepsSectionsId, "Section assignment refers to a removed or missing section"));
             }
             stepsWithSections.add(ss.stepId);
+            mountedSections.add(ss.sectionId);
         }
         for (SectionsQuestion sq : sectionsQuestions.values()) {
             if (!questions.containsKey(sq.questionId)) {
@@ -105,6 +109,7 @@ public class ExportValidation {
                 issues.add(ValidationIssue.error("sections_questions", sq.sectionsQuestionId, "Question assignment refers to a removed or missing section"));
             }
             sectionsWithQuestions.add(sq.sectionId);
+            assignedQuestions.add(sq.questionId);
         }
         for (Question q : questions.values()) {
             String type = q.questionType == null ? "" : q.questionType.name;
@@ -159,12 +164,23 @@ public class ExportValidation {
         checkTokens(issues, steps, sections, questions, stepsSections, sectionsQuestions, relationships, board);
         for (Step s : steps.values()) {
             if (!stepsWithSections.contains(s.stepId)) {
-                issues.add(ValidationIssue.warning("steps", s.stepId, "Step '" + s.name + "' has no sections"));
+                issues.add(ValidationIssue.warning("steps", s.stepId,
+                        "Step '" + StructureNode.nameOr(s.name, s.stepId) + "' has no sections"));
             }
         }
         for (Section s : sections.values()) {
-            if (!sectionsWithQuestions.contains(s.sectionId)) {
-                issues.add(ValidationIssue.warning("sections", s.sectionId, "Section '" + s.name + "' has no questions"));
+            String name = StructureNode.nameOr(s.name, s.sectionId);
+            // UC-007 BR-010: a section out of the structure is reported as that, and not also as
+            // empty -- the emptiness is downstream of the real defect, and mounting it is the fix.
+            if (!mountedSections.contains(s.sectionId)) {
+                issues.add(ValidationIssue.warning("sections", s.sectionId, "Section '" + name + "' is not in any step"));
+            } else if (!sectionsWithQuestions.contains(s.sectionId)) {
+                issues.add(ValidationIssue.warning("sections", s.sectionId, "Section '" + name + "' has no questions"));
+            }
+        }
+        for (Question q : questions.values()) {
+            if (!assignedQuestions.contains(q.questionId)) {
+                issues.add(ValidationIssue.warning("questions", q.questionId, label(q) + " is not in any section"));
             }
         }
         if (!stepsSections.isEmpty()) {

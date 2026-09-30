@@ -196,6 +196,26 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         if (address != null && DesignerAddress.RULE.equals(address.kind())) {
             // UC-007 BR-009: an address naming a rule opens the rule's editor over its target.
             editRule(address.id());
+        } else if (address != null && selected == null) {
+            // The board holds no such element. It may still be one the survey has but has placed
+            // nowhere, which lives in the drawer panels (UC-006 BR-003a).
+            revealUnplaced(address);
+        }
+    }
+
+    /** UC-007 BR-009: show an element the board cannot draw in the panel that does hold it. */
+    private void revealUnplaced(DesignerAddress address) {
+        if (toolbox == null) {
+            return;
+        }
+        boolean found = switch (address.kind()) {
+            case DesignerAddress.SECTION -> toolbox.revealSection(address.id());
+            case DesignerAddress.QUESTION -> toolbox.revealQuestion(address.id());
+            default -> false;
+        };
+        if (found) {
+            info(getTranslation(DesignerAddress.SECTION.equals(address.kind())
+                    ? "surveyDesignerView.revealedUnplacedSection" : "surveyDesignerView.revealedUnplacedQuestion"));
         }
     }
 
@@ -673,8 +693,10 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
             descriptions.put(sec.sectionId, sec.description);
         }
         toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users, listService.optionTexts(survey.id));
-        toolbox.sections.refresh(this, tree.all(), descriptions);
-        toolbox.questions.refresh(this, tree.all(), texts);
+        // UC-006 BR-003a: the panels are the survey's contents, so they hold the elements the board
+        // cannot draw -- a section in no step, a question in no section.
+        toolbox.sections.refresh(this, tree.all(), structureQuery.unplacedSections(survey.id), descriptions);
+        toolbox.questions.refresh(this, tree.all(), structureQuery.unplacedQuestions(survey.id), texts);
     }
 
     /** The right-hand pane: the selection as a respondent sees it, rebuilt with the board. */
@@ -819,6 +841,27 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
                 selected = node.parent();
                 load();
                 success(getTranslation("surveyDesignerView.removedAssignment", what, node.label(), where, node.parent().label()));
+            } catch (AuthoringException ae) {
+                error(ae.getMessage());
+            }
+        }, getTranslation("common.cancel"), e -> { }).open();
+    }
+
+    /**
+     * UC-015 A7 / UC-011 A7: remove an element that is placed nowhere. Everywhere else on the board
+     * removal takes an assignment away and retires the element with the last one; an element with no
+     * assignment has no such path, so this retires the element itself.
+     */
+    public void removeUnplaced(StructureNode node) {
+        ElementService.RemovalPlan plan = elements.planRemoval(survey.id, node.kind(), node.durableId());
+        String text = getTranslation("surveyDesignerView.removeUnplaced.text", node.label())
+                + (plan.dependents().isEmpty() ? ""
+                : " " + getTranslation("surveyDesignerView.removeStep.dependents", String.join("; ", plan.dependents())));
+        new ConfirmDialog(getTranslation("surveyDesignerView.removeUnplaced.title"), text, getTranslation("common.remove"), e -> {
+            try {
+                elements.remove(survey.id, node.kind(), node.durableId());
+                load();
+                success(getTranslation("surveyDesignerView.removedUnplaced", node.label()));
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }

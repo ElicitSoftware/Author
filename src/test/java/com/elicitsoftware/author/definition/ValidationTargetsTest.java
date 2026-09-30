@@ -133,6 +133,23 @@ class ValidationTargetsTest {
                 "BR-009: a rule that is gone has nothing to open");
     }
 
+    /** UC-006 BR-003a: the panels hold what the board cannot draw, so the finding still opens it. */
+    @Test
+    @TestTransaction
+    void anUnplacedElementIsStillReachable() {
+        Survey s = fixture();
+        StructureNode section = node(s.id, StructureNode.Kind.SECTION, "Fixture Section C");
+        em.createNativeQuery("UPDATE survey.steps_sections SET effective_to = now() WHERE survey_id = ?1 AND section_id = ?2")
+                .setParameter(1, s.id).setParameter(2, section.durableId()).executeUpdate();
+        em.flush();
+        em.clear();
+
+        ValidationTargets.Target target = targetOf(s, ValidationIssue.warning("sections", section.durableId(), "..."));
+        assertEquals(ValidationTargets.Destination.DESIGNER, target.destination());
+        assertEquals("section:" + section.durableId(), target.address().toString());
+        assertEquals(List.of(), target.location(), "BR-010: it sits nowhere, and the message is what says so");
+    }
+
     @Test
     @TestTransaction
     void aRetiredElementIsReportedWithoutALinkTheBoardCannotFollow() {

@@ -28,7 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Read model for the structure tree (UC-006): one query per table, labels resolved through
@@ -142,13 +144,48 @@ public class SurveyStructureQuery {
             if (sectionNode == null || q == null) {
                 return;
             }
-            String label = q.shortText != null && !q.shortText.isBlank() ? q.shortText : plain(q.text);
+            String label = questionLabel(q);
             String detail = q.questionType == null ? "" : q.questionType.name;
             StructureNode n = new StructureNode(StructureNode.Kind.QUESTION, q.questionId, sq.sectionsQuestionId,
                     label, detail, sq.displayOrder, q.questionKey, sq.isRetired() || q.isRetired(), sectionNode);
             children.get(sectionNode).add(n);
         });
         return new Tree(roots, children);
+    }
+
+    /**
+     * Current sections no step mounts (UC-015 A7). They are part of the survey and they export, but
+     * the board draws only what a lane holds, so the Sections panel is where they are reachable
+     * (UC-006 BR-003a). The nodes have no parent and no assignment, which is exactly what they lack.
+     */
+    public List<StructureNode> unplacedSections(int surveyId) {
+        Set<Integer> mounted = StepsSections.<StepsSections>list("surveyId", surveyId).stream()
+                .filter(StructuralElement::isCurrent).map(ss -> ss.sectionId).collect(Collectors.toSet());
+        return Section.<Section>list("surveyId", surveyId).stream()
+                .filter(StructuralElement::isCurrent)
+                .filter(s -> !mounted.contains(s.sectionId))
+                .sorted(Comparator.comparing((Section s) -> s.displayOrder, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(s -> new StructureNode(StructureNode.Kind.SECTION, s.sectionId, null,
+                        StructureNode.nameOr(s.name, s.sectionId), s.description, s.displayOrder, s.sectionKey, false, null))
+                .toList();
+    }
+
+    /** Current questions no section assigns (UC-011 A7); the Questions panel is where they are reachable. */
+    public List<StructureNode> unplacedQuestions(int surveyId) {
+        Set<Integer> assigned = SectionsQuestion.<SectionsQuestion>list("surveyId", surveyId).stream()
+                .filter(StructuralElement::isCurrent).map(sq -> sq.questionId).collect(Collectors.toSet());
+        return Question.<Question>list("surveyId", surveyId).stream()
+                .filter(StructuralElement::isCurrent)
+                .filter(q -> !assigned.contains(q.questionId))
+                .map(q -> new StructureNode(StructureNode.Kind.QUESTION, q.questionId, null, questionLabel(q),
+                        q.questionType == null ? "" : q.questionType.name, null, q.questionKey, false, null))
+                .toList();
+    }
+
+    /** A question's short text, else its text with the markup taken out, else its durable id. */
+    private static String questionLabel(Question q) {
+        String label = q.shortText != null && !q.shortText.isBlank() ? q.shortText : plain(q.text);
+        return StructureNode.nameOr(label, q.questionId);
     }
 
     private static <E extends StructuralElement> Map<Integer, E> byDurable(List<E> rows, Function<E, Integer> durable, boolean includeRetired) {

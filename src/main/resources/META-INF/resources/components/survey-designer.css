@@ -566,6 +566,20 @@
     white-space: nowrap;
 }
 
+/* A section in no step, a question in no section (UC-015 A7, UC-011 A7): the panel is the only
+   place either appears, so the badge has to read as a state and not as a placement. */
+.designer-badge-unplaced {
+    color: var(--lumo-warning-text-color);
+    font-style: italic;
+}
+
+/* Where a validation finding landed (UC-007 BR-009). */
+.designer-panel-row-revealed {
+    outline: 2px solid var(--lumo-primary-color);
+    outline-offset: -2px;
+    border-radius: var(--lumo-border-radius-s);
+}
+
 .designer-node-menu {
     margin-inline-start: auto;
 }

@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Learn, before exporting, which problems would make the definition fail or behave unexpectedly at a deployed site, and which edits will apply retroactively there.  
 **Status:** Draft  
-**Requirements:** [FR-005, FR-022, FR-018, FR-024, FR-061, C-011, C-012](../requirements.md)
+**Requirements:** [FR-005, FR-022, FR-018, FR-024, FR-061, FR-062, C-011, C-012](../requirements.md)
 
 ## Preconditions
 
@@ -17,7 +17,7 @@
 ## Main Success Scenario
 
 1. The author opens the survey in the editor (UC-006) or chooses Export (UC-008).
-2. The system checks the current elements of the survey: every reference from one element to another resolves to a current element; every relationship has a downstream path that holds together (a step, a section mounted in it, a question assigned to that section; a question outside the upstream question's own section names its step and section) and a valid operator and action; every choice-type question refers to a select group that has at least one current item; every `{<TOKEN>}` a step name, section name or question text uses is filled by a rule that reaches it, and every token a rule carries, whatever its action, is a name a text could write between angle brackets and is used by a text it reaches; every step has at least one section and every section at least one question; ordering values are unique within their parent; the survey's initial display key names a current section assignment.
+2. The system checks the current elements of the survey: every reference from one element to another resolves to a current element; every relationship has a downstream path that holds together (a step, a section mounted in it, a question assigned to that section; a question outside the upstream question's own section names its step and section) and a valid operator and action; every choice-type question refers to a select group that has at least one current item; every `{<TOKEN>}` a step name, section name or question text uses is filled by a rule that reaches it, and every token a rule carries, whatever its action, is a name a text could write between angle brackets and is used by a text it reaches; every step has at least one section, every section is mounted in a step and holds at least one question, and every question is assigned to a section; ordering values are unique within their parent; the survey's initial display key names a current section assignment.
 3. The system classifies each finding as an error (blocks export) or a warning (informational).
 4. The system adds a retroactivity warning for each step or section whose name changed since the last export and for each question whose ontology assignment changed since the last export.
 5. The system displays the findings in the validation panel, each naming where in the survey its element sits and, where an element can be opened, linked to it.
@@ -157,6 +157,9 @@ element does not live on the board:
 
 - a rule opens the designer with the rule's *target* selected and the rule's own editor open over
   it, which is where the token, the operator and the action are corrected;
+- a section in no step, or a question in no section, opens the designer and reveals the element in
+  the drawer's Sections or Questions panel (UC-015 A7, UC-011 A7), because the board draws only
+  what a step or a card holds;
 - a finding about an ontology tag or one of its assignments opens the survey's Reporting page
   (UC-023);
 - a finding about a missing or out-of-date translation opens the survey's Translations page
@@ -166,3 +169,26 @@ A finding with nothing to open — the survey has no steps, an option belongs to
 stays plain text. It is never a dead link: a finding is a link exactly when following it lands
 somewhere, so an element the designer cannot currently show (a retired one, which the board hides
 until Show removed is on) is reported without one.
+
+### BR-010: An element out of the structure is reported as out of the structure
+
+A section no step mounts, and a question no section assigns, are current elements of the survey:
+they export, they count, and every rule and tag that names them stays with them. What they are not
+is anywhere a respondent can arrive, and — before UC-015 A7 and UC-011 A7 — anywhere the author
+could see, which is how one survives an import unnoticed.
+
+Each is its own warning, named for what is actually wrong: *is not in any step* for a section, *is
+not in any section* for a question. A section that is in no step is not also reported as having no
+questions, because the emptiness is downstream of the real defect and fixing the mount is what a
+reader should be told to do.
+
+They are warnings, not errors (BR-001): the definition installs cleanly at a site and nothing about
+a deployed survey misbehaves. What it costs is a file carrying elements nothing shows.
+
+### BR-011: An element is named by something, never by nothing
+
+A finding names its element, so an element with no name — which an import can carry in — must still
+be named by something a reader can match against what the tool shows. A step, a section or a
+question whose name is blank is reported by its durable id (`Section '#1'`), the same fallback the
+Questions panel and the structure tree already use for a question with no short text. A finding
+never prints an empty name, and never prints `null`.

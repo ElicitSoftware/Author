@@ -21,8 +21,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Where a validation finding points (UC-007 BR-008, BR-009 / FR-061).
@@ -67,7 +69,14 @@ public class ValidationTargets {
 
     /** Resolves every finding of one survey against one reading of its structure. */
     public Resolver forSurvey(int surveyId) {
-        return new Resolver(surveyId, structure.tree(surveyId, false));
+        return new Resolver(surveyId, structure.tree(surveyId, false),
+                durableIds(structure.unplacedSections(surveyId)), durableIds(structure.unplacedQuestions(surveyId)));
+    }
+
+    private static Set<Integer> durableIds(List<StructureNode> nodes) {
+        Set<Integer> ids = new LinkedHashSet<>();
+        nodes.forEach(n -> ids.add(n.durableId()));
+        return ids;
     }
 
     /** One survey's structure, held while a panel of findings is rendered. */
@@ -75,10 +84,14 @@ public class ValidationTargets {
 
         private final int surveyId;
         private final SurveyStructureQuery.Tree tree;
+        private final Set<Integer> unplacedSections;
+        private final Set<Integer> unplacedQuestions;
 
-        Resolver(int surveyId, SurveyStructureQuery.Tree tree) {
+        Resolver(int surveyId, SurveyStructureQuery.Tree tree, Set<Integer> unplacedSections, Set<Integer> unplacedQuestions) {
             this.surveyId = surveyId;
             this.tree = tree;
+            this.unplacedSections = unplacedSections;
+            this.unplacedQuestions = unplacedQuestions;
         }
 
         public Optional<Target> of(ValidationIssue issue) {
@@ -87,9 +100,9 @@ public class ValidationTargets {
                 return Optional.empty();
             }
             return switch (issue.kind()) {
-                case "steps" -> element(StructureNode.Kind.STEP, id, DesignerAddress.STEP);
-                case "sections" -> element(StructureNode.Kind.SECTION, id, DesignerAddress.SECTION);
-                case "questions" -> element(StructureNode.Kind.QUESTION, id, DesignerAddress.QUESTION);
+                case "steps" -> element(StructureNode.Kind.STEP, id, DesignerAddress.STEP, Set.of());
+                case "sections" -> element(StructureNode.Kind.SECTION, id, DesignerAddress.SECTION, unplacedSections);
+                case "questions" -> element(StructureNode.Kind.QUESTION, id, DesignerAddress.QUESTION, unplacedQuestions);
                 case "steps_sections" -> assigned(StructureNode.Kind.SECTION, DesignerAddress.mount(id));
                 case "sections_questions" -> assigned(StructureNode.Kind.QUESTION, DesignerAddress.assignment(id));
                 case "relationships" -> rule(id);
@@ -101,10 +114,20 @@ public class ValidationTargets {
             };
         }
 
-        private Optional<Target> element(StructureNode.Kind kind, int durableId, String addressKind) {
+        /**
+         * An element's node, or — when the board holds none — the element itself if the survey still
+         * has it unplaced (UC-006 BR-003a). The address is the same either way: the designer selects
+         * the element where it is placed, and reveals it in the drawer panel when it is placed
+         * nowhere. An unplaced element has no path, and its message is what says so (BR-010).
+         */
+        private Optional<Target> element(StructureNode.Kind kind, int durableId, String addressKind, Set<Integer> unplaced) {
             StructureNode node = tree.find(kind, durableId, null);
-            return node == null ? Optional.empty()
-                    : Optional.of(Target.designer(new DesignerAddress(addressKind, durableId), containersOf(node)));
+            if (node == null) {
+                return unplaced.contains(durableId)
+                        ? Optional.of(Target.designer(new DesignerAddress(addressKind, durableId), List.of()))
+                        : Optional.empty();
+            }
+            return Optional.of(Target.designer(new DesignerAddress(addressKind, durableId), containersOf(node)));
         }
 
         private Optional<Target> assigned(StructureNode.Kind kind, DesignerAddress address) {
