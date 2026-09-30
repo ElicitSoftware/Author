@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Keeps {@code docs/ai/AUTHORING_FOR_AI.md} honest (UC-042, NFR-017).
+ * Keeps {@code docs/ai/AUTHORING_FROM_AI.md} honest (UC-042, NFR-017).
  *
  * <p>The document tells an AI agent how to write a {@code .elicit} definition without access to
  * this source tree, so anything in it that restates the code can go stale silently and the only
@@ -52,9 +52,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @QuarkusTest
 @QuarkusTestResource(PostgresTestResource.class)
-class AuthoringForAiDocTest {
+class AuthoringFromAiDocTest {
 
-    private static final Path DOC = Path.of("docs", "ai", "AUTHORING_FOR_AI.md");
+    private static final Path DOC = Path.of("docs", "ai", "AUTHORING_FROM_AI.md");
 
     @Inject
     SurveyDefinitionImporter importer;

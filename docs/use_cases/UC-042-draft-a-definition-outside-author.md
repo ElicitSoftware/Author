@@ -12,7 +12,7 @@
 
 ## Preconditions
 
-- The author has `docs/ai/AUTHORING_FOR_AI.md`, the AI authoring specification.
+- The author has `docs/ai/AUTHORING_FROM_AI.md`, the AI authoring specification.
 - The author has access to an AI session. Author itself need not be running, and the agent needs no access to this source tree or to any database.
 - To import the result afterwards, the author is signed in to Author with the `elicit_author` role.
 
