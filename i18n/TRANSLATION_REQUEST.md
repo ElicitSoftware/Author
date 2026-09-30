@@ -158,6 +158,10 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `importDefinitionView.retiredSkipped` | , {0} retired record(s) skipped | Import page · optional clause appended to the result sentence (keep the leading comma) | 40 | params: {0} = count |
 | `importDefinitionView.openInEditor` | Open in editor | Import page · primary button | 20 |  |
 | `importDefinitionView.importFailed` | Import failed: {0} | Import page · error paragraph | 80 | params: {0} = reason |
+| `importDefinitionView.validation` | Validation | Import page · heading of the validation findings shown after an import | 20 |  |
+| `importDefinitionView.validationClean` | No findings: this definition is ready to export. | Import page · paragraph when validation finds nothing in the imported definition | 70 |  |
+| `importDefinitionView.issue.error` | Error: {0} | Import page · validation list item | 100 | params: {0} = finding text identical |
+| `importDefinitionView.issue.warning` | Warning: {0} | Import page · validation list item | 100 | params: {0} = finding text |
 | `aiDraftView.pageTitle` | Draft with AI | AI draft page · browser tab title | 25 |  |
 | `aiDraftView.title` | Draft a survey with an AI agent | AI draft page · heading | 45 |  |
 | `aiDraftView.intro` | A survey can start from a draft written somewhere else. Take the specification to any AI session, describe the survey you want, and bring back the file it writes. Nothing leaves this installation on its own: you carry the specification out, and you carry the draft back. | AI draft page · intro paragraph | 350 |  |
@@ -942,6 +946,10 @@ importDefinitionView.recordsImported={0} records imported from {1}
 importDefinitionView.retiredSkipped=, {0} retired record(s) skipped
 importDefinitionView.openInEditor=Open in editor
 importDefinitionView.importFailed=Import failed: {0}
+importDefinitionView.validation=Validation
+importDefinitionView.validationClean=No findings: this definition is ready to export.
+importDefinitionView.issue.error=Error: {0}
+importDefinitionView.issue.warning=Warning: {0}
 aiDraftView.pageTitle=Draft with AI
 aiDraftView.title=Draft a survey with an AI agent
 aiDraftView.intro=A survey can start from a draft written somewhere else. Take the specification to any AI session, describe the survey you want, and bring back the file it writes. Nothing leaves this installation on its own: you carry the specification out, and you carry the draft back.

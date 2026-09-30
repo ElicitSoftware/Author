@@ -14,8 +14,12 @@ package com.elicitsoftware.author.flow;
 import com.elicitsoftware.author.ai.AuthoringSpecification;
 import com.elicitsoftware.author.definition.DefinitionException;
 import com.elicitsoftware.author.definition.ElicitFormat;
+import com.elicitsoftware.author.definition.ExportValidation;
 import com.elicitsoftware.author.definition.ImportResult;
 import com.elicitsoftware.author.definition.SurveyDefinitionImporter;
+import com.elicitsoftware.author.definition.ValidationIssue;
+import com.elicitsoftware.author.definition.ValidationTargets;
+import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.author.security.AuthorRoles;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.button.Button;
@@ -38,6 +42,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 
 import java.io.ByteArrayInputStream;
+import java.util.List;
 
 /** Import a {@code .elicit} definition into Author as a new working copy (UC-005). */
 @Route(value = "import", layout = MainLayout.class)
@@ -46,6 +51,16 @@ public class ImportDefinitionView extends VerticalLayout implements HasDynamicTi
 
     @Inject
     SurveyDefinitionImporter importer;
+
+    @Inject
+    SurveyService surveyService;
+
+    /** The same checks the editor and the export dialog run (UC-007), against what was just imported. */
+    @Inject
+    ExportValidation validation;
+
+    @Inject
+    ValidationTargets targets;
 
     /** Offered only by a build that packaged the AI authoring specification (UC-042 A5). */
     @Inject
@@ -110,6 +125,7 @@ public class ImportDefinitionView extends VerticalLayout implements HasDynamicTi
                     new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(imported.surveyId())))));
             open.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
             result.add(open);
+            reportFindings(imported.surveyId());
         } catch (DefinitionException e) {
             Paragraph p = new Paragraph(getTranslation("importDefinitionView.importFailed", e.getMessage()));
             p.addClassName(LumoUtility.TextColor.ERROR);
@@ -121,5 +137,32 @@ public class ImportDefinitionView extends VerticalLayout implements HasDynamicTi
             }
         }
         upload.clearFileList();
+    }
+
+    /**
+     * The validation findings for what was just imported (UC-005 step 6).
+     *
+     * <p>An import writes rows; it does not judge them. A definition drafted outside Author
+     * (UC-042) can be well-formed as a file and still hold a survey no respondent can use -- the
+     * case that prompted this is a placeholder naming its token as a bare word instead of
+     * {@code <NAME>}, which fills nothing, so the respondent silently reads the default and nothing
+     * about the file is wrong. Those checks already exist for export and for the editor's panel, and
+     * an author who has to open the editor to discover them learns too late; the findings are shown
+     * where the file lands, in the same words and with the same links.</p>
+     *
+     * <p>Findings never undo the import. The working copy is the point of a round trip -- an
+     * imported survey is meant to be opened and fixed here, and export is where an error blocks.</p>
+     */
+    private void reportFindings(int surveyId) {
+        List<ValidationIssue> issues = surveyService.find(surveyId)
+                .map(validation::validate)
+                .orElse(List.of());
+        result.add(new H3(getTranslation("importDefinitionView.validation")));
+        if (issues.isEmpty()) {
+            result.add(new Paragraph(getTranslation("importDefinitionView.validationClean")));
+            return;
+        }
+        result.add(new ValidationFindings(surveyId, issues, targets.forSurvey(surveyId), true,
+                "importDefinitionView.issue"));
     }
 }
