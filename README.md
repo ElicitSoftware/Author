@@ -127,10 +127,13 @@ Rules are drawn as arrows between elements, and the survey's **Reporting** page
 (`survey/{id}/reporting`) manages the reporting tags, dimensions and assignments that drive the
 site's dimensional reporting schema, with a preview of the tables and columns they produce; the
 same tags are reachable from a question's or section's menu on the board. The printable
-[author's manual](docs/manual/README.md) ships inside the image alongside that guide. For
-authoring away from the tool, [`docs/ai/AUTHORING_FROM_AI.md`](docs/ai/AUTHORING_FROM_AI.md)
-explains the survey model and the `.elicit` record format to an AI agent, so a draft
-definition can be written in an AI session and imported here. Work follows the AIUP workflow described
+[author's manual](docs/manual/README.md) ships inside the image alongside that guide. A survey can
+also start from an AI draft: [`docs/ai/AUTHORING_FROM_AI.md`](docs/ai/AUTHORING_FROM_AI.md)
+explains the survey model and the `.elicit` record format to an AI agent, and Author offers that
+same document on its **Draft with AI** page (`ai-draft`, beside **New survey** on the surveys
+list), so an author with no checkout can copy it into an AI session and import the draft it
+writes. Author sends nothing to any AI service — the author carries the specification out and the
+draft back. Work follows the AIUP workflow described
 in [`CLAUDE.md`](CLAUDE.md); use case specs live in [`docs/use_cases/`](docs/use_cases/).
 
 ## Related Guides

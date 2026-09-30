@@ -11,11 +11,13 @@ package com.elicitsoftware.author.flow;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.ai.AuthoringSpecification;
 import com.elicitsoftware.author.definition.DefinitionException;
 import com.elicitsoftware.author.definition.ElicitFormat;
 import com.elicitsoftware.author.definition.ImportResult;
 import com.elicitsoftware.author.definition.SurveyDefinitionImporter;
 import com.elicitsoftware.author.security.AuthorRoles;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
@@ -29,6 +31,7 @@ import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
+import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.streams.UploadHandler;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
@@ -44,8 +47,14 @@ public class ImportDefinitionView extends VerticalLayout implements HasDynamicTi
     @Inject
     SurveyDefinitionImporter importer;
 
+    /** Offered only by a build that packaged the AI authoring specification (UC-042 A5). */
+    @Inject
+    AuthoringSpecification authoringSpecification;
+
     final Upload upload;
     final Div result = new Div();
+    /** The other end of the round trip: where the draft being uploaded here comes from (UC-042). */
+    final Div draftOrigin = new Div(new RouterLink(getTranslation("importDefinitionView.aiDraftLink"), AiDraftView.class));
 
     public ImportDefinitionView() {
         add(new H2(getTranslation("importDefinitionView.title")));
@@ -56,7 +65,14 @@ public class ImportDefinitionView extends VerticalLayout implements HasDynamicTi
         upload.setAcceptedFileTypes(ElicitFormat.FILE_EXTENSION);
         upload.setMaxFileSize(ElicitFormat.MAX_FILE_BYTES);
         upload.setMaxFiles(1);
-        add(upload, result);
+        draftOrigin.setVisible(false); // until the injected bean says this build carries the specification
+        add(draftOrigin, upload, result);
+    }
+
+    @Override
+    protected void onAttach(AttachEvent attachEvent) {
+        super.onAttach(attachEvent);
+        draftOrigin.setVisible(authoringSpecification != null && authoringSpecification.isAvailable());
     }
 
     @Override

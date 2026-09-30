@@ -11,6 +11,7 @@ package com.elicitsoftware.author.flow;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.ai.AuthoringSpecification;
 import com.elicitsoftware.author.flow.designer.SurveyDesignerView;
 import com.elicitsoftware.author.i18n.ElicitI18NProvider;
 import com.elicitsoftware.author.i18n.LanguageSwitcher;
@@ -68,6 +69,10 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
 
     @Inject
     AuthorManual manual;
+
+    /** Offered only by a build that packaged the AI authoring specification (UC-042 A5). */
+    @Inject
+    AuthoringSpecification authoringSpecification;
 
     private Component drawerContent;
     private StructureNavigationTree structureTree;
@@ -156,6 +161,11 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
                 manualItem.setRouterIgnore(true);
                 manualItem.setOpenInNewBrowserTab(true);
                 nav.addItem(manualItem);
+            }
+            // The three ways to start a survey sit together: New survey lives on the Surveys page,
+            // and the other two are here, drafting before importing because that is their order.
+            if (authoringSpecification != null && authoringSpecification.isAvailable()) {
+                nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.aiDraft"), AiDraftView.class, VaadinIcon.MAGIC.create()));
             }
             nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.importDefinition"), ImportDefinitionView.class, VaadinIcon.UPLOAD.create()));
         }

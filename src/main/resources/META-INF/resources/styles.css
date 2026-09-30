@@ -166,3 +166,34 @@ html {
     padding: var(--lumo-space-m, 16px);
     background-color: var(--lumo-base-color, #fff);
 }
+
+/* Draft with AI (UC-042): a prose page, so it reads at the same column width as the guide. */
+.ai-draft {
+    max-width: 52rem;
+}
+
+.ai-draft ol {
+    line-height: var(--lumo-line-height-m);
+}
+
+.ai-draft-actions {
+    margin: var(--lumo-space-m) 0;
+}
+
+.ai-draft-download {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--lumo-space-xs);
+    color: var(--brand-primary, var(--lumo-primary-text-color));
+    text-decoration: none;
+}
+
+.ai-draft-download:hover {
+    text-decoration: underline;
+}
+
+.ai-draft-next {
+    margin-top: var(--lumo-space-l);
+    padding-top: var(--lumo-space-m);
+    border-top: 1px solid var(--brand-border, var(--lumo-contrast-10pct));
+}
