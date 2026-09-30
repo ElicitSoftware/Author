@@ -27,8 +27,9 @@ import java.util.Map;
 
 /**
  * Drawer panel "Questions" (UC-011 A6): every current question of the survey once, whatever the
- * number of sections it sits in. Its glyph drags into a card to reuse the question there; the row
- * menu offers the same through a picker, and Edit… opens the question dialog.
+ * number of sections it sits in — including the questions no section assigns at all, which the
+ * board cannot draw (UC-011 A7, UC-006 BR-003a). Its glyph drags into a card to reuse the question
+ * there; the row menu offers the same through a picker, and Edit… opens the question dialog.
  */
 public class QuestionBankPanel extends VerticalLayout {
 
@@ -47,9 +48,12 @@ public class QuestionBankPanel extends VerticalLayout {
         final NodeMenu menu;
         /** Lower-cased short text, question text and type, what the drawer search matches against. */
         final String searchText;
+        /** False for a question no section assigns: it exports, but nothing on the board holds it. */
+        final boolean placed;
 
         Row(SurveyDesignerView view, StructureNode node, int placements, String questionText) {
             this.node = node;
+            this.placed = placements > 0;
             this.searchText = (node.label() + " " + (questionText == null ? "" : questionText.replaceAll("<[^>]+>", " ")) + " "
                     + (node.detail() == null ? "" : node.detail())).toLowerCase(java.util.Locale.ROOT);
             addClassName("designer-panel-row");
@@ -64,11 +68,18 @@ public class QuestionBankPanel extends VerticalLayout {
             label.setText(node.label());
             label.addClassName("designer-panel-label");
             label.getElement().setAttribute("data-i18n-content", "");
-            uses.setText(placements == 1 ? getTranslation("questionBankPanel.uses.one") : getTranslation("questionBankPanel.uses.many", placements));
+            uses.setText(placed
+                    ? (placements == 1 ? getTranslation("questionBankPanel.uses.one") : getTranslation("questionBankPanel.uses.many", placements))
+                    : getTranslation("questionBankPanel.uses.none"));
             uses.addClassName("designer-badge");
+            uses.addClassName(placed ? "designer-badge-placed" : "designer-badge-unplaced");
             menu = new NodeMenu(getTranslation("questionBankPanel.menu.aria", node.label()));
             menu.item(getTranslation("questionBankPanel.menu.addToSection"), () -> view.addBankQuestionTo(node));
             menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node));
+            // UC-011 A7: an unassigned question has no assignment whose removal could retire it.
+            if (!placed) {
+                menu.item(getTranslation("common.remove"), () -> view.removeUnplaced(node));
+            }
             add(glyph, label, uses, menu);
         }
 
@@ -95,8 +106,9 @@ public class QuestionBankPanel extends VerticalLayout {
     final Span empty = new Span();
     private String query = "";
 
-    /** One row per question durable id; placements counted over the current tree. */
-    void refresh(SurveyDesignerView view, List<StructureNode> all, Map<Integer, String> textByQuestionId) {
+    /** One row per question durable id; placements counted over the current tree, unplaced questions last. */
+    void refresh(SurveyDesignerView view, List<StructureNode> all, List<StructureNode> unplaced,
+                 Map<Integer, String> textByQuestionId) {
         rows.removeAll();
         items.clear();
         Map<Integer, StructureNode> first = new LinkedHashMap<>();
@@ -108,6 +120,10 @@ public class QuestionBankPanel extends VerticalLayout {
             first.putIfAbsent(n.durableId(), n);
             placements.merge(n.durableId(), 1, Integer::sum);
         }
+        for (StructureNode n : unplaced) {
+            first.putIfAbsent(n.durableId(), n);
+            placements.putIfAbsent(n.durableId(), 0);
+        }
         for (StructureNode n : first.values()) {
             Row row = new Row(view, n, placements.get(n.durableId()), textByQuestionId.get(n.durableId()));
             items.add(row);
@@ -116,6 +132,23 @@ public class QuestionBankPanel extends VerticalLayout {
         empty.addClassName("designer-empty-hint");
         rows.add(empty);
         filter(query);
+    }
+
+    /**
+     * Brings one question into view (UC-007 BR-009): clears any search that hides it and marks the row.
+     * Returns false when the panel does not hold that question.
+     */
+    boolean reveal(int durableId) {
+        Row target = items.stream().filter(r -> r.node.durableId() == durableId).findFirst().orElse(null);
+        items.forEach(r -> r.removeClassName("designer-panel-row-revealed"));
+        if (target == null) {
+            return false;
+        }
+        search.clear();
+        filter("");
+        target.addClassName("designer-panel-row-revealed");
+        target.scrollIntoView();
+        return true;
     }
 
     /** Drawer search: show only the questions whose name, text or type contain {@code q}; returns the match count. */

@@ -37,6 +37,15 @@ public record StructureNode(Kind kind, Integer durableId, Integer assignmentId, 
         return kind.name().toLowerCase();
     }
 
+    /**
+     * What names an element that has no name of its own — its durable id (UC-007 BR-011). An import
+     * can carry in a step, a section or a question with a blank name, and the panels, the tree and
+     * the validation findings must still be able to point at it.
+     */
+    public static String nameOr(String name, Integer durableId) {
+        return name == null || name.isBlank() ? "#" + durableId : name;
+    }
+
     public String shortKey() {
         return elementKey == null ? "" : elementKey.toString().substring(0, 8);
     }

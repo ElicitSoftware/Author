@@ -63,6 +63,23 @@ public class DesignerToolbox extends VerticalLayout {
         return palette;
     }
 
+    /**
+     * Opens the Sections panel on one section and marks it (UC-007 BR-009). This is how a finding
+     * about a section no step mounts is followed: the board has nothing to select.
+     */
+    public boolean revealSection(int durableId) {
+        boolean found = sections.reveal(durableId);
+        sectionsPanel.setOpened(found || sectionsPanel.isOpened());
+        return found;
+    }
+
+    /** Opens the Questions panel on one question and marks it (UC-007 BR-009). */
+    public boolean revealQuestion(int durableId) {
+        boolean found = questions.reveal(durableId);
+        questionsPanel.setOpened(found || questionsPanel.isOpened());
+        return found;
+    }
+
     private static Details panel(String title, com.vaadin.flow.component.Component body, boolean opened) {
         Details d = new Details(title, body);
         d.addThemeVariants(DetailsVariant.SMALL);

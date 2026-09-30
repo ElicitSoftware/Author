@@ -11,13 +11,21 @@ package com.elicitsoftware.author.flow;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.survey.StructureNode;
+import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.router.RouterLink;
 import java.util.Map;
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +35,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @QuarkusTest
 @QuarkusTestResource(PostgresTestResource.class)
 class SurveyEditorViewTest extends QuarkusBrowserlessTest {
+
+    @Inject
+    EntityManager em;
+
+    @Inject
+    SurveyStructureQuery structure;
 
     private SurveyEditorView open(String name) {
         Survey s = Survey.find("name", name).firstResult();
@@ -72,6 +86,46 @@ class SurveyEditorViewTest extends QuarkusBrowserlessTest {
         test(view.reporting).click();
         com.elicitsoftware.author.flow.reporting.ReportingView reporting = $(com.elicitsoftware.author.flow.reporting.ReportingView.class).single();
         assertEquals(view.survey.id, reporting.survey.id, "UC-023 step 1: the survey's Reporting page");
+    }
+
+    /** UC-007 steps 5-6 / FR-061: a finding is a link to its element and says where that element sits. */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "editor.author", roles = {"elicit_author"})
+    void aFindingLinksToItsElementAndSaysWhereItSits() {
+        Survey s = Survey.find("name", "AuthorFixture").firstResult();
+        StructureNode sectionC = structure.tree(s.id, false).all().stream()
+                .filter(n -> n.kind() == StructureNode.Kind.SECTION && "Fixture Section C".equals(n.label()))
+                .findFirst().orElseThrow();
+        em.createNativeQuery("UPDATE survey.sections_questions sq SET effective_to = now() FROM survey.questions q "
+                        + "WHERE sq.question_id = q.question_id AND q.short_text = 'FixtureQ5' AND sq.survey_id = ?1")
+                .setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        SurveyEditorView view = open("AuthorFixture");
+        RouterLink link = view.findings.getChildren().flatMap(Component::getChildren)
+                .filter(RouterLink.class::isInstance).map(RouterLink.class::cast)
+                .filter(l -> l.getText().contains("has no questions"))
+                .findFirst().orElseThrow(() -> new AssertionError("no link for the empty section: " + view.issues));
+
+        assertTrue(link.getHref().contains("/design"), link.getHref());
+        assertEquals("section:" + sectionC.durableId(),
+                link.getQueryParameters().orElseThrow().getSingleParameter("select").orElseThrow());
+        assertTrue(view.findings.getChildren().flatMap(Component::getChildren)
+                        .filter(Span.class::isInstance).map(Component::getElement)
+                        .anyMatch(e -> e.getText().contains("Fixture Step Two")),
+                "UC-007 BR-008: the finding names the step the section sits in");
+    }
+
+    @Test
+    @TestSecurity(user = "editor.author", roles = {"elicit_author"})
+    void aFindingWithNothingToOpenStaysPlainText() {
+        SurveyEditorView view = open("AuthorFixtureEmpty");
+        assertTrue(view.issues.stream().anyMatch(i -> "surveys".equals(i.kind())), view.issues.toString());
+        assertTrue(view.findings.getChildren().flatMap(Component::getChildren)
+                        .noneMatch(RouterLink.class::isInstance),
+                "UC-007 BR-009: a survey-wide finding has no element to open");
     }
 
     @Test

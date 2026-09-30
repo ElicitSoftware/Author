@@ -66,6 +66,15 @@
 2. If the target section already holds the question, the system refuses and explains.
 3. Use case continues at step 4.
 
+### A7: A question that is in no section
+
+**Trigger:** The survey holds a current question that no section assigns — an import carried it in, or its last assignment was removed while it was restored afterwards (step 1)  
+**Flow:**
+
+1. The system lists the question in the Questions panel like any other, marked as being in no section, and gives it the same Edit… and Add to section… actions plus Remove, since it has no assignment whose removal could retire it.
+2. Validation reports it (UC-007), and the finding links to it here, because the board cannot show a question no card holds.
+3. Use case continues at step 1.
+
 ### A5: Remove a question from a section
 
 **Trigger:** The author chooses Remove from this section on a row (step 1)  

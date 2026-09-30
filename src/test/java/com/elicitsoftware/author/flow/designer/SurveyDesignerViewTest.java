@@ -67,6 +67,9 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     @Inject
     RuleService rules;
 
+    @Inject
+    com.elicitsoftware.author.survey.SurveyStructureQuery structureQuery;
+
     private Survey fixture() {
         return Survey.find("name", "AuthorFixture").firstResult();
     }
@@ -491,5 +494,132 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         navigate(SurveysView.class);
         assertNull(find(StructureNavigationTree.class, layout()).all().stream().findFirst().orElse(null),
                 "UC-006 step 7: the drawer shows the application navigation again");
+    }
+
+    // ---- the address (UC-006 BR-003) --------------------------------------------------------
+
+    private SurveyDesignerView openAt(Survey s, String select) {
+        return UI.getCurrent().navigate(SurveyDesignerView.class,
+                new com.vaadin.flow.router.RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(s.id)),
+                com.vaadin.flow.router.QueryParameters.of(SurveyDesignerView.SELECT, select)).orElseThrow();
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anAddressSelectsAnElementByItsDurableId() {
+        Survey s = fixture();
+        StructureNode step = structureOf(s).roots().get(1);
+        SurveyDesignerView view = openAt(s, "step:" + step.durableId());
+        assertEquals(step, view.selected(), "UC-006 BR-003: the selection comes from the address");
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anAddressNamingAnAssignmentSelectsTheElementInThatContainer() {
+        Survey s = fixture();
+        StructureNode section = node(s, StructureNode.Kind.SECTION, "Fixture Section C");
+        StructureNode question = node(s, StructureNode.Kind.QUESTION, "FixtureQ4");
+
+        assertEquals(section, openAt(s, "ss:" + section.assignmentId()).selected());
+        SurveyDesignerView view = openAt(s, "sq:" + question.assignmentId());
+        assertEquals(question, view.selected());
+        assertEquals(question.assignmentId(), view.selected().assignmentId());
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anAddressNamingARuleOpensItsEditorOverTheTarget() {
+        Survey s = fixture();
+        Relationship rule = Relationship.find("surveyId", s.id).firstResult();
+        SurveyDesignerView view = openAt(s, "rule:" + rule.relationshipId);
+
+        assertEquals(node(s, StructureNode.Kind.QUESTION, "FixtureQ4"), view.selected(),
+                "UC-007 BR-009: the rule's target is selected under the editor");
+        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        assertTrue(dialog.isOpened(), "UC-007 BR-009: the rule's own editor is open");
+        dialog.close();
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anAddressThatNamesNothingSelectsNothing() {
+        Survey s = fixture();
+        assertNull(openAt(s, "question:999999").selected(), "UC-006 A2: no selection, not an error page");
+        assertNull(openAt(s, "nonsense").selected());
+        assertNull(openAt(s, "rule:999999").selected());
+    }
+
+    // ---- elements the board cannot draw (UC-015 A7, UC-011 A7) ------------------------------
+
+    /** Takes Section C out of every step without the cascade, the way an import can leave one. */
+    private void unmount(Survey s, StructureNode section) {
+        em.createNativeQuery("UPDATE survey.steps_sections SET effective_to = now() WHERE survey_id = ?1 AND section_id = ?2")
+                .setParameter(1, s.id).setParameter(2, section.durableId()).executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void theSectionsPanelHoldsASectionNoStepMounts() {
+        Survey s = fixture();
+        StructureNode sectionC = node(s, StructureNode.Kind.SECTION, "Fixture Section C");
+        unmount(s, sectionC);
+
+        SurveyDesignerView view = open(s);
+        assertTrue(view.lanes.stream().flatMap(l -> l.cards.stream())
+                        .noneMatch(c -> c.node().durableId().equals(sectionC.durableId())),
+                "the board draws only what a lane holds");
+        SectionBankPanel.Row row = view.toolbox().sections.items.stream()
+                .filter(r -> r.node().durableId().equals(sectionC.durableId())).findFirst().orElseThrow();
+        assertFalse(row.placed, "UC-015 A7: the panel marks it as being in no step");
+        assertNotNull(row.menu.find(row.getTranslation("common.remove")),
+                "UC-015 A7: no assignment to remove, so the element itself can be removed");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anAddressForAnUnplacedSectionRevealsItInThePanel() {
+        Survey s = fixture();
+        StructureNode sectionC = node(s, StructureNode.Kind.SECTION, "Fixture Section C");
+        unmount(s, sectionC);
+
+        SurveyDesignerView view = openAt(s, "section:" + sectionC.durableId());
+        assertNull(view.selected(), "nothing on the board to select");
+        assertTrue(view.toolbox().sectionsPanel.isOpened(), "UC-007 BR-009: the panel that does hold it is opened");
+        assertTrue(view.toolbox().sections.items.stream()
+                        .filter(r -> r.node().durableId().equals(sectionC.durableId()))
+                        .anyMatch(r -> r.hasClassName("designer-panel-row-revealed")),
+                "UC-007 BR-009: and the row is marked");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anUnplacedElementCanBeRemovedFromThePanel() {
+        Survey s = fixture();
+        StructureNode sectionC = node(s, StructureNode.Kind.SECTION, "Fixture Section C");
+        unmount(s, sectionC);
+
+        SurveyDesignerView view = open(s);
+        view.removeUnplaced(view.toolbox().sections.items.stream()
+                .filter(r -> r.node().durableId().equals(sectionC.durableId())).findFirst().orElseThrow().node());
+        com.vaadin.flow.component.confirmdialog.ConfirmDialog dialog =
+                $(com.vaadin.flow.component.confirmdialog.ConfirmDialog.class).single();
+        ComponentUtil.fireEvent(dialog, new com.vaadin.flow.component.confirmdialog.ConfirmDialog.ConfirmEvent(dialog, true));
+
+        assertTrue(view.toolbox().sections.items.stream().noneMatch(r -> r.node().durableId().equals(sectionC.durableId())),
+                "UC-015 A7: the element itself is retired, so the panel no longer lists it");
+    }
+
+    private com.elicitsoftware.author.survey.SurveyStructureQuery.Tree structureOf(Survey s) {
+        return structureQuery.tree(s.id, false);
+    }
+
+    private StructureNode node(Survey s, StructureNode.Kind kind, String label) {
+        return structureOf(s).all().stream().filter(n -> n.kind() == kind && label.equals(n.label()))
+                .findFirst().orElseThrow();
     }
 }

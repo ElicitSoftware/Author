@@ -1,0 +1,43 @@
+/*-
+ * ***LICENSE_START***
+ * Elicit Author
+ * %%
+ * Copyright (C) 2026 Elicit Software LLC
+ * %%
+ * PolyForm Noncommercial License 1.0.0
+ * <https://polyformproject.org/licenses/noncommercial/1.0.0>
+ * ***LICENSE_END***
+ */
+
+/*
+ * Validation findings (UC-007): the editor's validation panel and the export dialog's list.
+ * A finding carries its own severity color on the list item, so the link inherits it rather
+ * than turning link-blue — the severity is what the eye should catch first, and an underline
+ * is enough to say the text is a link.
+ */
+.validation-findings {
+    margin-block: var(--lumo-space-xs);
+    padding-inline-start: var(--lumo-space-l);
+}
+
+.validation-findings li {
+    margin-block: var(--lumo-space-xs);
+}
+
+.validation-finding-link {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+    cursor: pointer;
+}
+
+.validation-finding-link:hover,
+.validation-finding-link:focus-visible {
+    text-decoration-thickness: 2px;
+}
+
+.validation-finding-location {
+    margin-inline-start: var(--lumo-space-xs);
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+    font-size: var(--lumo-font-size-s);
+}

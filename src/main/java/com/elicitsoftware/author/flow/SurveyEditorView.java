@@ -14,6 +14,7 @@ package com.elicitsoftware.author.flow;
 import com.elicitsoftware.author.definition.ExportValidation;
 import com.elicitsoftware.author.definition.SurveyDefinitionExporter;
 import com.elicitsoftware.author.definition.ValidationIssue;
+import com.elicitsoftware.author.definition.ValidationTargets;
 import com.elicitsoftware.author.security.AuthorRoles;
 import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.model.Survey;
@@ -22,9 +23,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.ListItem;
 import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.html.UnorderedList;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -33,7 +32,6 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 
@@ -55,6 +53,9 @@ public class SurveyEditorView extends VerticalLayout implements BeforeEnterObser
     @Inject
     SurveyDefinitionExporter exporter;
 
+    @Inject
+    ValidationTargets targets;
+
     final H2 heading = new H2();
     final Paragraph summary = new Paragraph();
     final Paragraph attribution = new Paragraph();
@@ -67,6 +68,7 @@ public class SurveyEditorView extends VerticalLayout implements BeforeEnterObser
 
     Survey survey;
     List<ValidationIssue> issues = List.of();
+    ValidationFindings findings;
 
     public SurveyEditorView() {
         HorizontalLayout toolbar = new HorizontalLayout(design, reporting, translations, editDetails, exportButton);
@@ -79,7 +81,7 @@ public class SurveyEditorView extends VerticalLayout implements BeforeEnterObser
                 new com.vaadin.flow.router.RouteParameters(SURVEY_ID, String.valueOf(survey.id)))));
         exportButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         editDetails.addClickListener(e -> new SurveyMetadataDialog(surveyService, survey, saved -> load(saved.id)).open());
-        exportButton.addClickListener(e -> new ExportDialog(surveyService, exporter, survey, issues, saved -> load(saved.id)).open());
+        exportButton.addClickListener(e -> new ExportDialog(surveyService, exporter, survey, issues, targets.forSurvey(survey.id), saved -> load(saved.id)).open());
         heading.getElement().setAttribute("data-i18n-content", ""); // authored survey title
         add(heading, summary, attribution, toolbar, validationPanel);
     }
@@ -112,15 +114,12 @@ public class SurveyEditorView extends VerticalLayout implements BeforeEnterObser
         validationPanel.removeAll();
         validationPanel.add(new H3(getTranslation("surveyEditorView.validation")));
         if (issues.isEmpty()) {
+            findings = null;
             validationPanel.add(new Paragraph(getTranslation("surveyEditorView.readyToExport")));
         } else {
-            UnorderedList list = new UnorderedList();
-            issues.forEach(i -> {
-                ListItem li = new ListItem(getTranslation(i.isError() ? "surveyEditorView.issue.error" : "surveyEditorView.issue.warning", i.message()));
-                li.addClassName(i.isError() ? LumoUtility.TextColor.ERROR : LumoUtility.TextColor.WARNING);
-                list.add(li);
-            });
-            validationPanel.add(list);
+            // UC-007 step 5: every finding says where its element sits and opens it (FR-061).
+            findings = new ValidationFindings(survey.id, issues, targets.forSurvey(survey.id), true, "surveyEditorView.issue");
+            validationPanel.add(findings);
         }
     }
 }

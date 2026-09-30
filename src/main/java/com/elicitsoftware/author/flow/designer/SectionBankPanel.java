@@ -27,8 +27,9 @@ import java.util.Map;
 
 /**
  * Drawer panel "Sections" (UC-015 A6): every current section of the survey once, whatever the
- * number of steps it is mounted in. Its glyph drags into a lane to mount the section there (one
- * more assignment, not a copy); the row menu offers the same through a picker, and Edit… opens
+ * number of steps it is mounted in — including the sections no step mounts at all, which the board
+ * cannot draw (UC-015 A7, UC-006 BR-003a). Its glyph drags into a lane to mount the section there
+ * (one more assignment, not a copy); the row menu offers the same through a picker, and Edit… opens
  * the section dialog.
  */
 public class SectionBankPanel extends VerticalLayout {
@@ -48,8 +49,11 @@ public class SectionBankPanel extends VerticalLayout {
         final NodeMenu menu;
         /** Lower-cased name and description, what the drawer search matches against. */
         final String searchText;
+        /** False for a section no step mounts: it exports, but nothing on the board holds it. */
+        final boolean placed;
 
         Row(SurveyDesignerView view, StructureNode node, int mounts, String description) {
+            this.placed = mounts > 0;
             this.node = node;
             this.searchText = (node.label() + " " + (description == null ? "" : description)).toLowerCase(java.util.Locale.ROOT);
             addClassName("designer-panel-row");
@@ -64,11 +68,19 @@ public class SectionBankPanel extends VerticalLayout {
             label.setText(node.label());
             label.addClassName("designer-panel-label");
             label.getElement().setAttribute("data-i18n-content", "");
-            uses.setText(mounts == 1 ? getTranslation("sectionBankPanel.uses.one") : getTranslation("sectionBankPanel.uses.many", mounts));
+            uses.setText(placed
+                    ? (mounts == 1 ? getTranslation("sectionBankPanel.uses.one") : getTranslation("sectionBankPanel.uses.many", mounts))
+                    : getTranslation("sectionBankPanel.uses.none"));
             uses.addClassName("designer-badge");
+            uses.addClassName(placed ? "designer-badge-placed" : "designer-badge-unplaced");
             menu = new NodeMenu(getTranslation("sectionBankPanel.menu.aria", node.label()));
             menu.item(getTranslation("sectionBankPanel.menu.mountInStep"), () -> view.mountIn(node));
             menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node));
+            // UC-015 A7: an unplaced section has no assignment whose removal could retire it, so the
+            // only way to be rid of one is to remove the element itself.
+            if (!placed) {
+                menu.item(getTranslation("common.remove"), () -> view.removeUnplaced(node));
+            }
             add(glyph, label, uses, menu);
         }
 
@@ -95,8 +107,9 @@ public class SectionBankPanel extends VerticalLayout {
     final Span empty = new Span();
     private String query = "";
 
-    /** One row per section durable id; mounts counted over the current tree. */
-    void refresh(SurveyDesignerView view, List<StructureNode> all, Map<Integer, String> descriptionBySectionId) {
+    /** One row per section durable id; mounts counted over the current tree, unplaced sections last. */
+    void refresh(SurveyDesignerView view, List<StructureNode> all, List<StructureNode> unplaced,
+                 Map<Integer, String> descriptionBySectionId) {
         rows.removeAll();
         items.clear();
         Map<Integer, StructureNode> first = new LinkedHashMap<>();
@@ -108,6 +121,10 @@ public class SectionBankPanel extends VerticalLayout {
             first.putIfAbsent(n.durableId(), n);
             mounts.merge(n.durableId(), 1, Integer::sum);
         }
+        for (StructureNode n : unplaced) {
+            first.putIfAbsent(n.durableId(), n);
+            mounts.putIfAbsent(n.durableId(), 0);
+        }
         for (StructureNode n : first.values()) {
             Row row = new Row(view, n, mounts.get(n.durableId()), descriptionBySectionId.get(n.durableId()));
             items.add(row);
@@ -116,6 +133,23 @@ public class SectionBankPanel extends VerticalLayout {
         empty.addClassName("designer-empty-hint");
         rows.add(empty);
         filter(query);
+    }
+
+    /**
+     * Brings one section into view (UC-007 BR-009): clears any search that hides it and marks the row.
+     * Returns false when the panel does not hold that section.
+     */
+    boolean reveal(int durableId) {
+        Row target = items.stream().filter(r -> r.node.durableId() == durableId).findFirst().orElse(null);
+        items.forEach(r -> r.removeClassName("designer-panel-row-revealed"));
+        if (target == null) {
+            return false;
+        }
+        search.clear();
+        filter("");
+        target.addClassName("designer-panel-row-revealed");
+        target.scrollIntoView();
+        return true;
     }
 
     /** Drawer search: show only the sections whose name or description contain {@code q}; returns the match count. */

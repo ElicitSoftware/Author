@@ -12,6 +12,7 @@ package com.elicitsoftware.author.survey;
  */
 
 import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.Section;
 import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.Step;
@@ -26,7 +27,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Read model for the structure tree (UC-006): one query per table, labels resolved through
@@ -53,6 +57,49 @@ public class SurveyStructureQuery {
                 }
             }
             return out;
+        }
+
+        /**
+         * The node for an element, preferring the container the assignment names. A section mounted in
+         * two steps, or a question assigned to two sections, is two nodes; with no assignment named —
+         * or one this tree does not hold — the element's first place is returned.
+         */
+        public StructureNode find(StructureNode.Kind kind, Integer durableId, Integer assignmentId) {
+            return all().stream()
+                    .filter(n -> n.kind() == kind && Objects.equals(n.durableId(), durableId))
+                    .filter(n -> assignmentId == null || Objects.equals(n.assignmentId(), assignmentId))
+                    .findFirst()
+                    .orElseGet(() -> assignmentId == null ? null : find(kind, durableId, null));
+        }
+
+        /** The node an assignment created: the section in that step, or the question in that section. */
+        public StructureNode findByAssignment(StructureNode.Kind kind, Integer assignmentId) {
+            return assignmentId == null ? null : all().stream()
+                    .filter(n -> n.kind() == kind && Objects.equals(n.assignmentId(), assignmentId))
+                    .findFirst().orElse(null);
+        }
+
+        /**
+         * The element a rule points at — the innermost of its downstream path, in the mount the path
+         * names (UC-019 BR-001). A rule whose path no longer resolves has no node.
+         */
+        public StructureNode target(Relationship r) {
+            if (r == null) {
+                return null;
+            }
+            if (r.downstreamSqId != null) {
+                List<StructureNode> rows = all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION
+                        && Objects.equals(n.assignmentId(), r.downstreamSqId)).toList();
+                return rows.stream().filter(n -> n.parent() != null && Objects.equals(n.parent().assignmentId(), r.downstreamSsId))
+                        .findFirst().orElse(rows.isEmpty() ? null : rows.get(0));
+            }
+            if (r.downstreamSsId != null) {
+                return findByAssignment(StructureNode.Kind.SECTION, r.downstreamSsId);
+            }
+            if (r.downstreamStepId != null) {
+                return find(StructureNode.Kind.STEP, r.downstreamStepId, null);
+            }
+            return null;
         }
     }
 
@@ -97,13 +144,48 @@ public class SurveyStructureQuery {
             if (sectionNode == null || q == null) {
                 return;
             }
-            String label = q.shortText != null && !q.shortText.isBlank() ? q.shortText : plain(q.text);
+            String label = questionLabel(q);
             String detail = q.questionType == null ? "" : q.questionType.name;
             StructureNode n = new StructureNode(StructureNode.Kind.QUESTION, q.questionId, sq.sectionsQuestionId,
                     label, detail, sq.displayOrder, q.questionKey, sq.isRetired() || q.isRetired(), sectionNode);
             children.get(sectionNode).add(n);
         });
         return new Tree(roots, children);
+    }
+
+    /**
+     * Current sections no step mounts (UC-015 A7). They are part of the survey and they export, but
+     * the board draws only what a lane holds, so the Sections panel is where they are reachable
+     * (UC-006 BR-003a). The nodes have no parent and no assignment, which is exactly what they lack.
+     */
+    public List<StructureNode> unplacedSections(int surveyId) {
+        Set<Integer> mounted = StepsSections.<StepsSections>list("surveyId", surveyId).stream()
+                .filter(StructuralElement::isCurrent).map(ss -> ss.sectionId).collect(Collectors.toSet());
+        return Section.<Section>list("surveyId", surveyId).stream()
+                .filter(StructuralElement::isCurrent)
+                .filter(s -> !mounted.contains(s.sectionId))
+                .sorted(Comparator.comparing((Section s) -> s.displayOrder, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(s -> new StructureNode(StructureNode.Kind.SECTION, s.sectionId, null,
+                        StructureNode.nameOr(s.name, s.sectionId), s.description, s.displayOrder, s.sectionKey, false, null))
+                .toList();
+    }
+
+    /** Current questions no section assigns (UC-011 A7); the Questions panel is where they are reachable. */
+    public List<StructureNode> unplacedQuestions(int surveyId) {
+        Set<Integer> assigned = SectionsQuestion.<SectionsQuestion>list("surveyId", surveyId).stream()
+                .filter(StructuralElement::isCurrent).map(sq -> sq.questionId).collect(Collectors.toSet());
+        return Question.<Question>list("surveyId", surveyId).stream()
+                .filter(StructuralElement::isCurrent)
+                .filter(q -> !assigned.contains(q.questionId))
+                .map(q -> new StructureNode(StructureNode.Kind.QUESTION, q.questionId, null, questionLabel(q),
+                        q.questionType == null ? "" : q.questionType.name, null, q.questionKey, false, null))
+                .toList();
+    }
+
+    /** A question's short text, else its text with the markup taken out, else its durable id. */
+    private static String questionLabel(Question q) {
+        String label = q.shortText != null && !q.shortText.isBlank() ? q.shortText : plain(q.text);
+        return StructureNode.nameOr(label, q.questionId);
     }
 
     private static <E extends StructuralElement> Map<Integer, E> byDurable(List<E> rows, Function<E, Integer> durable, boolean includeRetired) {

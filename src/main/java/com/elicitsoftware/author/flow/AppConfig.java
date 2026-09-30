@@ -59,6 +59,7 @@ import java.nio.file.Paths;
 @StyleSheet("context://components/structure-navigation.css")
 @StyleSheet("context://components/debug-view.css")
 @StyleSheet("context://components/survey-designer.css")
+@StyleSheet("context://components/validation-findings.css")
 @StyleSheet("context://styles.css")
 @ApplicationScoped
 @Startup

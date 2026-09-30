@@ -70,6 +70,63 @@ class ExportValidationTest {
         assertTrue(issues.stream().noneMatch(ValidationIssue::isError));
     }
 
+    /** UC-007 BR-010: an element out of the structure is reported as out of the structure. */
+    @Test
+    @TestTransaction
+    void aSectionInNoStepIsReportedAsThatAndNotAlsoAsEmpty() {
+        Survey s = fixture();
+        unmountSectionC(s.id);
+        em.createNativeQuery("UPDATE survey.sections_questions sq SET effective_to = now() FROM survey.questions q "
+                        + "WHERE sq.question_id = q.question_id AND q.short_text = 'FixtureQ5' AND sq.survey_id = ?1")
+                .setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "sections".equals(i.kind())
+                && i.message().contains("Section 'Fixture Section C' is not in any step")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("Fixture Section C' has no questions")),
+                "BR-010: the emptiness is downstream of the real defect: " + issues);
+    }
+
+    @Test
+    @TestTransaction
+    void aQuestionInNoSectionIsReported() {
+        Survey s = fixture();
+        em.createNativeQuery("UPDATE survey.sections_questions sq SET effective_to = now() FROM survey.questions q "
+                        + "WHERE sq.question_id = q.question_id AND q.short_text = 'FixtureQ5' AND sq.survey_id = ?1")
+                .setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "questions".equals(i.kind())
+                && i.message().contains("FixtureQ5' is not in any section")), issues.toString());
+    }
+
+    /** UC-007 BR-011: a finding never prints an empty name, and never prints null. */
+    @Test
+    @TestTransaction
+    void anElementWithNoNameIsReportedByItsDurableId() {
+        Survey s = fixture();
+        unmountSectionC(s.id);
+        em.createNativeQuery("UPDATE survey.sections SET name = null WHERE survey_id = ?1 AND name = 'Fixture Section C'")
+                .setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> "sections".equals(i.kind()) && i.message().matches(".*Section '#\\d+' is not in any step.*")),
+                issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("null")), issues.toString());
+    }
+
+    private void unmountSectionC(int surveyId) {
+        em.createNativeQuery("UPDATE survey.steps_sections ss SET effective_to = now() FROM survey.sections sec "
+                        + "WHERE ss.section_id = sec.section_id AND sec.name = 'Fixture Section C' AND ss.survey_id = ?1")
+                .setParameter(1, surveyId).executeUpdate();
+    }
+
     @Test
     @TestTransaction
     void relationshipToARetiredQuestionAssignmentIsAnError() {
