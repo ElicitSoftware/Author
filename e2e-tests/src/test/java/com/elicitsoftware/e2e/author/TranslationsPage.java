@@ -65,10 +65,10 @@ public class TranslationsPage extends AuthorPageObject {
      * Every language tag the page offers (UC-043 step 2), in offer order.
      *
      * <p>This is {@code TranslationService.offerableLanguages}: the tags the survey publishes
-     * first, then every other language Elicit carries, never the base language. It is deliberately
-     * wider than the published set -- offering a language is what lets an author start one
-     * (UC-044) -- so a survey publishing two of the twenty Elicit carries offers all twenty. Use
-     * {@link #publishedLanguages()} for the survey's own set.</p>
+     * first, then the rest of {@code author.content.languages}, never the base language. Elicit
+     * carries English, Arabic and Latin American Spanish, so a survey based on English offers two
+     * -- and offers both whether or not it publishes them, because choosing one is how an author
+     * starts it (UC-044). Use {@link #publishedLanguages()} for the survey's own set.</p>
      */
     public List<String> languages() {
         return offeredLabels().stream().map(TranslationsPage::tagOf).toList();
@@ -91,9 +91,9 @@ public class TranslationsPage extends AuthorPageObject {
     /**
      * Chooses the language whose tag is {@code tag} and waits for the grid to reload.
      *
-     * <p>Types the tag first so the list is filtered down to a few items. The list is long enough
-     * that the scroller would otherwise be free to virtualize an item out of the DOM, and the
-     * filter is how a person picks from it anyway. The match is then made on the tag rather than
+     * <p>Types the tag first, which is how a person picks from this field and what keeps the click
+     * safe if Elicit ever carries enough languages for the scroller to virtualize one out of the
+     * DOM. The match is then made on the tag rather than
      * on the label, because the label carries the language's display name too -- and the item is
      * <em>clicked</em>, never committed with Enter: the field takes a custom value (UC-044), so
      * Enter on unmatched text would publish a new language rather than select an existing one.</p>

@@ -265,13 +265,15 @@ class CensusMultilingualE2ETest extends MultilingualTestBase {
             Recording.beat(USA, "the Translations page lists every translatable string, none translated");
             TranslationsPage page043 = new TranslationsPage(page);
             page043.waitUntilLoaded();
-            // The Language list offers every language Elicit carries, not just this survey's --
-            // choosing an unpublished one is how an author starts it (UC-044) -- so the assertion
-            // is on the ones it marks as published, which is the set the editor just declared.
+            // Two assertions, because the list means two things. What it offers is every content
+            // language Elicit carries (author.content.languages less the survey's own English),
+            // which is the whole point of curating that set: an author cannot start a language no
+            // site could render. What it marks as published is this survey's own set, which the
+            // editor has just declared. Here they coincide.
+            assertEquals(PUBLISHED, page043.languages(),
+                    "the Translations page should offer exactly the content languages Elicit carries");
             assertEquals(PUBLISHED, page043.publishedLanguages(),
-                    "the Translations page should show these two as the survey's published languages");
-            assertTrue(page043.languages().containsAll(PUBLISHED),
-                    "the published languages should also be among the offered ones");
+                    "the Translations page should show both of them as published");
             stringCount = page043.counts().total();
             assertTrue(stringCount > 100, "the census survey should have well over a hundred translatable strings,"
                     + " the page counts " + stringCount);
