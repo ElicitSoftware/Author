@@ -15,6 +15,7 @@ import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -50,6 +51,24 @@ class ImportDefinitionViewTest extends QuarkusBrowserlessTest {
         Button open = find(Button.class, view.result).withText(view.getTranslation("importDefinitionView.openInEditor")).single();
         assertTrue(open.isEnabled());
         assertEquals(1, Survey.count("name", "ElicitDesigner"));
+    }
+
+    /**
+     * UC-005 step 6: an import writes rows, it does not judge them. The same checks the editor and
+     * the export dialog run are shown where the file lands, so a draft that is well-formed as a file
+     * but holds a survey no respondent can use says so before anyone opens the editor.
+     */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "import.author", roles = {"elicit_author"})
+    void uploadedDefinitionIsValidatedInPlace() throws IOException {
+        ImportDefinitionView view = navigate(ImportDefinitionView.class);
+
+        view.handleUpload(Files.readAllBytes(Path.of("samples", "ElicitDesigner.elicit")), "ElicitDesigner.elicit");
+
+        assertTrue(find(H3.class, view.result).all().stream().map(H3::getText)
+                        .anyMatch(view.getTranslation("importDefinitionView.validation")::equals),
+                "the validation heading is shown after an import");
     }
 
     @Test

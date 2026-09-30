@@ -74,6 +74,22 @@ nothing either. Both are export errors. Markup belongs outside the braces:
 `<b>{<SUBJECT>|the subject}</b>`, never inside them. A name is at most ten
 characters, starts with a letter, and holds letters, digits and underscores only.
 
+**These are the two a draft gets wrong.** Both were in one real draft, on the same
+token, and everything else about the file was correct:
+
+- `DESTINATION` is eleven characters. It is the natural word, and it does not fit —
+  `survey.relationships.token` is `character varying(10)`, so the import refuses it
+  and names it. Shorten the name (`DEST`), not the question. Write a word you can
+  count, and count it.
+- `{DESTINATION|this destination}` names the token without its angle brackets. The
+  file imports, nothing about it is malformed, and the placeholder fills nothing:
+  every respondent reads "this destination" and no one finds out. Write
+  `{<DEST>|this destination}`.
+
+The one that costs least is reading your own rules back afterwards: for each rule
+with a `token`, find the text that names it and check the brackets are there and
+the spelling matches.
+
 ---
 
 ## 2. The file format
@@ -411,7 +427,7 @@ the option's `coded_value`, not its `display_text`. And question 1 is a `RADIO`
    - `initial_display_key` matches a `steps_sections` display key;
    - every `{<TOKEN>}` names its token in angle brackets and has a default or a
      rule that fills it, and every rule's `token` is that name alone, upper case,
-     without the brackets.
+     without the brackets — **count the characters, ten at most**.
 6. Say plainly what you left for the person to finish — reporting tags, tokens you
    were unsure about, anything you guessed.
 

@@ -11,7 +11,9 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.survey.Tokens;
 import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
@@ -27,9 +29,11 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -140,6 +144,62 @@ public class SurveyDefinitionImporterTest {
         DefinitionException ex = assertThrows(DefinitionException.class, () -> importer.importFile(of(file)));
         assertTrue(ex.getMessage().startsWith("Line "), ex.getMessage());
         assertEquals(0, Survey.count("surveyKey", key), "UC-005 BR-004: nothing left behind");
+    }
+
+    /** The sample with the first rule's token field (index 10) replaced by {@code token}. */
+    static String sampleWithToken(String token) throws IOException {
+        List<String> lines = Files.readAllLines(SAMPLE);
+        String prefix = "relationships: ";
+        for (int i = 0; i < lines.size(); i++) {
+            if (!lines.get(i).startsWith(prefix)) {
+                continue;
+            }
+            String[] f = lines.get(i).substring(prefix.length()).split("\\|", -1);
+            f[10] = token;
+            lines.set(i, prefix + String.join("|", f));
+            return String.join("\n", lines) + "\n";
+        }
+        throw new IllegalStateException("the sample carries no relationships record to rewrite");
+    }
+
+    /**
+     * FR-012: a token name is at most {@link Tokens#MAX_LENGTH}, which the editor enforces and the
+     * import did not. An over-long name reached {@code survey.relationships.token} and came back as
+     * Postgres' own {@code value too long for type character varying(10)} -- a line number and a
+     * column width, naming neither the token nor the limit. Only a definition drafted outside Author
+     * can carry one (UC-042); the editor refuses to save it.
+     */
+    @Test
+    void tokenLongerThanTheColumnIsRefusedByName() throws IOException {
+        DefinitionException ex = assertThrows(DefinitionException.class,
+                () -> importer.importFile(of(sampleWithToken("DESTINATION"))));
+        assertTrue(ex.getMessage().startsWith("Line "), ex.getMessage());
+        assertTrue(ex.getMessage().contains("DESTINATION"), "names the token: " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("at most " + Tokens.MAX_LENGTH), "names the limit: " + ex.getMessage());
+        assertFalse(ex.getMessage().contains("character varying"),
+                "the column's own error no longer reaches the author: " + ex.getMessage());
+    }
+
+    /**
+     * A name written as the reference, or in lower case, is stored the way the editor stores it
+     * (FR-012). The runtime keys a text's values on this column verbatim, so a token stored
+     * {@code <DEST>} would be asked for under a name it does not have and fill nothing.
+     */
+    @Test
+    @TestTransaction
+    void tokenWrittenAsAReferenceIsStoredAsItsNameAlone() throws IOException {
+        ImportResult r = importer.importFile(of(sampleWithToken("<dest>")));
+        List<Relationship> rules = Relationship.list("surveyId", r.surveyId());
+        assertTrue(rules.stream().anyMatch(rule -> "DEST".equals(rule.token)),
+                "stored canonically: " + rules.stream().map(rule -> String.valueOf(rule.token)).toList());
+    }
+
+    /** A name no placeholder could ever write between angle brackets fills nothing (BR-007). */
+    @Test
+    void tokenThatNoTextCouldNameIsRefused() throws IOException {
+        DefinitionException ex = assertThrows(DefinitionException.class,
+                () -> importer.importFile(of(sampleWithToken("1ST TRIP"))));
+        assertTrue(ex.getMessage().contains("angle brackets"), ex.getMessage());
     }
 
     @Test

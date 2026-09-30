@@ -11,6 +11,7 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.survey.Tokens;
 import com.elicitsoftware.author.survey.TranslatableFields;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -450,11 +451,44 @@ public class SurveyDefinitionImporter {
         q.setParameter(8, parseIntOrNull(f[7]));
         q.setParameter(9, parseIntOrNull(f[8]));
         q.setParameter(10, nullIfEmpty(f[9]));
-        q.setParameter(11, nullIfEmpty(f[10]));
+        q.setParameter(11, importedToken(f[10]));
         q.setParameter(12, nullIfEmpty(f[11]));
         q.setParameter(13, nullIfEmpty(f[12]));
         q.setParameter(14, nullIfEmpty(f[13]));
         q.executeUpdate();
+    }
+
+    /**
+     * The token a relationship carries, held to the same rule {@code RuleService} holds one an
+     * author types (FR-012).
+     *
+     * <p>Until this check existed the field went straight into {@code survey.relationships.token},
+     * which is {@code character varying(10)}, so an over-long name surfaced as the raw
+     * {@code value too long for type character varying(10)} from Postgres -- a line number and a
+     * column width, naming neither the token nor the limit. A definition drafted outside Author
+     * (UC-042) is where that comes from: the editor cannot produce one.</p>
+     *
+     * <p>Canonicalized first, as the editor does, so a draft that writes the name in lower case or
+     * as the reference {@code <DEST>} still imports and is stored the way Author stores it. The
+     * runtime keys a text's values on this column verbatim, so a token stored with its brackets is
+     * asked for under a name it does not have and fills nothing.</p>
+     */
+    private static String importedToken(String field) {
+        String written = nullIfEmpty(field);
+        if (written == null) {
+            return null;
+        }
+        String token = Tokens.canonical(written);
+        if (token.length() > Tokens.MAX_LENGTH) {
+            throw new DefinitionException("the rule's token '" + token + "' is " + token.length()
+                    + " characters; a token name is at most " + Tokens.MAX_LENGTH
+                    + ", the width of the column that carries it. Shorten it here and in every text that names it");
+        }
+        if (!Tokens.TOKEN_NAME.matcher(token).matches()) {
+            throw new DefinitionException("the rule's token '" + written + "' is not a name a text could write"
+                    + " between angle brackets, so no placeholder could ever name it");
+        }
+        return token;
     }
 
     private void insertReport(String[] f, Long surveyId) {
