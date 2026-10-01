@@ -28,8 +28,8 @@ for local development and testing, though any OIDC-compliant server works in pro
 
 ## Stack
 
-- Java 25, Quarkus 3.39.5, Maven build
-- Vaadin 25.2.7 (Flow, server-side UI)
+- Java 25, Quarkus 3.40.1 LTS, Maven build
+- Vaadin 25.3.0 (Flow, server-side UI)
 - Hibernate ORM with Panache (JPA) against a local `survey` database
 - PostgreSQL
 - OIDC / Keycloak authorization

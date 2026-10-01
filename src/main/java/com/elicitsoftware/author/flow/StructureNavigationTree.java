@@ -16,6 +16,7 @@ import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.treegrid.TreeGrid;
+import com.vaadin.flow.data.provider.hierarchy.HierarchicalDataProvider;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
 import com.vaadin.flow.data.provider.hierarchy.TreeDataProvider;
 import com.vaadin.flow.router.RouteParameters;
@@ -34,7 +35,7 @@ public class StructureNavigationTree extends VerticalLayout {
     final TreeGrid<StructureNode> grid = new TreeGrid<>();
     final Checkbox showRemoved = new Checkbox();
     private final TreeData<StructureNode> data = new TreeData<>();
-    private final TreeDataProvider<StructureNode> provider = new TreeDataProvider<>(data);
+    private final TreeDataProvider<StructureNode> provider = new TreeDataProvider<>(data, HierarchicalDataProvider.HierarchyFormat.NESTED);
 
     private final int surveyId;
     private final SurveyStructureQuery query;

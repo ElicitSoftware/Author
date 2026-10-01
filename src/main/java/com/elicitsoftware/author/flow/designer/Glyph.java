@@ -39,11 +39,11 @@ public class Glyph extends Span {
 
     /** Icon per {@code survey.question_types.name}; anything unknown falls back to a question mark. */
     static final Map<String, VaadinIcon> QUESTION_ICONS = Map.ofEntries(
-            Map.entry("TEXT", VaadinIcon.TEXT_INPUT),
+            Map.entry("TEXT", VaadinIcon.INPUT),
             Map.entry("TEXTAREA", VaadinIcon.PARAGRAPH),
             Map.entry("INTEGER", VaadinIcon.HASH),
             Map.entry("DOUBLE", VaadinIcon.CALC),
-            Map.entry("CHECKBOX", VaadinIcon.CHECK_SQUARE_O),
+            Map.entry("CHECKBOX", VaadinIcon.CHECK_SQUARE),
             Map.entry("CHECKBOX_GROUP", VaadinIcon.TASKS),
             Map.entry("RADIO", VaadinIcon.DOT_CIRCLE),
             Map.entry("COMBOBOX", VaadinIcon.COMBOBOX),
@@ -51,7 +51,7 @@ public class Glyph extends Span {
             Map.entry("DATE_PICKER", VaadinIcon.CALENDAR),
             Map.entry("DATE_TIME_PICKER", VaadinIcon.CALENDAR_CLOCK),
             Map.entry("TIME_PICKER", VaadinIcon.CLOCK),
-            Map.entry("EMAIL", VaadinIcon.ENVELOPE_O),
+            Map.entry("EMAIL", VaadinIcon.ENVELOPE),
             Map.entry("PASSWORD", VaadinIcon.PASSWORD),
             Map.entry("HTML", VaadinIcon.CODE),
             Map.entry("MODAL", VaadinIcon.MODAL));
@@ -79,7 +79,7 @@ public class Glyph extends Span {
 
     public static Glyph section() {
         Glyph g = new Glyph(Kind.SECTION, Translations.get("glyph.section"));
-        g.add(VaadinIcon.FOLDER_O.create());
+        g.add(VaadinIcon.FOLDER.create());
         return g;
     }
 
@@ -88,7 +88,7 @@ public class Glyph extends Span {
         String type = questionTypeName == null ? "" : questionTypeName.toUpperCase(Locale.ROOT);
         Glyph g = new Glyph(Kind.QUESTION, type.isEmpty() ? Translations.get("glyph.question")
                 : Translations.get("glyph.questionOfType", type.replace('_', ' ').toLowerCase(Locale.ROOT)));
-        g.add(QUESTION_ICONS.getOrDefault(type, VaadinIcon.QUESTION_CIRCLE_O).create());
+        g.add(QUESTION_ICONS.getOrDefault(type, VaadinIcon.QUESTION_CIRCLE).create());
         return g;
     }
 
@@ -103,7 +103,7 @@ public class Glyph extends Span {
                 g.setText("{T}");
                 yield g;
             }
-            default -> withIcon(new Glyph(Kind.RULE_SHOW, Translations.get("glyph.rule")), VaadinIcon.CONNECT_O);
+            default -> withIcon(new Glyph(Kind.RULE_SHOW, Translations.get("glyph.rule")), VaadinIcon.CONNECT);
         };
     }
 

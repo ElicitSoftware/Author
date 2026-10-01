@@ -41,7 +41,7 @@ public final class FieldHelp {
         boolean picker = field instanceof ComboBox || field instanceof MultiSelectComboBox
                 || field instanceof DatePicker || field instanceof DateTimePicker;
         if (field instanceof HasSuffix suffix && !picker) {
-            Icon icon = VaadinIcon.INFO_CIRCLE_O.create();
+            Icon icon = VaadinIcon.INFO_CIRCLE.create();
             icon.addClassName("field-info");
             Tooltip.forComponent(icon).withText(text);
             suffix.setSuffixComponent(icon);
