@@ -19,7 +19,7 @@
 1. The author chooses Manual in the application header.
 2. The system opens the author's manual in a new browser tab as a printable document.
 3. The system shows a title page naming the application, the version of the application the manual was built with, and the date that build was made.
-4. The author reads the manual: an orientation chapter that names the pieces of a survey, then one chapter per stage of the work — signing in, creating a survey, laying out steps and sections, adding questions, giving choice questions their lists, connecting questions with rules, tagging for reporting, checking the validation panel, and exporting the definition.
+4. The author reads the manual: an orientation chapter that names the pieces of a survey, then one chapter per stage of the work — signing in, creating a survey, laying out steps and sections, adding questions, giving choice questions their lists, connecting questions with rules, tagging for reporting, checking the validation panel, and exporting the definition — followed by deleting a survey (UC-047): the backup to take first, and why sites that applied an export are unaffected and can only be updated again from that backup.
 5. The system illustrates each stage with a screenshot of the screen the step describes, captioned and numbered, so that the author can match the instruction to what is on screen.
 6. The system repeats the version and the build date in the footer of every page.
 7. The author follows the manual, on screen or on paper, and builds a survey.

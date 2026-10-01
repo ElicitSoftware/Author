@@ -13,7 +13,7 @@ rectangle "Elicit Author" {
     usecase "UC-001\nAuthenticate via OIDC" as UC001
     usecase "UC-002\nRestrict Authoring Access" as UC002
 
-    ' Survey Definition Lifecycle (FR-001..FR-009)
+    ' Survey Definition Lifecycle (FR-001..FR-009, FR-065)
     usecase "UC-003\nCreate Survey" as UC003
     usecase "UC-004\nEdit Survey Metadata" as UC004
     usecase "UC-005\nImport Survey Definition" as UC005
@@ -22,6 +22,7 @@ rectangle "Elicit Author" {
     usecase "UC-008\nExport Survey Definition" as UC008
     usecase "UC-009\nRemove Structural Element" as UC009
     usecase "UC-010\nRestore Removed Element" as UC010
+    usecase "UC-047\nDelete Survey" as UC047
 
     ' Question Authoring (FR-010..FR-014)
     ' Token authoring (FR-012) and its preview (FR-013) are specified as part of UC-011 rather
@@ -156,6 +157,9 @@ author --> UC044
 author --> UC045
 author --> UC046
 
+' Survey deletion
+author --> UC047
+
 ' Relationships worth calling out explicitly
 UC008 ..> UC007 : <<include>>
 UC009 ..> UC007 : <<extend>>
@@ -181,6 +185,7 @@ UC044 ..> UC043 : <<include>> a language must be declared to be translated
 UC043 ..> UC008 : <<extend>> translations travel in the definition file
 UC043 ..> UC007 : <<extend>> stale and missing counts are export warnings
 UC009 ..> UC043 : <<extend>> retiring an element retires its translations
+UC005 ..> UC047 : <<extend>> re-importing the backup restores it
 
 ' Not yet specified: UC-017 (FR-017), UC-025 (FR-027), UC-026 (FR-028), UC-027 (FR-029) and
 ' UC-028 (FR-030) are declared here as planned scope. Their requirements are Open and they have no

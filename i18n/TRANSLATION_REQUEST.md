@@ -107,6 +107,16 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `surveysView.grid.releaseNote` | Release note | Surveys list · grid column header | 20 |  |
 | `surveysView.open` | Open | Surveys list · row button opening the survey overview | 12 |  |
 | `surveysView.editDetails` | Edit details | Surveys list · row button opening the metadata dialog | 15 |  |
+| `surveysView.delete` | Delete | Surveys list · small button in each row, opens the delete confirmation | 15 |  |
+| `deleteSurveyDialog.title` | Delete {0}? | Delete survey dialog · dialog title | 60 | params: {0} = survey name |
+| `deleteSurveyDialog.permanent` | This permanently deletes the survey and everything in it: steps, sections, questions, choice lists, rules, reporting tags and translations, removed elements included. It cannot be undone. | Delete survey dialog · paragraph | 250 |  |
+| `deleteSurveyDialog.exported` | This survey has been exported, last by {0}: {1}. Author holds the master copy. Sites that applied an export keep their copy, and deleting it here does not change them. To change those sites later, import the backup into Author, edit it and export again; a survey rebuilt from scratch cannot update them. | Delete survey dialog · paragraph for a survey already exported; Author stays (product name) | 450 | params: {0} = author name, {1} = release note |
+| `deleteSurveyDialog.neverExported` | This survey has never been exported, so no site has a copy of it. | Delete survey dialog · paragraph for a survey never exported | 120 |  |
+| `deleteSurveyDialog.advice` | Download a backup first. It is the only way to get the survey back: importing it restores the survey with the same keys. It holds the survey exactly as it stands, even with validation errors, and no site can install it. | Delete survey dialog · paragraph urging a backup before deleting | 260 |  |
+| `deleteSurveyDialog.backup` | Download backup | Delete survey dialog · primary button downloading a backup file of the survey | 30 |  |
+| `deleteSurveyDialog.confirmName` | Type {0} to confirm | Delete survey dialog · text field label; the author types the survey name exactly | 60 | params: {0} = survey name |
+| `deleteSurveyDialog.delete` | Delete survey | Delete survey dialog · destructive button, enabled once the name is typed | 20 |  |
+| `deleteSurveyDialog.deleted` | Survey {0} deleted | Surveys list · notification after a delete | 60 | params: {0} = survey name |
 | `surveyEditorView.pageTitle` | Survey | Survey overview · browser tab title | 20 |  |
 | `surveyEditorView.editDetails` | Edit details | Survey overview · toolbar button | 15 |  |
 | `surveyEditorView.export` | Export… | Survey overview · toolbar button, opens the export dialog (keep the ellipsis) | 15 |  |
@@ -235,6 +245,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `guideView.reportingTags.p1` | A reporting tag names a column of the report a site builds from the answers. Tag a question and its answers fill that column; tag a section as it appears in a step with a fixed value, and every respondent who reaches it is classified by that value. Tags that share a dimension share one table of values. Open a survey's Reporting page, or the 'Reporting tags…' item on a question or section, to manage them. Changing or removing an assigned tag is retroactive: answers already recorded at deployed sites are reclassified. | Guide page · paragraph | 500 |  |
 | `guideView.identity.h` | Identity and exporting | Guide page · section heading | 40 |  |
 | `guideView.identity.p1` | Every element gets a key the moment it is created and keeps it for life. Removing an element retires it rather than deleting it, so answers already recorded at a site keep their meaning. When the survey is ready you export a .elicit file; the Admin app installs it at a site the first time and updates it in place after that, matching elements by key. | Guide page · paragraph | 400 |  |
+| `guideView.identity.p2` | Deleting a whole survey, from the Surveys list, is the one thing that does remove rows, and it cannot be undone. Download the backup it offers first: importing that file brings the survey back with every key. Sites that applied an export are not touched; to change them later, import the backup, edit and export again. | Guide page · paragraph on deleting a whole survey | 420 |  |
 | `guideView.legend.h` | Glyph legend | Guide page · heading of the glyph legend | 20 |  |
 | `guideView.legend.step` | Step, numbered by its display order | Guide page · legend entry | 50 |  |
 | `guideView.legend.section` | Section | Guide page · legend entry | 20 |  |
@@ -896,6 +907,16 @@ surveysView.grid.lastEditedBy=Last edited by
 surveysView.grid.releaseNote=Release note
 surveysView.open=Open
 surveysView.editDetails=Edit details
+surveysView.delete=Delete
+deleteSurveyDialog.title=Delete {0}?
+deleteSurveyDialog.permanent=This permanently deletes the survey and everything in it: steps, sections, questions, choice lists, rules, reporting tags and translations, removed elements included. It cannot be undone.
+deleteSurveyDialog.exported=This survey has been exported, last by {0}: {1}. Author holds the master copy. Sites that applied an export keep their copy, and deleting it here does not change them. To change those sites later, import the backup into Author, edit it and export again; a survey rebuilt from scratch cannot update them.
+deleteSurveyDialog.neverExported=This survey has never been exported, so no site has a copy of it.
+deleteSurveyDialog.advice=Download a backup first. It is the only way to get the survey back: importing it restores the survey with the same keys. It holds the survey exactly as it stands, even with validation errors, and no site can install it.
+deleteSurveyDialog.backup=Download backup
+deleteSurveyDialog.confirmName=Type {0} to confirm
+deleteSurveyDialog.delete=Delete survey
+deleteSurveyDialog.deleted=Survey {0} deleted
 surveyEditorView.pageTitle=Survey
 surveyEditorView.editDetails=Edit details
 surveyEditorView.export=Export…
@@ -1024,6 +1045,7 @@ guideView.reportingTags.h=Reporting tags
 guideView.reportingTags.p1=A reporting tag names a column of the report a site builds from the answers. Tag a question and its answers fill that column; tag a section as it appears in a step with a fixed value, and every respondent who reaches it is classified by that value. Tags that share a dimension share one table of values. Open a survey's Reporting page, or the 'Reporting tags…' item on a question or section, to manage them. Changing or removing an assigned tag is retroactive: answers already recorded at deployed sites are reclassified.
 guideView.identity.h=Identity and exporting
 guideView.identity.p1=Every element gets a key the moment it is created and keeps it for life. Removing an element retires it rather than deleting it, so answers already recorded at a site keep their meaning. When the survey is ready you export a .elicit file; the Admin app installs it at a site the first time and updates it in place after that, matching elements by key.
+guideView.identity.p2=Deleting a whole survey, from the Surveys list, is the one thing that does remove rows, and it cannot be undone. Download the backup it offers first: importing that file brings the survey back with every key. Sites that applied an export are not touched; to change them later, import the backup, edit and export again.
 guideView.legend.h=Glyph legend
 guideView.legend.step=Step, numbered by its display order
 guideView.legend.section=Section

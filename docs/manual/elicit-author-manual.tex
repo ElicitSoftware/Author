@@ -140,7 +140,8 @@ Every element gets a key the moment it is created and keeps it for life. Removin
 \term{retires} it rather than deleting it, so answers already recorded at a site keep their
 meaning. When the survey is ready you \term{export} a \texttt{.elicit} file; the Admin app
 installs it at a site the first time and updates it in place after that, matching elements by
-key.
+key. Deleting a whole survey is the one thing that does remove rows; it has its own section at
+the end, because it cannot be undone.
 
 \begin{elicitnote}[Vocabulary]
 Author never uses ``publish'' for a state in the database — the verb is \emph{export}. The
@@ -425,6 +426,42 @@ exported, or start from one of the sample definitions.
 \end{elicitnote}
 
 %% ------------------------------------------------------------------ 11
+\section{Deleting a survey}
+\markboth{Deleting a survey}{}
+
+A survey you no longer need, or one you are about to replace from a file, can be deleted from the
+\ui{Surveys} list: choose \ui{Delete} on its row. Unlike removing an element, which retires it,
+this deletes the survey and everything in it --- steps, sections, questions, choice lists, rules,
+reporting tags and translations, removed elements included. Nothing in Author can bring it back.
+
+The confirmation therefore asks for three things:
+
+\begin{itemize}
+  \item \textbf{Take the backup.} \ui{Download backup} saves the whole survey exactly as it stands
+        --- even with validation errors --- to a \texttt{.elicit} file. \ui{Import definition} reads
+        it back with every key unchanged, which is the only way to undo a delete.
+  \item \textbf{Read what it says about sites.} If the survey has been exported, the confirmation
+        names who exported it last and the release note. Author holds the master copy; every site
+        that applied an export keeps its own and is not touched by the delete.
+  \item \textbf{Type the survey's name.} \ui{Delete survey} stays disabled until the name matches
+        exactly.
+\end{itemize}
+
+\begin{elicitnote}[Changing a site after a delete]
+A site matches every update by the keys in the file. To change a site's copy later, import the
+backup, edit it and export again. A survey rebuilt from scratch has new keys and would install at
+the site beside the old one rather than update it.
+\end{elicitnote}
+
+The backup is not an export: it records no release note, and it is marked as a draft
+(\texttt{ELICIT\_SURVEY\_DRAFT\_V1}), so the Admin app refuses it and no site can install it
+by mistake. Re-import it, check the validation panel, and export as usual before it goes
+anywhere.
+
+Author also refuses to delete a survey that has respondents in its own database: Author holds
+definitions, not answers, and recorded answers are never deleted from it.
+
+%% ------------------------------------------------------------------ 12
 \section{Where to look next}
 \markboth{Where to look next}{}
 

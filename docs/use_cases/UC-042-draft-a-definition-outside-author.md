@@ -98,7 +98,7 @@ Everything in the document that restates the implementation is verified against 
 
 ### BR-003: A draft is not a deployable definition
 
-A draft carries `ELICIT_SURVEY_DRAFT_V1`, which only Author reads. Author writes only `ELICIT_SURVEY_EXPORT_V1`, and does so only when an author exports. A draft therefore reaches a site only after a person has reviewed it here (C-022).
+A draft carries `ELICIT_SURVEY_DRAFT_V1`, which only Author reads. Author writes `ELICIT_SURVEY_EXPORT_V1` only when an author exports, and writes the draft marker itself only on the backup taken before a survey is deleted (UC-047 BR-006). A draft therefore reaches a site only after a person has reviewed it here (C-022).
 
 ### BR-004: A draft brings no identity
 

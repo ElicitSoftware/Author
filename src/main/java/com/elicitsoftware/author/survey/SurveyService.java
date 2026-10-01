@@ -188,6 +188,70 @@ public class SurveyService {
         return s;
     }
 
+    /**
+     * Whether the survey has ever been exported. A stored release note is the mark (UC-008 step 3
+     * makes it mandatory), the same test the purge guard applies (UC-009 A3).
+     */
+    public static boolean isExported(Survey s) {
+        return s.publishedBy != null && s.publishedComment != null;
+    }
+
+    /**
+     * Child tables in delete order: each table goes before the tables it references. Relationships
+     * reference assignments and steps; assignments reference questions, sections and steps;
+     * questions and items reference select groups. Metadata and translations carry durable ids
+     * with no constraint, so they can go first.
+     */
+    private static final List<String> SURVEY_CHILD_TABLES = List.of(
+            "translations", "metadata", "ontology",
+            "relationships", "sections_questions", "steps_sections", "questions",
+            "select_items", "select_groups", "sections", "steps",
+            "reports", "post_survey_actions");
+
+    /**
+     * UC-047: physically deletes the survey and every row that belongs to it, retired rows
+     * included. Unlike removal (UC-009), nothing is kept: the recovery path is an export taken
+     * beforehand, which imports back under the same survey and element keys (UC-005).
+     * <p>
+     * Deleting the survey here never reaches a site. Sites that applied an export keep their copy;
+     * re-importing the export is what lets Author update them again (BR-003).
+     *
+     * @param id the survey
+     * @throws AuthoringException when the survey is gone, or has respondents in this database
+     */
+    @Transactional
+    public void delete(int id) {
+        Survey s = Survey.findById(id);
+        if (s == null) {
+            throw new AuthoringException("Survey " + id + " no longer exists");
+        }
+        // BR-004. Author's database holds definitions, not responses; one that holds responses is
+        // a site's database, and recorded answers are never deleted from here.
+        Number respondents = (Number) em.createNativeQuery("SELECT count(*) FROM survey.respondents WHERE survey_id = ?1")
+                .setParameter(1, id).getSingleResult();
+        if (respondents.longValue() > 0) {
+            throw new AuthoringException("Survey '" + s.name + "' has " + respondents + " respondents in this database;"
+                    + " Author does not delete recorded answers");
+        }
+        // BR-005. The importer reuses a tag by (name, tag), so another survey's metadata may point at
+        // a tag this survey owns. Hand such a tag to that survey rather than delete it from under it.
+        em.createNativeQuery("""
+                        UPDATE survey.ontology o
+                           SET survey_id = (SELECT min(m.survey_id) FROM survey.metadata m
+                                             WHERE m.ontology_id = o.id AND m.survey_id <> ?1)
+                         WHERE o.survey_id = ?1
+                           AND EXISTS (SELECT 1 FROM survey.metadata m WHERE m.ontology_id = o.id AND m.survey_id <> ?1)
+                        """)
+                .setParameter(1, id).executeUpdate();
+        for (String table : SURVEY_CHILD_TABLES) {
+            em.createNativeQuery("DELETE FROM survey." + table + " WHERE survey_id = ?1").setParameter(1, id).executeUpdate();
+        }
+        s.delete();
+        renames.clear(id);
+        reportingChanges.clear(id);
+        em.flush();
+    }
+
     int nextDisplayOrder() {
         Integer max = em.createQuery("select max(s.displayOrder) from Survey s", Integer.class).getSingleResult();
         return max == null ? 1 : max + 1;

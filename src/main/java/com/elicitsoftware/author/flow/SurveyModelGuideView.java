@@ -99,7 +99,8 @@ public class SurveyModelGuideView extends VerticalLayout implements HasDynamicTi
                 new Paragraph(getTranslation("guideView.reportingTags.p1")));
 
         section(VaadinIcon.LINK.create(), getTranslation("guideView.identity.h"),
-                new Paragraph(getTranslation("guideView.identity.p1")));
+                new Paragraph(getTranslation("guideView.identity.p1")),
+                new Paragraph(getTranslation("guideView.identity.p2")));
 
         add(new H3(getTranslation("guideView.legend.h")));
         Div legend = new Div();

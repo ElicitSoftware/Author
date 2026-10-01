@@ -42,7 +42,8 @@ public final class ElicitFormat {
      * format, guided by {@code docs/ai/AUTHORING_FROM_AI.md}. Author imports it; Admin refuses it,
      * because Admin's readers gate on {@link #FORMAT_VERSION} as a substring and this deliberately
      * does not contain it. A draft therefore cannot reach a deployed site: it must be reviewed in
-     * Author and re-exported under {@link #FORMAT_VERSION} first. Author never writes this marker.
+     * Author and re-exported under {@link #FORMAT_VERSION} first. Author writes this marker only on
+     * the backup taken before a survey is deleted (UC-047 BR-006), for the same reason.
      */
     public static final String DRAFT_FORMAT_VERSION = "ELICIT_SURVEY_DRAFT_V1";
     public static final String REVISION_HEADER = "# survey_revision:";

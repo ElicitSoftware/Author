@@ -12,6 +12,7 @@ package com.elicitsoftware.author.flow;
  */
 
 import com.elicitsoftware.author.ai.AuthoringSpecification;
+import com.elicitsoftware.author.definition.SurveyDefinitionExporter;
 import com.elicitsoftware.author.security.AuthorRoles;
 import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.model.Survey;
@@ -20,6 +21,8 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.HasDynamicTitle;
@@ -29,7 +32,8 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 
 /**
- * Surveys list: create (UC-003), edit metadata (UC-004), open (UC-006), export (UC-008).
+ * Surveys list: create (UC-003), edit metadata (UC-004), open (UC-006), export (UC-008),
+ * delete (UC-047).
  * <p>
  * The toolbar carries both ways to start from nothing — the blank form and the AI draft
  * (UC-042) — because this is the page an author lands on, and a path nobody can see is a path
@@ -46,6 +50,10 @@ public class SurveysView extends VerticalLayout implements HasDynamicTitle {
 
     @Inject
     SurveyService surveyService;
+
+    /** UC-047 step 5: the backup offered by the delete dialog. */
+    @Inject
+    SurveyDefinitionExporter exporter;
 
     /** Offered only by a build that packaged the AI authoring specification (UC-042 A5). */
     @Inject
@@ -78,7 +86,9 @@ public class SurveysView extends VerticalLayout implements HasDynamicTitle {
             Button edit = new Button(getTranslation("surveysView.editDetails"), VaadinIcon.PENCIL.create(), e ->
                     new SurveyMetadataDialog(surveyService, s, saved -> refresh()).open());
             edit.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-            return new HorizontalLayout(open, edit);
+            Button delete = new Button(getTranslation("surveysView.delete"), VaadinIcon.TRASH.create(), e -> confirmDelete(s));
+            delete.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
+            return new HorizontalLayout(open, edit, delete);
         }).setHeader("").setAutoWidth(true);
         // A double click on a row goes straight to the designer; Open keeps the overview one click away.
         grid.addItemDoubleClickListener(e -> getUI().ifPresent(ui -> ui.navigate(
@@ -86,6 +96,16 @@ public class SurveysView extends VerticalLayout implements HasDynamicTitle {
                 new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(e.getItem().id)))));
         grid.setSizeFull();
         add(toolbar, grid);
+    }
+
+    /** UC-047: the guarded delete, with a backup one click away. */
+    void confirmDelete(Survey s) {
+        new DeleteSurveyDialog(surveyService, exporter, s,
+                () -> {
+                    Notification.show(getTranslation("deleteSurveyDialog.deleted", s.name))
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                    refresh();
+                }).open();
     }
 
     @Override
