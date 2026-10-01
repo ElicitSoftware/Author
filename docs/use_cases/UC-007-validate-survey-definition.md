@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Learn, before exporting, which problems would make the definition fail or behave unexpectedly at a deployed site, and which edits will apply retroactively there.  
 **Status:** Draft  
-**Requirements:** [FR-005, FR-022, FR-018, FR-024, FR-061, FR-062, C-011, C-012](../requirements.md)
+**Requirements:** [FR-005, FR-022, FR-018, FR-024, FR-061, FR-062, FR-064, C-011, C-012](../requirements.md)
 
 ## Preconditions
 
@@ -17,7 +17,7 @@
 ## Main Success Scenario
 
 1. The author opens the survey in the editor (UC-006) or chooses Export (UC-008).
-2. The system checks the current elements of the survey: every reference from one element to another resolves to a current element; every relationship has a downstream path that holds together (a step, a section mounted in it, a question assigned to that section; a question outside the upstream question's own section names its step and section) and a valid operator and action; every choice-type question refers to a select group that has at least one current item; every `{<TOKEN>}` a step name, section name or question text uses is filled by a rule that reaches it, and every token a rule carries, whatever its action, is a name a text could write between angle brackets and is used by a text it reaches; every step has at least one section, every section is mounted in a step and holds at least one question, and every question is assigned to a section; ordering values are unique within their parent; the survey's initial display key names a current section assignment.
+2. The system checks the current elements of the survey: every reference from one element to another resolves to a current element; every relationship has a downstream path that holds together (a step, a section mounted in it, a question assigned to that section; a question outside the upstream question's own section names its step and section) and a valid operator and action; every choice-type question refers to a select group that has at least one current item; every placeholder a step name, section name or question text uses is filled by a rule that reaches it, and every placeholder name a rule carries, whatever its action, is a name a text could write between angle brackets and is used by a text it reaches (BR-005..BR-007); every step has at least one section, every section is mounted in a step and holds at least one question, and every question is assigned to a section; every question outside the first step is reached by a Show or Repeat rule (BR-012); ordering values are unique within their parent; the survey's initial display key names a current section assignment.
 3. The system classifies each finding as an error (blocks export) or a warning (informational).
 4. The system adds a retroactivity warning for each step or section whose name changed since the last export and for each question whose ontology assignment changed since the last export.
 5. The system displays the findings in the validation panel, each naming where in the survey its element sits and, where an element can be opened, linked to it.
@@ -192,3 +192,37 @@ be named by something a reader can match against what the tool shows. A step, a 
 question whose name is blank is reported by its durable id (`Section '#1'`), the same fallback the
 Questions panel and the structure tree already use for a question with no short text. A finding
 never prints an empty name, and never prints `null`.
+
+### BR-012: Only the first step may stand without a rule
+
+A respondent's first sign-in builds every element no rule controls. The Survey runtime walks every
+step, section and question of the survey and creates and saves an answer row for each one that is
+not the downstream target of a rule, before the first page is shown. That is what keeps the first
+page fast: everything else is *just in time*, built by the rule that calls for it at the moment an
+answer calls for it. It also keeps the database free of rows no one will ever see: a respondent who
+abandons the survey in the first step or two has had only those steps written for them. An
+uncontrolled element in a later step defeats both — it is created and saved for every respondent at
+sign-in, whether or not they ever reach it, and a survey made of them loads and saves the whole
+survey before the first page.
+
+So only the **first step** — the step with the lowest display order — may hold elements without a
+rule. Every question in every later step must be *reached* by a Show or Repeat rule, where reached
+means what it means for tokens (BR-005, UC-019 BR-005): a rule reaches its target and everything
+inside it, so a question is reached by a rule on its step, on its section as mounted in that step,
+or on the question itself (named through that mount, or — for a question in the upstream question's
+own section — by itself). A section mounted in the first step and in a later step needs a rule for
+the later mount only. Text rules do not count: the runtime builds nothing for a Text rule, which
+only rewrites what another rule has built.
+
+The usual rule is **Field exists → Show**: an upstream question the respondent has already passed —
+often an HTML introduction on the previous step — with the Field exists operator holds as soon as
+that question has been presented, so the target is built when the respondent reaches the question
+rather than at sign-in. A step that should always follow is given one such rule on the step itself,
+which reaches everything in it.
+
+Each element nothing reaches is an **error** (BR-001), reported at the outermost level that is
+wholly unreached so that one missing rule is one finding: the step when nothing in it is reached, the
+section mount when the step has some rule but nothing reaches that mount or its questions, otherwise
+each unreached question. A step or section with no questions builds nothing and is not reported here
+(it is already a warning). The message names the remedy — add a Show rule, usually Field exists,
+targeting the element — and links to it (BR-009).

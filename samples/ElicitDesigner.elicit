@@ -10,7 +10,7 @@
 # steps_sections: 7
 # questions: 21
 # sections_questions: 21
-# relationships: 3
+# relationships: 7
 # reports: 0
 # post_survey_actions: 0
 # dimensions: 0
@@ -91,6 +91,10 @@ sections_questions: 6020|fece1e00-7e32-5efd-8515-2a696936228a|1020|7|3|0|||elici
 relationships: 1|154dac02-e886-5866-a427-c429e6101f23||6009||105||2|2|Repeat the step description block once per step||1|||0|||elicit-designer|Initial publication
 relationships: 2|19b294a3-4baf-5796-b14e-bb6bf9f00d71||6015|||6016|6|1|Ask for a report name only when a PDF report was requested||PDF|||0|||elicit-designer|Initial publication
 relationships: 3|d450ada2-7126-50c9-8d21-66b9a4b074dc||6015|||6017|6|1|Ask for an endpoint only when a webhook was requested||WEBHOOK|||0|||elicit-designer|Initial publication
+relationships: 4|b825e5a8-c401-54ef-88ba-4a384ba9c42e||6000|2|||5|1|Show Survey Identity once the welcome has been presented|||||0|||elicit-designer|Initial publication
+relationships: 5|8b2b8139-6a96-512e-b01a-12e06a80a732||6002|3|||5|1|Show Structure once the identity introduction has been presented|||||0|||elicit-designer|Initial publication
+relationships: 6|e00b56c2-4d1b-5954-8d44-d900f50d81a0||6008|4|||5|1|Show Delivery once the structure introduction has been presented|||||0|||elicit-designer|Initial publication
+relationships: 7|0e16869b-8d3f-5624-847b-daf14383d782||6014|5|||5|1|Show Generate once the delivery introduction has been presented|||||0|||elicit-designer|Initial publication
 translations: 1|8b53b8cf-2b24-5c13-a213-4ea58d298e67|surveys|b3a7c2e4-5d18-4f92-8a60-1c9e3f75d2b4|title|es-419|Diseñador de encuestas Elicit|8ed2381958525891146961186c8829ebb7adfcbe30650d5c44eae922ceddccbb|0|||elicit-designer|Initial publication
 translations: 2|7b96a596-73c7-50e2-98ec-ae03f27d97d3|steps|2e90b091-435e-5fac-acd6-5dae925679a6|name|es-419|Bienvenida|0e2226b5235f0ff94a276eb4d07a3bfea74b7e3b8b85e9efca6c18430f041bf8|0|||elicit-designer|Initial publication
 translations: 3|b8a0010a-b501-511f-ab8a-83291434c634|sections|a9a56304-b147-53c1-96cc-bd61575c32e8|name|es-419|Nombre y propósito|3d5f43178908123243cf9f52e7de2f46e54ff0eafa888a13f7b01ecebb8ceec6|0|||elicit-designer|Initial publication

@@ -48,7 +48,7 @@ class SurveyModelGuideViewTest extends QuarkusBrowserlessTest {
                 view.getTranslation("guideView.designer.h"),
                 view.getTranslation("guideView.designing.h"),
                 view.getTranslation("guideView.reportingTags.h"),
-                view.getTranslation("guideView.identity.h")), titles, "UC-029 step 2: the eight ideas, in this order");
+                view.getTranslation("guideView.identity.h")), titles, "UC-029 BR-004: the eight ideas, in this order");
 
         assertFalse(view.diagram.getAlt().orElse("").isBlank(), "UC-029 BR-003: the diagram has an accessible description");
         assertTrue(view.getChildren().anyMatch(c -> c.getClassNames().contains("survey-guide-legend")), "UC-029 step 3: glyph legend");

@@ -59,6 +59,25 @@ There are three actions:
 SHOW rule and it stays hidden until that rule holds. When several rules point at
 the same target, **all** of them must hold.
 
+**Only the first step stands without a rule.** When a respondent signs in, the
+survey builds and saves every element no rule controls, before the first page
+appears. Everything after that is built *just in time*, by the rule that calls for
+it, at the moment the respondent reaches the question the rule reads. This keeps
+the first page fast, and it keeps the database free of rows for questions no one
+sees: a respondent who abandons the survey in the first step or two has had only
+those steps written for them. So the first step (lowest `display_order`) may hold
+steps, sections and questions with no rule, and **every question in every later
+step must be reached by a SHOW or REPEAT rule** — one on its step, on its section
+as mounted in that step, or on the question itself. A rule reaches its target and
+everything inside it, so one rule on a step covers the whole step. TEXT rules do not
+count: they build nothing.
+
+The usual rule is **show if exists**: operator `FIELD_EXIST` with action `SHOW`,
+read from a question on an earlier step — an `HTML` introduction is a common
+choice. `FIELD_EXIST` holds as soon as that question has been presented, so a step
+that always follows is still built only when the respondent gets there. A step that
+is genuinely conditional already has its SHOW or REPEAT rule and needs nothing more.
+
 **Tokens are slots, not questions.** `{<SUBJECT>|the subject}` in a question's text
 is a placeholder. A TEXT rule fills it with an earlier answer, so a later question
 can name what the respondent actually said. Without a filling rule the respondent
@@ -299,6 +318,13 @@ can use and a draft they have to repair.
 12. **Every `<NAME>` in a placeholder must be a token some rule carries.** A phrase
     fills all or nothing, so one reference nothing defines stops the whole
     placeholder filling.
+13. **Every question after the first step must be built by a rule.** A SHOW or
+    REPEAT rule must reach it — targeting its step, its `steps_sections` mount, or
+    the question. Give each later step that has no condition of its own a
+    `FIELD_EXIST` → `SHOW` rule targeting the step (`downstream_step_id` only), read
+    from a question on an earlier step. A step nothing builds is reported once, on
+    the step; a section or question nothing builds inside a step that has other
+    rules is reported on that section or question.
 
 **Warnings — allowed, but a person will have to look at them:**
 
@@ -398,7 +424,9 @@ a description, no token, reference value `1` — the `coded_value` of "Yes" — 
 the empty upstream-value fields and the `0||||` tail.
 
 Note what makes it valid: the driving question is in step 1 and the target mount is
-in step 2, so the rule points forward. The upstream reference is
+in step 2, so the rule points forward. Step 2's only section is the rule's target,
+so the same rule is what builds step 2 just in time; without it, step 2 would need a
+`FIELD_EXIST` → `SHOW` rule of its own. The upstream reference is
 `sections_questions` id 1, not `questions` id 1 — they happen to coincide here,
 which is exactly why the distinction is easy to lose. The reference value matches
 the option's `coded_value`, not its `display_text`. And question 1 is a `RADIO`
@@ -423,6 +451,9 @@ the option's `coded_value`, not its `display_text`. And question 1 is a `RADIO`
    - every id referenced exists and appears earlier in the file;
    - every rule points forward, names one target, and reads from a
      `sections_questions` id;
+   - every step after the first is built by a SHOW or REPEAT rule — on the step,
+     on each of its mounts, or on each of its questions — normally `FIELD_EXIST` →
+     `SHOW` from an earlier question;
    - every choice question has a list with options;
    - `initial_display_key` matches a `steps_sections` display key;
    - every `{<TOKEN>}` names its token in angle brackets and has a default or a

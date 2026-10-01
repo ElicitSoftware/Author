@@ -23,6 +23,7 @@ import com.elicitsoftware.model.Step;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.OperatorType;
 import com.elicitsoftware.model.ActionType;
+import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.test.PostgresTestResource;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** UC-007 Validate Survey Definition. */
@@ -56,9 +58,13 @@ class ExportValidationTest {
         return Survey.find("name", "AuthorFixture").firstResult();
     }
 
+    /** The fixture's step two has no rule of its own; with one Field exists → Show rule the survey is clean (UC-007 BR-012). */
     @Test
+    @TestTransaction
     void populatedFixtureHasNoErrors() {
-        List<ValidationIssue> issues = validation.validate(fixture());
+        Survey s = fixture();
+        buildStepTwo(s);
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().noneMatch(ValidationIssue::isError), issues.toString());
     }
 
@@ -193,16 +199,20 @@ class ExportValidationTest {
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "steps".equals(i.kind()) && i.message().contains("has no sections")), issues.toString());
     }
 
+    /** The fixture's one rule; scoped by name so the step-two rule a test adds is left alone. */
+    private static final String CHILD_COUNT_RULE = "Show child count when children = Y";
+
     /** UC-019 BR-001 / UC-007 step 2: a rule whose downstream path does not hold together blocks export; a full path passes. */
     @Test
     @TestTransaction
     void ruleWithAnIncompletePathIsAnError() {
         Survey s = fixture();
+        buildStepTwo(s);
         Question q5 = Question.find("shortText = ?1 and effectiveTo = ?2", "FixtureQ5", StructuralElement.SENTINEL).firstResult();
         SectionsQuestion sq5 = SectionsQuestion.find("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", s.id, q5.questionId, StructuralElement.SENTINEL).firstResult();
         // The fixture rule reads FixtureQ3 in Section B; point it at FixtureQ5 in Section C with no step or section named.
-        em.createNativeQuery("UPDATE survey.relationships SET downstream_sq_id = ?2, downstream_ss_id = NULL, downstream_step_id = NULL WHERE survey_id = ?1")
-                .setParameter(1, s.id).setParameter(2, sq5.sectionsQuestionId).executeUpdate();
+        em.createNativeQuery("UPDATE survey.relationships SET downstream_sq_id = ?2, downstream_ss_id = NULL, downstream_step_id = NULL WHERE survey_id = ?1 AND description = ?3")
+                .setParameter(1, s.id).setParameter(2, sq5.sectionsQuestionId).setParameter(3, CHILD_COUNT_RULE).executeUpdate();
         em.flush();
         em.clear();
         List<ValidationIssue> errors = validation.validate(Survey.findById(s.id)).stream().filter(ValidationIssue::isError).toList();
@@ -213,7 +223,8 @@ class ExportValidationTest {
         em.createNativeQuery("""
                 UPDATE survey.relationships r SET downstream_ss_id = ss.steps_sections_id, downstream_step_id = ss.step_id
                 FROM survey.steps_sections ss WHERE ss.survey_id = r.survey_id AND ss.section_id = ?2 AND r.survey_id = ?1
-                """).setParameter(1, s.id).setParameter(2, sq5.sectionId).executeUpdate();
+                  AND r.description = ?3
+                """).setParameter(1, s.id).setParameter(2, sq5.sectionId).setParameter(3, CHILD_COUNT_RULE).executeUpdate();
         em.flush();
         em.clear();
         assertTrue(validation.validate(Survey.findById(s.id)).stream().noneMatch(ValidationIssue::isError), "a full path passes");
@@ -224,6 +235,7 @@ class ExportValidationTest {
     @TestTransaction
     void ruleWhoseTargetPrecedesItsOriginIsAnError() {
         Survey s = fixture();
+        buildStepTwo(s);
         Question q4 = Question.find("shortText = ?1 and effectiveTo = ?2", "FixtureQ4", StructuralElement.SENTINEL).firstResult();
         SectionsQuestion sq4 = SectionsQuestion.find("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", s.id, q4.questionId, StructuralElement.SENTINEL).firstResult();
         designer.moveQuestionWithinSection(s.id, sq4.sectionsQuestionId, 0);
@@ -401,6 +413,7 @@ class ExportValidationTest {
     @TestTransaction
     void aTokenFedByADisplayOnlyQuestionThatCarriesItsOwnValueIsAWarning() {
         Survey s = fixture();
+        buildStepTwo(s);
         setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
         htmlSourcedRuleOntoStepTwo(s, "{G1's|your} mother");
 
@@ -589,6 +602,7 @@ class ExportValidationTest {
     @TestTransaction
     void aLowerCaseTokenIsAWarningBecauseItStillFills() {
         Survey s = fixture();
+        buildStepTwo(s);
         setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
         plantToken(textRuleOntoStepTwo(s, "NAME"), "name");
 
@@ -612,4 +626,131 @@ class ExportValidationTest {
         assertTrue(issues.stream().noneMatch(i -> i.message().contains("carries the token")), issues.toString());
     }
 
+    // ---- UC-007 BR-012 / FR-064: only the first step may stand without a rule ------------------
+
+    /**
+     * The fixture leaves step two without a rule, so it would be built at sign-in. This gives it the usual
+     * one: Field exists on the welcome (FixtureQ1, an HTML question in step one) → Show step two.
+     */
+    private void buildStepTwo(Survey s) {
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf(s, "FixtureQ1").sectionsQuestionId;
+        draft.upstreamStepId = step(s, "Fixture Step One").stepId;
+        draft.downstreamStepId = step(s, "Fixture Step Two").stepId;
+        draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
+        draft.actionType = ActionType.find("name", "SHOW").firstResult();
+        rules.create(s.id, draft);
+        em.flush();
+        em.clear();
+    }
+
+    private SectionsQuestion assignmentOf(Survey s, String shortText) {
+        return SectionsQuestion.find("questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
+                shortText, s.id, StructuralElement.SENTINEL).firstResult();
+    }
+
+    private StepsSections mountOf(Survey s, String sectionName) {
+        Section section = Section.find("surveyId = ?1 and name = ?2 and effectiveTo = ?3", s.id, sectionName, StructuralElement.SENTINEL).firstResult();
+        return StepsSections.find("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", s.id, section.sectionId, StructuralElement.SENTINEL).firstResult();
+    }
+
+    /** A Field exists → Show rule from FixtureQ2 in step one, onto a mount and optionally a question in it. */
+    private void showRule(Survey s, StepsSections mount, Integer sqId) {
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf(s, "FixtureQ2").sectionsQuestionId;
+        draft.upstreamStepId = step(s, "Fixture Step One").stepId;
+        draft.downstreamStepId = mount.stepId;
+        draft.downstreamSsId = mount.stepsSectionsId;
+        draft.downstreamSqId = sqId;
+        draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
+        draft.actionType = ActionType.find("name", "SHOW").firstResult();
+        rules.create(s.id, draft);
+        em.flush();
+        em.clear();
+    }
+
+    private Step step(Survey s, String name) {
+        return Step.find("surveyId = ?1 and name = ?2 and effectiveTo = ?3", s.id, name, StructuralElement.SENTINEL).firstResult();
+    }
+
+    private Question newTextQuestion(Survey s, int sectionId, String shortText) {
+        Question q = new Question();
+        q.questionType = QuestionType.find("name", "TEXT").firstResult();
+        q.text = "Tell us more";
+        q.shortText = shortText;
+        Question created = designer.createQuestionIn(s.id, sectionId, q, 99);
+        em.flush();
+        em.clear();
+        return created;
+    }
+
+    private List<ValidationIssue> justInTimeErrors(Survey s) {
+        return validation.validate(Survey.findById(s.id)).stream()
+                .filter(i -> i.isError() && (i.message().contains("is not the first step") || i.message().contains("is not in the first step")))
+                .toList();
+    }
+
+    /** UC-007 BR-012: the first step stands without a rule; a later step nothing builds is one error, on the step. */
+    @Test
+    @TestTransaction
+    void aLaterStepNoShowOrRepeatRuleBuildsIsAnErrorOnTheStep() {
+        Survey s = fixture();
+        List<ValidationIssue> errors = justInTimeErrors(s);
+        assertEquals(1, errors.size(), errors.toString());
+        assertEquals("steps", errors.get(0).kind());
+        assertEquals(step(s, "Fixture Step Two").stepId, errors.get(0).durableId());
+        assertTrue(errors.get(0).message().contains("Field exists"), "the message names the usual remedy");
+    }
+
+    /** UC-007 BR-012: a Text rule builds nothing, so it does not stand in for a Show rule. */
+    @Test
+    @TestTransaction
+    void aTextRuleOnALaterStepDoesNotBuildIt() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        textRuleOntoStepTwo(s, "NAME");
+        List<ValidationIssue> errors = justInTimeErrors(s);
+        assertTrue(errors.size() == 1 && "steps".equals(errors.get(0).kind()), errors.toString());
+    }
+
+    /** UC-007 BR-012: a Show rule on the section as mounted in the step builds everything in it. */
+    @Test
+    @TestTransaction
+    void aShowRuleOnTheMountBuildsTheWholeSection() {
+        Survey s = fixture();
+        StepsSections c = mountOf(s, "Fixture Section C");
+        newTextQuestion(s, c.sectionId, "FixtureQ6");
+        showRule(s, mountOf(s, "Fixture Section C"), null);
+        assertTrue(justInTimeErrors(s).isEmpty(), justInTimeErrors(s).toString());
+    }
+
+    /** UC-007 BR-012: once a step has some rule, the finding moves in to the mount nothing reaches. */
+    @Test
+    @TestTransaction
+    void aSectionNothingReachesInAStepWithRulesIsAnErrorOnTheMount() {
+        Survey s = fixture();
+        Section draft = new Section();
+        draft.name = "Fixture Section D";
+        Section d = designer.createSectionIn(s.id, step(s, "Fixture Step Two").stepId, draft, 99);
+        newTextQuestion(s, d.sectionId, "FixtureQ6");
+        showRule(s, mountOf(s, "Fixture Section C"), null);
+        List<ValidationIssue> errors = justInTimeErrors(s);
+        assertEquals(1, errors.size(), errors.toString());
+        assertEquals("steps_sections", errors.get(0).kind());
+        assertEquals(mountOf(s, "Fixture Section D").stepsSectionsId, errors.get(0).durableId());
+    }
+
+    /** UC-007 BR-012: a rule on one question of a section leaves its neighbors to be reported one by one. */
+    @Test
+    @TestTransaction
+    void aQuestionNothingReachesBesideOneThatIsReachedIsAnErrorOnTheQuestion() {
+        Survey s = fixture();
+        StepsSections c = mountOf(s, "Fixture Section C");
+        newTextQuestion(s, c.sectionId, "FixtureQ6");
+        showRule(s, mountOf(s, "Fixture Section C"), assignmentOf(s, STEP_TWO_QUESTION).sectionsQuestionId);
+        List<ValidationIssue> errors = justInTimeErrors(s);
+        assertEquals(1, errors.size(), errors.toString());
+        assertEquals("sections_questions", errors.get(0).kind());
+        assertEquals(assignmentOf(s, "FixtureQ6").sectionsQuestionId, errors.get(0).durableId());
+    }
 }

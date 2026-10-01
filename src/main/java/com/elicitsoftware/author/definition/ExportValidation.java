@@ -47,7 +47,8 @@ import java.util.function.Function;
  * questions without options, tokens no rule fills and Text rules nothing uses (BR-005), rules whose token
  * is fed by a question that collects no answer (UC-019 BR-006), rules whose token is not a name a text
  * could write between angle brackets (BR-007), empty steps and sections, sections in no step and
- * questions in no section (BR-010), duplicate ordering. Errors block export; warnings do not.
+ * questions in no section (BR-010), questions outside the first step that no Show or Repeat rule builds
+ * (BR-012), duplicate ordering. Errors block export; warnings do not.
  * Read-only (UC-007 BR-004).
  */
 @ApplicationScoped
@@ -162,6 +163,7 @@ public class ExportValidation {
             board.problem(r).ifPresent(p -> issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " points backwards: " + p)));
         }
         checkTokens(issues, steps, sections, questions, stepsSections, sectionsQuestions, relationships, board);
+        justInTime(issues, steps, sections, questions, stepsSections, sectionsQuestions, relationships, board);
         for (Step s : steps.values()) {
             if (!stepsWithSections.contains(s.stepId)) {
                 issues.add(ValidationIssue.warning("steps", s.stepId,
@@ -207,6 +209,115 @@ public class ExportValidation {
         // the site -- but they should be reminded once more before the file leaves Author.
         translationGaps(issues, survey);
         return issues;
+    }
+
+    /**
+     * UC-007 BR-012 / FR-064: only the first step may stand without a rule.
+     *
+     * <p>A respondent's first sign-in builds every element no rule controls -- {@code QuestionManager.init}
+     * walks every mount of the survey and saves an answer row for each question that is not a rule's
+     * downstream target -- so an uncontrolled question in a later step is created for every respondent
+     * before the first page, whether they ever reach it or not. Everything after the first step has to
+     * be built just in time, by a Show or Repeat rule. Text rules build nothing, so they do not count.</p>
+     *
+     * <p>A question is reached the way a token is (BR-005): by a rule on its step, on its section as
+     * mounted there, or on the question itself through that mount or, in the upstream question's own
+     * section, with no mount named. One missing rule is one finding: the step when nothing in it is
+     * reached, else the mount when nothing in that is, else the question.</p>
+     */
+    private static void justInTime(List<ValidationIssue> issues, Map<Integer, Step> steps, Map<Integer, Section> sections,
+                                   Map<Integer, Question> questions, Map<Integer, StepsSections> stepsSections,
+                                   Map<Integer, SectionsQuestion> sectionsQuestions, List<Relationship> relationships,
+                                   RuleOrdering.Board board) {
+        Step first = steps.values().stream()
+                .filter(s -> s.displayOrder != null)
+                .min(java.util.Comparator.comparing((Step s) -> s.displayOrder).thenComparing(s -> s.stepId))
+                .orElse(null);
+        if (first == null) {
+            return;
+        }
+        List<Relationship> builders = relationships.stream()
+                .filter(r -> r.actionType != null && BUILDING_ACTIONS.contains(r.actionType.name))
+                .toList();
+        Map<Integer, List<SectionsQuestion>> bySection = new HashMap<>();
+        for (SectionsQuestion sq : sectionsQuestions.values()) {
+            if (questions.containsKey(sq.questionId)) {
+                bySection.computeIfAbsent(sq.sectionId, k -> new ArrayList<>()).add(sq);
+            }
+        }
+        for (Step step : steps.values()) {
+            if (step.stepId.equals(first.stepId)) {
+                continue;
+            }
+            Map<StepsSections, List<SectionsQuestion>> unreached = new java.util.LinkedHashMap<>();
+            int total = 0;
+            int missing = 0;
+            for (StepsSections ss : stepsSections.values().stream()
+                    .filter(m -> m.stepId.equals(step.stepId) && sections.containsKey(m.sectionId))
+                    .sorted(java.util.Comparator.comparing(m -> m.sectionDisplayOrder == null ? java.math.BigDecimal.ZERO : m.sectionDisplayOrder))
+                    .toList()) {
+                List<SectionsQuestion> held = bySection.getOrDefault(ss.sectionId, List.of());
+                List<SectionsQuestion> out = held.stream().filter(sq -> !reaches(builders, ss, sq)).toList();
+                total += held.size();
+                missing += out.size();
+                unreached.put(ss, out);
+            }
+            if (missing == 0) {
+                continue;
+            }
+            if (missing == total) {
+                issues.add(ValidationIssue.error("steps", step.stepId, "Step '" + StructureNode.nameOr(step.name, step.stepId)
+                        + "' is not the first step and no Show or Repeat rule builds it, so every respondent's sign-in"
+                        + " creates it before the first page. " + remedy("the step")));
+                continue;
+            }
+            for (Map.Entry<StepsSections, List<SectionsQuestion>> e : unreached.entrySet()) {
+                StepsSections ss = e.getKey();
+                List<SectionsQuestion> out = e.getValue();
+                if (out.isEmpty()) {
+                    continue;
+                }
+                String where = " in step " + board.stepLabel(step.stepId);
+                if (out.size() == bySection.getOrDefault(ss.sectionId, List.of()).size()) {
+                    issues.add(ValidationIssue.error("steps_sections", ss.stepsSectionsId, "Section "
+                            + board.sectionLabel(ss.sectionId) + where + " is not in the first step and no Show or Repeat"
+                            + " rule builds it, so every respondent's sign-in creates it before the first page. "
+                            + remedy("the section in this step")));
+                    continue;
+                }
+                for (SectionsQuestion sq : out) {
+                    issues.add(ValidationIssue.error("sections_questions", sq.sectionsQuestionId, label(questions.get(sq.questionId))
+                            + " in section " + board.sectionLabel(ss.sectionId) + where + " is not in the first step and no"
+                            + " Show or Repeat rule builds it, so every respondent's sign-in creates it before the first page. "
+                            + remedy("the question, its section or its step")));
+                }
+            }
+        }
+    }
+
+    private static final Set<String> BUILDING_ACTIONS = Set.of("SHOW", "REPEAT");
+
+    private static String remedy(String target) {
+        return "Add a Show rule targeting " + target + ", usually Field exists on a question the respondent has already passed";
+    }
+
+    /** Whether a Show or Repeat rule reaches the question as it is shown in this mount (UC-019 BR-005). */
+    private static boolean reaches(List<Relationship> builders, StepsSections ss, SectionsQuestion sq) {
+        for (Relationship r : builders) {
+            if (r.downstreamSqId != null) {
+                if (r.downstreamSqId.equals(sq.sectionsQuestionId)
+                        && (r.downstreamSsId == null || r.downstreamSsId.equals(ss.stepsSectionsId))) {
+                    return true;
+                }
+            } else if (r.downstreamSsId != null) {
+                if (r.downstreamSsId.equals(ss.stepsSectionsId)) {
+                    return true;
+                }
+            } else if (ss.stepId.equals(r.downstreamStepId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void duplicateOrders(List<ValidationIssue> issues, String kind, List<Map.Entry<Integer, String>> keyed) {

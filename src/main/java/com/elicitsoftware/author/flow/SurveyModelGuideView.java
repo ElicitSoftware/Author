@@ -42,7 +42,7 @@ import java.util.List;
 @RolesAllowed(AuthorRoles.AUTHOR)
 public class SurveyModelGuideView extends VerticalLayout implements HasDynamicTitle {
 
-    /** Section headings in page order; tests assert the sequence UC-029 step 2 prescribes. */
+    /** Section headings in page order; tests assert the sequence UC-029 BR-004 prescribes. */
     final List<H3> headings = new ArrayList<>();
     final Image diagram = new Image("images/survey-model.png", getTranslation("guideView.diagram.alt"));
     final RouterLink surveysLink = new RouterLink(getTranslation("guideView.surveysLink"), SurveysView.class);
@@ -67,7 +67,8 @@ public class SurveyModelGuideView extends VerticalLayout implements HasDynamicTi
                         item(Glyph.question("TEXT"), "guideView.containers.question.term", "guideView.containers.question.desc")));
 
         section(VaadinIcon.LIST_OL.create(), getTranslation("guideView.order.h"),
-                new Paragraph(getTranslation("guideView.order.p1")));
+                new Paragraph(getTranslation("guideView.order.p1")),
+                new Paragraph(getTranslation("guideView.order.p2")));
 
         section(Glyph.rule("SHOW"), getTranslation("guideView.rules.h"),
                 new Paragraph(getTranslation("guideView.rules.p1")),

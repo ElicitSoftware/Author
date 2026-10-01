@@ -94,6 +94,14 @@ Steps run in order, sections run in order within their step, and questions run i
 their section. Unless a rule says otherwise, that display order is exactly what the respondent
 experiences.
 
+Only the first step is built when a respondent signs in. The survey creates and saves every
+element no rule controls before the first page appears, so everything after the first step is
+built \emph{just in time} instead — by a Show or Repeat rule, at the moment the respondent's
+answers call for it. That keeps the first page fast, and it keeps the database free of questions
+nobody sees: a respondent who abandons the survey in the first step or two has had only those
+steps saved. Every step, section and question after the first step therefore needs a rule that
+builds it (see \emph{Connecting questions with rules}).
+
 \subsection{The rules}
 
 A \term{rule} reads the answer to one upstream question, compares it with a reference value using
@@ -347,6 +355,17 @@ The target must come after the upstream question in the survey's order. Author r
 that points backwards and says so, because the respondent would reach the target before there is
 an answer to read. A count question therefore sits in the section \emph{before} the block it
 repeats — a section cannot repeat itself.
+\end{elicitcaution}
+
+\begin{elicitcaution}[Every step after the first needs a rule]
+Only the first step may hold elements without a rule. Every question in a later step has to be
+reached by a Show or Repeat rule — one on its step, on its section in that step, or on the
+question itself; a rule reaches its target and everything inside it. Text rules do not count,
+because they build nothing. For a step that always follows, the usual rule is \ui{Field exists}
+$\rightarrow$ \ui{Show} on the step, read from a question on an earlier step such as its
+introduction: it holds as soon as that question has been presented. Validation reports a step
+nothing builds as an error, and inside a step that has rules, each section or question nothing
+reaches; export waits until each has its rule.
 \end{elicitcaution}
 
 Rules are drawn on the board as arrows from the question that is read to the element that is
