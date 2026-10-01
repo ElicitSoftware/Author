@@ -606,14 +606,14 @@
     /* The board left-aligns its children, so a zone with no content would collapse to zero width
        and never be hit by a drag; stretching it makes it as wide as the widest step lane. */
     align-self: stretch;
-    height: 0.75rem;
+    height: 1.125rem;
     margin: 1px 0;
     border-radius: var(--lumo-border-radius-s);
     transition: background 120ms ease;
 }
 
 .designer-drop-zone-step {
-    height: 1rem;
+    height: 1.5rem;
     /* On an empty board nothing else gives the board a width, so the first step's zone sets its own. */
     min-width: 12rem;
 }
