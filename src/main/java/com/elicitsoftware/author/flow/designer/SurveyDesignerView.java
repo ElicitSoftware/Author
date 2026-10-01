@@ -193,6 +193,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         selected = address == null ? null : resolve(address);
         openAncestors(selected);
         render();
+        scrollToSelected();
         if (address != null && DesignerAddress.RULE.equals(address.kind())) {
             // UC-007 BR-009: an address naming a rule opens the rule's editor over its target.
             editRule(address.id());
@@ -459,6 +460,21 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
     /** From the drawer tree: the tree's nodes are equal by value to the board's. */
     public void selectFromTree(StructureNode node) {
         select(find(node.kind(), node.durableId(), node.assignmentId()));
+        scrollToSelected();
+    }
+
+    /**
+     * Bring the selected card into view. The board was just rebuilt, so this runs after the new
+     * DOM is attached; it looks only inside the board, since the preview tags its boxes alike.
+     */
+    private void scrollToSelected() {
+        if (selected == null) {
+            return;
+        }
+        board.getElement().executeJs(
+                "const el = this.querySelector('[data-node-id=\"' + $0 + '\"]');"
+                        + "if (el) el.scrollIntoView({block: 'nearest', inline: 'nearest', behavior: 'smooth'});",
+                anchorOf(selected));
     }
 
     public void toggleAndSelect(StructureNode node) {
