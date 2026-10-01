@@ -154,6 +154,13 @@ relevant only once implementation code exists.
 
 ## Working Agreements
 
+- **AIUP first, for every change.** Before writing or changing code, update the
+  artifacts it implements: the FR row in `docs/requirements.md`, the use case in
+  `docs/use_cases.puml`, and its spec under `docs/use_cases/` (`/use-case-spec`,
+  validated with the skill's `validate_use_case.py --strict`). Code and tests
+  then cite the spec's `UC-XXX` and `BR-XXX` IDs. A bug fix that changes no
+  specified behavior is the only exception; a fix that does gets its spec
+  corrected first.
 - Re-run upstream skills when requirements change so downstream artifacts
   (entity model, use-case specs) stay consistent.
 - Tests must be traceable to a use case — reference the `UC-XXX` ID in test
