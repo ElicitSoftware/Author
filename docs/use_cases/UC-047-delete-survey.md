@@ -6,7 +6,7 @@
 **Use Case Name:** Delete Survey  
 **Primary Actor:** Survey Author  
 **Goal:** Take a whole survey out of Author for good, once the author has had every chance to keep a backup, without affecting any site that already runs it.  
-**Status:** Draft  
+**Status:** Approved  
 **Requirements:** [FR-065, FR-003, FR-006, C-022](../requirements.md)
 
 ## Preconditions
