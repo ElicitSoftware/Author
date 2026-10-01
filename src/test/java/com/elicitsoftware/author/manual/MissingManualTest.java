@@ -67,7 +67,7 @@ class MissingManualTest extends QuarkusBrowserlessTest {
         assertEquals(0, find(Anchor.class, layout).withClassName("header-manual-link").all().size(),
                 "no manual in the image means no link in the header (UC-039 A1)");
         assertFalse(find(SideNavItem.class, layout).all().stream()
-                        .anyMatch(item -> "Manual (PDF)".equals(item.getLabel())),
+                        .anyMatch(item -> layout.getTranslation("mainLayout.nav.manual").equals(item.getLabel())),
                 "no manual in the image means no navigation entry (UC-039 A1)");
     }
 

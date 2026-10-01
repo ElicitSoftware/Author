@@ -24,7 +24,7 @@ import com.vaadin.flow.router.RouterLink;
  */
 public class DesignerToolbox extends VerticalLayout {
 
-    final RouterLink guide = new RouterLink("How surveys work", SurveyModelGuideView.class);
+    final RouterLink guide = new RouterLink(SurveyModelGuideView.class);
     final DesignerPalette palette;
     final ListPanel lists;
     final SectionBankPanel sections;
@@ -43,20 +43,41 @@ public class DesignerToolbox extends VerticalLayout {
         setPadding(false);
         setSpacing(false);
         setAlignItems(Alignment.STRETCH);
+        guide.setText(getTranslation("designer.guideLink"));
         guide.addClassName("designer-guide-link");
-        controlsPanel = panel("Controls", palette, true);
-        listsPanel = panel("Lists", lists, false);
-        sectionsPanel = panel("Sections", sections, false);
-        questionsPanel = panel("Questions", questions, false);
+        controlsPanel = panel(getTranslation("designerToolbox.controls"), palette, true);
+        listsPanel = panel(getTranslation("designerToolbox.lists"), lists, false);
+        sectionsPanel = panel(getTranslation("designerToolbox.sections"), sections, false);
+        questionsPanel = panel(getTranslation("designerToolbox.questions"), questions, false);
         // Each panel filters itself; the title shows the match count while a search is active.
-        lists.onFiltered((q, hits) -> listsPanel.setSummaryText(q.isEmpty() ? "Lists" : "Lists (" + hits + ")"));
-        sections.onFiltered((q, hits) -> sectionsPanel.setSummaryText(q.isEmpty() ? "Sections" : "Sections (" + hits + ")"));
-        questions.onFiltered((q, hits) -> questionsPanel.setSummaryText(q.isEmpty() ? "Questions" : "Questions (" + hits + ")"));
+        lists.onFiltered((q, hits) -> listsPanel.setSummaryText(q.isEmpty()
+                ? getTranslation("designerToolbox.lists") : getTranslation("designerToolbox.listsCount", hits)));
+        sections.onFiltered((q, hits) -> sectionsPanel.setSummaryText(q.isEmpty()
+                ? getTranslation("designerToolbox.sections") : getTranslation("designerToolbox.sectionsCount", hits)));
+        questions.onFiltered((q, hits) -> questionsPanel.setSummaryText(q.isEmpty()
+                ? getTranslation("designerToolbox.questions") : getTranslation("designerToolbox.questionsCount", hits)));
         add(guide, controlsPanel, listsPanel, sectionsPanel, questionsPanel);
     }
 
     public DesignerPalette palette() {
         return palette;
+    }
+
+    /**
+     * Opens the Sections panel on one section and marks it (UC-007 BR-009). This is how a finding
+     * about a section no step mounts is followed: the board has nothing to select.
+     */
+    public boolean revealSection(int durableId) {
+        boolean found = sections.reveal(durableId);
+        sectionsPanel.setOpened(found || sectionsPanel.isOpened());
+        return found;
+    }
+
+    /** Opens the Questions panel on one question and marks it (UC-007 BR-009). */
+    public boolean revealQuestion(int durableId) {
+        boolean found = questions.reveal(durableId);
+        questionsPanel.setOpened(found || questionsPanel.isOpened());
+        return found;
     }
 
     private static Details panel(String title, com.vaadin.flow.component.Component body, boolean opened) {

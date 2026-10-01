@@ -459,7 +459,7 @@
     white-space: nowrap;
 }
 
-/* Children indent to the centre; the wide LEFT padding is the gutter where a rule between two
+/* Children indent to the center; the wide LEFT padding is the gutter where a rule between two
    children (e.g. two sections in a step) routes, so the arrow stays inside the box on the left. */
 .designer-lane-body {
     display: flex;
@@ -540,8 +540,8 @@
     cursor: pointer;
 }
 
-/* A light tint of the primary colour, not --brand-hover: brands define that as a solid menu
-   colour (UM: dark blue) that would swallow the row's dark label, type and tag badge. */
+/* A light tint of the primary color, not --brand-hover: brands define that as a solid menu
+   color (UM: dark blue) that would swallow the row's dark label, type and tag badge. */
 .designer-row:hover,
 .designer-row:focus-visible {
     background: var(--brand-primary-10pct, var(--lumo-primary-color-10pct));
@@ -564,6 +564,20 @@
     font-size: var(--lumo-font-size-xs);
     color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
     white-space: nowrap;
+}
+
+/* A section in no step, a question in no section (UC-015 A7, UC-011 A7): the panel is the only
+   place either appears, so the badge has to read as a state and not as a placement. */
+.designer-badge-unplaced {
+    color: var(--lumo-warning-text-color);
+    font-style: italic;
+}
+
+/* Where a validation finding landed (UC-007 BR-009). */
+.designer-panel-row-revealed {
+    outline: 2px solid var(--lumo-primary-color);
+    outline-offset: -2px;
+    border-radius: var(--lumo-border-radius-s);
 }
 
 .designer-node-menu {
@@ -589,19 +603,37 @@
    shifts under the pointer once a drag starts; they only light up while dragging (UC-016). */
 .designer-drop-zone {
     flex: none;
-    height: 0.75rem;
+    /* The board left-aligns its children, so a zone with no content would collapse to zero width
+       and never be hit by a drag; stretching it makes it as wide as the widest step lane. */
+    align-self: stretch;
+    height: 1.125rem;
     margin: 1px 0;
     border-radius: var(--lumo-border-radius-s);
     transition: background 120ms ease;
 }
 
 .designer-drop-zone-step {
-    height: 1rem;
+    height: 1.5rem;
+    /* On an empty board nothing else gives the board a width, so the first step's zone sets its own. */
+    min-width: 12rem;
 }
 
-.designer-board.dragging .designer-drop-zone {
+/* Only what can take the payload lights up, and it lifts above the rule-arrow overlay (z-index 2)
+   for the duration: an arrow's hit band is 14px of stroke and its glyphs are themselves drag
+   handles, so an arrow crossing a target would otherwise take the drop. A flex item honours
+   z-index without being positioned, so no position is needed here.
+
+   A rule is the exception that proves the shape: it is dropped on the question it reads from
+   (UC-019), never on an insertion bar, so a rule drag lights the question rows instead. A retired
+   row refuses the drop, so it stays dim. Rows only exist inside an open section card, so a rule
+   drag over a board of collapsed cards has nothing to light -- expand first. */
+.designer-board.dragging-step .designer-drop-zone-step,
+.designer-board.dragging-section .designer-drop-zone-section,
+.designer-board.dragging-question .designer-drop-zone-question,
+.designer-board.dragging-rule .designer-row:not(.retired) {
     outline: 1px dashed var(--brand-primary-50pct, var(--lumo-primary-color-50pct));
     outline-offset: -1px;
+    z-index: 3;
 }
 
 .designer-drop-zone.v-drag-over-target {
@@ -627,7 +659,7 @@
 
 elicit-rule-arrows {
     position: absolute;
-    left: 0;
+    inset-inline-start: 0;
     top: 0;
     pointer-events: none;
     z-index: 2;

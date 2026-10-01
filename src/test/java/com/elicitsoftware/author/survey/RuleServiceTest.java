@@ -26,11 +26,13 @@ import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,6 +53,9 @@ class RuleServiceTest {
 
     @Inject
     DesignerService designer;
+
+    @Inject
+    EntityManager em;
 
     private Survey fixture() {
         return Survey.find("name", "AuthorFixture").firstResult();
@@ -154,8 +159,8 @@ class RuleServiceTest {
         draft.token = " NAME ";
         Relationship created = rules.create(s.id, draft);
         assertEquals("NAME", created.token);
-        assertEquals("exists {NAME}", RelationshipQuery.condition(created));
-        assertEquals("Replace {NAME}", RelationshipQuery.label(created, "ignored"), "TEXT reads Replace {token}");
+        assertEquals("exists <NAME>", RelationshipQuery.condition(created));
+        assertEquals("Replace <NAME>", RelationshipQuery.label(created, "ignored"), "TEXT reads Replace <TOKEN>");
     }
 
     /**
@@ -225,7 +230,7 @@ class RuleServiceTest {
         Relationship created = rules.create(s.id, draft);
         assertEquals("NAME", created.token, "the token is kept, trimmed, for a non-Text action");
         assertEquals("NAME", rules.current(s.id, created.relationshipId).orElseThrow().token, "and persisted");
-        assertEquals("exists {NAME}", RelationshipQuery.condition(created), "the tooltip shows the token for any action");
+        assertEquals("exists <NAME>", RelationshipQuery.condition(created), "the tooltip shows the token for any action");
         assertTrue(RelationshipQuery.label(created, "Q5").startsWith("Show "), "the label still reads the action");
 
         draft.token = "WAYTOOLONGTOKEN";
@@ -412,5 +417,139 @@ class RuleServiceTest {
         again.actionType = action("SHOW");
         again.referenceValue = "N";
         assertEquals("downstream", assertThrows(AuthoringException.class, () -> rules.create(s.id, again)).field());
+    }
+    // ---- UC-019 BR-006: a token source is a question that collects a value --------------------
+
+    /** FixtureQ1 is the fixture's HTML question (type_id 4), so it collects no answer. */
+    private Relationship displayOnlySourcedDraft(Survey s, String defaultUpstreamValue) {
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf("FixtureQ1").sectionsQuestionId;
+        draft.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
+        draft.operatorType = operator("FIELD_EXIST");
+        draft.actionType = action("TEXT");
+        draft.token = "S1";
+        draft.defaultUpstreamValue = defaultUpstreamValue;
+        return draft;
+    }
+
+    @Test
+    @TestTransaction
+    void create_tokenFedByADisplayOnlyQuestionWithNoValueOfItsOwn_isRefused() {
+        Survey s = fixture();
+
+        AuthoringException refused = assertThrows(AuthoringException.class,
+                () -> rules.create(s.id, displayOnlySourcedDraft(s, null)));
+
+        assertEquals("upstreamSqId", refused.field(), "the message points at the question the rule reads");
+        assertTrue(refused.getMessage().contains("HTML"), refused.getMessage());
+        assertTrue(refused.getMessage().contains("{<S1>}"), refused.getMessage());
+    }
+
+    @Test
+    @TestTransaction
+    void create_tokenFedByADisplayOnlyQuestionThatCarriesItsOwnValue_isAccepted() {
+        Survey s = fixture();
+
+        // The idiom the Family History Survey uses on its Mother and Father steps: the phrase is the
+        // rule's own constant, so it fills the slot without reading an answer. Warned about at export
+        // (UC-007 BR-005), not refused here -- the runtime does fill it.
+        Relationship created = rules.create(s.id, displayOnlySourcedDraft(s, "{G1's|your} mother"));
+
+        assertNotNull(created.relationshipId);
+        assertEquals("{G1's|your} mother", created.defaultUpstreamValue);
+    }
+
+    @Test
+    @TestTransaction
+    void create_tokenFedByAQuestionThatCollectsAnAnswer_isAccepted() {
+        Survey s = fixture();
+        Relationship draft = displayOnlySourcedDraft(s, null);
+        draft.upstreamSqId = assignmentOf("FixtureQ2").sectionsQuestionId; // TEXT
+
+        assertNotNull(rules.create(s.id, draft).relationshipId);
+    }
+
+    @Test
+    void upstreamCollectsAnswer_readsTheTypesDataTypeFlag() {
+        Survey s = fixture();
+
+        assertFalse(rules.upstreamCollectsAnswer(s.id, assignmentOf("FixtureQ1").sectionsQuestionId), "HTML");
+        assertTrue(rules.upstreamCollectsAnswer(s.id, assignmentOf("FixtureQ2").sectionsQuestionId), "TEXT");
+        assertTrue(rules.upstreamCollectsAnswer(s.id, assignmentOf("FixtureQ4").sectionsQuestionId), "INTEGER");
+        assertTrue(rules.upstreamCollectsAnswer(s.id, null), "an unresolvable upstream is reported by its own check");
+    }
+
+    // ---- UC-019 A2 / FR-012: a rule's token is a name, not a reference ------------------------
+
+    private Relationship tokenDraft(Survey s, String token) {
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf("FixtureQ2").sectionsQuestionId;
+        draft.downstreamSqId = assignmentOf("FixtureQ5").sectionsQuestionId;
+        draft.operatorType = operator("FIELD_EXIST");
+        draft.actionType = action("TEXT");
+        draft.token = token;
+        return draft;
+    }
+
+    /**
+     * Author#21: the runtime keys a text's values on this column verbatim, so a token stored
+     * {@code <S1>} is asked for as {@code S1} and fills nothing. An author who types the reference, or
+     * the name in lower case, is saved from it.
+     */
+    @Test
+    @TestTransaction
+    void create_storesTheNameAloneUpperCase() {
+        Survey s = fixture();
+        Relationship fromReference = rules.create(s.id, tokenDraft(s, " <s1> "));
+        assertEquals("S1", fromReference.token, "the brackets belong to the text that names the token");
+        assertEquals("S1", rules.current(s.id, fromReference.relationshipId).orElseThrow().token, "and persisted");
+        assertEquals("exists <S1>", RelationshipQuery.condition(fromReference));
+
+        assertEquals("S1", rules.create(s.id, tokenDraft(s, "s1")).token, "FR-012: upper case where it is authored");
+    }
+
+    /** The limit counts the name, not brackets that are about to be dropped. */
+    @Test
+    @TestTransaction
+    void create_measuresTheLengthOfTheNameNotItsBrackets() {
+        Survey s = fixture();
+        assertEquals("GRANDMAMA", rules.create(s.id, tokenDraft(s, "<GRANDMAMA>")).token,
+                "eleven characters as typed, nine of name");
+        assertEquals("token", assertThrows(AuthoringException.class,
+                () -> rules.create(s.id, tokenDraft(s, "WAYTOOLONGTOKEN"))).field(),
+                "the " + Tokens.MAX_LENGTH + "-character limit still holds for the name itself");
+    }
+
+    /** A phrase names a token as {@code <NAME>}, so a token no phrase could spell fills nothing. */
+    @Test
+    @TestTransaction
+    void create_refusesATokenNoTextCouldName() {
+        Survey s = fixture();
+        for (String bad : List.of("S 1", "{S1}", "Q#", "S-1", "1S")) {
+            AuthoringException e = assertThrows(AuthoringException.class, () -> rules.create(s.id, tokenDraft(s, bad)),
+                    "UC-019 A2 should refuse '" + bad + "'");
+            assertEquals("token", e.field(), bad);
+        }
+    }
+
+    /**
+     * An import writes the column directly (UC-005), so a bracketed token can exist. Every write path
+     * runs through validate, so touching such a rule at all repairs it.
+     */
+    @Test
+    @TestTransaction
+    void repoint_repairsATokenAnImportBroughtIn() {
+        Survey s = fixture();
+        Relationship created = rules.create(s.id, tokenDraft(s, "S1"));
+        em.createNativeQuery("UPDATE survey.relationships SET token = '<S1>' WHERE id = ?1")
+                .setParameter(1, created.id).executeUpdate();
+        em.flush();
+        em.clear();
+        assertTrue(Tokens.known(s.id).contains("S1"), "known offers the name, whatever the column holds");
+        assertFalse(Tokens.known(s.id).contains("<S1>"), "and never a second entry for the same slot");
+
+        rules.repoint(s.id, created.relationshipId, RuleService.End.SOURCE, "sq-" + assignmentOf("FixtureQ3").sectionsQuestionId);
+
+        assertEquals("S1", rules.current(s.id, created.relationshipId).orElseThrow().token);
     }
 }

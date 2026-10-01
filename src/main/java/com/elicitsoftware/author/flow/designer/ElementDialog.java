@@ -45,45 +45,55 @@ import java.util.function.Function;
  */
 public class ElementDialog<T> extends Dialog {
 
-    final TextField name = new TextField("Name");
-    final TextField dimensionName = new TextField("Dimension name");
-    final TextArea description = new TextArea("Description");
+    /** Translation keys of the element kind words ("step" / "section") used inside sentences. */
+    static final String KIND_STEP = "elementDialog.kind.step";
+    static final String KIND_SECTION = "elementDialog.kind.section";
+
+    final TextField name = new TextField();
+    final TextField dimensionName = new TextField();
+    final TextArea description = new TextArea();
     final Div renameWarning = new Div();
-    final Checkbox acknowledge = new Checkbox("I understand that the new name relabels reports already produced at deployed sites");
-    final Button save = new Button("Save");
-    final Button cancel = new Button("Cancel");
+    final Checkbox acknowledge = new Checkbox();
+    final Button save = new Button();
+    final Button cancel = new Button();
 
     private final Binder<T> binder = new Binder<>();
     private final Map<String, HasValidation> fieldsByProperty = Map.of("name", name, "dimensionName", dimensionName, "description", description);
     private final String originalName;
 
-    private ElementDialog(String what, T bean, String originalName,
+    private ElementDialog(String kindKey, T bean, String originalName,
                           Function<T, String> getName, BiConsumer<T, String> setName,
                           Function<T, String> getDimension, BiConsumer<T, String> setDimension,
                           Function<T, String> getDescription, BiConsumer<T, String> setDescription,
                           Function<T, T> persist, Consumer<T> onSaved) {
         boolean creating = originalName == null;
         this.originalName = originalName;
-        setHeaderTitle(creating ? "New " + what : "Edit " + what);
+        String what = getTranslation(kindKey);
+        setHeaderTitle(creating ? getTranslation("elementDialog.title.new", what) : getTranslation("elementDialog.title.edit", what));
         setModal(true);
+        name.setLabel(getTranslation("elementDialog.name"));
+        dimensionName.setLabel(getTranslation("elementDialog.dimensionName"));
+        description.setLabel(getTranslation("elementDialog.description"));
+        acknowledge.setLabel(getTranslation("elementDialog.acknowledge"));
+        save.setText(getTranslation("common.save"));
+        cancel.setText(getTranslation("common.cancel"));
 
         name.setRequiredIndicatorVisible(true);
         name.setMaxLength(255);
         dimensionName.setMaxLength(255);
-        dimensionName.setHelperText("Reporting dimension; defaults to the name. Changing it is a reporting change, not a rename.");
+        dimensionName.setHelperText(getTranslation("elementDialog.dimensionName.helper"));
         description.setMaxLength(2000);
 
-        FieldHelp.help(name, "The " + what + "'s name. Shown to respondents and used as the report label; renaming it is retroactive.");
-        FieldHelp.help(dimensionName, "The name this " + what + " reports under. Defaults to the name; change it to relabel reports without renaming.");
-        FieldHelp.help(description, "An optional note for authors. It is not shown to respondents.");
+        FieldHelp.help(name, getTranslation("elementDialog.help.name", what));
+        FieldHelp.help(dimensionName, getTranslation("elementDialog.help.dimensionName", what));
+        FieldHelp.help(description, getTranslation("elementDialog.help.description"));
 
-        binder.forField(name).asRequired("Name is required").bind(getName::apply, setName::accept);
+        binder.forField(name).asRequired(getTranslation("elementDialog.error.nameRequired")).bind(getName::apply, setName::accept);
         binder.forField(dimensionName).bind(getDimension::apply, setDimension::accept);
         binder.forField(description).bind(getDescription::apply, setDescription::accept);
         binder.readBean(bean);
 
-        renameWarning.setText("Renaming is retroactive: reports already produced at deployed sites will show the new name, "
-                + "not only reports produced from now on.");
+        renameWarning.setText(getTranslation("elementDialog.renameWarning"));
         renameWarning.addClassName("rename-warning");
         renameWarning.getElement().setAttribute("role", "alert");
         renameWarning.setVisible(false);
@@ -95,7 +105,7 @@ public class ElementDialog<T> extends Dialog {
         form.setColspan(description, 2);
         add(form, renameWarning, acknowledge);
         if (creating) {
-            add(new Paragraph("The " + what + " is placed where you dropped it; you can move it afterwards."));
+            add(new Paragraph(getTranslation("elementDialog.placed", what)));
         }
 
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -108,7 +118,8 @@ public class ElementDialog<T> extends Dialog {
             try {
                 T saved = persist.apply(bean);
                 close();
-                Notification.show((creating ? "Created " : "Updated ") + what + " '" + getName.apply(saved) + "'",
+                Notification.show(creating ? getTranslation("elementDialog.saved.created", what, getName.apply(saved))
+                                : getTranslation("elementDialog.saved.updated", what, getName.apply(saved)),
                         3000, Notification.Position.BOTTOM_START).addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 onSaved.accept(saved);
             } catch (AuthoringException ae) {
@@ -154,7 +165,7 @@ public class ElementDialog<T> extends Dialog {
             bean.dimensionName = existing.dimensionName;
             bean.description = existing.description;
         }
-        return new ElementDialog<>("step", bean, existing == null ? null : existing.name,
+        return new ElementDialog<>(KIND_STEP, bean, existing == null ? null : existing.name,
                 s -> s.name, (s, v) -> s.name = v,
                 s -> s.dimensionName, (s, v) -> s.dimensionName = v,
                 s -> s.description, (s, v) -> s.description = v,
@@ -171,7 +182,7 @@ public class ElementDialog<T> extends Dialog {
             bean.dimensionName = existing.dimensionName;
             bean.description = existing.description;
         }
-        return new ElementDialog<>("section", bean, existing == null ? null : existing.name,
+        return new ElementDialog<>(KIND_SECTION, bean, existing == null ? null : existing.name,
                 s -> s.name, (s, v) -> s.name = v,
                 s -> s.dimensionName, (s, v) -> s.dimensionName = v,
                 s -> s.description, (s, v) -> s.description = v,

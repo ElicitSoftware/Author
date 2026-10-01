@@ -21,6 +21,8 @@ import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -131,5 +133,200 @@ class SurveyServiceTest {
     void list_isOrderedByDisplayOrderAndContainsFixtures() {
         var names = service.list().stream().map(s -> s.name).toList();
         assertTrue(names.indexOf("AuthorFixture") < names.indexOf("AuthorFixtureEmpty"));
+    }
+
+    // ---- UC-044: publishing a content language from the Translations page ----
+
+    private Survey withLanguages(String name, String base, String published) {
+        Survey d = draft(name);
+        d.baseLanguage = base;
+        d.contentLanguages = published;
+        return service.create(d);
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_addsTheTagAndLeavesTheRestOfTheSetAlone() {
+        // The curated set (author.content.languages=en,ar,es-419) has only two non-base tags, so
+        // this can no longer show a third tag arriving alongside two untouched ones -- one
+        // untouched tag is all the curated set leaves room for.
+        Survey s = withLanguages("UC044 add", "en", "ar");
+
+        Survey updated = service.publishLanguage(s.id, "es-419");
+
+        assertEquals("ar,es-419", updated.contentLanguages, "ordered and de-duplicated as stored");
+        assertEquals("author.one", updated.publishedBy, "UC-003 BR-004: last editor recorded");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_isTheFirstLanguageOfASurveyThatPublishedNone() {
+        Survey s = withLanguages("UC044 first", "en", null);
+        assertEquals("ar", service.publishLanguage(s.id, "ar").contentLanguages);
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_storesTheTagCanonically() {
+        Survey s = withLanguages("UC044 canon", "en", null);
+        // Underscore form on purpose: translations_es_419.properties is how the bundle spells it,
+        // and canonical() accepts that spelling too (LanguageTags.canonical).
+        assertEquals("es-419", service.publishLanguage(s.id, "  ES_419  ").contentLanguages,
+                "UC-044 BR-004: stored in the form the chrome mount uses");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesTheBaseLanguage() {
+        Survey s = withLanguages("UC044 base", "en", null);
+        AuthoringException e = assertThrows(AuthoringException.class,
+                () -> service.publishLanguage(s.id, "en"));
+        assertEquals("contentLanguages", e.field());
+        assertNull(Survey.<Survey>findById(s.id).contentLanguages, "nothing stored");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesTheBaseLanguageHoweverItWasStored() {
+        // copyMetadata only trims the base language, so "EN" is storable; the comparison
+        // canonicalizes both sides rather than assuming a form.
+        Survey s = withLanguages("UC044 base case", "EN", null);
+        assertThrows(AuthoringException.class, () -> service.publishLanguage(s.id, "en"));
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesATagItAlreadyPublishes() {
+        Survey s = withLanguages("UC044 dupe", "en", "ar");
+        AuthoringException e = assertThrows(AuthoringException.class,
+                () -> service.publishLanguage(s.id, "AR"));
+        assertEquals("contentLanguages", e.field());
+        assertEquals("ar", Survey.<Survey>findById(s.id).contentLanguages, "set unchanged");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesATagElicitDoesNotCarry() {
+        // UC-044 BR-004: only the curated set (author.content.languages) may be published -- a
+        // language the shipped chrome does not carry is one Survey's ContentTranslator silently
+        // skips, so publishing it would reach no respondent anywhere.
+        Survey s = withLanguages("UC044 uncurated", "en", "ar");
+
+        AuthoringException e = assertThrows(AuthoringException.class,
+                () -> service.publishLanguage(s.id, "fr"));
+
+        assertEquals("contentLanguages", e.field());
+        assertTrue(e.getMessage().contains("ElicitSoftware"), "points the author at who can add it");
+        assertEquals("ar", Survey.<Survey>findById(s.id).contentLanguages, "set unchanged");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesWhatIsNotALanguage() {
+        Survey s = withLanguages("UC044 junk", "en", null);
+        // Not fr_CA any more: the underscore spelling is now read rather than refused, so it
+        // would be turned away by the not-carried check instead and this test would pass without
+        // exercising what it names. LanguageTagsTest covers that spelling directly.
+        for (String bad : new String[]{"zzz", "français", "", "   "}) {
+            AuthoringException e = assertThrows(AuthoringException.class,
+                    () -> service.publishLanguage(s.id, bad), "should refuse '" + bad + "'");
+            assertEquals("contentLanguages", e.field());
+        }
+        assertNull(Survey.<Survey>findById(s.id).contentLanguages);
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_refusesASetThatWouldNotFitTheColumn() {
+        // content_languages is varchar(255). Forty-two five-character tags store as 251 characters
+        // (5 each plus 41 commas), so one more tag would not fit and must be refused rather than
+        // silently truncated. The curated set has only two non-base tags, so this set can no
+        // longer be built through publishLanguage (validate() would refuse every one of these
+        // pt-XX tags as not curated); it is written straight onto the already-managed entity
+        // instead, standing in for a set an import could have written before languages were
+        // curated -- validate()'s already-published exemption is exactly what lets such a survey
+        // still be edited, and publishLanguage never re-validates what it did not add.
+        List<String> many = new ArrayList<>();
+        for (char a = 'A'; many.size() < 42; a++) {
+            for (char b = 'A'; b <= 'Z' && many.size() < 42; b++) {
+                many.add("pt-" + a + b);
+            }
+        }
+        Survey s = withLanguages("UC044 full", "en", null);
+        s.contentLanguages = String.join(",", many);
+        assertEquals(251, s.contentLanguages.length(), "the set is full");
+
+        AuthoringException e = assertThrows(AuthoringException.class,
+                () -> service.publishLanguage(s.id, "es-419"));
+        assertEquals("contentLanguages", e.field());
+        assertEquals(251, Survey.<Survey>findById(s.id).contentLanguages.length(), "set unchanged");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void publishLanguage_unknownSurveyIsReported() {
+        AuthoringException e = assertThrows(AuthoringException.class,
+                () -> service.publishLanguage(-1, "fr"));
+        assertNull(e.field(), "not a field problem");
+    }
+
+    // ---- UC-044 BR-004: create() / updateMetadata() check the curated set too ----
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void create_refusesAContentLanguageElicitDoesNotCarry() {
+        // publishLanguage was the only checked path until now; a tag typed straight into the
+        // metadata dialog's contentLanguages field went in unexamined.
+        Survey d = draft("UC044 metadata refuse");
+        d.baseLanguage = "en";
+        d.contentLanguages = "fr";
+
+        AuthoringException e = assertThrows(AuthoringException.class, () -> service.create(d));
+
+        assertEquals("contentLanguages", e.field());
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void updateMetadata_keepsAnAlreadyPublishedUncuratedTag() {
+        // The exemption in validate(): a definition imported before the set was curated may still
+        // publish a tag outside it, and the author has to be able to save the survey -- otherwise
+        // there would be no way to ever remove that tag. Seeded by writing the column directly,
+        // standing in for what an import would have produced; publishLanguage itself would refuse
+        // "fr" outright.
+        Survey s = withLanguages("UC044 legacy import", "en", null);
+        s.contentLanguages = "fr";
+
+        // validate()'s exemption keys off the id on the object it is handed, which is this
+        // survey's own id in the real caller (SurveyMetadataDialog binds the persisted entity) --
+        // a fresh, id-less draft would miss the exemption entirely.
+        Survey edit = draft("UC044 legacy import kept");
+        edit.id = s.id;
+        edit.baseLanguage = "en";
+        edit.contentLanguages = "fr";
+        Survey updated = service.updateMetadata(s.id, edit);
+
+        assertEquals("fr", updated.contentLanguages, "the already-published tag survives the save");
+    }
+
+    @Test
+    void normalizeLanguages_trimsDeduplicatesAndOrders() {
+        assertEquals("ar,es-419,fr", SurveyService.normalizeLanguages(" fr , ar ,es-419, fr "));
+        assertNull(SurveyService.normalizeLanguages("  "));
+        assertNull(SurveyService.normalizeLanguages(null));
+        assertEquals("en,fr", SurveyService.normalizeLanguages("en,fr"),
+                "it does not strip the base language, and its javadoc no longer claims to");
     }
 }

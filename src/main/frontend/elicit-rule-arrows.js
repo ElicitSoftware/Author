@@ -178,6 +178,12 @@ class ElicitRuleArrows extends LitElement {
     return null;
   }
 
+  /** The spine side: steps sit at the inline start, so on the right in right-to-left layouts. */
+  _spineSide() {
+    const board = this._board();
+    return board && getComputedStyle(board).direction === 'rtl' ? 'right' : 'left';
+  }
+
   _point(el, side) {
     const board = this._board();
     const b = board.getBoundingClientRect();
@@ -200,12 +206,13 @@ class ElicitRuleArrows extends LitElement {
       // Both ends collapse into the same box: the rule is entirely inside a closed container, so it is
       // out of context — draw nothing. It reappears once that container is opened and the ends separate.
       if (s === t) continue;
-      // Steps are the fixed left spine, so arrows leave and arrive on the boxes' LEFT edge and route in
-      // a channel just to their left: inter-step rules run in the board's left gutter, and a within-step
-      // rule runs in the indent gutter to the left of its sections.
-      const from = this._point(s, 'left');
-      const to = this._point(t, 'left');
-      const cx = Math.min(from.x, to.x) - 14;
+      // Steps are the fixed spine at the inline start, so arrows leave and arrive on the boxes' START
+      // edge and route in a channel just outside it: inter-step rules run in the board's start gutter,
+      // and a within-step rule runs in the indent gutter beside its sections. Mirrored for RTL.
+      const side = this._spineSide();
+      const from = this._point(s, side);
+      const to = this._point(t, side);
+      const cx = side === 'right' ? Math.max(from.x, to.x) + 14 : Math.min(from.x, to.x) - 14;
       const sel = this.selectedAnchor;
       const active = !!sel && (e.source === sel || e.target === sel
         || (e.sourceFallbacks || []).includes(sel) || (e.targetFallbacks || []).includes(sel)
@@ -326,7 +333,7 @@ class ElicitRuleArrows extends LitElement {
 
   _pendingLine() {
     const src = this._resolve(this.pendingSource, []);
-    const from = src ? this._point(src, 'left') : this._pointer;
+    const from = src ? this._point(src, this._spineSide()) : this._pointer;
     return { from, to: { x: this._pointer.x, y: this._pointer.y } };
   }
 

@@ -1,0 +1,49 @@
+# ELICIT_SURVEY_EXPORT_V1
+# survey_id: 1
+# survey_key: 33306495-ee01-5434-977a-5f2e906f1b3a
+# survey_name: Family Health History
+# surveys: 1
+# select_groups: 2
+# select_items: 4
+# steps: 2
+# sections: 2
+# steps_sections: 2
+# questions: 5
+# sections_questions: 5
+# relationships: 2
+# reports: 0
+# post_survey_actions: 0
+# dimensions: 1
+# ontology: 1
+# metadata: 1
+# generated: 2026-09-29T00:00:00.000000000-04:00
+# survey_revision: 2026-09-29T00:00:00.000000000-04:00
+
+surveys: 1|33306495-ee01-5434-977a-5f2e906f1b3a|Family Health History|1|Family Health History|A short family health history questionnaire.|0001-0001-0000-0001-0000-0000-0000||author|Family Health History v1
+select_groups: 1|54ea36ca-3bb6-52e5-b2f2-64e2a67afd42|Yes / No||Text|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+select_groups: 2|1b10d31b-cf38-5f03-9bf8-8bbba2c7fc7e|Sex at birth||Text|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+select_items: 1|487bb528-edce-5bd8-96f5-41c3a2d4fcc4|1|Yes|1|Yes|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+select_items: 2|112837dd-3405-5197-b28d-dfac0431fc9d|1|No|2|No|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+select_items: 3|324e2e1d-1804-5dbc-a7d2-cf831189ee44|2|Female|1|Female|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+select_items: 4|f0731075-bbce-5c9b-912c-6a4ac0987090|2|Male|2|Male|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+steps: 1|6c14a607-78fd-510c-b0b0-a767afb52e59|1|About you|About You||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+steps: 2|9c0d5563-eae3-5303-8587-fd33b6da0e01|2|Each child|Each Child||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+sections: 1|0e581d86-3011-5b56-b7f2-70357f0e7b85|1|You|You||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+sections: 2|dde9b4af-3cdf-58ee-aa2c-4c5f7d804a56|2|Child|Child||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+steps_sections: 1|5bb6b3f1-e164-5540-9483-b4ed1ffa5084|1|1|1|1|0001-0001-0000-0001-0000-0000-0000|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+steps_sections: 2|f2df5a6b-4a9f-53d6-bb81-885c48c67f6b|2|2|2|1|0001-0002-0000-0001-0000-0000-0000|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+questions: 1|7c502392-58df-550c-9471-54d96d885aa1|8|What is your first name?|First name||false|||||||||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+questions: 2|3943cf2e-576d-5d62-80c2-ac2ce06e2fc0|3|Do you have any children?|Has children||false||||1|||||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+questions: 3|9b08eff8-ab3c-5066-b2be-71ad6e01bb55|5|How many children do you have?|Child count||false|0|20|||||||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+questions: 4|a99c9b7e-8331-59d7-83aa-8b3f23e57677|8|What is this child's first name?|Child name||false|||||||||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+questions: 5|69396ef5-7610-50a8-afc9-2465a4f4837a|3|What was this child's sex at birth?|Child sex||false||||2|||||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+sections_questions: 1|a21f1c60-8a4e-5ae9-9108-8677ed9f6fc7|1|1|1|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+sections_questions: 2|df526026-ce4f-59d4-af2c-17c3ae93d4f8|2|1|2|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+sections_questions: 3|22130d52-625b-52f4-8de9-5b5580644172|3|1|3|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+sections_questions: 4|020798cf-0855-58be-a452-be010d3d34e3|4|2|1|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+sections_questions: 5|0710f155-cd31-52eb-af4b-475ae878187b|5|2|2|0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+relationships: 1|2bf9c9c1-0ce6-5748-9711-7bce30353514||2|||3|3|1|Has children = Yes||Yes|||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+relationships: 2|dbd1faab-2036-59bd-9e8a-5e6c56e2d4bd||3||2||2|2|Child count > 0||0|||0|1970-01-01T00:00:00Z|9999-12-31T23:59:59Z||
+dimensions: 1|b3b6b72a-9f75-5430-ba5f-7444917a3eb5|family
+ontology: 1|6df73999-7953-5c3c-814b-7e9bf092abc5|familyhistory|children|1
+metadata: 1|ef22b883-496d-575b-912e-9e17fa5e66e2||2||1|

@@ -11,6 +11,7 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -38,11 +39,11 @@ public class Glyph extends Span {
 
     /** Icon per {@code survey.question_types.name}; anything unknown falls back to a question mark. */
     static final Map<String, VaadinIcon> QUESTION_ICONS = Map.ofEntries(
-            Map.entry("TEXT", VaadinIcon.TEXT_INPUT),
+            Map.entry("TEXT", VaadinIcon.INPUT),
             Map.entry("TEXTAREA", VaadinIcon.PARAGRAPH),
             Map.entry("INTEGER", VaadinIcon.HASH),
             Map.entry("DOUBLE", VaadinIcon.CALC),
-            Map.entry("CHECKBOX", VaadinIcon.CHECK_SQUARE_O),
+            Map.entry("CHECKBOX", VaadinIcon.CHECK_SQUARE),
             Map.entry("CHECKBOX_GROUP", VaadinIcon.TASKS),
             Map.entry("RADIO", VaadinIcon.DOT_CIRCLE),
             Map.entry("COMBOBOX", VaadinIcon.COMBOBOX),
@@ -50,7 +51,7 @@ public class Glyph extends Span {
             Map.entry("DATE_PICKER", VaadinIcon.CALENDAR),
             Map.entry("DATE_TIME_PICKER", VaadinIcon.CALENDAR_CLOCK),
             Map.entry("TIME_PICKER", VaadinIcon.CLOCK),
-            Map.entry("EMAIL", VaadinIcon.ENVELOPE_O),
+            Map.entry("EMAIL", VaadinIcon.ENVELOPE),
             Map.entry("PASSWORD", VaadinIcon.PASSWORD),
             Map.entry("HTML", VaadinIcon.CODE),
             Map.entry("MODAL", VaadinIcon.MODAL));
@@ -67,7 +68,7 @@ public class Glyph extends Span {
 
     /** A step tile showing its display order, or a layout icon when the order is not known yet. */
     public static Glyph step(Integer order) {
-        Glyph g = new Glyph(Kind.STEP, order == null ? "Step" : "Step " + order);
+        Glyph g = new Glyph(Kind.STEP, order == null ? Translations.get("glyph.step") : Translations.get("glyph.stepOrder", order));
         if (order == null) {
             g.add(VaadinIcon.LAYOUT.create());
         } else {
@@ -77,16 +78,17 @@ public class Glyph extends Span {
     }
 
     public static Glyph section() {
-        Glyph g = new Glyph(Kind.SECTION, "Section");
-        g.add(VaadinIcon.FOLDER_O.create());
+        Glyph g = new Glyph(Kind.SECTION, Translations.get("glyph.section"));
+        g.add(VaadinIcon.FOLDER.create());
         return g;
     }
 
     /** A question tile keyed by its type name ({@code survey.question_types.name}). */
     public static Glyph question(String questionTypeName) {
         String type = questionTypeName == null ? "" : questionTypeName.toUpperCase(Locale.ROOT);
-        Glyph g = new Glyph(Kind.QUESTION, type.isEmpty() ? "Question" : type.replace('_', ' ').toLowerCase(Locale.ROOT) + " question");
-        g.add(QUESTION_ICONS.getOrDefault(type, VaadinIcon.QUESTION_CIRCLE_O).create());
+        Glyph g = new Glyph(Kind.QUESTION, type.isEmpty() ? Translations.get("glyph.question")
+                : Translations.get("glyph.questionOfType", type.replace('_', ' ').toLowerCase(Locale.ROOT)));
+        g.add(QUESTION_ICONS.getOrDefault(type, VaadinIcon.QUESTION_CIRCLE).create());
         return g;
     }
 
@@ -94,14 +96,14 @@ public class Glyph extends Span {
     public static Glyph rule(String actionName) {
         String action = actionName == null ? "" : actionName.toUpperCase(Locale.ROOT);
         return switch (action) {
-            case "SHOW" -> withIcon(new Glyph(Kind.RULE_SHOW, "Show rule"), VaadinIcon.EYE);
-            case "REPEAT" -> withIcon(new Glyph(Kind.RULE_REPEAT, "Repeat rule"), VaadinIcon.REFRESH);
+            case "SHOW" -> withIcon(new Glyph(Kind.RULE_SHOW, Translations.get("glyph.rule.show")), VaadinIcon.EYE);
+            case "REPEAT" -> withIcon(new Glyph(Kind.RULE_REPEAT, Translations.get("glyph.rule.repeat")), VaadinIcon.REFRESH);
             case "TEXT" -> {
-                Glyph g = new Glyph(Kind.RULE_TEXT, "Text rule");
+                Glyph g = new Glyph(Kind.RULE_TEXT, Translations.get("glyph.rule.text"));
                 g.setText("{T}");
                 yield g;
             }
-            default -> withIcon(new Glyph(Kind.RULE_SHOW, "Rule"), VaadinIcon.CONNECT_O);
+            default -> withIcon(new Glyph(Kind.RULE_SHOW, Translations.get("glyph.rule")), VaadinIcon.CONNECT);
         };
     }
 

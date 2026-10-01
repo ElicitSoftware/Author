@@ -1,12 +1,11 @@
-# Builds Author and runs whatever tests exist on every pull request and every push to main.
-# This is the gate that enforces the build stays green before code merges — the release
-# workflow (maven.yml) skips tests entirely and only runs at tag-push time, so without this
-# workflow nothing ever builds Author in CI.
+# Builds Author and runs its tests on every pull request into a long-lived branch and every
+# push to one. This is the gate that enforces the build stays green before code merges — the
+# release workflow (maven.yml) skips tests entirely and only runs at tag-push time, so without
+# this workflow nothing ever builds Author in CI.
 #
-# NOTE: Author currently has no src/test directory. `mvn clean verify` therefore builds and
-# packages but runs no tests, and the jacoco-check gate in pom.xml (LINE >= 0.70) passes
-# vacuously because JaCoCo skips when no execution data file is produced. Once tests are
-# added that gate becomes live and will start enforcing 70% line coverage.
+# Both main and i18n are gated. i18n is a long-lived line that is many commits ahead of main
+# and carries the delimited-token work; while it was ungated, PRs merged into it were never
+# compiled, let alone tested.
 
 name: CI
 
@@ -14,9 +13,11 @@ on:
   push:
     branches:
       - main
+      - i18n
   pull_request:
     branches:
       - main
+      - i18n
 
 jobs:
   test:

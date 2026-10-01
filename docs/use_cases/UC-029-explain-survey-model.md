@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Understand how an Elicit survey is put together — the nested containers, the default path, and the rules that connect them — using the same vocabulary and glyphs the designer uses, so that the designer is understandable on first use.  
 **Status:** Implemented  
-**Requirements:** [FR-034, NFR-007](../requirements.md)
+**Requirements:** [FR-034, FR-064, NFR-007](../requirements.md)
 
 ## Preconditions
 
@@ -16,15 +16,7 @@
 ## Main Success Scenario
 
 1. The author chooses How surveys work in the application navigation.
-2. The system shows the guide page: a heading, a picture of the designer board showing a small survey, captured from the designer itself, and one section per idea, in this order:
-   1. Elicit is a decision tree — the respondent walks a path, and answers decide what comes next.
-   2. Containers nest — a survey holds steps, a step holds sections, a section holds questions; what each is for the respondent and for the author.
-   3. Order is the default path — steps, sections and questions run in display order unless a rule says otherwise.
-   4. Rules are the arrows — a rule reads one upstream question's answer, compares it with an operator and a reference value, and performs an action on one downstream target: SHOW, REPEAT or TEXT.
-   5. The designer draws all of this — each element is a box that opens in place to reveal its children (steps, then their sections, then their questions), arrows are rules, every element has a glyph that is also its drag handle, one click selects, a double click edits, and the ⋮ menu lists every action.
-   6. Designing a survey — a how-to: the Controls, Lists (UC-014) and Questions (UC-011 A6) panels with their per-panel search boxes, Reporting tags and the Survey structure tree, and the order of work from structure to rules, tags, validation and export.
-   7. Reporting tags — a tag names a column of the site's report; tagging a question reports its answers, tagging a section in a step with a fixed value classifies everyone who reaches it, and changing an assigned tag is retroactive (UC-021..UC-024).
-   8. Identity and publishing — every element's key is minted once, removal retires, and publishing exports a `.elicit` file that Admin applies.
+2. The system shows the guide page: a heading, a picture of the designer board showing a small survey, captured from the designer itself, and one section per idea, in the order BR-004 lists.
 3. The system shows a legend of the glyphs and an example rule written as "Question (operator) value → (Action) target".
 4. The author reads the page and continues to the Surveys list or, from within a survey, to its designer.
 
@@ -62,3 +54,16 @@ A rule is always presented as upstream question, operator, reference value, acti
 ### BR-003: Accessible without the diagram
 
 Every idea the diagram shows is also stated in text, and glyphs carry an accessible name, so the page conforms to NFR-007 without the image.
+
+### BR-004: The ideas and their order
+
+The guide explains these ideas, one section each, in this order:
+
+1. Elicit is a decision tree — the respondent walks a path, and answers decide what comes next.
+2. Containers nest — a survey holds steps, a step holds sections, a section holds questions; what each is for the respondent and for the author.
+3. Order is the default path — steps, sections and questions run in display order unless a rule says otherwise. Only the first step is built when a respondent signs in; everything after it is built just in time by a rule, usually Field exists → Show, so every later step, section or question needs one (FR-064, UC-007 BR-012).
+4. Rules are the arrows — a rule reads one upstream question's answer, compares it with an operator and a reference value, and performs an action on one downstream target: SHOW, REPEAT or TEXT.
+5. The designer draws all of this — each element is a box that opens in place to reveal its children (steps, then their sections, then their questions), arrows are rules, every element has a glyph that is also its drag handle, one click selects, a double click edits, and the ⋮ menu lists every action.
+6. Designing a survey — a how-to: the Controls, Lists (UC-014) and Questions (UC-011 A6) panels with their per-panel search boxes, Reporting tags and the Survey structure tree, and the order of work from structure to rules, tags, validation and export.
+7. Reporting tags — a tag names a column of the site's report; tagging a question reports its answers, tagging a section in a step with a fixed value classifies everyone who reaches it, and changing an assigned tag is retroactive (UC-021..UC-024).
+8. Identity and publishing — every element's key is minted once, removal retires, and publishing exports a `.elicit` file that Admin applies; deleting a whole survey (UC-047) is the one physical delete, never reaches a site, and is undone only by importing the backup taken first.

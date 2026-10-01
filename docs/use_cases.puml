@@ -13,7 +13,7 @@ rectangle "Elicit Author" {
     usecase "UC-001\nAuthenticate via OIDC" as UC001
     usecase "UC-002\nRestrict Authoring Access" as UC002
 
-    ' Survey Definition Lifecycle (FR-001..FR-009)
+    ' Survey Definition Lifecycle (FR-001..FR-009, FR-065)
     usecase "UC-003\nCreate Survey" as UC003
     usecase "UC-004\nEdit Survey Metadata" as UC004
     usecase "UC-005\nImport Survey Definition" as UC005
@@ -22,11 +22,12 @@ rectangle "Elicit Author" {
     usecase "UC-008\nExport Survey Definition" as UC008
     usecase "UC-009\nRemove Structural Element" as UC009
     usecase "UC-010\nRestore Removed Element" as UC010
+    usecase "UC-047\nDelete Survey" as UC047
 
     ' Question Authoring (FR-010..FR-014)
+    ' Token authoring (FR-012) and its preview (FR-013) are specified as part of UC-011 rather
+    ' than as use cases of their own; they carried no specification of their own as UC-012/UC-013.
     usecase "UC-011\nAuthor Question" as UC011
-    usecase "UC-012\nAuthor Token Placeholders in Question Text" as UC012
-    usecase "UC-013\nPreview Token Replacement" as UC013
     usecase "UC-014\nManage Select Groups and Items" as UC014
 
     ' Section & Step Organization (FR-015..FR-018)
@@ -35,7 +36,7 @@ rectangle "Elicit Author" {
     usecase "UC-017\nConfigure Repeating Elements" as UC017
     usecase "UC-018\nRename Step or Section" as UC018
 
-    ' Logic & Relationships (FR-019..FR-022, FR-041)
+    ' Logic & Relationships (FR-019..FR-022, FR-041, FR-064)
     usecase "UC-019\nCreate Conditional Relationship" as UC019
     usecase "UC-020\nVisualize Relationship Graph" as UC020
     usecase "UC-033\nValidate Rule Direction" as UC033
@@ -68,6 +69,16 @@ rectangle "Elicit Author" {
     usecase "UC-036\nDiagnose Branding" as UC036
     usecase "UC-037\nCheck Connections" as UC037
     usecase "UC-038\nView OIDC Diagnostics" as UC038
+
+    ' Localization (FR-049..FR-055)
+    usecase "UC-040\nAuthor Surveys in My Language" as UC040
+    usecase "UC-041\nManage Languages" as UC041
+
+    ' Content Translation (FR-056..FR-060)
+    usecase "UC-043\nTranslate Survey Content" as UC043
+    usecase "UC-044\nManage Content Languages" as UC044
+    usecase "UC-045\nRequest a Content Translation" as UC045
+    usecase "UC-046\nImport Content Translations" as UC046
 }
 
 ' Access
@@ -89,8 +100,6 @@ UC008 --> adminapp : .elicit file
 
 ' Question Authoring
 author --> UC011
-author --> UC012
-author --> UC013
 author --> UC014
 
 ' Section & Step Organization
@@ -137,6 +146,20 @@ UC034 ..> UC036 : <<directs to>>
 UC034 ..> UC037 : <<directs to>>
 UC036 ..> UC030 : <<reports>>
 
+' Localization
+author --> UC040
+admin --> UC040
+author --> UC041
+
+' Content translation
+author --> UC043
+author --> UC044
+author --> UC045
+author --> UC046
+
+' Survey deletion
+author --> UC047
+
 ' Relationships worth calling out explicitly
 UC008 ..> UC007 : <<include>>
 UC009 ..> UC007 : <<extend>>
@@ -153,7 +176,24 @@ UC016 ..> UC033 : <<extend>> backward rules shown red
 UC033 ..> UC007 : <<extend>> backward rule is an error
 UC022 ..> UC007 : <<extend>> retroactive warning
 UC039 ..> UC029 : <<extend>> printable form of the guide
+UC041 ..> UC040 : <<extend>> adds a language to the selector
 UC042 ..> UC029 : <<extend>> the same model, written for an AI agent
 UC042 ..> UC005 : <<include>> the draft is opened by importing it
+UC045 ..> UC043 : <<extend>> the bulk path out of the grid
+UC046 ..> UC043 : <<extend>> the bulk path back in
+UC044 ..> UC043 : <<include>> a language must be declared to be translated
+UC043 ..> UC008 : <<extend>> translations travel in the definition file
+UC043 ..> UC007 : <<extend>> stale and missing counts are export warnings
+UC009 ..> UC043 : <<extend>> retiring an element retires its translations
+UC005 ..> UC047 : <<extend>> re-importing the backup restores it
+
+' Not yet specified: UC-017 (FR-017), UC-025 (FR-027), UC-026 (FR-028), UC-027 (FR-029) and
+' UC-028 (FR-030) are declared here as planned scope. Their requirements are Open and they have no
+' file under docs/use_cases/ yet; every other use case on this diagram has one.
+note as N_planned
+  UC-017, UC-025, UC-026, UC-027 and UC-028
+  are planned scope: requirements Open, no
+  use case specification written yet.
+end note
 
 @enduml

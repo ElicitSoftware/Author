@@ -52,17 +52,62 @@ There are three actions:
 - **REPEAT** — the target section or question is repeated as many times as the
   answer says, for example one "Child" section per child.
 - **TEXT** — the answer is written into the target's text wherever a
-  `{TOKEN|default}` placeholder appears, so a later question can say "your
+  `{<TOKEN>|default}` placeholder appears, so a later question can say "your
   daughter" rather than "your child".
 
 **There is no Hide rule.** Hiding is the same as not showing: give the element a
 SHOW rule and it stays hidden until that rule holds. When several rules point at
 the same target, **all** of them must hold.
 
-**Tokens are slots, not questions.** `{SUBJECT|the subject}` in a question's text
+**Only the first step stands without a rule.** When a respondent signs in, the
+survey builds and saves every element no rule controls, before the first page
+appears. Everything after that is built *just in time*, by the rule that calls for
+it, at the moment the respondent reaches the question the rule reads. This keeps
+the first page fast, and it keeps the database free of rows for questions no one
+sees: a respondent who abandons the survey in the first step or two has had only
+those steps written for them. So the first step (lowest `display_order`) may hold
+steps, sections and questions with no rule, and **every question in every later
+step must be reached by a SHOW or REPEAT rule** — one on its step, on its section
+as mounted in that step, or on the question itself. A rule reaches its target and
+everything inside it, so one rule on a step covers the whole step. TEXT rules do not
+count: they build nothing.
+
+The usual rule is **show if exists**: operator `FIELD_EXIST` with action `SHOW`,
+read from a question on an earlier step — an `HTML` introduction is a common
+choice. `FIELD_EXIST` holds as soon as that question has been presented, so a step
+that always follows is still built only when the respondent gets there. A step that
+is genuinely conditional already has its SHOW or REPEAT rule and needs nothing more.
+
+**Tokens are slots, not questions.** `{<SUBJECT>|the subject}` in a question's text
 is a placeholder. A TEXT rule fills it with an earlier answer, so a later question
 can name what the respondent actually said. Without a filling rule the respondent
 reads the default after the `|`.
+
+**A token is named in angle brackets inside the placeholder, and stored without
+them.** The text writes `{<SUBJECT>|the subject}`, or a whole phrase around the
+reference — `{Has <SUBJECT> been|Were you}` — and the rule's `token` field holds the
+name alone, upper case: `SUBJECT`, never `<SUBJECT>`. The runtime looks a value up
+by that name, so a token written with its brackets in the `token` field fills
+nothing, and a phrase that writes `SUBJECT` without its angle brackets fills
+nothing either. Both are export errors. Markup belongs outside the braces:
+`<b>{<SUBJECT>|the subject}</b>`, never inside them. A name is at most ten
+characters, starts with a letter, and holds letters, digits and underscores only.
+
+**These are the two a draft gets wrong.** Both were in one real draft, on the same
+token, and everything else about the file was correct:
+
+- `DESTINATION` is eleven characters. It is the natural word, and it does not fit —
+  `survey.relationships.token` is `character varying(10)`, so the import refuses it
+  and names it. Shorten the name (`DEST`), not the question. Write a word you can
+  count, and count it.
+- `{DESTINATION|this destination}` names the token without its angle brackets. The
+  file imports, nothing about it is malformed, and the placeholder fills nothing:
+  every respondent reads "this destination" and no one finds out. Write
+  `{<DEST>|this destination}`.
+
+The one that costs least is reading your own rules back afterwards: for each rule
+with a `token`, find the text that names it and check the brackets are there and
+the spelling matches.
 
 ---
 
@@ -105,7 +150,8 @@ against records already read:
 
 `surveys` → `select_groups` → `select_items` → `steps` → `sections` →
 `steps_sections` → `questions` → `sections_questions` → `relationships` →
-`reports` → `post_survey_actions` → `dimensions` → `ontology` → `metadata`
+`reports` → `post_survey_actions` → `dimensions` → `ontology` → `metadata` →
+`translations`
 
 The `surveys` record must come first, and there must be **exactly one** of them —
 one survey per file.
@@ -149,11 +195,12 @@ Always write `0` for `version` and leave the other four empty: `0||||`
 | `dimensions` | 3 | `id \| dimension_key \| name` |
 | `ontology` | 5 | `id \| ontology_key \| name \| tag \| dimension` |
 | `metadata` | 7 | `id \| metadata_key \| steps_sections_id \| question_id \| sections_question_id \| ontology_id \| value` |
+| `translations` | 13 | `translation_id \| translation_key \| element_type \| element_key \| field \| language \| value \| source_hash \| ` + tail |
 
 **Omit the last five tables.** `reports`, `post_survey_actions`, `dimensions`,
 `ontology` and `metadata` are the reporting and integration layer. A person
 configures those in Author, where the consequences are visible. They are listed
-here only so you recognise them in an exported file.
+here only so you recognize them in an exported file.
 
 Notes on individual fields:
 
@@ -164,6 +211,9 @@ Notes on individual fields:
 - `coded_value` — what gets stored and what rules compare against, as opposed to
   `display_text`, which is what the respondent reads.
 - `data_type` on `select_groups` — `Text` unless you have reason otherwise.
+- `token` on `relationships` — the slot name alone, upper case, without the angle
+  brackets the text uses to name it: `SUBJECT`, not `<SUBJECT>`. At most ten
+  characters, starting with a letter.
 - `dimension_name` on steps and sections — the reporting name for that step or
   section. Use `lower_snake_case`. If you leave it empty it defaults to the
   display name, which usually contains spaces and capitals and makes for poor
@@ -216,6 +266,13 @@ On the `surveys` record only, two fields are worth filling:
 If you want to record provenance — the model, the date, the request — put a short
 line in the survey's `description`, which a person can read and edit.
 
+The `surveys` record has two further trailing fields, `base_language` and
+`content_languages` (Survey V019), which you may leave off entirely: a record that
+stops at `published_comment` is read as English content publishing no translations,
+which is what a draft is. Do not write `translations` records. A translation belongs
+to wording that has been reviewed, and it is authored in Author's Translations view
+against the finished survey (UC-043).
+
 ---
 
 ## 5. Rules you must follow
@@ -252,15 +309,28 @@ can use and a draft they have to repair.
 8. **Every reference must resolve.** No assignment may point at a step, section or
    question that does not exist in the file.
 9. **`initial_display_key` must match one of your `steps_sections` display keys.**
-10. **A `{TOKEN}` with no default and no rule filling it is an error.** Either give
-    every placeholder a default (`{SUBJECT|the subject}`) or make sure a TEXT
+10. **A `{<TOKEN>}` with no default and no rule filling it is an error.** Either give
+    every placeholder a default (`{<SUBJECT>|the subject}`) or make sure a TEXT
     rule reaches it.
+11. **A rule's `token` must be the name alone.** Upper case, starting with a letter,
+    letters, digits and underscores only, at most ten characters — `SUBJECT`, not
+    `<SUBJECT>`, and not `Has SUBJECT been`.
+12. **Every `<NAME>` in a placeholder must be a token some rule carries.** A phrase
+    fills all or nothing, so one reference nothing defines stops the whole
+    placeholder filling.
+13. **Every question after the first step must be built by a rule.** A SHOW or
+    REPEAT rule must reach it — targeting its step, its `steps_sections` mount, or
+    the question. Give each later step that has no condition of its own a
+    `FIELD_EXIST` → `SHOW` rule targeting the step (`downstream_step_id` only), read
+    from a question on an earlier step. A step nothing builds is reported once, on
+    the step; a section or question nothing builds inside a step that has other
+    rules is reported on that section or question.
 
 **Warnings — allowed, but a person will have to look at them:**
 
 - A survey with no steps, a step with no sections, a section with no questions.
 - Two elements sharing the same position.
-- A `{TOKEN|default}` that no rule fills — respondents always read the default.
+- A `{<TOKEN>|default}` that no rule fills — respondents always read the default.
 - A TEXT rule whose token no text it reaches actually uses.
 
 **REPEAT has one more constraint worth knowing:** a section cannot repeat itself.
@@ -282,7 +352,7 @@ it repeats. Put the count question in its own section before the repeating one.
 | 2 | `DATE_PICKER` | |
 | 3 | `COMBOBOX` | needs an answer list |
 | 4 | `HTML` | informational, not an input |
-| 5 | `INTEGER` | honours `min_value` / `max_value` |
+| 5 | `INTEGER` | honors `min_value` / `max_value` |
 | 6 | `DOUBLE` | |
 | 7 | `RADIO` | needs an answer list |
 | 8 | `TEXT` | single-line text |
@@ -354,7 +424,9 @@ a description, no token, reference value `1` — the `coded_value` of "Yes" — 
 the empty upstream-value fields and the `0||||` tail.
 
 Note what makes it valid: the driving question is in step 1 and the target mount is
-in step 2, so the rule points forward. The upstream reference is
+in step 2, so the rule points forward. Step 2's only section is the rule's target,
+so the same rule is what builds step 2 just in time; without it, step 2 would need a
+`FIELD_EXIST` → `SHOW` rule of its own. The upstream reference is
 `sections_questions` id 1, not `questions` id 1 — they happen to coincide here,
 which is exactly why the distinction is easy to lose. The reference value matches
 the option's `coded_value`, not its `display_text`. And question 1 is a `RADIO`
@@ -379,9 +451,14 @@ the option's `coded_value`, not its `display_text`. And question 1 is a `RADIO`
    - every id referenced exists and appears earlier in the file;
    - every rule points forward, names one target, and reads from a
      `sections_questions` id;
+   - every step after the first is built by a SHOW or REPEAT rule — on the step,
+     on each of its mounts, or on each of its questions — normally `FIELD_EXIST` →
+     `SHOW` from an earlier question;
    - every choice question has a list with options;
    - `initial_display_key` matches a `steps_sections` display key;
-   - every `{TOKEN}` has a default or a rule that fills it.
+   - every `{<TOKEN>}` names its token in angle brackets and has a default or a
+     rule that fills it, and every rule's `token` is that name alone, upper case,
+     without the brackets — **count the characters, ten at most**.
 6. Say plainly what you left for the person to finish — reporting tags, tokens you
    were unsure about, anything you guessed.
 

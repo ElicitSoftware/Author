@@ -16,7 +16,12 @@ import com.elicitsoftware.author.flow.StructureNavigationTree;
 import com.elicitsoftware.author.flow.SurveyEditorView;
 import com.elicitsoftware.author.flow.SurveysView;
 import com.elicitsoftware.author.survey.DisplayOrdering;
+import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
+import com.elicitsoftware.model.ActionType;
+import com.elicitsoftware.model.OperatorType;
+import com.elicitsoftware.model.Relationship;
+import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.Step;
 import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Question;
@@ -36,6 +41,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -54,6 +60,15 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
 
     @Inject
     DisplayOrdering ordering;
+
+    @Inject
+    EntityManager em;
+
+    @Inject
+    RuleService rules;
+
+    @Inject
+    com.elicitsoftware.author.survey.SurveyStructureQuery structureQuery;
 
     private Survey fixture() {
         return Survey.find("name", "AuthorFixture").firstResult();
@@ -111,11 +126,12 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         assertEquals(2, reopened.rows.size());
         assertTrue(view.isSelected(reopened.node()));
         String crumbs = view.breadcrumb.getChildren().map(c -> c.getElement().getText()).reduce("", String::concat);
-        assertTrue(crumbs.contains("Step: Fixture Step One") && crumbs.contains("Section: Fixture Section A"), crumbs);
+        assertTrue(crumbs.contains(view.getTranslation("surveyDesignerView.crumb.step", "Fixture Step One"))
+                && crumbs.contains(view.getTranslation("surveyDesignerView.crumb.section", "Fixture Section A")), crumbs);
 
         view.select(reopened.rows.get(1).node());
         crumbs = view.breadcrumb.getChildren().map(c -> c.getElement().getText()).reduce("", String::concat);
-        assertTrue(crumbs.contains("Question: FixtureQ2"), crumbs);
+        assertTrue(crumbs.contains(view.getTranslation("surveyDesignerView.crumb.question", "FixtureQ2")), crumbs);
         assertTrue(view.lanes.get(0).cards.get(0).isOpen(), "the selected question's card stays open");
     }
 
@@ -212,7 +228,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         SurveyDesignerView view = open(fixture());
         assertTrue(view.preview.isVisible(), "the preview pane is on by default");
         assertTrue(view.preview.titles().isEmpty(), "nothing selected: nothing previewed");
-        assertTrue(view.preview.hint.getText().startsWith("Select a step"), view.preview.hint.getText());
+        assertEquals(view.getTranslation("sectionPreview.hint.select"), view.preview.hint.getText());
 
         view.toggleAndSelect(view.lanes.get(0).node()); // Fixture Step One: Section A, Section B
         assertEquals(List.of("Fixture Section A", "Fixture Section B"), view.preview.titles(),
@@ -244,23 +260,95 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         assertFalse(view.preview.isVisible(), "the pane can be hidden to give the board the whole width");
     }
 
+    /**
+     * UC-011 BR-004 / ElicitSoftware/Author#22: a sample answer reaches the preview escaped, because
+     * it stands in for words the respondent typed and the runtime escapes those. Splicing it raw
+     * previewed markup as markup where the site renders the tag itself, which is the one direction
+     * of divergence that matters -- the author signs off on a page the respondent never sees.
+     */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void aSampleAnswerIsPreviewedEscapedAsTheSiteRendersIt() {
+        Survey s = fixture();
+        setSample(s, "FixtureQ2", "<b>Bob</b>");
+        // Section C's one question, so the display-only path the issue is about has something to draw.
+        setColumn(s, "FixtureQ5", "type_id", "(SELECT id FROM survey.question_types WHERE name = 'HTML')");
+        setText(s, "FixtureQ5", "<p>Hello {<NAME>|friend}.</p>");
+        textRuleOntoStepTwo(s, "NAME");
+
+        SurveyDesignerView view = open(s);
+        view.toggleAndSelect(view.lanes.get(1).cards.get(0).node()); // Fixture Step Two: Section C
+        List<SectionPreview.Block> blocks = view.preview.blocks();
+        assertEquals(1, blocks.size());
+
+        assertEquals("<p>Hello &lt;b&gt;Bob&lt;/b&gt;.</p>", ((Html) blocks.get(0).field()).getInnerHtml(),
+                "the respondent reads the literal tag, so the author must see the literal tag");
+    }
+
+    private void setSample(Survey s, String shortText, String sample) {
+        em.createNativeQuery("UPDATE survey.questions SET sample = ?1 WHERE short_text = ?2 AND survey_id = ?3")
+                .setParameter(1, sample).setParameter(2, shortText).setParameter(3, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    private void setText(Survey s, String shortText, String text) {
+        em.createNativeQuery("UPDATE survey.questions SET text = ?1 WHERE short_text = ?2 AND survey_id = ?3")
+                .setParameter(1, text).setParameter(2, shortText).setParameter(3, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    /** @param valueExpression inlined SQL, not a parameter: this is test-only and the callers are literals. */
+    private void setColumn(Survey s, String shortText, String column, String valueExpression) {
+        em.createNativeQuery("UPDATE survey.questions SET " + column + " = " + valueExpression
+                        + " WHERE short_text = ?1 AND survey_id = ?2")
+                .setParameter(1, shortText).setParameter(2, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    /** A Text rule reading FixtureQ2 and landing on every question of step two. */
+    private void textRuleOntoStepTwo(Survey s, String token) {
+        SectionsQuestion upstream = SectionsQuestion.find(
+                "questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
+                "FixtureQ2", s.id, StructuralElement.SENTINEL).firstResult();
+        Step one = Step.find("name = ?1 and effectiveTo = ?2", "Fixture Step One", StructuralElement.SENTINEL).firstResult();
+        Step two = Step.find("name = ?1 and effectiveTo = ?2", "Fixture Step Two", StructuralElement.SENTINEL).firstResult();
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = upstream.sectionsQuestionId;
+        draft.upstreamStepId = one.stepId;
+        draft.downstreamStepId = two.stepId;
+        draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
+        draft.actionType = ActionType.find("name", "TEXT").firstResult();
+        draft.token = token;
+        rules.create(s.id, draft);
+        em.flush();
+        em.clear();
+    }
+
     @Test
     @TestSecurity(user = "designer.author", roles = {"elicit_author"})
     void everyDragHasAMenuEquivalent() {
         SurveyDesignerView view = open(fixture());
         StepLane lane = view.lanes.get(0);
-        assertNotNull(lane.menu.find("Move down"), "NFR-012: steps reorder from the menu");
-        assertFalse(lane.menu.find("Move up").isEnabled(), "first step cannot move up");
+        assertNotNull(lane.menu.find(view.getTranslation("designer.menu.moveDown")), "NFR-012: steps reorder from the menu");
+        assertFalse(lane.menu.find(view.getTranslation("designer.menu.moveUp")).isEnabled(), "first step cannot move up");
         SectionCard card = lane.cards.get(0);
-        for (String label : List.of("Edit…", "Add question", "Copy to step…", "Also mount in step…", "Reporting tags…", "Move down", "Open details", "Remove from this step")) {
+        for (String key : List.of("designer.menu.edit", "sectionCard.menu.addQuestion", "sectionCard.menu.copyToStep", "sectionCard.menu.alsoMountInStep",
+                "designer.menu.reportingTags", "designer.menu.moveDown", "designer.menu.openDetails", "sectionCard.menu.removeFromStep")) {
+            String label = view.getTranslation(key);
             assertNotNull(card.menu.find(label), "NFR-012: section menu has " + label);
         }
         view.toggleAndSelect(card.node());
         QuestionRow row = view.lanes.get(0).cards.get(0).rows.get(0);
-        for (String label : List.of("Edit…", "Also add to section…", "Reporting tags…", "Move down", "Open details", "Remove from this section")) {
+        for (String key : List.of("designer.menu.edit", "questionRow.menu.alsoAddToSection", "designer.menu.reportingTags", "designer.menu.moveDown",
+                "designer.menu.openDetails", "questionRow.menu.removeFromSection")) {
+            String label = view.getTranslation(key);
             assertNotNull(row.menu.find(label), "NFR-012: question menu has " + label);
         }
-        assertFalse(row.menu.find("Move up").isEnabled(), "first question cannot move up");
+        assertFalse(row.menu.find(view.getTranslation("designer.menu.moveUp")).isEnabled(), "first question cannot move up");
     }
 
     @Test
@@ -268,19 +356,20 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     void drawerToolboxHasCollapsiblePanelsWithListsSectionsAndQuestions() {
         SurveyDesignerView view = open(fixture());
         DesignerToolbox toolbox = view.toolbox();
-        assertEquals(List.of("Controls", "Lists", "Sections", "Questions"),
+        assertEquals(List.of(view.getTranslation("designerToolbox.controls"), view.getTranslation("designerToolbox.lists"),
+                        view.getTranslation("designerToolbox.sections"), view.getTranslation("designerToolbox.questions")),
                 List.of(toolbox.controlsPanel.getSummaryText(), toolbox.listsPanel.getSummaryText(),
                         toolbox.sectionsPanel.getSummaryText(), toolbox.questionsPanel.getSummaryText()));
         assertTrue(toolbox.controlsPanel.isOpened(), "the palette stays open by default");
         assertEquals(1, toolbox.lists.items.size(), "UC-014 step 1: the fixture's one list");
         assertEquals("FixtureYesNo", toolbox.lists.items.get(0).group().name);
-        assertFalse(toolbox.lists.items.get(0).menu.find("Remove").isEnabled(), "UC-014 A2: in use by FixtureQ3");
+        assertFalse(toolbox.lists.items.get(0).menu.find(view.getTranslation("common.remove")).isEnabled(), "UC-014 A2: in use by FixtureQ3");
         assertEquals(5, toolbox.questions.items.size(), "UC-011 A6: every current question once");
-        assertNotNull(toolbox.questions.items.get(0).menu.find("Add to section…"), "NFR-012: keyboard route");
+        assertNotNull(toolbox.questions.items.get(0).menu.find(view.getTranslation("questionBankPanel.menu.addToSection")), "NFR-012: keyboard route");
         assertEquals(List.of("Fixture Section A", "Fixture Section B", "Fixture Section C"),
                 toolbox.sections.items.stream().map(r -> r.node().label()).toList(), "UC-015 A6: every current section once");
-        assertEquals("in 1 step", toolbox.sections.items.get(0).uses.getText());
-        assertNotNull(toolbox.sections.items.get(0).menu.find("Mount in step…"), "NFR-012: keyboard route");
+        assertEquals(view.getTranslation("sectionBankPanel.uses.one"), toolbox.sections.items.get(0).uses.getText());
+        assertNotNull(toolbox.sections.items.get(0).menu.find(view.getTranslation("sectionBankPanel.menu.mountInStep")), "NFR-012: keyboard route");
     }
 
     @Test
@@ -291,25 +380,25 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         test(toolbox.questions.search).setValue("children");
         List<String> shown = toolbox.questions.items.stream().filter(Component::isVisible).map(r -> r.node().label()).toList();
         assertEquals(List.of("FixtureQ3", "FixtureQ4"), shown, "matches the question text, not only the short name");
-        assertEquals("Questions (2)", toolbox.questionsPanel.getSummaryText());
-        assertEquals("Lists", toolbox.listsPanel.getSummaryText(), "the Lists panel is untouched by the Questions search");
+        assertEquals(view.getTranslation("designerToolbox.questionsCount", 2), toolbox.questionsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.lists"), toolbox.listsPanel.getSummaryText(), "the Lists panel is untouched by the Questions search");
         assertEquals(1, toolbox.lists.items.stream().filter(Component::isVisible).count());
         test(toolbox.lists.search).setValue("yes");
         assertEquals(1, toolbox.lists.items.stream().filter(Component::isVisible).count(), "matches an option text of FixtureYesNo");
-        assertEquals("Lists (1)", toolbox.listsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.listsCount", 1), toolbox.listsPanel.getSummaryText());
         test(toolbox.lists.search).setValue("zzz");
         assertTrue(toolbox.lists.empty.isVisible(), "no list matches: the hint says so");
-        assertEquals("Lists (0)", toolbox.listsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.listsCount", 0), toolbox.listsPanel.getSummaryText());
         test(toolbox.questions.search).setValue("");
         assertEquals(5, toolbox.questions.items.stream().filter(Component::isVisible).count(), "cleared: everything back");
-        assertEquals("Questions", toolbox.questionsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.questions"), toolbox.questionsPanel.getSummaryText());
         test(toolbox.sections.search).setValue("section b");
         assertEquals(List.of("Fixture Section B"),
                 toolbox.sections.items.stream().filter(Component::isVisible).map(r -> r.node().label()).toList());
-        assertEquals("Sections (1)", toolbox.sectionsPanel.getSummaryText());
-        assertEquals("Questions", toolbox.questionsPanel.getSummaryText(), "the Questions panel is untouched by the Sections search");
+        assertEquals(view.getTranslation("designerToolbox.sectionsCount", 1), toolbox.sectionsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.questions"), toolbox.questionsPanel.getSummaryText(), "the Questions panel is untouched by the Sections search");
         test(toolbox.sections.search).setValue("");
-        assertEquals("Sections", toolbox.sectionsPanel.getSummaryText());
+        assertEquals(view.getTranslation("designerToolbox.sections"), toolbox.sectionsPanel.getSummaryText());
     }
 
     @Test
@@ -383,7 +472,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     void reportingTagsMenuOpensTheElementsTagList() {
         SurveyDesignerView view = open(fixture());
         SectionCard sectionB = view.lanes.get(0).cards.get(1);
-        assertNotNull(sectionB.menu.find("Reporting tags…"), "UC-021 step 1: reachable from the card menu");
+        assertNotNull(sectionB.menu.find(view.getTranslation("designer.menu.reportingTags")), "UC-021 step 1: reachable from the card menu");
         view.reportingTags(sectionB.node());
         com.elicitsoftware.author.flow.reporting.ElementTagsDialog dialog = $(com.elicitsoftware.author.flow.reporting.ElementTagsDialog.class).single();
         assertTrue(dialog.isOpened());
@@ -405,5 +494,132 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         navigate(SurveysView.class);
         assertNull(find(StructureNavigationTree.class, layout()).all().stream().findFirst().orElse(null),
                 "UC-006 step 7: the drawer shows the application navigation again");
+    }
+
+    // ---- the address (UC-006 BR-003) --------------------------------------------------------
+
+    private SurveyDesignerView openAt(Survey s, String select) {
+        return UI.getCurrent().navigate(SurveyDesignerView.class,
+                new com.vaadin.flow.router.RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(s.id)),
+                com.vaadin.flow.router.QueryParameters.of(SurveyDesignerView.SELECT, select)).orElseThrow();
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anAddressSelectsAnElementByItsDurableId() {
+        Survey s = fixture();
+        StructureNode step = structureOf(s).roots().get(1);
+        SurveyDesignerView view = openAt(s, "step:" + step.durableId());
+        assertEquals(step, view.selected(), "UC-006 BR-003: the selection comes from the address");
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anAddressNamingAnAssignmentSelectsTheElementInThatContainer() {
+        Survey s = fixture();
+        StructureNode section = node(s, StructureNode.Kind.SECTION, "Fixture Section C");
+        StructureNode question = node(s, StructureNode.Kind.QUESTION, "FixtureQ4");
+
+        assertEquals(section, openAt(s, "ss:" + section.assignmentId()).selected());
+        SurveyDesignerView view = openAt(s, "sq:" + question.assignmentId());
+        assertEquals(question, view.selected());
+        assertEquals(question.assignmentId(), view.selected().assignmentId());
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anAddressNamingARuleOpensItsEditorOverTheTarget() {
+        Survey s = fixture();
+        Relationship rule = Relationship.find("surveyId", s.id).firstResult();
+        SurveyDesignerView view = openAt(s, "rule:" + rule.relationshipId);
+
+        assertEquals(node(s, StructureNode.Kind.QUESTION, "FixtureQ4"), view.selected(),
+                "UC-007 BR-009: the rule's target is selected under the editor");
+        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        assertTrue(dialog.isOpened(), "UC-007 BR-009: the rule's own editor is open");
+        dialog.close();
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anAddressThatNamesNothingSelectsNothing() {
+        Survey s = fixture();
+        assertNull(openAt(s, "question:999999").selected(), "UC-006 A2: no selection, not an error page");
+        assertNull(openAt(s, "nonsense").selected());
+        assertNull(openAt(s, "rule:999999").selected());
+    }
+
+    // ---- elements the board cannot draw (UC-015 A7, UC-011 A7) ------------------------------
+
+    /** Takes Section C out of every step without the cascade, the way an import can leave one. */
+    private void unmount(Survey s, StructureNode section) {
+        em.createNativeQuery("UPDATE survey.steps_sections SET effective_to = now() WHERE survey_id = ?1 AND section_id = ?2")
+                .setParameter(1, s.id).setParameter(2, section.durableId()).executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void theSectionsPanelHoldsASectionNoStepMounts() {
+        Survey s = fixture();
+        StructureNode sectionC = node(s, StructureNode.Kind.SECTION, "Fixture Section C");
+        unmount(s, sectionC);
+
+        SurveyDesignerView view = open(s);
+        assertTrue(view.lanes.stream().flatMap(l -> l.cards.stream())
+                        .noneMatch(c -> c.node().durableId().equals(sectionC.durableId())),
+                "the board draws only what a lane holds");
+        SectionBankPanel.Row row = view.toolbox().sections.items.stream()
+                .filter(r -> r.node().durableId().equals(sectionC.durableId())).findFirst().orElseThrow();
+        assertFalse(row.placed, "UC-015 A7: the panel marks it as being in no step");
+        assertNotNull(row.menu.find(row.getTranslation("common.remove")),
+                "UC-015 A7: no assignment to remove, so the element itself can be removed");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anAddressForAnUnplacedSectionRevealsItInThePanel() {
+        Survey s = fixture();
+        StructureNode sectionC = node(s, StructureNode.Kind.SECTION, "Fixture Section C");
+        unmount(s, sectionC);
+
+        SurveyDesignerView view = openAt(s, "section:" + sectionC.durableId());
+        assertNull(view.selected(), "nothing on the board to select");
+        assertTrue(view.toolbox().sectionsPanel.isOpened(), "UC-007 BR-009: the panel that does hold it is opened");
+        assertTrue(view.toolbox().sections.items.stream()
+                        .filter(r -> r.node().durableId().equals(sectionC.durableId()))
+                        .anyMatch(r -> r.hasClassName("designer-panel-row-revealed")),
+                "UC-007 BR-009: and the row is marked");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void anUnplacedElementCanBeRemovedFromThePanel() {
+        Survey s = fixture();
+        StructureNode sectionC = node(s, StructureNode.Kind.SECTION, "Fixture Section C");
+        unmount(s, sectionC);
+
+        SurveyDesignerView view = open(s);
+        view.removeUnplaced(view.toolbox().sections.items.stream()
+                .filter(r -> r.node().durableId().equals(sectionC.durableId())).findFirst().orElseThrow().node());
+        com.vaadin.flow.component.confirmdialog.ConfirmDialog dialog =
+                $(com.vaadin.flow.component.confirmdialog.ConfirmDialog.class).single();
+        ComponentUtil.fireEvent(dialog, new com.vaadin.flow.component.confirmdialog.ConfirmDialog.ConfirmEvent(dialog, true));
+
+        assertTrue(view.toolbox().sections.items.stream().noneMatch(r -> r.node().durableId().equals(sectionC.durableId())),
+                "UC-015 A7: the element itself is retired, so the panel no longer lists it");
+    }
+
+    private com.elicitsoftware.author.survey.SurveyStructureQuery.Tree structureOf(Survey s) {
+        return structureQuery.tree(s.id, false);
+    }
+
+    private StructureNode node(Survey s, StructureNode.Kind kind, String label) {
+        return structureOf(s).all().stream().filter(n -> n.kind() == kind && label.equals(n.label()))
+                .findFirst().orElseThrow();
     }
 }

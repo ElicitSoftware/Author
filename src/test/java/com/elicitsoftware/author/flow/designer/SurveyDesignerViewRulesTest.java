@@ -13,6 +13,7 @@ package com.elicitsoftware.author.flow.designer;
 
 import com.elicitsoftware.author.flow.SurveyEditorView;
 import com.elicitsoftware.author.survey.RelationshipQuery;
+import com.elicitsoftware.author.survey.Tokens;
 import com.elicitsoftware.model.OperatorType;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.StructuralElement;
@@ -20,6 +21,7 @@ import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
 import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.combobox.ComboBoxBase;
 import com.vaadin.flow.component.dnd.DragStartEvent;
 import com.vaadin.flow.component.dnd.DropEvent;
 import io.quarkus.test.TestTransaction;
@@ -27,6 +29,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -43,6 +46,9 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
 
     @Inject
     RelationshipQuery relationshipQuery;
+
+    @Inject
+    EntityManager em;
 
     private Survey fixture() {
         return Survey.find("name", "AuthorFixture").firstResult();
@@ -79,7 +85,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
 
         assertEquals("sq-" + row.node().assignmentId(), view.overlay.pendingSource(), "UC-019 step 2: the arrow hangs from the question");
         assertEquals("REPEAT", view.overlay.pendingAction());
-        assertNotNull(row.menu.find("Add rule…"), "UC-019 A1: keyboard path on the row menu");
+        assertNotNull(row.menu.find(row.getTranslation("questionRow.menu.addRule")), "UC-019 A1: keyboard path on the row menu");
     }
 
     @Test
@@ -101,7 +107,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         assertTrue(dialog.isOpened(), "UC-019 step 4");
         assertEquals(count.node().assignmentId(), dialog.upstream.getValue().assignmentId(), "upstream pre-filled");
         assertEquals("REPEAT", dialog.action.getValue().name, "action pre-filled from the glyph");
-        assertEquals("Section", dialog.targetKind.getValue());
+        assertEquals(RelationshipDialog.KIND_SECTION, dialog.targetKind.getValue());
         assertEquals(sectionC.node().assignmentId(), dialog.target.getValue().assignmentId(), "target pre-filled");
         assertTrue(dialog.token.isVisible(), "UC-019 BR-005: any action may carry a token");
         assertFalse(dialog.token.isRequiredIndicatorVisible(), "only a Text rule requires one (UC-019 A2)");
@@ -217,5 +223,56 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         assertNull(after.downstreamSsId, "still question-only");
         assertNull(after.downstreamStepId);
         assertNull(after.upstreamStepId, "still fires from every mount");
+    }
+
+    // ---- UC-019 A2 / FR-012: the token field shows the name, the sentence shows the reference ----
+
+    /**
+     * Author#21: a token typed as the reference a text writes settles on its name, because the runtime
+     * keys a text's values on the name. The sentence reads the placeholder back the way a text writes
+     * it, so the author sees both halves of the convention at once.
+     */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "rules.author", roles = {"elicit_author"})
+    void aTokenTypedAsAReferenceSettlesOnItsName() {
+        Survey s = fixture();
+        SurveyDesignerView view = open(s);
+        SectionCard sectionA = view.lanes.get(0).cards.get(0);
+        view.toggleAndSelect(sectionA.node());
+        QuestionRow welcome = sectionA.rows.get(0);
+        QuestionRow name = sectionA.rows.get(1);
+
+        ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.ConnectRequestedEvent(view.overlay, true,
+                "sq-" + welcome.node().assignmentId(), "sq-" + name.node().assignmentId(),
+                "ss-" + sectionA.node().assignmentId(), "SHOW"));
+        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+
+        ComponentUtil.fireEvent(dialog.token, new ComboBoxBase.CustomValueSetEvent<>(dialog.token, true, " <s1> "));
+
+        assertEquals("S1", dialog.token.getValue(), "the brackets belong to the text that names the token");
+        assertTrue(dialog.sentence.getElement().getTextRecursively().contains("{<S1>}"),
+                "and the sentence reads it as a text writes it: " + dialog.sentence.getElement().getTextRecursively());
+        test(dialog.cancel).click();
+    }
+
+    /** An import can write the column directly (UC-005); the dialog shows the name the platform means. */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "rules.author", roles = {"elicit_author"})
+    void openingARuleSavedWithItsBracketsShowsTheNameAlone() {
+        Survey s = fixture();
+        em.createNativeQuery("UPDATE survey.relationships SET token = '<S1>' WHERE survey_id = ?1")
+                .setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+        SurveyDesignerView view = open(s);
+        int ruleId = relationshipQuery.edges(s.id, false).get(0).relationshipId();
+
+        ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.EdgeSelectedEvent(view.overlay, true, ruleId));
+
+        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        assertEquals(Tokens.canonical("<S1>"), dialog.token.getValue(), "saving the rule corrects the row");
+        test(dialog.cancel).click();
     }
 }

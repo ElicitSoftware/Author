@@ -11,6 +11,7 @@ package com.elicitsoftware.author.diagnostics;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -36,14 +37,15 @@ public class RequiredConfigCheck {
     public record RequiredSetting(String property, String envVar, String purpose, boolean present) {
     }
 
-    private record Required(String property, String envVar, String purpose) {
+    /** {@code purposeKey} names the translation of what the setting is for (UC-040). */
+    private record Required(String property, String envVar, String purposeKey) {
     }
 
     private static final List<Required> REQUIRED = List.of(
             new Required("quarkus.datasource.password", "ELICIT_DB_PASSWORD",
-                    "password of the database user Author connects as"),
+                    "systemOverviewView.setting.datasourcePassword"),
             new Required("quarkus.oidc.credentials.secret", "OIDC_CLIENT_SECRET",
-                    "client secret registered with the identity provider"));
+                    "systemOverviewView.setting.oidcSecret"));
 
     public RequiredConfigCheck() {
         // CDI managed bean
@@ -52,7 +54,8 @@ public class RequiredConfigCheck {
     public List<RequiredSetting> requiredSettings() {
         Config config = ConfigProvider.getConfig();
         return REQUIRED.stream()
-                .map(r -> new RequiredSetting(r.property(), r.envVar(), r.purpose(), isPresent(config, r.property())))
+                .map(r -> new RequiredSetting(r.property(), r.envVar(), Translations.get(r.purposeKey()),
+                        isPresent(config, r.property())))
                 .toList();
     }
 

@@ -79,6 +79,31 @@ class SurveysViewTest extends QuarkusBrowserlessTest {
     }
 
     @Test
+    @TestTransaction
+    @TestSecurity(user = "view.author", roles = {"elicit_author"})
+    void deleteIsGuardedByTypingTheNameAndOffersABackup() {
+        SurveysView view = navigate(SurveysView.class);
+        Survey empty = Survey.find("name", "AuthorFixtureEmpty").firstResult();
+        view.confirmDelete(empty);
+        DeleteSurveyDialog dialog = $(DeleteSurveyDialog.class).single();
+
+        assertFalse(dialog.delete.isEnabled(), "UC-047 BR-002: disabled until the name is typed");
+        test(dialog.confirmName).setValue("AuthorFixture");
+        assertFalse(dialog.delete.isEnabled(), "a different survey's name does not unlock it");
+
+        // UC-047 step 4: the backup is a download link, offered before anything is typed.
+        assertTrue(dialog.backup.getHref() != null && !dialog.backup.getHref().isBlank());
+
+        test(dialog.confirmName).setValue("AuthorFixtureEmpty");
+        assertTrue(dialog.delete.isEnabled());
+        test(dialog.delete).click();
+
+        assertFalse(dialog.isOpened());
+        assertTrue(Survey.findByIdOptional(empty.id).isEmpty());
+        assertFalse(view.grid.getGenericDataView().getItems().anyMatch(s -> s.id.equals(empty.id)));
+    }
+
+    @Test
     @TestSecurity(user = "view.nobody", roles = {})
     void requiresAuthorRole() {
         // UC-002 A1: without elicit_author the route is not reachable; the access checker

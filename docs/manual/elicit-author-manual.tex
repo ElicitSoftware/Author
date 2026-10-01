@@ -94,6 +94,14 @@ Steps run in order, sections run in order within their step, and questions run i
 their section. Unless a rule says otherwise, that display order is exactly what the respondent
 experiences.
 
+Only the first step is built when a respondent signs in. The survey creates and saves every
+element no rule controls before the first page appears, so everything after the first step is
+built \emph{just in time} instead — by a Show or Repeat rule, at the moment the respondent's
+answers call for it. That keeps the first page fast, and it keeps the database free of questions
+nobody sees: a respondent who abandons the survey in the first step or two has had only those
+steps saved. Every step, section and question after the first step therefore needs a rule that
+builds it (see \emph{Connecting questions with rules}).
+
 \subsection{The rules}
 
 A \term{rule} reads the answer to one upstream question, compares it with a reference value using
@@ -112,7 +120,7 @@ There are three actions:
   \item \term{Repeat} — the target section or question is repeated as many times as the answer
         says, for example one \ui{Child} section per child.
   \item \term{Text} — the answer is written into the target's text wherever a
-        \texttt{\{TOKEN|default\}} placeholder appears, so a later question can say
+        \texttt{\{<TOKEN>|default\}} placeholder appears, so a later question can say
         ``your daughter'' rather than ``your child''.
 \end{itemize}
 
@@ -132,12 +140,13 @@ Every element gets a key the moment it is created and keeps it for life. Removin
 \term{retires} it rather than deleting it, so answers already recorded at a site keep their
 meaning. When the survey is ready you \term{export} a \texttt{.elicit} file; the Admin app
 installs it at a site the first time and updates it in place after that, matching elements by
-key.
+key. Deleting a whole survey is the one thing that does remove rows; it has its own section at
+the end, because it cannot be undone.
 
 \begin{elicitnote}[Vocabulary]
 Author never uses ``publish'' for a state in the database — the verb is \emph{export}. The
 credential a respondent enters to reach a survey is the \term{access code}, never a token;
-``token'' means only the \texttt{\{KEY|default\}} placeholder in question text.
+``token'' means only the \texttt{\{<KEY>|default\}} placeholder in question text.
 \end{elicitnote}
 
 %% ------------------------------------------------------------------ 2
@@ -190,6 +199,45 @@ with no steps, a choice question with no list, a rule that points backwards — 
 ``Ready to export: no findings'' before the export is worth doing.
 
 %% ------------------------------------------------------------------ 4
+\section{Starting from an AI draft}
+\markboth{Starting from an AI draft}{}
+
+There is a third way to start, beside the empty form and importing a file someone sent you: have
+an AI agent write the first draft. Choose \ui{Draft with AI}, beside \ui{New survey} on the
+surveys list and in the navigation.
+
+Author does none of the drafting. What the page gives you is the \emph{specification} --- one
+self-contained document that teaches an agent the survey model and the exact record format of a
+\texttt{.elicit} file --- and the four steps of the round trip:
+
+\begin{enumerate}
+  \item \ui{Copy prompt to clipboard} puts a short instruction and the whole specification on
+        your clipboard, ready to paste into any AI session. \ui{Download the specification}
+        saves the same document as a file, for an agent you would rather attach it to.
+  \item Describe the survey you want. A good agent will ask you the questions that decide
+        structure: the topics to cover, what repeats per person or per item, what has to be
+        conditional.
+  \item Save the \texttt{.elicit} file it writes.
+  \item Bring it back to \ui{Import definition}. The two pages link to each other.
+\end{enumerate}
+
+\begin{elicitnote}[Nothing leaves the building on its own]
+Author sends nothing to any AI service and needs no account with one. You carry the
+specification out and you carry the draft back, so this works with whatever agent you already
+use, and a deployment with no outbound network access loses nothing.
+\end{elicitnote}
+
+A draft is not a deployable definition. It is marked so that only Author will read it --- the
+Admin console refuses it --- and it arrives here with no keys of its own: Author mints the
+survey key and every element key on import, so what you get is an ordinary working copy, exactly
+like one you had typed yourself.
+
+Expect to correct things. Open the imported survey and read the validation panel: an agent that
+has never seen your data will get some rules backwards and leave some lists empty. Fix them in
+the designer, or hand the findings back to the agent and import a corrected draft as a second
+survey. Nothing is deployed until you export it yourself.
+
+%% ------------------------------------------------------------------ 5
 \section{Laying out steps and sections}
 \markboth{Laying out steps and sections}{}
 
@@ -229,7 +277,7 @@ A step with no sections shows the respondent nothing. Add one from the step's me
 One click on a lane opens it to reveal its section cards; one click on a card opens it to reveal
 its question rows. A double click on any of them opens its editor.
 
-%% ------------------------------------------------------------------ 5
+%% ------------------------------------------------------------------ 6
 \section{Giving choice questions their options}
 \markboth{Giving choice questions their options}{}
 
@@ -243,7 +291,7 @@ A list belongs to the survey, not to one question, so several questions can offe
 options. Drag a list's glyph onto a question to give it those options, or pick the list in the
 question's own editor.
 
-%% ------------------------------------------------------------------ 6
+%% ------------------------------------------------------------------ 7
 \section{Adding questions}
 \markboth{Adding questions}{}
 
@@ -260,7 +308,7 @@ The fields worth knowing:
         the type, and the preview at the bottom shows the field the respondent will get.
   \item \ui{Short text} — the label on the board and in the structure tree. Keep it short.
   \item \ui{Question text} — what the respondent reads. This is where a
-        \texttt{\{TOKEN|default\}} placeholder goes if a Text rule is to fill it.
+        \texttt{\{<TOKEN>|default\}} placeholder goes if a Text rule is to fill it.
   \item \ui{Required} and \ui{Validation message} — whether an answer is compulsory, and what
         the respondent is told when it is missing.
   \item \ui{Sample answer} — previews what a Text rule reading this question would write
@@ -288,7 +336,7 @@ change to its text reaches every section it is in.
 \screenshot{15-question-bank}{The Questions panel. Each question appears once, with how many
 sections use it; the search box narrows the panel as you type.}
 
-%% ------------------------------------------------------------------ 7
+%% ------------------------------------------------------------------ 8
 \section{Connecting questions with rules}
 \markboth{Connecting questions with rules}{}
 
@@ -310,11 +358,22 @@ an answer to read. A count question therefore sits in the section \emph{before} 
 repeats — a section cannot repeat itself.
 \end{elicitcaution}
 
+\begin{elicitcaution}[Every step after the first needs a rule]
+Only the first step may hold elements without a rule. Every question in a later step has to be
+reached by a Show or Repeat rule — one on its step, on its section in that step, or on the
+question itself; a rule reaches its target and everything inside it. Text rules do not count,
+because they build nothing. For a step that always follows, the usual rule is \ui{Field exists}
+$\rightarrow$ \ui{Show} on the step, read from a question on an earlier step such as its
+introduction: it holds as soon as that question has been presented. Validation reports a step
+nothing builds as an error, and inside a step that has rules, each section or question nothing
+reaches; export waits until each has its rule.
+\end{elicitcaution}
+
 Rules are drawn on the board as arrows from the question that is read to the element that is
-acted on, labelled with the action. Untick \ui{Show rules} at the top of the board to hide them
+acted on, labeled with the action. Untick \ui{Show rules} at the top of the board to hide them
 while you work on structure.
 
-%% ------------------------------------------------------------------ 8
+%% ------------------------------------------------------------------ 9
 \section{Tagging for reporting}
 \markboth{Tagging for reporting}{}
 
@@ -341,7 +400,7 @@ recorded, once the survey is exported and applied. Historical reports change wit
 tag change as a decision about past data, not only about future data.
 \end{elicitcaution}
 
-%% ------------------------------------------------------------------ 9
+%% ------------------------------------------------------------------ 10
 \section{Checking and exporting}
 \markboth{Checking and exporting}{}
 
@@ -366,13 +425,51 @@ Author for further editing, keeping every key. That is how you pick up a survey 
 exported, or start from one of the sample definitions.
 \end{elicitnote}
 
-%% ------------------------------------------------------------------ 10
+%% ------------------------------------------------------------------ 11
+\section{Deleting a survey}
+\markboth{Deleting a survey}{}
+
+A survey you no longer need, or one you are about to replace from a file, can be deleted from the
+\ui{Surveys} list: choose \ui{Delete} on its row. Unlike removing an element, which retires it,
+this deletes the survey and everything in it --- steps, sections, questions, choice lists, rules,
+reporting tags and translations, removed elements included. Nothing in Author can bring it back.
+
+The confirmation therefore asks for three things:
+
+\begin{itemize}
+  \item \textbf{Take the backup.} \ui{Download backup} saves the whole survey exactly as it stands
+        --- even with validation errors --- to a \texttt{.elicit} file. \ui{Import definition} reads
+        it back with every key unchanged, which is the only way to undo a delete.
+  \item \textbf{Read what it says about sites.} If the survey has been exported, the confirmation
+        names who exported it last and the release note. Author holds the master copy; every site
+        that applied an export keeps its own and is not touched by the delete.
+  \item \textbf{Type the survey's name.} \ui{Delete survey} stays disabled until the name matches
+        exactly.
+\end{itemize}
+
+\begin{elicitnote}[Changing a site after a delete]
+A site matches every update by the keys in the file. To change a site's copy later, import the
+backup, edit it and export again. A survey rebuilt from scratch has new keys and would install at
+the site beside the old one rather than update it.
+\end{elicitnote}
+
+The backup is not an export: it records no release note, and it is marked as a draft
+(\texttt{ELICIT\_SURVEY\_DRAFT\_V1}), so the Admin app refuses it and no site can install it
+by mistake. Re-import it, check the validation panel, and export as usual before it goes
+anywhere.
+
+Author also refuses to delete a survey that has respondents in its own database: Author holds
+definitions, not answers, and recorded answers are never deleted from it.
+
+%% ------------------------------------------------------------------ 12
 \section{Where to look next}
 \markboth{Where to look next}{}
 
 \begin{itemize}
   \item \ui{How surveys work} in the application navigation — this manual's first section, drawn
         live with the real glyphs.
+  \item \ui{Draft with AI} — the specification that lets an AI agent write a first draft,
+        and the round trip it belongs to.
   \item \ui{Import definition} — bring an existing \texttt{.elicit} file into Author.
   \item \ui{System} (for administrators) — version, database, branding, connections and OIDC
         diagnostics for a deployment.

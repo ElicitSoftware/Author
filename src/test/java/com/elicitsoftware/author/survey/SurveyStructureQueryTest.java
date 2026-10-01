@@ -58,4 +58,28 @@ class SurveyStructureQueryTest {
         assertEquals("Welcome to the fixture survey.", SurveyStructureQuery.plain("<p>Welcome to the fixture survey.</p>"));
         assertEquals(58, SurveyStructureQuery.plain("x".repeat(100)).length(), "57 characters plus an ellipsis");
     }
+
+    /**
+     * UC-006 / UC-045 BR-003: a label is where an author sees that a text is personalized, so the
+     * token inside a placeholder survives even though it looks exactly like a tag.
+     */
+    @Test
+    void plainTextKeepsTokensInsidePlaceholders() {
+        assertEquals("How old is {<NAME>|this person}?",
+                SurveyStructureQuery.plain("How old is {<NAME>|this person}?"));
+        assertEquals("{Does <S1>|Do you} currently have cancer?",
+                SurveyStructureQuery.plain("{Does <S1>|Do you} currently have cancer?"));
+        assertEquals("{<S1>}", SurveyStructureQuery.plain("{<S1>}"), "a placeholder with no default");
+    }
+
+    /** Markup around a placeholder still goes, and a bare tag is still markup wherever it sits. */
+    @Test
+    void plainTextStillStripsMarkupOutsidePlaceholders() {
+        assertEquals("Ask {<S1>'s|your} mother",
+                SurveyStructureQuery.plain("<p>Ask <b>{<S1>'s|your}</b> mother</p>"));
+        assertEquals("bold then {<NAME>|someone}",
+                SurveyStructureQuery.plain("<b>bold</b> then {<NAME>|someone}"));
+        assertEquals("Name of person {Q#}", SurveyStructureQuery.plain("Name of person {Q#}"),
+                "the instance counter is not a token and is left alone either way");
+    }
 }

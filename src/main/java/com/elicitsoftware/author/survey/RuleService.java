@@ -13,6 +13,8 @@ package com.elicitsoftware.author.survey;
 
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.ConstraintViolationTranslator;
+import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.Step;
@@ -30,8 +32,9 @@ import java.util.Optional;
  * Write side of rules (UC-019): create, edit, re-point, retire and restore relationships with
  * the runtime's constraints enforced up front — a downstream path that holds together (BR-001,
  * completed from the chosen target by {@link RulePath}), a question assignment upstream (BR-002),
- * a token for Text (any action may carry one, BR-005), no Repeat onto a step (A3), and a target that
- * comes after the question the rule reads from (UC-033 A1).
+ * a token for Text (any action may carry one, BR-005), a token that is a name a text could write
+ * between angle brackets (A2), no Repeat onto a step (A3), and a target that comes after the question
+ * the rule reads from (UC-033 A1).
  */
 @ApplicationScoped
 public class RuleService {
@@ -215,9 +218,27 @@ public class RuleService {
             throw new AuthoringException("A Text rule needs the token it replaces", "token");
         }
         if (r.token != null) {
-            r.token = r.token.trim();
-            if (r.token.length() > 10) {
-                throw new AuthoringException("Token names are at most 10 characters", "token");
+            // FR-012: the token is the name alone. The brackets belong to the text that names it, and
+            // the runtime keys a text's values on this column verbatim, so a token stored <S1> is
+            // asked for under a name it does not have and fills nothing (Author#21). An author who
+            // types the reference, or types the name in lower case, is saved from it; measured after
+            // that, so the limit counts the name and not brackets that are about to be dropped.
+            r.token = Tokens.canonical(r.token);
+            if (r.token.length() > Tokens.MAX_LENGTH) {
+                throw new AuthoringException("Token names are at most " + Tokens.MAX_LENGTH + " characters", "token");
+            }
+            if (!Tokens.TOKEN_NAME.matcher(r.token).matches()) {
+                throw new AuthoringException("A token name starts with a letter and holds letters, digits and"
+                        + " underscores only, so no text could ever name '" + r.token + "'", "token");
+            }
+            // UC-019 BR-006: a token holds an answer or the rule's own value. A display-only question
+            // has no answer to give, so a rule on one fills nothing unless it carries a value.
+            if (!upstreamCollectsAnswer(surveyId, r.upstreamSqId)
+                    && (r.defaultUpstreamValue == null || r.defaultUpstreamValue.isBlank())) {
+                throw new AuthoringException("A " + upstreamTypeName(surveyId, r.upstreamSqId)
+                        + " question collects no answer, so {" + Tokens.reference(r.token) + "} would stay unfilled."
+                        + " Read from a question the respondent answers, or give the rule a default"
+                        + " upstream value to fill the token with", "upstreamSqId");
             }
         }
         if ("REPEAT".equals(r.actionType.name) && r.target() == Relationship.Target.STEP) {
@@ -229,6 +250,37 @@ public class RuleService {
         if (r.description == null || r.description.isBlank()) {
             r.description = RelationshipQuery.condition(r);
         }
+    }
+
+    /**
+     * Whether the question a rule reads collects an answer at all, so a token on that rule can be
+     * filled from one (UC-019 BR-006). True when the upstream cannot be resolved: a missing
+     * assignment is reported by its own check, and this one should not double up on it.
+     */
+    public boolean upstreamCollectsAnswer(int surveyId, Integer upstreamSqId) {
+        QuestionType type = upstreamType(surveyId, upstreamSqId);
+        return type == null || Tokens.collectsAnswer(type);
+    }
+
+    /** The upstream question's type name for a message, or "display-only" when it cannot be resolved. */
+    private String upstreamTypeName(int surveyId, Integer upstreamSqId) {
+        QuestionType type = upstreamType(surveyId, upstreamSqId);
+        return type == null || type.name == null ? "display-only" : type.name;
+    }
+
+    private QuestionType upstreamType(int surveyId, Integer upstreamSqId) {
+        if (upstreamSqId == null) {
+            return null;
+        }
+        Optional<SectionsQuestion> sq = SectionsQuestion.find(
+                "surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3",
+                surveyId, upstreamSqId, StructuralElement.SENTINEL).firstResultOptional();
+        if (sq.isEmpty()) {
+            return null;
+        }
+        Optional<Question> question = Question.find("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3",
+                surveyId, sq.get().questionId, StructuralElement.SENTINEL).firstResultOptional();
+        return question.map(q -> q.questionType).orElse(null);
     }
 
     private static void copy(Relationship from, Relationship to) {

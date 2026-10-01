@@ -52,45 +52,52 @@ public class SystemDatabaseView extends VerticalLayout implements HasDynamicTitl
 
     @PostConstruct
     void init() {
-        add(new H3("Database"));
-        add(new Paragraph("Author owns no migrations. The survey schema in its database is created by the "
-                + "Survey preview instance that shares the database, so a missing schema means that instance "
-                + "has not started against this database yet."));
+        add(new H3(getTranslation("systemDatabaseView.title")));
+        add(new Paragraph(getTranslation("systemDatabaseView.intro")));
 
-        add(new H4("Connection"));
+        add(new H4(getTranslation("systemDatabaseView.connection")));
         DatabaseDiagnostics.ConnectionReport connection = database.checkConnection();
         Grid<Row> connectionGrid = new Grid<>();
         connectionGrid.setId(CONNECTION_GRID_ID);
         connectionGrid.setItems(List.of(
-                new Row("State", connection.result().isUp() ? "OK" : "Failed"),
-                new Row("Configured user", connection.configuredUser()),
-                new Row("Connected as", valueOrDash(connection.connectedAs())),
-                new Row("Database", valueOrDash(connection.database())),
-                new Row("Server", connection.result().detail()),
-                new Row("Round trip", connection.result().durationMs() + " ms")));
-        connectionGrid.addColumn(Row::label).setHeader("Item").setAutoWidth(true);
-        connectionGrid.addColumn(Row::value).setHeader("Value").setFlexGrow(1);
+                new Row(getTranslation("systemDatabaseView.row.state"), getTranslation(connection.result().isUp() ? "system.badge.ok" : "system.badge.failed")),
+                new Row(getTranslation("systemDatabaseView.row.configuredUser"), connection.configuredUser()),
+                new Row(getTranslation("systemDatabaseView.row.connectedAs"), valueOrDash(connection.connectedAs())),
+                new Row(getTranslation("systemDatabaseView.row.database"), valueOrDash(connection.database())),
+                new Row(getTranslation("systemDatabaseView.row.server"), connection.result().detail()),
+                new Row(getTranslation("systemDatabaseView.row.roundTrip"), SystemBadges.millis(connection.result().durationMs()))));
+        connectionGrid.addColumn(Row::label).setHeader(getTranslation("system.grid.item")).setAutoWidth(true);
+        connectionGrid.addColumn(Row::value).setHeader(getTranslation("system.grid.value")).setFlexGrow(1);
         connectionGrid.setAllRowsVisible(true);
         connectionGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_WRAP_CELL_CONTENT);
         add(connectionGrid);
 
-        add(new H4("Survey schema"));
+        add(new H4(getTranslation("systemDatabaseView.surveySchema")));
         DatabaseDiagnostics.MigrationReport migration = database.surveyMigration();
         Grid<Row> schemaGrid = new Grid<>();
         schemaGrid.setId(SCHEMA_GRID_ID);
         schemaGrid.setItems(List.of(
-                new Row("Schema present", database.checkSchema().detail()),
-                new Row("Survey migration (survey.flyway_history)", !migration.installed() ? "not installed"
-                        : migration.version() == null ? valueOrDash(migration.installedOn()).equals("-") ? "empty"
-                        : migration.installedOn() : migration.version()
-                        + (migration.success() ? " applied " : " FAILED ") + valueOrDash(migration.installedOn())),
-                new Row("Kimball durable-key sequences", database.checkDurableSequences().detail()),
-                new Row("Surveys authored", Long.toString(database.surveyCount()))));
-        schemaGrid.addColumn(Row::label).setHeader("Item").setAutoWidth(true);
-        schemaGrid.addColumn(Row::value).setHeader("Value").setFlexGrow(1);
+                new Row(getTranslation("systemDatabaseView.row.schemaPresent"), database.checkSchema().detail()),
+                new Row(getTranslation("systemDatabaseView.row.surveyMigration"), migrationState(migration)),
+                new Row(getTranslation("systemDatabaseView.row.durableSequences"), database.checkDurableSequences().detail()),
+                new Row(getTranslation("systemDatabaseView.row.surveysAuthored"), Long.toString(database.surveyCount()))));
+        schemaGrid.addColumn(Row::label).setHeader(getTranslation("system.grid.item")).setAutoWidth(true);
+        schemaGrid.addColumn(Row::value).setHeader(getTranslation("system.grid.value")).setFlexGrow(1);
         schemaGrid.setAllRowsVisible(true);
         schemaGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_WRAP_CELL_CONTENT);
         add(schemaGrid);
+    }
+
+    /** The migration cell: not installed, empty, unreadable (carried in installedOn), or version plus outcome. */
+    private String migrationState(DatabaseDiagnostics.MigrationReport migration) {
+        if (!migration.installed()) {
+            return getTranslation("systemDatabaseView.migration.notInstalled");
+        }
+        if (migration.version() == null) {
+            return migration.installedOn() == null ? getTranslation("systemDatabaseView.migration.empty") : migration.installedOn();
+        }
+        return getTranslation(migration.success() ? "systemDatabaseView.migration.applied" : "systemDatabaseView.migration.failed",
+                migration.version(), valueOrDash(migration.installedOn()));
     }
 
     private static String valueOrDash(String value) {
@@ -99,6 +106,6 @@ public class SystemDatabaseView extends VerticalLayout implements HasDynamicTitl
 
     @Override
     public String getPageTitle() {
-        return "System Database";
+        return getTranslation("systemDatabaseView.pageTitle");
     }
 }

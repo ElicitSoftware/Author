@@ -27,20 +27,61 @@ and expresses removals as retirements (`effective_to` closed). See
 
 ## Stack
 
-- Java 25, Quarkus 3.39.2, Maven build
-- Vaadin 25.2.7 (Flow, server-side UI)
+- Java 25, Quarkus 3.40.1 LTS, Maven build
+- Vaadin 25.3.0 (Flow, server-side UI)
 - Hibernate ORM with Panache (JPA) — **not jOOQ**. Author owns **no
   production Flyway migrations**; it maps entities onto the `survey` schema that
   Survey's `db/migration` creates. Tests replay a verbatim mirror of those
   scripts (`src/test/resources/db/schema-mirror`, refreshed by
   `scripts/sync-survey-schema.sh`) into a Testcontainers Postgres.
 - PostgreSQL — Author's **own** database carrying the `survey` schema (the
-  `author` database in the umbrella repo's compose stack), never a deployed
+  `author` database in this repo's `docker-compose.yml`), never a deployed
   site's database. Connects as `survey_user`.
 - OIDC / Keycloak authorization (matches Admin's setup); client
   `elicit-author`, role `elicit_author` (not implied by `elicit_admin`).
   Dev port **8084**.
 - Docker for deployment
+
+## This repo is private, and nests inside the umbrella
+
+Author is **not** open source and is no longer cloned by the umbrella's
+`cloneAllProjects.sh`. It is still expected to sit at `Elicit/Author/`, where
+the umbrella's `.gitignore` hides it, because shared assets are kept in exactly
+one place — the umbrella — rather than duplicated here:
+
+| Lives in the umbrella | Lives here |
+| --- | --- |
+| `../elicit-brand`, `../sftp_ssh`, `../../FHHS/family-history-survey.elicit` | `docker-compose.yml`, `keycloak/`, `db-init/` |
+
+`keycloak/elicit-realm.json` is Author's own copy and deliberately diverges from
+the umbrella's: the umbrella's no longer carries the `elicit-author` client, its
+roles or the `author` user, and this one does. A realm change that matters to
+both has to be made twice.
+
+`docker-compose.yml` here runs the **whole platform** — Survey, Admin, FHHS and
+Pedigree alongside `author` and `author-survey` — because the end-to-end suites
+drive the site applications too. It cannot run at the same time as the
+umbrella's stack or either multi-site suite; they share host ports.
+
+## End-to-end suites
+
+`e2e-tests/`, `e2e_multisite/` and `e2e_multisite_multilingual/` are standalone
+Maven projects (no parent pom) holding the platform's Playwright tests. They
+moved here when Author went private, because all three drive Author and the two
+multi-site suites compile the Author page objects out of
+`e2e-tests/src/test/java` by relative path — which is why they must stay
+siblings.
+
+> **These run through `mvn`, not the Quarkus Dev MCP tools.** Each suite's
+> `run.sh` calls `mvn -DskipTests=false test` against an already-running stack
+> that it starts itself. The "never `mvn test`" rule below governs Author's own
+> module tests under `src/test/`; it does not apply here. Do not "fix" the
+> suites to use `devui-testing_runTests` — there is no dev-mode app to run them
+> in.
+
+They are opt-in (`skipTests` defaults to true) and need Docker images built
+first: Survey/Admin/FHHS/Pedigree from the umbrella's `buildDockerImages.sh`,
+Author from `./buildDockerImage.sh`.
 
 ## MCP Servers and Skills
 
@@ -101,7 +142,7 @@ relevant only once implementation code exists.
 ## Terminology
 
 - **Access code** = the respondent credential (Admin issues it). **Token** =
-  only a question-text placeholder (`{KEY|default}`, `relationships.token`).
+  only a question-text placeholder (`{<KEY>|default}`, `relationships.token`).
 - Versioning vocabulary: durable key, element key, version, current, retired,
   revision. Never `is_current`, `active`, or `is_draft`; never "publish" for a
   database state — the verb is **export**.
@@ -113,6 +154,13 @@ relevant only once implementation code exists.
 
 ## Working Agreements
 
+- **AIUP first, for every change.** Before writing or changing code, update the
+  artifacts it implements: the FR row in `docs/requirements.md`, the use case in
+  `docs/use_cases.puml`, and its spec under `docs/use_cases/` (`/use-case-spec`,
+  validated with the skill's `validate_use_case.py --strict`). Code and tests
+  then cite the spec's `UC-XXX` and `BR-XXX` IDs. A bug fix that changes no
+  specified behavior is the only exception; a fix that does gets its spec
+  corrected first.
 - Re-run upstream skills when requirements change so downstream artifacts
   (entity model, use-case specs) stay consistent.
 - Tests must be traceable to a use case — reference the `UC-XXX` ID in test
@@ -124,10 +172,14 @@ relevant only once implementation code exists.
 ## Reference
 
 - Vision: `docs/vision.md`
-- AI authoring spec: `docs/ai/AUTHORING_FOR_AI.md` — the survey model and the `.elicit`
+- AI authoring spec: `docs/ai/AUTHORING_FROM_AI.md` — the survey model and the `.elicit`
   record format written for an AI agent, so an author can get a draft definition out of an
   AI session without Author running (UC-042, FR-048). Drafts carry `ELICIT_SURVEY_DRAFT_V1`,
-  which only Author reads; `AuthoringForAiDocTest` gates the document against the code
+  which only Author reads; `AuthoringFromAiDocTest` gates the document against the code
   (NFR-017), so change the document whenever the format, the lookup ids or validation change.
+  The same file is packaged onto the classpath at `ai/` by a `<resource>` block in `pom.xml`
+  and served role-gated at `/api/authoring-spec`, so `AiDraftView` (route `ai-draft`, FR-063)
+  can hand it to an author who has no checkout — the third way to start a survey, beside the
+  blank form and importing a definition. Edit the document under `docs/ai/`, never a copy.
 - Reference deployment: [FHHS](https://github.com/ElicitSoftware/FHHS)
 - Marketplace: https://github.com/AI-Unified-Process/marketplace

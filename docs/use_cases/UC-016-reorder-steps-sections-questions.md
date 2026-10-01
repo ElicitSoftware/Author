@@ -53,7 +53,7 @@
 **Flow:**
 
 1. The system completes the move; it never refuses a reorder because of a rule (UC-033 BR-002).
-2. The system draws each affected rule in the error colour and tells the author how many rules now point backwards.
+2. The system draws each affected rule in the error color and tells the author how many rules now point backwards.
 3. Use case continues at step 4.
 
 ## Postconditions

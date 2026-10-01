@@ -45,7 +45,7 @@ public class RelationshipQuery {
                            boolean invalid, String problem) { }
 
     public List<RuleEdge> edges(int surveyId, boolean includeRetired) {
-        // Names, so the arrow can read "Show <section>", "Repeat <question>", "Replace {TOKEN}".
+        // Names, so the arrow can read "Show <section>", "Repeat <question>", "Replace <TOKEN>".
         Map<Integer, String> stepName = new HashMap<>();
         List<Step> steps = Step.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL);
         for (Step s : steps) {
@@ -140,14 +140,14 @@ public class RelationshipQuery {
         return new ArrayList<>(fallbacks);
     }
 
-    /** The arrow label reads what the rule does: {@code "Show <target>"}, {@code "Repeat <target>"}, {@code "Replace {TOKEN}"}. */
+    /** The arrow label reads what the rule does: {@code "Show <target>"}, {@code "Repeat <target>"}, {@code "Replace <TOKEN>"}. */
     public static String label(Relationship r, String targetName) {
         String name = targetName == null || targetName.isBlank() ? "target" : targetName;
         String action = r.actionType == null ? "" : r.actionType.name;
         return switch (action) {
             case "SHOW" -> "Show " + name;
             case "REPEAT" -> "Repeat " + name;
-            case "TEXT" -> "Replace " + (r.token != null && !r.token.isBlank() ? "{" + r.token + "}" : name);
+            case "TEXT" -> "Replace " + (r.token != null && !r.token.isBlank() ? Tokens.reference(r.token) : name);
             default -> (action.isBlank() ? "Rule" : action) + " " + name;
         };
     }
@@ -166,7 +166,7 @@ public class RelationshipQuery {
         };
         boolean unary = "is true".equals(op) || "exists".equals(op);
         String value = unary || r.referenceValue == null || r.referenceValue.isBlank() ? "" : " " + r.referenceValue;
-        String token = r.token != null && !r.token.isBlank() ? " {" + r.token + "}" : "";
+        String token = r.token != null && !r.token.isBlank() ? " " + Tokens.reference(r.token) : "";
         return op + value + token;
     }
 }

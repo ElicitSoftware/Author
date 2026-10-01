@@ -36,9 +36,9 @@ import java.util.List;
 public class ElementTagsDialog extends Dialog {
 
     public final Grid<Assignment> grid = new Grid<>(Assignment.class, false);
-    final Button add = new Button("Add tag…");
-    final Button close = new Button("Close");
-    final Paragraph empty = new Paragraph("No reporting tags yet. Without a tag, answers to this element are not reported.");
+    final Button add = new Button();
+    final Button close = new Button();
+    final Paragraph empty = new Paragraph();
 
     private final ReportingService service;
     private final Survey survey;
@@ -50,19 +50,23 @@ public class ElementTagsDialog extends Dialog {
         this.survey = survey;
         this.node = node;
         this.onChanged = onChanged;
-        setHeaderTitle("Reporting tags — " + node.label());
+        add.setText(getTranslation("elementTagsDialog.addTag"));
+        close.setText(getTranslation("common.close"));
+        empty.setText(getTranslation("elementTagsDialog.empty"));
+        setHeaderTitle(getTranslation("elementTagsDialog.title", node.label()));
         setModal(true);
         setWidth("56rem");
 
-        grid.addColumn(a -> a.metadata().ontology == null ? "" : a.metadata().ontology.tag).setHeader("Tag").setAutoWidth(true);
-        grid.addColumn(Assignment::scopeLabel).setHeader("Applies to").setAutoWidth(true);
-        grid.addColumn(Assignment::valueLabel).setHeader("Value").setAutoWidth(true);
+        grid.getElement().setAttribute("data-i18n-content", ""); // tag names and values are authored
+        grid.addColumn(a -> a.metadata().ontology == null ? "" : a.metadata().ontology.tag).setHeader(getTranslation("elementTagsDialog.grid.tag")).setAutoWidth(true);
+        grid.addColumn(Assignment::scopeLabel).setHeader(getTranslation("elementTagsDialog.grid.appliesTo")).setAutoWidth(true);
+        grid.addColumn(Assignment::valueLabel).setHeader(getTranslation("elementTagsDialog.grid.value")).setAutoWidth(true);
         grid.addColumn(a -> a.metadata().ontology == null ? "" : ReportingNames.factColumn(a.metadata().ontology.tag))
-                .setHeader("Report column").setAutoWidth(true);
+                .setHeader(getTranslation("elementTagsDialog.grid.reportColumn")).setAutoWidth(true);
         grid.addComponentColumn(a -> {
-            Button edit = new Button("Edit…", e -> edit(a));
+            Button edit = new Button(getTranslation("elementTagsDialog.edit"), e -> edit(a));
             edit.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-            Button remove = new Button("Remove", e -> confirmRemove(a));
+            Button remove = new Button(getTranslation("common.remove"), e -> confirmRemove(a));
             remove.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
             return new HorizontalLayout(edit, remove);
         }).setHeader("").setAutoWidth(true);
@@ -89,17 +93,17 @@ public class ElementTagsDialog extends Dialog {
 
     private void confirmRemove(Assignment a) {
         String tag = a.metadata().ontology == null ? "?" : a.metadata().ontology.tag;
-        new ConfirmDialog("Remove reporting tag", "Remove tag '" + tag + "' from " + node.label() + "? Answers already recorded at "
-                + "deployed sites stop being classified by it once the survey is exported and applied.", "Remove", e -> {
+        new ConfirmDialog(getTranslation("elementTagsDialog.removeAssignment.header"),
+                getTranslation("elementTagsDialog.removeAssignment.text", tag, node.label()), getTranslation("common.remove"), e -> {
             try {
                 service.unassign(survey.id, a.metadata().id);
-                Notification.show("Removed tag '" + tag + "'", 3000, Notification.Position.BOTTOM_START)
+                Notification.show(getTranslation("elementTagsDialog.removedTag", tag), 3000, Notification.Position.BOTTOM_START)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 changed();
             } catch (AuthoringException ae) {
                 Notification.show(ae.getMessage(), 5000, Notification.Position.MIDDLE).addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-        }, "Cancel", e -> { }).open();
+        }, getTranslation("common.cancel"), e -> { }).open();
     }
 
     private void changed() {

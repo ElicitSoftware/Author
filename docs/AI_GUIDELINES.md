@@ -343,74 +343,47 @@ public class Survey extends PanacheEntity {
 
 ### Implementing Token Replacement
 
+A placeholder is written `{phrase containing a <TOKEN>|default text}` (UC-045
+BR-003). The token is the upper-case name in angle brackets; the phrase and the
+default around it are prose. A phrase is filled all-or-nothing — every reference
+in it must have a value, or the placeholder falls back to its default, or, with
+no default, to the phrase as written. A rule's `token` column stores the name
+alone, upper case (`S1`); the brackets belong to the text that names it.
+
+**Do not write a new token-replacement service.** Parsing lives in
+`com.elicitsoftware.author.survey.Tokens` (`PLACEHOLDER`, `TOKEN_REF`,
+`TOKEN_NAME`, `placeholders`, `names`, `bareTokenNames`), and the designer's
+substitution in `PreviewFields.substituteTokens`, which deliberately mirrors the
+Survey runtime's `QuestionManager.replaceTokens`. Extend those — a second regex
+is a second answer, and it can disagree with the one the exporter enforces.
+
 ```java
-// Test-first token replacement
+// Test-first, against the real API -- see PreviewFieldsTest and TokensTest.
 @Test
-void shouldReplaceS1TokenWithPersonName() {
-    // Given
-    String template = "What is {S1|your}'s age?";
-    Map<String, String> tokens = Map.of("S1", "John");
-
-    // When
-    String result = tokenService.replaceTokens(template, tokens);
-
-    // Then
-    assertThat(result).isEqualTo("What is John's age?");
+void fillsEveryReferenceInThePhrase() {
+    assertEquals("Is Bob living?",
+            PreviewFields.substituteTokens("Is {<S1>|they} living?", values(Map.of("S1", "Bob"))));
 }
 
 @Test
-void shouldUseDefaultValueWhenTokenNotProvided() {
-    // Given
-    String template = "What is {S1|your}'s age?";
-    Map<String, String> tokens = Map.of();
-
-    // When
-    String result = tokenService.replaceTokens(template, tokens);
-
-    // Then
-    assertThat(result).isEqualTo("What is your's age?");
+void fallsBackToTheDefaultWhenNothingFillsIt() {
+    assertEquals("Is they living?",
+            PreviewFields.substituteTokens("Is {<S1>|they} living?", none()));
 }
 
 @Test
-void shouldHandlePossessiveGrammarCorrectly() {
-    // Given
-    String template = "What is {S1|you}'s age?";
-    Map<String, String> tokens = Map.of("S1", "Mary");
-
-    // When
-    String result = tokenService.replaceTokens(template, tokens);
-
-    // Then
-    assertThat(result).isEqualTo("What is Mary's age?");
-}
-
-// Implementation
-@ApplicationScoped
-public class TokenReplacementService {
-
-    private static final Pattern TOKEN_PATTERN =
-        Pattern.compile("\\{([A-Z0-9]+)\\|([^}]+)\\}");
-
-    public String replaceTokens(String template, Map<String, String> tokens) {
-        if (template == null) {
-            return null;
-        }
-
-        Matcher matcher = TOKEN_PATTERN.matcher(template);
-        StringBuffer result = new StringBuffer();
-
-        while (matcher.find()) {
-            String tokenName = matcher.group(1);
-            String defaultValue = matcher.group(2);
-            String replacement = tokens.getOrDefault(tokenName, defaultValue);
-            matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
-        }
-
-        matcher.appendTail(result);
-        return result.toString();
-    }
+void carriesThePossessiveInThePhraseSoTheDefaultStaysGrammatical() {
+    assertEquals("What is Mary's age?",
+            PreviewFields.substituteTokens("What is {<S1>'s|your} age?", values(Map.of("S1", "Mary"))));
 }
 ```
+
+The last one is why the possessive belongs *inside* the braces: written
+`{<S1>|your}'s age`, an unfilled token reads "your's age".
+
+The undelimited `{S1|default}` form is obsolete. `Tokens.bareTokenNames` finds a
+placeholder that names a known token as a bare word, and `ExportValidation`
+reports it as an **error** that blocks export.
 
 ### Implementing Conditional Logic
 

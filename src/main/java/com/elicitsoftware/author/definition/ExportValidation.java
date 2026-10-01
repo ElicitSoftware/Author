@@ -26,8 +26,10 @@ import com.elicitsoftware.author.survey.ReportingChangeLedger;
 import com.elicitsoftware.author.survey.ReportingService;
 import com.elicitsoftware.author.survey.RuleOrdering;
 import com.elicitsoftware.author.survey.RulePath;
+import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.TokenSamples;
 import com.elicitsoftware.author.survey.Tokens;
+import com.elicitsoftware.author.survey.TranslationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -42,8 +44,11 @@ import java.util.function.Function;
 /**
  * Checks a survey's current elements before export (UC-007): dangling durable references,
  * relationships whose downstream path does not hold together or that point backwards (UC-033 A3), choice
- * questions without options, tokens no rule fills and Text rules nothing uses (BR-005), empty steps and
- * sections, duplicate ordering. Errors block export; warnings do not.
+ * questions without options, tokens no rule fills and Text rules nothing uses (BR-005), rules whose token
+ * is fed by a question that collects no answer (UC-019 BR-006), rules whose token is not a name a text
+ * could write between angle brackets (BR-007), empty steps and sections, sections in no step and
+ * questions in no section (BR-010), questions outside the first step that no Show or Repeat rule builds
+ * (BR-012), duplicate ordering. Errors block export; warnings do not.
  * Read-only (UC-007 BR-004).
  */
 @ApplicationScoped
@@ -57,6 +62,9 @@ public class ExportValidation {
 
     @Inject
     ReportingChangeLedger reportingChanges;
+
+    @Inject
+    TranslationService translations;
 
     public static final Set<String> CHOICE_TYPES = Set.of("RADIO", "COMBOBOX", "MULTI_SELECT", "CHECKBOX_GROUP");
 
@@ -79,6 +87,8 @@ public class ExportValidation {
 
         Set<Integer> stepsWithSections = new HashSet<>();
         Set<Integer> sectionsWithQuestions = new HashSet<>();
+        Set<Integer> mountedSections = new HashSet<>();
+        Set<Integer> assignedQuestions = new HashSet<>();
         Set<Integer> groupsWithItems = new HashSet<>();
         items.forEach(i -> groupsWithItems.add(i.selectGroupId));
 
@@ -90,6 +100,7 @@ public class ExportValidation {
                 issues.add(ValidationIssue.error("steps_sections", ss.stepsSectionsId, "Section assignment refers to a removed or missing section"));
             }
             stepsWithSections.add(ss.stepId);
+            mountedSections.add(ss.sectionId);
         }
         for (SectionsQuestion sq : sectionsQuestions.values()) {
             if (!questions.containsKey(sq.questionId)) {
@@ -99,6 +110,7 @@ public class ExportValidation {
                 issues.add(ValidationIssue.error("sections_questions", sq.sectionsQuestionId, "Question assignment refers to a removed or missing section"));
             }
             sectionsWithQuestions.add(sq.sectionId);
+            assignedQuestions.add(sq.questionId);
         }
         for (Question q : questions.values()) {
             String type = q.questionType == null ? "" : q.questionType.name;
@@ -151,14 +163,26 @@ public class ExportValidation {
             board.problem(r).ifPresent(p -> issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " points backwards: " + p)));
         }
         checkTokens(issues, steps, sections, questions, stepsSections, sectionsQuestions, relationships, board);
+        justInTime(issues, steps, sections, questions, stepsSections, sectionsQuestions, relationships, board);
         for (Step s : steps.values()) {
             if (!stepsWithSections.contains(s.stepId)) {
-                issues.add(ValidationIssue.warning("steps", s.stepId, "Step '" + s.name + "' has no sections"));
+                issues.add(ValidationIssue.warning("steps", s.stepId,
+                        "Step '" + StructureNode.nameOr(s.name, s.stepId) + "' has no sections"));
             }
         }
         for (Section s : sections.values()) {
-            if (!sectionsWithQuestions.contains(s.sectionId)) {
-                issues.add(ValidationIssue.warning("sections", s.sectionId, "Section '" + s.name + "' has no questions"));
+            String name = StructureNode.nameOr(s.name, s.sectionId);
+            // UC-007 BR-010: a section out of the structure is reported as that, and not also as
+            // empty -- the emptiness is downstream of the real defect, and mounting it is the fix.
+            if (!mountedSections.contains(s.sectionId)) {
+                issues.add(ValidationIssue.warning("sections", s.sectionId, "Section '" + name + "' is not in any step"));
+            } else if (!sectionsWithQuestions.contains(s.sectionId)) {
+                issues.add(ValidationIssue.warning("sections", s.sectionId, "Section '" + name + "' has no questions"));
+            }
+        }
+        for (Question q : questions.values()) {
+            if (!assignedQuestions.contains(q.questionId)) {
+                issues.add(ValidationIssue.warning("questions", q.questionId, label(q) + " is not in any section"));
             }
         }
         if (!stepsSections.isEmpty()) {
@@ -180,7 +204,120 @@ public class ExportValidation {
                 .map(ss -> Map.entry(ss.stepsSectionsId, ss.stepId + ":" + ss.sectionDisplayOrder)).toList());
         duplicateOrders(issues, "sections_questions", sectionsQuestions.values().stream()
                 .map(sq -> Map.entry(sq.sectionsQuestionId, sq.sectionId + ":" + sq.displayOrder)).toList());
+        // UC-043 / FR-060: warnings, never errors. An author may legitimately export a survey whose
+        // translations are behind -- every one of those strings falls back to the base language at
+        // the site -- but they should be reminded once more before the file leaves Author.
+        translationGaps(issues, survey);
         return issues;
+    }
+
+    /**
+     * UC-007 BR-012 / FR-064: only the first step may stand without a rule.
+     *
+     * <p>A respondent's first sign-in builds every element no rule controls -- {@code QuestionManager.init}
+     * walks every mount of the survey and saves an answer row for each question that is not a rule's
+     * downstream target -- so an uncontrolled question in a later step is created for every respondent
+     * before the first page, whether they ever reach it or not. Everything after the first step has to
+     * be built just in time, by a Show or Repeat rule. Text rules build nothing, so they do not count.</p>
+     *
+     * <p>A question is reached the way a token is (BR-005): by a rule on its step, on its section as
+     * mounted there, or on the question itself through that mount or, in the upstream question's own
+     * section, with no mount named. One missing rule is one finding: the step when nothing in it is
+     * reached, else the mount when nothing in that is, else the question.</p>
+     */
+    private static void justInTime(List<ValidationIssue> issues, Map<Integer, Step> steps, Map<Integer, Section> sections,
+                                   Map<Integer, Question> questions, Map<Integer, StepsSections> stepsSections,
+                                   Map<Integer, SectionsQuestion> sectionsQuestions, List<Relationship> relationships,
+                                   RuleOrdering.Board board) {
+        Step first = steps.values().stream()
+                .filter(s -> s.displayOrder != null)
+                .min(java.util.Comparator.comparing((Step s) -> s.displayOrder).thenComparing(s -> s.stepId))
+                .orElse(null);
+        if (first == null) {
+            return;
+        }
+        List<Relationship> builders = relationships.stream()
+                .filter(r -> r.actionType != null && BUILDING_ACTIONS.contains(r.actionType.name))
+                .toList();
+        Map<Integer, List<SectionsQuestion>> bySection = new HashMap<>();
+        for (SectionsQuestion sq : sectionsQuestions.values()) {
+            if (questions.containsKey(sq.questionId)) {
+                bySection.computeIfAbsent(sq.sectionId, k -> new ArrayList<>()).add(sq);
+            }
+        }
+        for (Step step : steps.values()) {
+            if (step.stepId.equals(first.stepId)) {
+                continue;
+            }
+            Map<StepsSections, List<SectionsQuestion>> unreached = new java.util.LinkedHashMap<>();
+            int total = 0;
+            int missing = 0;
+            for (StepsSections ss : stepsSections.values().stream()
+                    .filter(m -> m.stepId.equals(step.stepId) && sections.containsKey(m.sectionId))
+                    .sorted(java.util.Comparator.comparing(m -> m.sectionDisplayOrder == null ? java.math.BigDecimal.ZERO : m.sectionDisplayOrder))
+                    .toList()) {
+                List<SectionsQuestion> held = bySection.getOrDefault(ss.sectionId, List.of());
+                List<SectionsQuestion> out = held.stream().filter(sq -> !reaches(builders, ss, sq)).toList();
+                total += held.size();
+                missing += out.size();
+                unreached.put(ss, out);
+            }
+            if (missing == 0) {
+                continue;
+            }
+            if (missing == total) {
+                issues.add(ValidationIssue.error("steps", step.stepId, "Step '" + StructureNode.nameOr(step.name, step.stepId)
+                        + "' is not the first step and no Show or Repeat rule builds it, so every respondent's sign-in"
+                        + " creates it before the first page. " + remedy("the step")));
+                continue;
+            }
+            for (Map.Entry<StepsSections, List<SectionsQuestion>> e : unreached.entrySet()) {
+                StepsSections ss = e.getKey();
+                List<SectionsQuestion> out = e.getValue();
+                if (out.isEmpty()) {
+                    continue;
+                }
+                String where = " in step " + board.stepLabel(step.stepId);
+                if (out.size() == bySection.getOrDefault(ss.sectionId, List.of()).size()) {
+                    issues.add(ValidationIssue.error("steps_sections", ss.stepsSectionsId, "Section "
+                            + board.sectionLabel(ss.sectionId) + where + " is not in the first step and no Show or Repeat"
+                            + " rule builds it, so every respondent's sign-in creates it before the first page. "
+                            + remedy("the section in this step")));
+                    continue;
+                }
+                for (SectionsQuestion sq : out) {
+                    issues.add(ValidationIssue.error("sections_questions", sq.sectionsQuestionId, label(questions.get(sq.questionId))
+                            + " in section " + board.sectionLabel(ss.sectionId) + where + " is not in the first step and no"
+                            + " Show or Repeat rule builds it, so every respondent's sign-in creates it before the first page. "
+                            + remedy("the question, its section or its step")));
+                }
+            }
+        }
+    }
+
+    private static final Set<String> BUILDING_ACTIONS = Set.of("SHOW", "REPEAT");
+
+    private static String remedy(String target) {
+        return "Add a Show rule targeting " + target + ", usually Field exists on a question the respondent has already passed";
+    }
+
+    /** Whether a Show or Repeat rule reaches the question as it is shown in this mount (UC-019 BR-005). */
+    private static boolean reaches(List<Relationship> builders, StepsSections ss, SectionsQuestion sq) {
+        for (Relationship r : builders) {
+            if (r.downstreamSqId != null) {
+                if (r.downstreamSqId.equals(sq.sectionsQuestionId)
+                        && (r.downstreamSsId == null || r.downstreamSsId.equals(ss.stepsSectionsId))) {
+                    return true;
+                }
+            } else if (r.downstreamSsId != null) {
+                if (r.downstreamSsId.equals(ss.stepsSectionsId)) {
+                    return true;
+                }
+            } else if (ss.stepId.equals(r.downstreamStepId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void duplicateOrders(List<ValidationIssue> issues, String kind, List<Map.Entry<Integer, String>> keyed) {
@@ -205,9 +342,11 @@ public class ExportValidation {
     }
 
     /**
-     * UC-007 BR-005 / FR-005: a token a text uses must be filled by a rule that reaches that text — a
+     * UC-007 BR-005 / FR-005: every token a text uses must be filled by a rule that reaches that text — a
      * rule reaches its target and everything inside it (UC-019 BR-005) — and the token a rule of any
-     * action carries must be used by a text it reaches. A placeholder with no default that nothing fills is an error: the
+     * action carries must be used by a text it reaches. Every token, because filling a phrase is all or
+     * nothing (BR-006): a phrase one of whose references nothing reaches fills no more than one where
+     * nothing reaches any. A placeholder with no default that nothing fills is an error: the
      * runtime would show the respondent the raw placeholder. One with a default is a warning.
      */
     private static void checkTokens(List<ValidationIssue> issues, Map<Integer, Step> steps, Map<Integer, Section> sections,
@@ -260,10 +399,224 @@ public class ExportValidation {
                 continue;
             }
             String tok = r.token.trim();
+            if (tokenSpelling(issues, r, tok)) {
+                // The token cannot be named at all, so "no text uses it" and "nothing fills it" are the
+                // same defect read out again. One finding, at its cause.
+                continue;
+            }
             if (!reachUses(r, tok, steps, sections, questions, stepsSections, sectionsQuestions, questionsBySection)) {
                 issues.add(ValidationIssue.warning("relationships", r.relationshipId,
-                        "Rule '" + r.description + "' fills {" + tok + "} but no text it reaches uses it"));
+                        "Rule '" + r.description + "' fills {" + Tokens.reference(tok)
+                                + "} but no text it reaches uses it"));
             }
+            displayOnlySource(issues, r, tok, questions, sectionsQuestions);
+        }
+        undelimitedTokens(issues, steps, sections, questions, relationships);
+        undefinedReferences(issues, steps, sections, questions, relationships);
+    }
+
+    /**
+     * UC-007 BR-006: every {@code <NAME>} in a phrase must be a token some rule carries.
+     *
+     * <p>Filling a phrase is all or nothing — {@code QuestionManager.fillPhrase} returns null the
+     * moment one reference has no value — so a single reference nothing defines stops the whole
+     * placeholder filling, and the respondent reads its default forever. Nothing about the text
+     * looks wrong, which is the same silent failure the undelimited check exists for.</p>
+     *
+     * <p>This is also how markup written inside a placeholder is caught. {@code <b>} is a
+     * well-formed token name, so it cannot be told from a token by its spelling; it can be told by
+     * the survey defining no such token. The fix is the same either way — a tag belongs outside the
+     * braces, wrapping the placeholder — so the message says so.</p>
+     *
+     * <p>Only the phrase is checked. The default is used verbatim and is never scanned for
+     * references, so markup there renders as markup and fills nothing in.</p>
+     *
+     * <p>A rule whose token carries its own brackets counts as defining the name here, deliberately:
+     * {@code defined} is built from {@link Tokens#bare}, so {@code <S1>} defines {@code S1}. Reading
+     * the column strictly instead would report that one broken rule once for every text that names the
+     * token, and every report would block export. It is reported once, at its cause, by BR-007.</p>
+     */
+    private static void undefinedReferences(List<ValidationIssue> issues, Map<Integer, Step> steps,
+                                            Map<Integer, Section> sections, Map<Integer, Question> questions,
+                                            List<Relationship> relationships) {
+        // What a rule carries is what the runtime can fill. Names harvested from the texts
+        // themselves would make a stray <b> define itself.
+        Set<String> defined = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        for (Relationship r : relationships) {
+            if (r.token != null && !r.token.isBlank()) {
+                defined.add(Tokens.bare(r.token.trim()));
+            }
+        }
+        for (Step s : steps.values()) {
+            undefinedHere(issues, "steps", s.stepId, "Step '" + s.name + "'", s.name, defined);
+        }
+        for (Section s : sections.values()) {
+            undefinedHere(issues, "sections", s.sectionId, "Section '" + s.name + "'", s.name, defined);
+        }
+        for (Question q : questions.values()) {
+            undefinedHere(issues, "questions", q.questionId, label(q), q.text, defined);
+        }
+        for (Relationship r : relationships) {
+            undefinedHere(issues, "relationships", r.relationshipId, "Rule '" + r.description + "'",
+                    r.defaultUpstreamValue, defined);
+        }
+    }
+
+    private static void undefinedHere(List<ValidationIssue> issues, String kind, Integer id, String where,
+                                      String text, Set<String> defined) {
+        for (Tokens.Placeholder ph : Tokens.placeholders(text)) {
+            for (String name : ph.tokens()) {
+                if (defined.contains(name)) {
+                    continue;
+                }
+                String ref = Tokens.reference(name);
+                issues.add(ValidationIssue.error(kind, id, where + " uses " + ref + " in " + ph.text()
+                        + ", but no rule defines the token " + name + ", so the placeholder never fills and"
+                        + " respondents always read "
+                        + (ph.defaultText() == null ? "it as written" : "\"" + ph.defaultText() + "\"")
+                        + ". If " + ref + " is markup, it belongs outside the braces: write " + ref + "{"));
+            }
+        }
+    }
+
+    /**
+     * UC-019 BR-006: a token holds the respondent's answer or the rule's own default upstream value.
+     * A display-only question ({@code HTML}, {@code MODAL}) collects no answer, so a rule reading one
+     * has only its own value to give -- and with neither, the token is never filled at all and the
+     * respondent reads the placeholder's default. The Family History Survey drives the possessive on
+     * its Mother and Father steps this way, from {@code HTML} questions with a constant value, which
+     * is the idiom the warning is there to retire.
+     */
+    private static void displayOnlySource(List<ValidationIssue> issues, Relationship r, String tok,
+                                          Map<Integer, Question> questions, Map<Integer, SectionsQuestion> sectionsQuestions) {
+        SectionsQuestion up = sectionsQuestions.get(r.upstreamSqId);
+        Question upstream = up == null ? null : questions.get(up.questionId);
+        if (upstream == null || Tokens.collectsAnswer(upstream.questionType)) {
+            return;
+        }
+        String type = upstream.questionType == null ? "display-only" : upstream.questionType.name;
+        String rule = "Rule '" + r.description + "'";
+        if (r.defaultUpstreamValue == null || r.defaultUpstreamValue.isBlank()) {
+            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " fills {"
+                    + Tokens.reference(tok) + "} from " + label(upstream) + ", a display-only " + type
+                    + " question that collects no answer, and carries no value of its own, so nothing ever fills {"
+                    + Tokens.reference(tok) + "}"));
+        } else {
+            issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " fills {"
+                    + Tokens.reference(tok) + "} from " + label(upstream) + ", a display-only " + type
+                    + " question that collects no answer; only the rule's own value fills the token."
+                    + " Read it from a question the respondent answers"));
+        }
+    }
+
+    /**
+     * UC-007 BR-007: a rule's token is a name, not a reference.
+     *
+     * <p>The runtime keys a text's token values on {@code relationship.token} exactly as the column
+     * holds it, and asks for the name it parsed out of a reference. So a token stored {@code <S1>} is
+     * asked for as {@code S1}, never matches, and every placeholder meant to use it falls back to its
+     * default forever -- with the rule reading correctly in the designer (Author#21). A token holding
+     * a character a reference cannot spell is unnameable the same way.</p>
+     *
+     * <p>A name that is merely not the canonical spelling still fills, because every match ignores
+     * case, so it is a warning rather than an error: a survey that runs today must not be blocked from
+     * export over spelling. What it costs is the survey's token list, which then offers two names for
+     * one slot.</p>
+     *
+     * <p>{@link com.elicitsoftware.author.survey.RuleService} canonicalizes on the way in, so what
+     * this reports is what an import (UC-005) or an external draft (UC-042) wrote into the column
+     * directly.</p>
+     *
+     * @return true when no text could ever name the token, so the checks that ask which texts use it
+     *         would only read the same defect back out once per text
+     */
+    private static boolean tokenSpelling(List<ValidationIssue> issues, Relationship r, String tok) {
+        if (Tokens.TOKEN_NAME.matcher(tok).matches()) {
+            return false; // already the name alone, upper case: nothing to say
+        }
+        String name = Tokens.canonical(tok);
+        String rule = "Rule '" + r.description + "'";
+        if (!Tokens.bare(tok).equals(tok)) {
+            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " carries the token "
+                    + tok + ", written with the angle brackets a text uses to name it. A phrase naming "
+                    + tok + " asks for the token " + Tokens.bare(tok) + ", and " + tok + " is not "
+                    + Tokens.bare(tok) + ", so nothing this rule reaches ever fills. Write " + name));
+            return true;
+        }
+        if (!Tokens.nameable(tok)) {
+            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " carries the token "
+                    + tok + ", which no text can name: a token name holds letters, digits and underscores"
+                    + " only, so nothing this rule reaches ever fills"));
+            return true;
+        }
+        if (!Tokens.TOKEN_NAME.matcher(name).matches()) {
+            issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " carries the token "
+                    + tok + ", which does not start with a letter. It still fills "
+                    + Tokens.reference(tok) + ", but a token name reads as a name: rename it to start with"
+                    + " a letter"));
+            return false;
+        }
+        issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " carries the token "
+                + tok + " rather than " + name + ". It still fills " + Tokens.reference(tok)
+                + ", because the runtime matches a token's name without regard to case, but the survey's"
+                + " token list then offers " + tok + " and " + name + " as two names for one slot. Write "
+                + name));
+        return false;
+    }
+
+    /**
+     * UC-007 BR-005: a placeholder that names its token as a bare word rather than as {@code <TOKEN>}
+     * fills nothing, so the respondent always reads its default and nothing about the text looks
+     * wrong. This is the shape every placeholder had before the brackets, so it is what an imported
+     * definition written against an older Survey carries (ElicitSoftware/FHHS#54).
+     */
+    private static void undelimitedTokens(List<ValidationIssue> issues, Map<Integer, Step> steps,
+                                          Map<Integer, Section> sections, Map<Integer, Question> questions,
+                                          List<Relationship> relationships) {
+        Set<String> known = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        for (Relationship r : relationships) {
+            if (r.token != null && !r.token.isBlank()) {
+                known.add(r.token.trim());
+            }
+        }
+        steps.values().forEach(s -> known.addAll(Tokens.names(s.name)));
+        sections.values().forEach(s -> known.addAll(Tokens.names(s.name)));
+        questions.values().forEach(q -> known.addAll(Tokens.names(q.text)));
+        if (known.isEmpty()) {
+            return;
+        }
+        for (Step s : steps.values()) {
+            bareTokens(issues, "steps", s.stepId, "Step '" + s.name + "'", s.name, known);
+        }
+        for (Section s : sections.values()) {
+            bareTokens(issues, "sections", s.sectionId, "Section '" + s.name + "'", s.name, known);
+        }
+        for (Question q : questions.values()) {
+            bareTokens(issues, "questions", q.questionId, label(q), q.text, known);
+        }
+        for (Relationship r : relationships) {
+            bareTokens(issues, "relationships", r.relationshipId, "Rule '" + r.description + "'",
+                    r.defaultUpstreamValue, known);
+        }
+    }
+
+    private static void bareTokens(List<ValidationIssue> issues, String kind, Integer id, String where,
+                                   String text, Set<String> known) {
+        for (Tokens.Placeholder ph : Tokens.placeholders(text)) {
+            Set<String> bare = Tokens.bareTokenNames(ph.text(), known);
+            if (bare.isEmpty()) {
+                continue;
+            }
+            String suggestion = ph.text();
+            for (String name : bare) {
+                suggestion = suggestion.replaceAll("(?<![A-Za-z0-9_])" + java.util.regex.Pattern.quote(name)
+                        + "(?![A-Za-z0-9_>])", java.util.regex.Matcher.quoteReplacement(Tokens.reference(name)));
+            }
+            issues.add(ValidationIssue.error(kind, id, where + " uses " + ph.text() + ", which names the token"
+                    + (bare.size() == 1 ? " " : "s ") + String.join(", ", bare)
+                    + " without angle brackets, so no rule fills it"
+                    + (ph.defaultText() == null ? "" : " and respondents always read \"" + ph.defaultText() + "\"")
+                    + ". Write " + suggestion));
         }
     }
 
@@ -302,6 +655,23 @@ public class ExportValidation {
             return true;
         }
         return questionsBySection.getOrDefault(sectionId, List.of()).stream().anyMatch(q -> Tokens.uses(q.text, tok));
+    }
+
+    /** One warning per published language that is incomplete or out of date. */
+    private void translationGaps(List<ValidationIssue> issues, Survey survey) {
+        for (String language : translations.contentLanguages(survey)) {
+            TranslationService.Counts counts = translations.counts(survey.id, language);
+            if (counts.missing() > 0) {
+                issues.add(ValidationIssue.warning("translations", survey.id,
+                        language + " is published but " + counts.missing()
+                                + " string(s) are not translated; they will show in the base language"));
+            }
+            if (counts.stale() > 0) {
+                issues.add(ValidationIssue.warning("translations", survey.id,
+                        counts.stale() + " translation(s) in " + language
+                                + " are out of date and will not be shown until they are translated again"));
+            }
+        }
     }
 
     private static String label(Question q) {

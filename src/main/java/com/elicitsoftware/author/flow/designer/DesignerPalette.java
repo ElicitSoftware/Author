@@ -23,6 +23,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import io.quarkus.panache.common.Sort;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * The shape palette (UC-011 step 1, UC-015 A4, UC-016): one draggable glyph per kind of element
@@ -40,10 +41,10 @@ public class DesignerPalette extends VerticalLayout {
 
     private Glyph questionChip;
     private final Div questionSlot = new Div();
-    private final Runnable onDragStart;
+    private final Consumer<PaletteItem> onDragStart;
     private final Runnable onDragEnd;
 
-    public DesignerPalette(Runnable onDragStart, Runnable onDragEnd) {
+    public DesignerPalette(Consumer<PaletteItem> onDragStart, Runnable onDragEnd) {
         this.onDragStart = onDragStart;
         this.onDragEnd = onDragEnd;
         addClassName("designer-palette");
@@ -51,7 +52,7 @@ public class DesignerPalette extends VerticalLayout {
         setSpacing(false);
         setAlignItems(Alignment.STRETCH);
         getElement().setAttribute("role", "toolbar");
-        getElement().setAttribute("aria-label", "Palette: drag a glyph onto the board to add an element");
+        getElement().setAttribute("aria-label", getTranslation("designerPalette.aria"));
 
         draggable(stepChip, PaletteItem.step());
         draggable(sectionChip, PaletteItem.section());
@@ -60,7 +61,7 @@ public class DesignerPalette extends VerticalLayout {
         questionTypePicker.setItems(types);
         questionTypePicker.setItemLabelGenerator(t -> t.name);
         questionTypePicker.setWidthFull();
-        questionTypePicker.setAriaLabel("Question type for new questions");
+        questionTypePicker.setAriaLabel(getTranslation("designerPalette.questionType"));
         types.stream().filter(t -> "TEXT".equals(t.name)).findFirst().ifPresentOrElse(questionTypePicker::setValue,
                 () -> types.stream().findFirst().ifPresent(questionTypePicker::setValue));
         questionTypePicker.addValueChangeListener(e -> rebuildQuestionChip());
@@ -72,11 +73,11 @@ public class DesignerPalette extends VerticalLayout {
 
         Div card = new Div();
         card.addClassName("designer-palette-card");
-        card.add(row("Step", chips(stepChip)),
-                row("Section", chips(sectionChip)),
-                row("Question", chips(questionSlot)),
+        card.add(row(getTranslation("designerPalette.step"), chips(stepChip)),
+                row(getTranslation("designerPalette.section"), chips(sectionChip)),
+                row(getTranslation("designerPalette.question"), chips(questionSlot)),
                 questionTypePicker,
-                row("Rule", chips(showRuleChip, repeatRuleChip, textRuleChip)));
+                row(getTranslation("designerPalette.rule"), chips(showRuleChip, repeatRuleChip, textRuleChip)));
         add(card);
     }
 
@@ -96,7 +97,7 @@ public class DesignerPalette extends VerticalLayout {
         questionSlot.add(questionChip);
     }
 
-    /** A labelled row inside the tools card: a caption on the left, its draggable chips on the right. */
+    /** A labeled row inside the tools card: a caption on the left, its draggable chips on the right. */
     private static Div row(String caption, Component chips) {
         Div r = new Div(label(caption), chips);
         r.addClassName("designer-palette-row");
@@ -119,9 +120,9 @@ public class DesignerPalette extends VerticalLayout {
         // Board targets ask for the MOVE effect. Chromium cancels a drop whose target effect is
         // outside the source's allowed effects, so a COPY-only palette chip would never land.
         source.setEffectAllowed(EffectAllowed.COPY_MOVE);
-        source.addDragStartListener(e -> onDragStart.run());
+        source.addDragStartListener(e -> onDragStart.accept(item));
         source.addDragEndListener(e -> onDragEnd.run());
-        glyph.getElement().setAttribute("aria-roledescription", "draggable palette item");
+        glyph.getElement().setAttribute("aria-roledescription", getTranslation("designerPalette.roledescription"));
     }
 
     private static Span label(String text) {

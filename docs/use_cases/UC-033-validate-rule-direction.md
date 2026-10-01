@@ -19,7 +19,7 @@
 1. The author reorders a step, section or question (UC-016).
 2. The system renumbers positions and rebuilds the board.
 3. For every current rule the system compares the downstream target's position (step, section, question) — the innermost element of its path, in the mount the path names — with the upstream question's, for every mount the rule fires from.
-4. The system draws each backward rule in the error colour, adds "points backwards" to its label, puts the reason in its tooltip, and tells the author in the move notification how many rules now point backwards.
+4. The system draws each backward rule in the error color, adds "points backwards" to its label, puts the reason in its tooltip, and tells the author in the move notification how many rules now point backwards.
 5. The author drags the arrow's head to a later downstream target, drags its tail to an earlier upstream question, or moves the elements again.
 6. The system re-checks, draws the rule normally, and export validation (UC-007) no longer lists it; the goal is achieved.
 
@@ -62,7 +62,7 @@
 **Trigger:** The author opens a survey imported from a file that already contained a backward rule (step 2)  
 **Flow:**
 
-1. The system accepts the file as it is (C-015), draws the rule in the error colour and reports it at export.
+1. The system accepts the file as it is (C-015), draws the rule in the error color and reports it at export.
 2. Use case continues at step 5.
 
 ## Postconditions
@@ -73,7 +73,7 @@
 
 ### Failure Postconditions
 
-- A backward rule remains, drawn in the error colour and listed as an export error; the survey is otherwise unchanged.
+- A backward rule remains, drawn in the error color and listed as an export error; the survey is otherwise unchanged.
 
 ## Business Rules
 
@@ -93,7 +93,7 @@ Direction is computed from current positions on every render and at export; a re
 
 A section can be mounted in several steps. A rule that names no upstream step fires from whichever mount the respondent answers in, so it is valid only if it is forward from every mount of the upstream question's section; a rule that names its upstream step (UC-019 BR-001) fires only from that mount and is checked there. The target is compared where its path puts it: a question in the section mount its path names, a section in its own mount, a step as a whole. A downstream question whose path names no mount is compared against every mount of its section — except a question in the upstream question's own section: the respondent sees it on the page being answered, so it is compared within the same mount and only the question order matters.
 
-### BR-005: Colour is never the only cue
+### BR-005: Color is never the only cue
 
 A backward arrow also changes its label and tooltip, and is listed in text in the validation panel and in the move notification.
 

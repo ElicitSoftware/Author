@@ -21,7 +21,7 @@
 3. The author drops the arrowhead on the target: a step lane header, a section card header or a question row.
 4. The system opens the rule dialog with the upstream question, the action and the downstream target filled in; the card the row or header sits in tells the system which mount of a shared section is meant.
 5. The author chooses the operator, enters the reference value, optionally names the token the rule fills — picked from the names the survey already uses or typed new; optional for Show and Repeat, required for Text (BR-005) — and an optional description, and saves.
-6. The system creates the rule with a key minted once — stored question-only when the target sits in the upstream question's own section, otherwise with the step and section the target is shown in (BR-001) — draws the arrow labelled by its action and target (UC-020 BR-004), and refreshes validation.
+6. The system creates the rule with a key minted once — stored question-only when the target sits in the upstream question's own section, otherwise with the step and section the target is shown in (BR-001) — draws the arrow labeled by its action and target (UC-020 BR-004), and refreshes validation.
 
 ## Alternative Flows
 
@@ -30,16 +30,23 @@
 **Trigger:** The author chooses Add rule… from a question row's menu (step 1)  
 **Flow:**
 
-1. The system opens the rule dialog with the upstream question filled in; the author picks the downstream kind and target from lists, in which a section mounted in several steps appears once per mount, labelled by its path.
+1. The system opens the rule dialog with the upstream question filled in; the author picks the downstream kind and target from lists, in which a section mounted in several steps appears once per mount, labeled by its path. A question is labeled by its path and its type — `welcome › Demographics › married (radio)` — in both the upstream and the target list, since the type is what decides the operators and values the rule can use.
 2. Use case continues at step 5.
 
-### A2: Text action without a token
+### A2: Text action without a token, or a token that is not a name
 
-**Trigger:** The action is Text and no token name is given, or it exceeds 10 characters (step 5)  
+**Trigger:** The action is Text and no token name is given; or a token is given that is not a name a
+text could write between angle brackets, or whose name exceeds 10 characters (step 5)  
 **Flow:**
 
-1. The system marks the token field and refuses to save.
-2. Use case continues at step 5.
+1. The system stores a token as the name alone, upper case: a token typed `<S1>` is saved as `S1`,
+   and one typed `s1` as `S1`. The brackets belong to the text that names the token, and the runtime
+   keys a text's values on this name, so a token stored with them fills nothing (UC-007 BR-007).
+   The name is what the length is measured against, so `<GRANDMAMA>` is nine characters, not eleven.
+2. What no normalizing can repair — a name holding a character a reference cannot spell (`S 1`,
+   `{S1}`, `Q#`), one that does not start with a letter, or one longer than ten characters — marks
+   the token field and refuses to save.
+3. Use case continues at step 5.
 
 ### A3: Repeat onto a step
 
@@ -95,4 +102,12 @@ The runtime applies a target's rules with AND; the board draws them as separate 
 
 ### BR-005: A rule reaches everything inside its target, and a token is a slot, not a question
 
-The runtime builds a text's token values from the rules that target its step, then its section, then the question itself, the inner overriding the outer. A Text rule on a step therefore fills its token in every section and question of that step; one rule per step, not one per element. A token is the name of a slot in a text, declared by being used: the same token may be filled by several rules from different questions, each where the text is shown (the Family History Survey fills `{S1}` from fifteen places), and a rule of any action that carries a token fills it. The token is therefore offered for every action, not only Text: a Show or Repeat rule may name the slot the upstream answer fills in the target's texts (the Family History Survey's step-showing Show rules carry `S1` and `CS2`), and a Text rule must name one (A2). The example answer a preview substitutes belongs to the question the rule reads (UC-011 BR-005), not to the rule.
+The runtime builds a text's token values from the rules that target its step, then its section, then the question itself, the inner overriding the outer. A Text rule on a step therefore fills its token in every section and question of that step; one rule per step, not one per element. A token is the name of a slot in a text, declared by being used: the same token may be filled by several rules from different questions, each where the text is shown (the Family History Survey fills `<S1>` from fifteen places), and a rule of any action that carries a token fills it. The token is therefore offered for every action, not only Text: a Show or Repeat rule may name the slot the upstream answer fills in the target's texts (the Family History Survey's step-showing Show rules carry `S1` and `CS2`), and a Text rule must name one (A2). The token is stored as the name alone, upper case (`S1`); the angle brackets belong to the text that names it, and a token stored with them is asked for under a name it does not have and fills nothing (A2, UC-007 BR-007). The example answer a preview substitutes belongs to the question the rule reads (UC-011 BR-005), not to the rule, and it outranks the rule's own value wherever a real answer would — for a free-text, date or time source — because that is the choice the runtime makes between the two (UC-011 BR-004).
+
+### BR-006: A token source is a question that collects a value
+
+A token holds one of two things: the respondent's answer to the question the rule reads, or the rule's own default upstream value, which is a constant the author writes. A *display-only* question — `HTML`, which renders text inline, and `MODAL`, which renders it in a dialog — has no input and collects no answer, so a rule reading one can fill its token only from that constant, and a rule reading one with no constant fills nothing at all: the respondent reads the placeholder's default and nothing says why.
+
+Which questions those are is read from `question_types.data_type`, which the platform leaves empty for exactly `HTML` and `MODAL` and sets for all fourteen types that collect a value. The flag rather than the two names, because the Survey runtime asks the same question of the same row when it decides what a token holds (Survey UC-002 BR-010), and a display-only type added later is then covered in both modules without either being edited.
+
+A rule that carries a token and reads a display-only question is refused when it has no default upstream value, since it can never fill the slot. One that has a constant is accepted but warned about at export (UC-007): it works, but only by accident of the constant, and the slot no longer has anything to do with the question the rule reads. The Family History Survey drives the possessive on its Mother and Father steps this way — `FIELD_EXIST` on an `HTML` question, with the phrase in the constant — and those rules are what the warning exists to retire. The designer's preview follows the same rule: where a rule cannot fill its token, the preview shows the placeholder's default, which is what the respondent would read, rather than the source question's sample answer (UC-011 BR-005).

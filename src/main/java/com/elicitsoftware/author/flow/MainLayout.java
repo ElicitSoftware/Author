@@ -11,7 +11,11 @@ package com.elicitsoftware.author.flow;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.ai.AuthoringSpecification;
 import com.elicitsoftware.author.flow.designer.SurveyDesignerView;
+import com.elicitsoftware.author.i18n.ElicitI18NProvider;
+import com.elicitsoftware.author.i18n.LanguageSwitcher;
+import com.elicitsoftware.author.i18n.LocaleSelection;
 import com.elicitsoftware.author.manual.AuthorManual;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
@@ -30,6 +34,7 @@ import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationListener;
+import com.vaadin.quarkus.annotation.VaadinServiceEnabled;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
@@ -53,8 +58,21 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     @Inject
     SurveyStructureQuery structureQuery;
 
+    /** Remembers the language the author picks (UC-040). */
+    @Inject
+    LocaleSelection localeSelection;
+
+    /** Supplies the languages offered by the switcher. */
+    @Inject
+    @VaadinServiceEnabled
+    ElicitI18NProvider i18nProvider;
+
     @Inject
     AuthorManual manual;
+
+    /** Offered only by a build that packaged the AI authoring specification (UC-042 A5). */
+    @Inject
+    AuthoringSpecification authoringSpecification;
 
     private Component drawerContent;
     private StructureNavigationTree structureTree;
@@ -85,7 +103,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         try {
             Image logo = new Image();
             logo.setSrc(brandUtil.getIconResourcePath(brandInfo));
-            logo.setAlt(brandInfo.getDisplayName() + " Logo");
+            logo.setAlt(getTranslation("common.logoAlt", brandInfo.getDisplayName(getLocale())));
             logo.addClassName("logo");
             Div logoContainer = new Div(logo);
             logoContainer.addClassName("logo-container");
@@ -94,12 +112,18 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
             // Logo not available, continue without it
         }
 
-        String appTitle = brandInfo != null ? brandUtil.getApplicationTitle(brandInfo, "Author") : "Elicit Author";
+        String appType = getTranslation("common.appType.author");
+        String appTitle = brandInfo == null || brandInfo.isDefaultBrand()
+                ? getTranslation("common.appTitle.default", appType)
+                : getTranslation("common.appTitle", brandInfo.getDisplayName(getLocale()), appType);
         Anchor title = new Anchor("/", appTitle);
         title.addClassName("brand-title");
         headerContainer.add(title);
 
         addManualLink(headerContainer);
+
+        // Language selector (UC-040): every page offers the shipped and mounted languages.
+        headerContainer.add(new LanguageSwitcher(localeSelection, i18nProvider));
 
         addToNavbar(headerContainer);
     }
@@ -116,13 +140,13 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         if (identity == null || !identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.AUTHOR)) {
             return;
         }
-        Anchor manualLink = new Anchor("/api/manual", "Manual");
+        Anchor manualLink = new Anchor("/api/manual", getTranslation("mainLayout.header.manual"));
         // The Vaadin router intercepts relative hrefs; /api/manual is served outside the router.
         manualLink.setRouterIgnore(true);
         manualLink.setTarget(AnchorTarget.BLANK);
-        manualLink.setTitle("Open the author's manual (PDF) in a new tab");
+        manualLink.setTitle(getTranslation("mainLayout.header.manualTitle"));
         manualLink.addClassName("header-manual-link");
-        manualLink.getElement().insertChild(0, VaadinIcon.FILE_TEXT_O.create().getElement());
+        manualLink.getElement().insertChild(0, VaadinIcon.FILE_TEXT.create().getElement());
         headerContainer.add(manualLink);
     }
 
@@ -130,20 +154,25 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     public void showApplicationNavigation() {
         SideNav nav = new SideNav();
         if (identity != null && identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.AUTHOR)) {
-            nav.addItem(new SideNavItem("Surveys", SurveysView.class, VaadinIcon.LIST.create()));
-            nav.addItem(new SideNavItem("How surveys work", SurveyModelGuideView.class, VaadinIcon.OPEN_BOOK.create()));
+            nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.surveys"), SurveysView.class, VaadinIcon.LIST.create()));
+            nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.guide"), SurveyModelGuideView.class, VaadinIcon.OPEN_BOOK.create()));
             if (manual != null && manual.isAvailable()) {
-                SideNavItem manualItem = new SideNavItem("Manual (PDF)", "/api/manual", VaadinIcon.FILE_TEXT_O.create());
+                SideNavItem manualItem = new SideNavItem(getTranslation("mainLayout.nav.manual"), "/api/manual", VaadinIcon.FILE_TEXT.create());
                 manualItem.setRouterIgnore(true);
                 manualItem.setOpenInNewBrowserTab(true);
                 nav.addItem(manualItem);
             }
-            nav.addItem(new SideNavItem("Import definition", ImportDefinitionView.class, VaadinIcon.UPLOAD.create()));
+            // The three ways to start a survey sit together: New survey lives on the Surveys page,
+            // and the other two are here, drafting before importing because that is their order.
+            if (authoringSpecification != null && authoringSpecification.isAvailable()) {
+                nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.aiDraft"), AiDraftView.class, VaadinIcon.MAGIC.create()));
+            }
+            nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.importDefinition"), ImportDefinitionView.class, VaadinIcon.UPLOAD.create()));
         }
         if (identity != null && identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.ADMIN)) {
             nav.addItem(createSystemSection());
         }
-        nav.addItem(new SideNavItem("Logout", LogoutView.class, VaadinIcon.LOCK.create()));
+        nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.logout"), LogoutView.class, VaadinIcon.LOCK.create()));
         setDrawerContent(nav);
     }
 
@@ -152,13 +181,18 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
      * deployment (UC-034 to UC-038). Gated on {@code elicit_admin}, which grants no authoring.
      */
     private SideNavItem createSystemSection() {
-        SideNavItem systemSection = new SideNavItem("System");
+        SideNavItem systemSection = new SideNavItem(getTranslation("mainLayout.nav.system"));
         systemSection.setPrefixComponent(VaadinIcon.TOOLS.create());
-        systemSection.addItem(new SideNavItem("Overview", SystemOverviewView.class, VaadinIcon.DASHBOARD.create()));
-        systemSection.addItem(new SideNavItem("Database", SystemDatabaseView.class, VaadinIcon.DATABASE.create()));
-        systemSection.addItem(new SideNavItem("Branding", SystemBrandingView.class, VaadinIcon.PAINTBRUSH.create()));
-        systemSection.addItem(new SideNavItem("Connections", SystemConnectionsView.class, VaadinIcon.CONNECT.create()));
-        systemSection.addItem(new SideNavItem("OIDC", OidcDiagnosticsView.class, VaadinIcon.SHIELD.create()));
+        systemSection.addItem(new SideNavItem(getTranslation("mainLayout.nav.systemOverview"), SystemOverviewView.class,
+                VaadinIcon.DASHBOARD.create()));
+        systemSection.addItem(new SideNavItem(getTranslation("mainLayout.nav.systemDatabase"), SystemDatabaseView.class,
+                VaadinIcon.DATABASE.create()));
+        systemSection.addItem(new SideNavItem(getTranslation("mainLayout.nav.systemBranding"), SystemBrandingView.class,
+                VaadinIcon.PAINTBRUSH.create()));
+        systemSection.addItem(new SideNavItem(getTranslation("mainLayout.nav.systemConnections"), SystemConnectionsView.class,
+                VaadinIcon.CONNECT.create()));
+        systemSection.addItem(new SideNavItem(getTranslation("mainLayout.nav.systemOidc"), OidcDiagnosticsView.class,
+                VaadinIcon.SHIELD.create()));
         return systemSection;
     }
 
@@ -198,7 +232,10 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     protected void onAttach(AttachEvent attachEvent) {
         getUI().ifPresent(ui -> ui.addAfterNavigationListener(this));
         // Install the mouse-draggable drawer resize handle (drawer-resizer.js) on this app-layout.
-        getElement().executeJs("window.__initDrawerResizer && window.__initDrawerResizer(this)");
+        getElement().executeJs("window.__initDrawerResizer && window.__initDrawerResizer(this, "
+                + "{title: $0, ariaLabel: $1, smallScreenHeading: $2, smallScreenText: $3})",
+                getTranslation("mainLayout.resizer.title"), getTranslation("mainLayout.resizer.aria"),
+                getTranslation("mainLayout.smallScreen.heading"), getTranslation("mainLayout.smallScreen.text"));
     }
 
     @Override

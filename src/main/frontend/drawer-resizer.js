@@ -17,9 +17,11 @@
  * Registered as a global initialiser and invoked from MainLayout with the app-layout element, so
  * there is exactly one handle regardless of navigation.
  */
-window.__initDrawerResizer = function (appLayout) {
+window.__initDrawerResizer = function (appLayout, texts) {
   if (!appLayout || appLayout.__resizerInstalled) return;
   appLayout.__resizerInstalled = true;
+  texts = texts || {};
+  const rtl = () => getComputedStyle(document.documentElement).direction === 'rtl';
 
   // Elicit Author is a desktop/tablet authoring tool; below tablet width show a full-screen notice
   // (styled and toggled by the .small-screen-notice media query) instead of a cramped, unusable UI.
@@ -29,9 +31,9 @@ window.__initDrawerResizer = function (appLayout) {
     const card = document.createElement('div');
     card.className = 'small-screen-notice-card';
     const h = document.createElement('h2');
-    h.textContent = 'A bigger screen is needed';
+    h.textContent = texts.smallScreenHeading || 'A bigger screen is needed';
     const p = document.createElement('p');
-    p.textContent = 'Elicit Author is built for designing surveys on a tablet or larger screen. Please switch to a wider device.';
+    p.textContent = texts.smallScreenText || 'Elicit Author is built for designing surveys on a tablet or larger screen. Please switch to a wider device.';
     card.appendChild(h);
     card.appendChild(p);
     notice.appendChild(card);
@@ -49,9 +51,9 @@ window.__initDrawerResizer = function (appLayout) {
 
   const handle = document.createElement('div');
   handle.className = 'drawer-resizer';
-  handle.setAttribute('title', 'Drag to resize the drawer');
+  handle.setAttribute('title', texts.title || 'Drag to resize the drawer');
   handle.setAttribute('role', 'separator');
-  handle.setAttribute('aria-label', 'Resize drawer');
+  handle.setAttribute('aria-label', texts.ariaLabel || 'Resize drawer');
   document.body.appendChild(handle);
 
   const drawer = () => appLayout.shadowRoot && appLayout.shadowRoot.querySelector('[part="drawer"]');
@@ -63,24 +65,27 @@ window.__initDrawerResizer = function (appLayout) {
     handle.style.display = 'block';
     handle.style.top = r.top + 'px';
     handle.style.height = r.height + 'px';
-    handle.style.left = (r.right - 3) + 'px';
+    // The drawer sits at the inline start, so its resize edge is on the left in RTL layouts.
+    handle.style.left = (rtl() ? r.left - 3 : r.right - 3) + 'px';
   }
 
   let dragging = false;
   let drawerLeft = 0;
+  let drawerRight = 0;
 
   handle.addEventListener('pointerdown', (e) => {
     const d = drawer();
     if (!d) return;
     dragging = true;
     drawerLeft = d.getBoundingClientRect().left;
+    drawerRight = d.getBoundingClientRect().right;
     handle.setPointerCapture(e.pointerId);
     document.body.style.userSelect = 'none';
     e.preventDefault();
   });
   handle.addEventListener('pointermove', (e) => {
     if (!dragging) return;
-    let w = Math.round(e.clientX - drawerLeft);
+    let w = Math.round(rtl() ? drawerRight - e.clientX : e.clientX - drawerLeft);
     w = Math.max(MIN, Math.min(MAX, w));
     appLayout.style.setProperty('--vaadin-app-layout-drawer-width', w + 'px');
     place();

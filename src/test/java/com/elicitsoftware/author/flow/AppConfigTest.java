@@ -118,7 +118,7 @@ class AppConfigTest {
         assertDoesNotThrow(() -> config.configurePage(new AppShellSettings()));
     }
 
-    // The colour and typography sheets are inlined ahead of the theme, so the theme's own
+    // The color and typography sheets are inlined ahead of the theme, so the theme's own
     // @import lines for them must go: inlined, their relative URLs resolve against the page and
     // the browser asks for /colors/brand-colors.css, which nothing serves.
     @Test

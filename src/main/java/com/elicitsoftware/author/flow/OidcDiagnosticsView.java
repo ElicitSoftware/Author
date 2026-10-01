@@ -60,39 +60,41 @@ public class OidcDiagnosticsView extends VerticalLayout implements HasDynamicTit
 
     @PostConstruct
     void init() {
-        add(new H3("OIDC"));
-        add(new Paragraph("The identity the provider handed this session: who signed in, which roles "
-                + "arrived, and whether the authoring role is among them. Tokens are masked."));
+        add(new H3(getTranslation("oidcDiagnosticsView.title")));
+        add(new Paragraph(getTranslation("oidcDiagnosticsView.intro")));
 
         StringBuilder sb = new StringBuilder();
-        sb.append("User: ").append(identity.getPrincipal().getName()).append('\n');
-        sb.append("Is Anonymous: ").append(identity.isAnonymous()).append('\n');
-        sb.append("Roles: ").append(identity.getRoles()).append('\n');
+        sb.append(getTranslation("oidcDiagnosticsView.user", identity.getPrincipal().getName())).append('\n');
+        sb.append(getTranslation("oidcDiagnosticsView.isAnonymous", String.valueOf(identity.isAnonymous()))).append('\n');
+        sb.append(getTranslation("oidcDiagnosticsView.roles", String.valueOf(identity.getRoles()))).append('\n');
         String roleSource = identity.getAttribute(RoleSecurityIdentityAugmentor.ROLE_SOURCE_ATTRIBUTE);
-        sb.append("Role Source: ").append(roleSource).append('\n');
-        sb.append("Has ").append(AuthorRoles.AUTHOR).append(": ").append(identity.hasRole(AuthorRoles.AUTHOR)).append('\n');
-        sb.append("Has ").append(AuthorRoles.ADMIN).append(": ").append(identity.hasRole(AuthorRoles.ADMIN)).append("\n\n");
+        sb.append(getTranslation("oidcDiagnosticsView.roleSource", String.valueOf(roleSource))).append('\n');
+        sb.append(getTranslation("oidcDiagnosticsView.hasRole", AuthorRoles.AUTHOR,
+                String.valueOf(identity.hasRole(AuthorRoles.AUTHOR)))).append('\n');
+        sb.append(getTranslation("oidcDiagnosticsView.hasRole", AuthorRoles.ADMIN,
+                String.valueOf(identity.hasRole(AuthorRoles.ADMIN)))).append("\n\n");
 
         try {
             if (idTokenInstance.isResolvable()) {
                 JsonWebToken idToken = idTokenInstance.get();
-                sb.append("Issuer: ").append(idToken.getIssuer()).append('\n');
-                sb.append("Email: ").append(String.valueOf((Object) idToken.getClaim("email"))).append('\n');
-                sb.append("ID Token: ").append(maskToken(idToken.getRawToken(), revealTokens)).append("\n\n");
+                sb.append(getTranslation("oidcDiagnosticsView.issuer", String.valueOf(idToken.getIssuer()))).append('\n');
+                sb.append(getTranslation("oidcDiagnosticsView.email", String.valueOf((Object) idToken.getClaim("email")))).append('\n');
+                sb.append(getTranslation("oidcDiagnosticsView.idToken", maskToken(idToken.getRawToken(), revealTokens))).append("\n\n");
             } else {
-                sb.append("ID Token: Not available or resolvable\n\n");
+                sb.append(getTranslation("oidcDiagnosticsView.idTokenUnavailable")).append("\n\n");
             }
         } catch (Exception e) {
-            sb.append("ID Token Error: ").append(e.getMessage()).append("\n\n");
+            sb.append(getTranslation("oidcDiagnosticsView.idTokenError", String.valueOf(e.getMessage()))).append("\n\n");
         }
         try {
             if (accessTokenInstance.isResolvable()) {
-                sb.append("Access Token: ").append(maskToken(accessTokenInstance.get().getToken(), revealTokens)).append('\n');
+                sb.append(getTranslation("oidcDiagnosticsView.accessToken",
+                        maskToken(accessTokenInstance.get().getToken(), revealTokens))).append('\n');
             } else {
-                sb.append("Access Token: Not available or resolvable\n");
+                sb.append(getTranslation("oidcDiagnosticsView.accessTokenUnavailable")).append('\n');
             }
         } catch (Exception e) {
-            sb.append("Access Token Error: ").append(e.getMessage()).append('\n');
+            sb.append(getTranslation("oidcDiagnosticsView.accessTokenError", String.valueOf(e.getMessage()))).append('\n');
         }
 
         Pre info = new Pre(sb.toString());
@@ -112,6 +114,6 @@ public class OidcDiagnosticsView extends VerticalLayout implements HasDynamicTit
 
     @Override
     public String getPageTitle() {
-        return "OIDC Diagnostics";
+        return getTranslation("oidcDiagnosticsView.pageTitle");
     }
 }

@@ -64,7 +64,7 @@ public class SectionCard extends Div {
         source.setDragData(node);
         source.setEffectAllowed(EffectAllowed.MOVE);
         source.setDraggable(!node.retired());
-        source.addDragStartListener(e -> view.dragStarted());
+        source.addDragStartListener(e -> view.dragStarted(node.kind()));
         source.addDragEndListener(e -> view.dragEnded());
         if (!node.retired()) {
             glyph.getElement().setAttribute("draggable", "true");
@@ -74,31 +74,33 @@ public class SectionCard extends Div {
         toggle.addClassName("designer-card-toggle");
         name.setText(node.label());
         name.addClassName("designer-card-name");
-        questionCount.setText(questions.size() == 1 ? "1 question" : questions.size() + " questions");
+        name.getElement().setAttribute("data-i18n-content", "");
+        questionCount.setText(questions.size() == 1 ? getTranslation("sectionCard.questionCount.one") : getTranslation("sectionCard.questionCount.many", questions.size()));
         questionCount.addClassName("designer-badge");
-        mountBadge.setText("in " + mountedInSteps + " steps");
+        mountBadge.setText(getTranslation("sectionCard.mounted", mountedInSteps));
         mountBadge.addClassName("designer-badge");
-        mountBadge.setTitle("This section is mounted in " + mountedInSteps + " steps; editing it changes all of them");
+        mountBadge.setTitle(getTranslation("sectionCard.mounted.title", mountedInSteps));
         mountBadge.setVisible(mountedInSteps > 1);
         TagBadge.fill(tagBadge, view.tagsOf(node));
 
-        menu = new NodeMenu("Actions for section " + node.label());
-        menu.item("Edit…", () -> view.edit(node), !node.retired());
-        menu.item("Add question", () -> view.addChild(node), !node.retired());
-        menu.item("Copy to step…", () -> view.copyTo(node), !node.retired());
-        menu.item("Also mount in step…", () -> view.mountIn(node), !node.retired());
-        menu.item("Reporting tags…", () -> view.reportingTags(node), !node.retired());
-        menu.item("Move up", () -> view.move(node, -1), !node.retired() && indexInLane > 0);
-        menu.item("Move down", () -> view.move(node, 1), !node.retired() && indexInLane < laneSize - 1);
-        menu.item("Open details", () -> view.openDetails(node));
-        menu.item("Remove from this step", () -> view.removeAssignment(node), !node.retired());
+        menu = new NodeMenu(getTranslation("sectionCard.menu.aria", node.label()));
+        menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node), !node.retired());
+        menu.item(getTranslation("sectionCard.menu.addQuestion"), () -> view.addChild(node), !node.retired());
+        menu.item(getTranslation("sectionCard.menu.copyToStep"), () -> view.copyTo(node), !node.retired());
+        menu.item(getTranslation("sectionCard.menu.alsoMountInStep"), () -> view.mountIn(node), !node.retired());
+        menu.item(getTranslation("designer.menu.reportingTags"), () -> view.reportingTags(node), !node.retired());
+        menu.item(getTranslation("designer.menu.moveUp"), () -> view.move(node, -1), !node.retired() && indexInLane > 0);
+        menu.item(getTranslation("designer.menu.moveDown"), () -> view.move(node, 1), !node.retired() && indexInLane < laneSize - 1);
+        menu.item(getTranslation("designer.menu.openDetails"), () -> view.openDetails(node));
+        menu.item(getTranslation("sectionCard.menu.removeFromStep"), () -> view.removeAssignment(node), !node.retired());
 
         header.addClassName("designer-card-header");
         header.getElement().setAttribute("role", "button");
         header.getElement().setAttribute("tabindex", "0");
         header.getElement().setAttribute("aria-expanded", String.valueOf(open));
-        header.getElement().setAttribute("aria-label", "Section " + node.label() + ", " + questionCount.getText()
-                + (node.retired() ? ", removed" : ""));
+        header.getElement().setAttribute("aria-label", node.retired()
+                ? getTranslation("sectionCard.aria.removed", node.label(), questionCount.getText())
+                : getTranslation("sectionCard.aria", node.label(), questionCount.getText()));
         header.add(toggle, glyph, name, questionCount, mountBadge, tagBadge, menu);
         // Single click toggles and selects; double click edits (UC-018 step 1). Told apart on the
         // client, as QuestionRow does: a debounced single vs. an immediate double, so the board
@@ -113,7 +115,7 @@ public class SectionCard extends Div {
                 view.edit(node);
             }
         });
-        header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '");
+        header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '"); // i18n:ignore
         DropTarget<Div> headerDrop = DropTarget.create(header);
         headerDrop.setDropEffect(DropEffect.MOVE);
         headerDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
@@ -135,7 +137,7 @@ public class SectionCard extends Div {
         }
         body.add(new DropZone(new DropSpot(node, questions.size(), StructureNode.Kind.QUESTION), view::onDrop));
         if (questions.isEmpty()) {
-            Span empty = new Span("No questions yet — drop a question glyph here or use Add question.");
+            Span empty = new Span(getTranslation("sectionCard.empty"));
             empty.addClassName("designer-empty");
             body.add(empty);
         }

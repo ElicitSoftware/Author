@@ -11,6 +11,7 @@ package com.elicitsoftware.author.diagnostics;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -77,10 +78,10 @@ public class ConnectionChecks {
         Config config = ConfigProvider.getConfig();
         List<Target> targets = new ArrayList<>();
         value(config, "quarkus.oidc.auth-server-url").ifPresent(url ->
-                targets.add(new Target("Identity provider", "quarkus.oidc.auth-server-url", url, Kind.OIDC_DISCOVERY)));
+                targets.add(new Target(Translations.get("systemConnectionsView.group.identityProvider"), "quarkus.oidc.auth-server-url", url, Kind.OIDC_DISCOVERY)));
         Optional<String> otlp = value(config, "quarkus.otel.exporter.otlp.endpoint")
                 .or(() -> value(config, "quarkus.otel.exporter.otlp.traces.endpoint"));
-        otlp.ifPresent(endpoint -> targets.add(new Target("Telemetry collector",
+        otlp.ifPresent(endpoint -> targets.add(new Target(Translations.get("systemConnectionsView.group.telemetryCollector"),
                 "quarkus.otel.exporter.otlp.endpoint", endpoint, Kind.TCP)));
         return targets;
     }
@@ -95,12 +96,13 @@ public class ConnectionChecks {
                 case TCP -> tcp(target, start);
             };
         } catch (HttpTimeoutException e) {
-            return CheckResult.down(target.name(), "timed out after " + TIMEOUT.toSeconds() + " s", elapsed(start));
+            return CheckResult.down(target.name(), Translations.get("systemConnectionsView.result.timedOut",
+                    Long.toString(TIMEOUT.toSeconds())), elapsed(start));
         } catch (IOException | RuntimeException e) {
             return CheckResult.down(target.name(), reason(e), elapsed(start));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return CheckResult.down(target.name(), "interrupted", elapsed(start));
+            return CheckResult.down(target.name(), Translations.get("systemConnectionsView.result.interrupted"), elapsed(start));
         }
     }
 
@@ -110,15 +112,16 @@ public class ConnectionChecks {
         HttpResponse<String> response = client.send(get(uri), HttpResponse.BodyHandlers.ofString());
         long ms = elapsed(start);
         if (response.statusCode() == HttpURLConnection.HTTP_OK && response.body().contains("\"issuer\"")) {
-            return CheckResult.up(target.name(), "discovery document served at " + uri, ms);
+            return CheckResult.up(target.name(), Translations.get("systemConnectionsView.result.discoveryServed", uri.toString()), ms);
         }
-        return CheckResult.down(target.name(), "HTTP " + response.statusCode() + " from " + uri
-                + " is not an OIDC discovery document; check the realm address", ms);
+        return CheckResult.down(target.name(), Translations.get("systemConnectionsView.result.notDiscovery",
+                Integer.toString(response.statusCode()), uri.toString()), ms);
     }
 
     private CheckResult http(Target target, long start) throws IOException, InterruptedException {
         HttpResponse<Void> response = client.send(get(URI.create(target.address())), HttpResponse.BodyHandlers.discarding());
-        return CheckResult.up(target.name(), "reachable, HTTP " + response.statusCode(), elapsed(start));
+        return CheckResult.up(target.name(), Translations.get("systemConnectionsView.result.reachable",
+                Integer.toString(response.statusCode())), elapsed(start));
     }
 
     private static CheckResult tcp(Target target, long start) throws IOException {
@@ -126,12 +129,13 @@ public class ConnectionChecks {
         String host = uri.getHost();
         int port = uri.getPort();
         if (host == null || port < 0) {
-            return CheckResult.unknown(target.name(), "address " + target.address() + " has no host and port");
+            return CheckResult.unknown(target.name(), Translations.get("systemConnectionsView.result.noHostPort", target.address()));
         }
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port), (int) TIMEOUT.toMillis());
         }
-        return CheckResult.up(target.name(), "connected to " + host + ":" + port, elapsed(start));
+        return CheckResult.up(target.name(), Translations.get("systemConnectionsView.result.connected", host, Integer.toString(port)),
+                elapsed(start));
     }
 
     private static HttpRequest get(URI uri) {
@@ -144,7 +148,7 @@ public class ConnectionChecks {
 
     private static String reason(Exception e) {
         if (e instanceof java.net.SocketTimeoutException) {
-            return "timed out after " + TIMEOUT.toSeconds() + " s";
+            return Translations.get("systemConnectionsView.result.timedOut", Long.toString(TIMEOUT.toSeconds()));
         }
         String message = e.getMessage();
         return message == null || message.isBlank() ? e.getClass().getSimpleName() : message;

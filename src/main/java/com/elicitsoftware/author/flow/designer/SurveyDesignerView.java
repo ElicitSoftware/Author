@@ -17,6 +17,7 @@ import com.elicitsoftware.author.flow.MainLayout;
 import com.elicitsoftware.author.flow.SurveyEditorView;
 import com.elicitsoftware.author.flow.SurveyModelGuideView;
 import com.elicitsoftware.author.security.AuthorRoles;
+import com.elicitsoftware.author.survey.DesignerAddress;
 import com.elicitsoftware.author.survey.DesignerService;
 import com.elicitsoftware.author.survey.ElementService;
 import com.elicitsoftware.author.survey.RelationshipQuery;
@@ -28,6 +29,8 @@ import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.author.survey.TokenSamples;
+import com.elicitsoftware.author.survey.StaleTranslationLedger;
+import com.elicitsoftware.author.flow.translations.TranslationsView;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.elicitsoftware.model.ActionType;
 import com.elicitsoftware.model.Question;
@@ -53,7 +56,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.NotFoundException;
-import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.router.RouterLink;
@@ -75,17 +78,21 @@ import java.util.Set;
  * the breadcrumb, the drawer tree and the address (UC-006 BR-003).
  */
 @Route(value = "survey/:" + SurveyEditorView.SURVEY_ID + "(\\d+)/design", layout = MainLayout.class)
-@PageTitle("Designer")
 @RolesAllowed(AuthorRoles.AUTHOR)
-public class SurveyDesignerView extends Div implements BeforeEnterObserver {
+public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasDynamicTitle {
 
     public static final String SELECT = "select";
+    /** What {@code dragging-<what>} says when a rule glyph is in flight; the kinds use their own names. */
+    private static final String RULE_DRAG = "rule";
 
     @Inject
     SurveyService surveyService;
 
     @Inject
     SurveyStructureQuery structureQuery;
+
+    @Inject
+    StaleTranslationLedger staleTranslations;
 
     @Inject
     DesignerService designer;
@@ -116,15 +123,15 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     final Div breadcrumb = new Div();
     final Div board = new Div();
-    final Checkbox showRemoved = new Checkbox("Show removed");
-    final Checkbox showRules = new Checkbox("Show rules", true);
-    final Checkbox showPreview = new Checkbox("Show preview", true);
+    final Checkbox showRemoved = new Checkbox();
+    final Checkbox showRules = new Checkbox(true);
+    final Checkbox showPreview = new Checkbox(true);
     /** The board and, beside it, the respondent's view of the selection (the right-hand pane). */
     final Div split = new Div();
     final SectionPreview preview = new SectionPreview();
     final RuleArrowsOverlay overlay = new RuleArrowsOverlay();
-    final Button overview = new Button("Overview", VaadinIcon.ARROW_LEFT.create());
-    final Button addStep = new Button("Add step", VaadinIcon.PLUS.create());
+    final Button overview = new Button(VaadinIcon.ARROW_LEFT.create());
+    final Button addStep = new Button(VaadinIcon.PLUS.create());
     final List<StepLane> lanes = new ArrayList<>();
     DesignerPalette palette;
     DesignerToolbox toolbox;
@@ -134,7 +141,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     public SurveyDesignerView() {
         addClassName("designer");
         breadcrumb.addClassName("designer-breadcrumb");
-        breadcrumb.getElement().setAttribute("aria-label", "Where you are in the survey");
+        showRemoved.setLabel(getTranslation("surveyDesignerView.showRemoved"));
+        showRules.setLabel(getTranslation("surveyDesignerView.showRules"));
+        showPreview.setLabel(getTranslation("surveyDesignerView.showPreview"));
+        overview.setText(getTranslation("surveyDesignerView.overview"));
+        addStep.setText(getTranslation("surveyDesignerView.addStep"));
+        breadcrumb.getElement().setAttribute("aria-label", getTranslation("surveyDesignerView.breadcrumb.aria"));
         board.addClassName("designer-board");
         showRemoved.addValueChangeListener(e -> load());
         showRules.addValueChangeListener(e -> render());
@@ -160,12 +172,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         int id = event.getRouteParameters().getInteger(SurveyEditorView.SURVEY_ID).orElse(-1);
         Optional<Survey> found = surveyService.find(id);
         if (found.isEmpty()) {
-            event.rerouteToError(NotFoundException.class, "No survey with id " + id);
+            event.rerouteToError(NotFoundException.class, getTranslation("surveyDesignerView.noSurvey", String.valueOf(id)));
             return;
         }
         survey = found.get();
         if (palette == null) {
-            palette = new DesignerPalette(this::dragStarted, this::dragEnded);
+            palette = new DesignerPalette(this::paletteDragStarted, this::dragEnded);
             toolbox = new DesignerToolbox(this, palette);
             // The palette (add-tools + rule glyphs) now lives in the drawer, placed there by
             // MainLayout.syncWith; the in-view bar keeps only the back link and the view toggles.
@@ -176,10 +188,36 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             add(breadcrumb, toolbar, split);
         }
         List<String> select = event.getLocation().getQueryParameters().getParameters().getOrDefault(SELECT, List.of());
+        DesignerAddress address = select.isEmpty() ? null : DesignerAddress.parse(select.get(0)).orElse(null);
         tree = structureQuery.tree(survey.id, Boolean.TRUE.equals(showRemoved.getValue()));
-        selected = select.isEmpty() ? null : resolve(select.get(0));
+        selected = address == null ? null : resolve(address);
         openAncestors(selected);
         render();
+        scrollToSelected();
+        if (address != null && DesignerAddress.RULE.equals(address.kind())) {
+            // UC-007 BR-009: an address naming a rule opens the rule's editor over its target.
+            editRule(address.id());
+        } else if (address != null && selected == null) {
+            // The board holds no such element. It may still be one the survey has but has placed
+            // nowhere, which lives in the drawer panels (UC-006 BR-003a).
+            revealUnplaced(address);
+        }
+    }
+
+    /** UC-007 BR-009: show an element the board cannot draw in the panel that does hold it. */
+    private void revealUnplaced(DesignerAddress address) {
+        if (toolbox == null) {
+            return;
+        }
+        boolean found = switch (address.kind()) {
+            case DesignerAddress.SECTION -> toolbox.revealSection(address.id());
+            case DesignerAddress.QUESTION -> toolbox.revealQuestion(address.id());
+            default -> false;
+        };
+        if (found) {
+            info(getTranslation(DesignerAddress.SECTION.equals(address.kind())
+                    ? "surveyDesignerView.revealedUnplacedSection" : "surveyDesignerView.revealedUnplacedQuestion"));
+        }
     }
 
     // ---- state -----------------------------------------------------------------------------
@@ -207,6 +245,34 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         selected = selected == null ? null : find(selected.kind(), selected.durableId(), selected.assignmentId());
         openAncestors(selected);
         render();
+        warnAboutStaleTranslations();
+    }
+
+    /**
+     * FR-060: after a save that changed a translated wording, say which languages it invalidated.
+     * <p>
+     * The notification does not dismiss itself and carries a link to the Translations page, because
+     * the consequence is invisible otherwise: every affected string quietly falls back to the base
+     * language at every site until it is translated again.
+     */
+    private void warnAboutStaleTranslations() {
+        for (String[] entry : staleTranslations.drain(survey.id)) {
+            Notification notification = new Notification();
+            notification.addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+            notification.setPosition(Notification.Position.BOTTOM_START);
+            Button open = new Button(getTranslation("designer.staleTranslations.open"), e -> {
+                notification.close();
+                getUI().ifPresent(ui -> ui.navigate(TranslationsView.class,
+                        new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id))));
+            });
+            open.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+            Button dismiss = new Button(getTranslation("common.close"), e -> notification.close());
+            dismiss.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+            notification.add(new HorizontalLayout(
+                    new Span(getTranslation("designer.staleTranslations", entry[0], entry[2], entry[1])),
+                    open, dismiss));
+            notification.open();
+        }
     }
 
     private void render() {
@@ -224,7 +290,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     private void rebuildBoard() {
         // A drop rebuilds the board, so the dragged element (and its dragend) never comes back.
-        board.removeClassName("dragging");
+        dragEnded();
         board.removeAll();
         lanes.clear();
         collectTagLabels();
@@ -240,8 +306,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         overlay.setSelectedAnchor(anchorOf(selected));
         board.add(overlay);
         if (roots.isEmpty()) {
-            Div empty = new Div(new Span("This survey has no steps yet. Drag the Step glyph here or use Add step. "),
-                    new RouterLink("How surveys work", SurveyModelGuideView.class));
+            RouterLink guide = new RouterLink(SurveyModelGuideView.class);
+            guide.setText(getTranslation("designer.guideLink"));
+            Div empty = new Div(new Span(getTranslation("surveyDesignerView.emptyBoard") + " "), guide);
             empty.addClassName("designer-empty-board");
             board.add(empty);
         }
@@ -277,12 +344,17 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         }
     }
 
-    private static String crumbLabel(StructureNode n) {
+    private String crumbLabel(StructureNode n) {
         return switch (n.kind()) {
-            case STEP -> "Step: " + n.label();
-            case SECTION -> "Section: " + n.label();
-            case QUESTION -> "Question: " + n.label();
+            case STEP -> getTranslation("surveyDesignerView.crumb.step", n.label());
+            case SECTION -> getTranslation("surveyDesignerView.crumb.section", n.label());
+            case QUESTION -> getTranslation("surveyDesignerView.crumb.question", n.label());
         };
+    }
+
+    @Override
+    public String getPageTitle() {
+        return getTranslation("surveyDesignerView.pageTitle");
     }
 
     private void syncAddress() {
@@ -295,25 +367,26 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         return ui == null ? Optional.empty() : ui.getChildren().filter(MainLayout.class::isInstance).map(MainLayout.class::cast).findFirst();
     }
 
-    private StructureNode resolve(String selectParam) {
-        String[] parts = selectParam.split(":");
-        if (parts.length < 2) {
-            return null;
-        }
-        try {
-            StructureNode.Kind kind = StructureNode.Kind.valueOf(parts[0].toUpperCase());
-            return find(kind, Integer.parseInt(parts[1]), null);
-        } catch (IllegalArgumentException e) {
-            return null;
+    /** UC-006 BR-003: what the address selects — an element, an element in one container, or a rule's target. */
+    private StructureNode resolve(DesignerAddress address) {
+        switch (address.kind()) {
+            case DesignerAddress.MOUNT:
+                return tree.findByAssignment(StructureNode.Kind.SECTION, address.id());
+            case DesignerAddress.ASSIGNMENT:
+                return tree.findByAssignment(StructureNode.Kind.QUESTION, address.id());
+            case DesignerAddress.RULE:
+                return tree.target(rules.any(survey.id, address.id()).orElse(null));
+            default:
+                try {
+                    return find(StructureNode.Kind.valueOf(address.kind().toUpperCase()), address.id(), null);
+                } catch (IllegalArgumentException e) {
+                    return null;
+                }
         }
     }
 
     private StructureNode find(StructureNode.Kind kind, Integer durableId, Integer assignmentId) {
-        return tree.all().stream()
-                .filter(n -> n.kind() == kind && Objects.equals(n.durableId(), durableId))
-                .filter(n -> assignmentId == null || Objects.equals(n.assignmentId(), assignmentId))
-                .findFirst()
-                .orElseGet(() -> assignmentId == null ? null : find(kind, durableId, null));
+        return tree.find(kind, durableId, assignmentId);
     }
 
     private void openAncestors(StructureNode node) {
@@ -387,6 +460,21 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     /** From the drawer tree: the tree's nodes are equal by value to the board's. */
     public void selectFromTree(StructureNode node) {
         select(find(node.kind(), node.durableId(), node.assignmentId()));
+        scrollToSelected();
+    }
+
+    /**
+     * Bring the selected card into view. The board was just rebuilt, so this runs after the new
+     * DOM is attached; it looks only inside the board, since the preview tags its boxes alike.
+     */
+    private void scrollToSelected() {
+        if (selected == null) {
+            return;
+        }
+        board.getElement().executeJs(
+                "const el = this.querySelector('[data-node-id=\"' + $0 + '\"]');"
+                        + "if (el) el.scrollIntoView({block: 'nearest', inline: 'nearest', behavior: 'smooth'});",
+                anchorOf(selected));
     }
 
     public void toggleAndSelect(StructureNode node) {
@@ -399,12 +487,51 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         render();
     }
 
+    /** A drag whose payload nothing on the board highlights for (a list onto a choice question). */
     public void dragStarted() {
+        markDrag(null);
+    }
+
+    /**
+     * A drag of an element: only the insertion bars that accept this kind light up and lift.
+     *
+     * @see #markDrag(String)
+     */
+    public void dragStarted(StructureNode.Kind kind) {
+        markDrag(kind == null ? null : kind.name().toLowerCase());
+    }
+
+    /**
+     * A drag from the palette. A rule glyph is dropped on the question it reads from (UC-019), not
+     * on an insertion bar — {@link #onDrop} turns a rule away, because its {@code kind()} is null
+     * and so matches no spot — so it marks the board for rules and the question rows light up
+     * instead. Every other glyph marks the board for the kind it creates.
+     */
+    void paletteDragStarted(PaletteItem item) {
+        markDrag(item.isRule() ? RULE_DRAG : item.kind().name().toLowerCase());
+    }
+
+    /**
+     * Marks the board for the duration of a drag: {@code dragging}, plus {@code dragging-<what>}
+     * naming what is being dragged, when something on the board can take it.
+     * <p>
+     * That second class is what lets only the valid targets light up, and lift above the rule-arrow
+     * overlay — whose arrow hit bands and glyphs are themselves drag handles, and would otherwise be
+     * what the pointer finds over a target (UC-016, UC-019, UC-020).
+     */
+    private void markDrag(String what) {
         board.addClassName("dragging");
+        if (what != null) {
+            board.addClassName("dragging-" + what);
+        }
     }
 
     public void dragEnded() {
         board.removeClassName("dragging");
+        board.removeClassName("dragging-" + RULE_DRAG);
+        for (StructureNode.Kind kind : StructureNode.Kind.values()) {
+            board.removeClassName("dragging-" + kind.name().toLowerCase());
+        }
     }
 
     /** Central drop dispatcher: palette items create, nodes reorder within or copy across containers. */
@@ -427,7 +554,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 StepsSections mount = designer.mountSection(survey.id, bank.sectionId(), spot.container().durableId(), spot.index());
                 load();
                 select(find(StructureNode.Kind.SECTION, bank.sectionId(), mount.stepsSectionsId));
-                success("Section '" + bank.label() + "' is now also in step '" + spot.container().label() + "'");
+                success(getTranslation("surveyDesignerView.sectionAlsoInStep", bank.label(), spot.container().label()));
             } else if (data instanceof BankQuestion bank) {
                 // UC-011 A6: a question from the drawer's Questions panel, reused in the target section.
                 if (spot.accepts() != StructureNode.Kind.QUESTION || spot.container() == null) {
@@ -437,7 +564,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 open(spot.container());
                 load();
                 select(find(StructureNode.Kind.QUESTION, bank.questionId(), null));
-                success("Question '" + bank.label() + "' is now also in section '" + spot.container().label() + "'");
+                success(getTranslation("surveyDesignerView.questionAlsoInSection", bank.label(), spot.container().label()));
             } else if (data instanceof StructureNode node) {
                 if (node.kind() != spot.accepts() || node.retired()) {
                     return;
@@ -447,33 +574,33 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                     case STEP -> {
                         int from = indexIn(tree.roots(), node);
                         designer.moveStep(survey.id, node.durableId(), targetIndex(from, spot.index()));
-                        afterMove(node, "Moved step '" + node.label() + "'", backwardBefore);
+                        afterMove(node, getTranslation("surveyDesignerView.movedStep", node.label()), backwardBefore);
                     }
                     case SECTION -> {
                         if (Objects.equals(node.parent().durableId(), spot.container().durableId())) {
                             int from = indexIn(childrenOf(spot.container()), node);
                             designer.moveSectionWithinStep(survey.id, node.assignmentId(), targetIndex(from, spot.index()));
-                            afterMove(node, "Moved section '" + node.label() + "'", backwardBefore);
+                            afterMove(node, getTranslation("surveyDesignerView.movedSection", node.label()), backwardBefore);
                         } else {
                             // UC-015 main flow: a card dragged across lanes mounts the same section there.
                             StepsSections mount = designer.mountSection(survey.id, node.durableId(), spot.container().durableId(), spot.index());
                             load();
                             select(find(StructureNode.Kind.SECTION, node.durableId(), mount.stepsSectionsId));
-                            success("Section '" + node.label() + "' is now also in step '" + spot.container().label() + "'");
+                            success(getTranslation("surveyDesignerView.sectionAlsoInStep", node.label(), spot.container().label()));
                         }
                     }
                     case QUESTION -> {
                         if (Objects.equals(node.parent().durableId(), spot.container().durableId())) {
                             int from = indexIn(childrenOf(spot.container()), node);
                             designer.moveQuestionWithinSection(survey.id, node.assignmentId(), targetIndex(from, spot.index()));
-                            afterMove(node, "Moved question '" + node.label() + "'", backwardBefore);
+                            afterMove(node, getTranslation("surveyDesignerView.movedQuestion", node.label()), backwardBefore);
                         } else {
                             // UC-011 A4: a row dragged across cards places the same question there.
                             designer.assignQuestionInto(survey.id, node.durableId(), spot.container().durableId(), spot.index());
                             open(spot.container());
                             load();
                             select(find(StructureNode.Kind.QUESTION, node.durableId(), null));
-                            success("Question '" + node.label() + "' is now also in section '" + spot.container().label() + "'");
+                            success(getTranslation("surveyDesignerView.questionAlsoInSection", node.label(), spot.container().label()));
                         }
                     }
                 }
@@ -514,7 +641,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 case SECTION -> designer.moveSectionWithinStep(survey.id, node.assignmentId(), indexIn(childrenOf(node.parent()), node) + delta);
                 case QUESTION -> designer.moveQuestionWithinSection(survey.id, node.assignmentId(), indexIn(childrenOf(node.parent()), node) + delta);
             }
-            afterMove(node, "Moved " + node.routeKind() + " '" + node.label() + "'", backwardBefore);
+            afterMove(node, switch (node.kind()) {
+                case STEP -> getTranslation("surveyDesignerView.movedStep", node.label());
+                case SECTION -> getTranslation("surveyDesignerView.movedSection", node.label());
+                case QUESTION -> getTranslation("surveyDesignerView.movedQuestion", node.label());
+            }, backwardBefore);
         } catch (AuthoringException ae) {
             error(ae.getMessage());
         }
@@ -525,7 +656,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         if (node.kind() != StructureNode.Kind.SECTION) {
             return;
         }
-        new PickerDialog<>("Copy section '" + node.label() + "'", "Into step", tree.roots(), StructureNode::label, step -> {
+        new PickerDialog<>(getTranslation("surveyDesignerView.copySection.title", node.label()), getTranslation("surveyDesignerView.copySection.label"), tree.roots(), StructureNode::label, step -> {
             try {
                 Section copy = designer.duplicateSectionInto(survey.id, node.durableId(), step.durableId(), childrenOf(step).size());
                 copiedSection(copy, step);
@@ -537,11 +668,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     /** UC-015 A5 keyboard route: the same section in another step. */
     public void mountIn(StructureNode section) {
-        new PickerDialog<>("Mount section '" + section.label() + "'", "Also in step", tree.roots(), StructureNode::label, step -> {
+        new PickerDialog<>(getTranslation("surveyDesignerView.mountSection.title", section.label()), getTranslation("surveyDesignerView.mountSection.label"), tree.roots(), StructureNode::label, step -> {
             try {
                 designer.mountSection(survey.id, section.durableId(), step.durableId(), childrenOf(step).size());
                 load();
-                success("Section '" + section.label() + "' is now also in step '" + step.label() + "'");
+                success(getTranslation("surveyDesignerView.sectionAlsoInStep", section.label(), step.label()));
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
@@ -554,7 +685,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         if (survey == null) {
             return out;
         }
-        for (Question q : Question.<Question>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) {
+        for (Question q : Question.<Question>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) { // i18n:ignore JPQL
             out.put(q.questionId, q);
         }
         return out;
@@ -574,12 +705,14 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             }
         }
         java.util.Map<Integer, String> descriptions = new java.util.HashMap<>();
-        for (Section sec : Section.<Section>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) {
+        for (Section sec : Section.<Section>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) { // i18n:ignore JPQL
             descriptions.put(sec.sectionId, sec.description);
         }
         toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users, listService.optionTexts(survey.id));
-        toolbox.sections.refresh(this, tree.all(), descriptions);
-        toolbox.questions.refresh(this, tree.all(), texts);
+        // UC-006 BR-003a: the panels are the survey's contents, so they hold the elements the board
+        // cannot draw -- a section in no step, a question in no section.
+        toolbox.sections.refresh(this, tree.all(), structureQuery.unplacedSections(survey.id), descriptions);
+        toolbox.questions.refresh(this, tree.all(), structureQuery.unplacedQuestions(survey.id), texts);
     }
 
     /** The right-hand pane: the selection as a respondent sees it, rebuilt with the board. */
@@ -607,7 +740,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             designer.assignList(survey.id, question.durableId(), list.selectGroupId());
             load();
             select(find(StructureNode.Kind.QUESTION, question.durableId(), question.assignmentId()));
-            success("Question '" + question.label() + "' now offers the list '" + list.name() + "'");
+            success(getTranslation("surveyDesignerView.questionUsesList", question.label(), list.name()));
         } catch (AuthoringException ae) {
             error(ae.getMessage());
         }
@@ -627,25 +760,25 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     /** UC-014 A2. */
     public void removeList(SelectGroup group) {
-        new ConfirmDialog("Remove list", "Remove the list '" + group.name + "' and its options?", "Remove", e -> {
+        new ConfirmDialog(getTranslation("surveyDesignerView.removeList.title"), getTranslation("surveyDesignerView.removeList.text", group.name), getTranslation("common.remove"), e -> {
             try {
                 listService.remove(survey.id, group.selectGroupId);
                 load();
-                success("Removed list '" + group.name + "'");
+                success(getTranslation("surveyDesignerView.removedList", group.name));
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
-        }, "Cancel", e -> { }).open();
+        }, getTranslation("common.cancel"), e -> { }).open();
     }
 
     /** UC-011 A4/A6, keyboard route: the same question in a section chosen from a picker (row menu and Questions panel). */
     public void addBankQuestionTo(StructureNode question) {
-        new PickerDialog<>("Add question '" + question.label() + "'", "To section", sectionsDistinct(), this::sectionPath, section -> {
+        new PickerDialog<>(getTranslation("surveyDesignerView.addQuestion.title", question.label()), getTranslation("surveyDesignerView.addQuestion.label"), sectionsDistinct(), this::sectionPath, section -> {
             try {
                 designer.assignQuestionInto(survey.id, question.durableId(), section.durableId(), childrenOf(section).size());
                 open(section);
                 load();
-                success("Question '" + question.label() + "' is now also in section '" + section.label() + "'");
+                success(getTranslation("surveyDesignerView.questionAlsoInSection", question.label(), section.label()));
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
@@ -707,12 +840,14 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         boolean last = node.kind() == StructureNode.Kind.SECTION ? mountCount(node) <= 1
                 : tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION && !n.retired()
                 && Objects.equals(n.durableId(), node.durableId())).count() <= 1;
-        String what = node.kind() == StructureNode.Kind.SECTION ? "section" : "question";
-        String where = node.kind() == StructureNode.Kind.SECTION ? "step" : "section";
-        String text = "Remove " + what + " '" + node.label() + "' from " + where + " '" + node.parent().label() + "'?"
-                + (last ? " This is its only place in the survey, so the " + what + " itself is removed (it can be restored from its details page)."
-                : " It stays in the other places it is used.");
-        new ConfirmDialog("Remove from " + where, text, "Remove", e -> {
+        String what = node.kind() == StructureNode.Kind.SECTION
+                ? getTranslation("surveyDesignerView.kind.section") : getTranslation("surveyDesignerView.kind.question");
+        String where = node.kind() == StructureNode.Kind.SECTION
+                ? getTranslation("surveyDesignerView.kind.step") : getTranslation("surveyDesignerView.kind.section");
+        String text = getTranslation("surveyDesignerView.removeAssignment.text", what, node.label(), where, node.parent().label())
+                + " " + (last ? getTranslation("surveyDesignerView.removeAssignment.last", what)
+                : getTranslation("surveyDesignerView.removeAssignment.shared"));
+        new ConfirmDialog(getTranslation("surveyDesignerView.removeAssignment.title", where), text, getTranslation("common.remove"), e -> {
             try {
                 if (node.kind() == StructureNode.Kind.SECTION) {
                     designer.retireSectionAssignment(survey.id, node.assignmentId());
@@ -721,27 +856,48 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
                 }
                 selected = node.parent();
                 load();
-                success("Removed " + what + " '" + node.label() + "' from " + where + " '" + node.parent().label() + "'");
+                success(getTranslation("surveyDesignerView.removedAssignment", what, node.label(), where, node.parent().label()));
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
-        }, "Cancel", e -> { }).open();
+        }, getTranslation("common.cancel"), e -> { }).open();
+    }
+
+    /**
+     * UC-015 A7 / UC-011 A7: remove an element that is placed nowhere. Everywhere else on the board
+     * removal takes an assignment away and retires the element with the last one; an element with no
+     * assignment has no such path, so this retires the element itself.
+     */
+    public void removeUnplaced(StructureNode node) {
+        ElementService.RemovalPlan plan = elements.planRemoval(survey.id, node.kind(), node.durableId());
+        String text = getTranslation("surveyDesignerView.removeUnplaced.text", node.label())
+                + (plan.dependents().isEmpty() ? ""
+                : " " + getTranslation("surveyDesignerView.removeStep.dependents", String.join("; ", plan.dependents())));
+        new ConfirmDialog(getTranslation("surveyDesignerView.removeUnplaced.title"), text, getTranslation("common.remove"), e -> {
+            try {
+                elements.remove(survey.id, node.kind(), node.durableId());
+                load();
+                success(getTranslation("surveyDesignerView.removedUnplaced", node.label()));
+            } catch (AuthoringException ae) {
+                error(ae.getMessage());
+            }
+        }, getTranslation("common.cancel"), e -> { }).open();
     }
 
     public void removeStep(StructureNode step) {
         ElementService.RemovalPlan plan = elements.planRemoval(survey.id, StructureNode.Kind.STEP, step.durableId());
-        String text = "Remove step '" + step.label() + "'?" + (plan.dependents().isEmpty() ? ""
-                : " Removed with it: " + String.join("; ", plan.dependents()) + ".") + " It can be restored from its details page.";
-        new ConfirmDialog("Remove step", text, "Remove", e -> {
+        String text = getTranslation("surveyDesignerView.removeStep.text", step.label(), plan.dependents().isEmpty() ? ""
+                : " " + getTranslation("surveyDesignerView.removeStep.dependents", String.join("; ", plan.dependents())));
+        new ConfirmDialog(getTranslation("surveyDesignerView.removeStep.title"), text, getTranslation("common.remove"), e -> {
             try {
                 designer.removeStep(survey.id, step.durableId());
                 selected = null;
                 load();
-                success("Removed step '" + step.label() + "'");
+                success(getTranslation("surveyDesignerView.removedStep", step.label()));
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
-        }, "Cancel", e -> { }).open();
+        }, getTranslation("common.cancel"), e -> { }).open();
     }
 
     // ---- rules (UC-019, UC-020) ------------------------------------------------------------
@@ -799,7 +955,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             preset.downstreamSqId = tsq;
             preset.downstreamSsId = anchorId(mountAnchor, "ss"); // the card the row was dropped in
         } else {
-            info("Drop the arrow on a step, a section or a question");
+            info(getTranslation("surveyDesignerView.dropArrowHint"));
             return;
         }
         new RelationshipDialog(survey.id, tree, rules, null, preset, saved -> ruleSaved(saved), this::load).open();
@@ -808,7 +964,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
     void editRule(int relationshipId) {
         Optional<Relationship> rule = rules.any(survey.id, relationshipId);
         if (rule.isEmpty()) {
-            info("This rule no longer exists");
+            info(getTranslation("surveyDesignerView.ruleGone"));
             return;
         }
         // Clicking a rule glyph shifts focus to the rule's target, then opens the rule editor.
@@ -825,27 +981,14 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
 
     /** The downstream element a rule points at — the innermost of its path, in the mount the path names — resolved to a board node. */
     private StructureNode targetNode(Relationship r) {
-        if (r.downstreamSqId != null) {
-            List<StructureNode> rows = tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION
-                    && Objects.equals(n.assignmentId(), r.downstreamSqId)).toList();
-            return rows.stream().filter(n -> n.parent() != null && Objects.equals(n.parent().assignmentId(), r.downstreamSsId))
-                    .findFirst().orElse(rows.isEmpty() ? null : rows.get(0));
-        }
-        if (r.downstreamSsId != null) {
-            return tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.SECTION
-                    && Objects.equals(n.assignmentId(), r.downstreamSsId)).findFirst().orElse(null);
-        }
-        if (r.downstreamStepId != null) {
-            return find(StructureNode.Kind.STEP, r.downstreamStepId, null);
-        }
-        return null;
+        return tree.target(r);
     }
 
     void repoint(int relationshipId, String end, String targetAnchor, String mountAnchor) {
         try {
             rules.repoint(survey.id, relationshipId, "SOURCE".equals(end) ? RuleService.End.SOURCE : RuleService.End.TARGET, targetAnchor, mountAnchor);
             load();
-            success("Rule re-pointed");
+            success(getTranslation("surveyDesignerView.ruleRepointed"));
         } catch (AuthoringException ae) {
             error(ae.getMessage());
             load();
@@ -928,7 +1071,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
         load();
         StructureNode node = find(StructureNode.Kind.SECTION, copy.sectionId, null);
         select(node);
-        Button undo = new Button("Undo", e -> {
+        Button undo = new Button(getTranslation("surveyDesignerView.undo"), e -> {
             try {
                 designer.removeSection(survey.id, copy.sectionId);
                 selected = null;
@@ -938,7 +1081,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             }
         });
         undo.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
-        Notification n = new Notification(new Span("Copied section '" + copy.name + "' into step '" + targetStep.label() + "'. "), undo);
+        Notification n = new Notification(new Span(getTranslation("surveyDesignerView.copiedSection", copy.name, targetStep.label()) + " "), undo);
         n.setDuration(8000);
         n.setPosition(Notification.Position.BOTTOM_START);
         n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -965,8 +1108,8 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver {
             return;
         }
         int n = newlyBackward.size();
-        warning(message + " — " + n + (n == 1 ? " rule now points" : " rules now point") + " backwards (shown in red). "
-                + "Move the downstream target after the upstream question, or move the elements again.");
+        warning(n == 1 ? getTranslation("surveyDesignerView.backward.one", message)
+                : getTranslation("surveyDesignerView.backward.many", message, n));
     }
 
     /** The ids of the current rules whose target is not after their origin (UC-033 BR-003: derived, never stored). */

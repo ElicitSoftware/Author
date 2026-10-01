@@ -47,7 +47,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.NotFoundException;
-import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -64,9 +64,8 @@ import java.util.Map;
  * that would make that build fail.
  */
 @Route(value = "survey/:" + SurveyEditorView.SURVEY_ID + "(\\d+)/reporting", layout = MainLayout.class)
-@PageTitle("Reporting tags")
 @RolesAllowed(AuthorRoles.AUTHOR)
-public class ReportingView extends VerticalLayout implements BeforeEnterObserver {
+public class ReportingView extends VerticalLayout implements BeforeEnterObserver, HasDynamicTitle {
 
     @Inject
     SurveyService surveyService;
@@ -78,10 +77,10 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
     SurveyStructureQuery structureQuery;
 
     final H2 heading = new H2();
-    final Button overview = new Button("Survey overview", VaadinIcon.ARROW_LEFT.create());
-    final Button openDesigner = new Button("Open in designer", VaadinIcon.SITEMAP.create());
-    final Button newTag = new Button("New tag…", VaadinIcon.PLUS.create());
-    final Button assign = new Button("Assign tag…", VaadinIcon.TAG.create());
+    final Button overview = new Button(VaadinIcon.ARROW_LEFT.create());
+    final Button openDesigner = new Button(VaadinIcon.SITEMAP.create());
+    final Button newTag = new Button(VaadinIcon.PLUS.create());
+    final Button assign = new Button(VaadinIcon.TAG.create());
     final Grid<Ontology> tags = new Grid<>(Ontology.class, false);
     final Grid<Assignment> assignments = new Grid<>(Assignment.class, false);
     final Div impactPanel = new Div();
@@ -92,6 +91,11 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
     final Map<Integer, Long> usesByTag = new HashMap<>();
 
     public ReportingView() {
+        overview.setText(getTranslation("reportingView.surveyOverview"));
+        openDesigner.setText(getTranslation("reportingView.openInDesigner"));
+        newTag.setText(getTranslation("reportingView.newTag"));
+        assign.setText(getTranslation("reportingView.assignTag"));
+        heading.getElement().setAttribute("data-i18n-content", "");
         overview.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         overview.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
                 new RouteParameters(SurveyEditorView.SURVEY_ID, String.valueOf(survey.id)))));
@@ -103,46 +107,46 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
         assign.addClickListener(e -> new TagAssignmentDialog(reporting, survey,
                 TagAssignmentDialog.targets(structureQuery.tree(survey.id, false).all()), null, null, saved -> load()).open());
 
-        Paragraph intro = new Paragraph("A reporting tag names a column of the site's report. Assign it to a question and the "
-                + "answers fill that column; assign it to a section with a fixed value and every respondent who reaches the section "
-                + "is classified by it. Tags on the same dimension share one table of values.");
-        Paragraph retro = new Paragraph("Changing or removing an assigned tag is retroactive: answers already recorded at deployed "
-                + "sites are reclassified when the survey is exported and applied.");
+        Paragraph intro = new Paragraph(getTranslation("reportingView.intro"));
+        Paragraph retro = new Paragraph(getTranslation("reportingView.retro"));
         retro.addClassName(LumoUtility.TextColor.SECONDARY);
 
-        tags.addColumn(o -> o.tag).setHeader("Tag").setAutoWidth(true);
-        tags.addColumn(o -> o.dimension == null ? "(own table)" : o.dimension.name).setHeader("Dimension").setAutoWidth(true);
-        tags.addColumn(ReportingNames::dimTable).setHeader("Table").setAutoWidth(true);
-        tags.addColumn(o -> ReportingNames.factColumn(o.tag)).setHeader("Report column").setAutoWidth(true);
-        tags.addColumn(o -> usesByTag.getOrDefault(o.id, 0L)).setHeader("Assignments").setAutoWidth(true);
+        tags.getElement().setAttribute("data-i18n-content", ""); // tag and dimension names are authored
+        tags.addColumn(o -> o.tag).setHeader(getTranslation("reportingView.grid.tag")).setAutoWidth(true);
+        tags.addColumn(o -> o.dimension == null ? getTranslation("reportingView.grid.ownTable") : o.dimension.name)
+                .setHeader(getTranslation("reportingView.grid.dimension")).setAutoWidth(true);
+        tags.addColumn(ReportingNames::dimTable).setHeader(getTranslation("reportingView.grid.table")).setAutoWidth(true);
+        tags.addColumn(o -> ReportingNames.factColumn(o.tag)).setHeader(getTranslation("reportingView.grid.reportColumn")).setAutoWidth(true);
+        tags.addColumn(o -> usesByTag.getOrDefault(o.id, 0L)).setHeader(getTranslation("reportingView.grid.assignments")).setAutoWidth(true);
         tags.addComponentColumn(o -> {
             long uses = usesByTag.getOrDefault(o.id, 0L);
-            Button edit = new Button("Edit…", e -> new TagDialog(reporting, survey, o, saved -> load()).open());
+            Button edit = new Button(getTranslation("reportingView.edit"), e -> new TagDialog(reporting, survey, o, saved -> load()).open());
             edit.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-            Button remove = new Button("Remove", e -> confirmRemoveTag(o));
+            Button remove = new Button(getTranslation("common.remove"), e -> confirmRemoveTag(o));
             remove.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
             remove.setEnabled(uses == 0);
-            remove.setTooltipText(uses == 0 ? "Remove this tag" : "Remove its assignments first");
+            remove.setTooltipText(uses == 0 ? getTranslation("reportingView.removeTag.tooltip") : getTranslation("reportingView.removeTag.blocked"));
             return new HorizontalLayout(edit, remove);
         }).setHeader("").setAutoWidth(true);
         tags.setAllRowsVisible(true);
         tags.asSingleSelect().addValueChangeListener(e -> filterAssignments(e.getValue()));
 
-        assignments.addColumn(Assignment::elementLabel).setHeader("Element").setAutoWidth(true);
-        assignments.addColumn(Assignment::where).setHeader("Where").setAutoWidth(true);
-        assignments.addColumn(Assignment::scopeLabel).setHeader("Applies to").setAutoWidth(true);
-        assignments.addColumn(a -> a.metadata().ontology == null ? "" : a.metadata().ontology.tag).setHeader("Tag").setAutoWidth(true);
-        assignments.addColumn(Assignment::valueLabel).setHeader("Value").setAutoWidth(true);
+        assignments.getElement().setAttribute("data-i18n-content", ""); // element, tag and value cells are authored
+        assignments.addColumn(Assignment::elementLabel).setHeader(getTranslation("reportingView.assignmentsGrid.element")).setAutoWidth(true);
+        assignments.addColumn(Assignment::where).setHeader(getTranslation("reportingView.assignmentsGrid.where")).setAutoWidth(true);
+        assignments.addColumn(Assignment::scopeLabel).setHeader(getTranslation("reportingView.assignmentsGrid.appliesTo")).setAutoWidth(true);
+        assignments.addColumn(a -> a.metadata().ontology == null ? "" : a.metadata().ontology.tag).setHeader(getTranslation("reportingView.assignmentsGrid.tag")).setAutoWidth(true);
+        assignments.addColumn(Assignment::valueLabel).setHeader(getTranslation("reportingView.assignmentsGrid.value")).setAutoWidth(true);
         assignments.addComponentColumn(a -> {
-            Span badge = new Span(a.dangling() ? "removed element" : "");
+            Span badge = new Span(a.dangling() ? getTranslation("reportingView.removedElement") : "");
             badge.addClassName("designer-badge");
             badge.setVisible(a.dangling());
             return badge;
         }).setHeader("").setAutoWidth(true);
         assignments.addComponentColumn(a -> {
-            Button edit = new Button("Edit…", e -> new TagAssignmentDialog(reporting, survey, null, null, a, saved -> load()).open());
+            Button edit = new Button(getTranslation("reportingView.edit"), e -> new TagAssignmentDialog(reporting, survey, null, null, a, saved -> load()).open());
             edit.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-            Button remove = new Button("Remove", e -> confirmRemoveAssignment(a));
+            Button remove = new Button(getTranslation("common.remove"), e -> confirmRemoveAssignment(a));
             remove.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
             return new HorizontalLayout(edit, remove);
         }).setHeader("").setAutoWidth(true);
@@ -151,7 +155,13 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
         impactPanel.addClassName("reporting-impact");
 
         HorizontalLayout toolbar = new HorizontalLayout(overview, openDesigner, newTag, assign);
-        add(heading, intro, retro, toolbar, new H3("Tags"), tags, new H3("Assignments"), assignments, impactPanel);
+        add(heading, intro, retro, toolbar, new H3(getTranslation("reportingView.tags")), tags,
+                new H3(getTranslation("reportingView.assignments")), assignments, impactPanel);
+    }
+
+    @Override
+    public String getPageTitle() {
+        return getTranslation("reportingView.pageTitle");
     }
 
     @Override
@@ -168,7 +178,7 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
 
     void load() {
         survey = surveyService.find(survey.id).orElseThrow();
-        heading.setText("Reporting tags — " + (survey.title == null || survey.title.isBlank() ? survey.name : survey.title));
+        heading.setText(getTranslation("reportingView.heading", survey.title == null || survey.title.isBlank() ? survey.name : survey.title));
         allAssignments = reporting.assignments(survey.id);
         usesByTag.clear();
         for (Assignment a : allAssignments) {
@@ -191,61 +201,71 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
     /** UC-024 steps 2-3: what the site's reporting schema gains, then what would break it. */
     private void renderImpact() {
         impactPanel.removeAll();
-        impactPanel.add(new H3("Dimensional impact"));
-        impactPanel.add(new Paragraph("When the exported survey is applied and answers arrive, the site's reporting build creates "
-                + "these objects in the surveyreport schema."));
+        impactPanel.add(new H3(getTranslation("reportingView.impact.title")));
+        impactPanel.add(new Paragraph(getTranslation("reportingView.impact.intro")));
         if (impact.tables().isEmpty()) {
-            impactPanel.add(new Paragraph("No tags yet: the survey adds nothing to the reporting schema."));
+            impactPanel.add(new Paragraph(getTranslation("reportingView.impact.none")));
         } else {
             UnorderedList tableList = new UnorderedList();
+            tableList.getElement().setAttribute("data-i18n-content", ""); // derived table names and authored tags
             for (DimTable t : impact.tables()) {
-                tableList.add(new ListItem("surveyreport." + t.name() + " — "
-                        + (t.sharedDimension() ? "shared dimension '" + t.source() + "'" : "own table of tag '" + t.source() + "'")
-                        + " — tags: " + String.join(", ", t.tags()) + " — " + t.assignments()
-                        + (t.assignments() == 1 ? " assignment" : " assignments")));
+                String source = t.sharedDimension()
+                        ? getTranslation("reportingView.impact.sharedDimension", t.source())
+                        : getTranslation("reportingView.impact.ownTable", t.source());
+                String count = t.assignments() == 1
+                        ? getTranslation("reportingView.impact.assignmentOne", t.assignments())
+                        : getTranslation("reportingView.impact.assignmentMany", t.assignments());
+                tableList.add(new ListItem(getTranslation("reportingView.impact.table",
+                        "surveyreport." + t.name(), source, String.join(", ", t.tags()), count)));
             }
-            impactPanel.add(new Span("Dimension tables"), tableList);
+            impactPanel.add(new Span(getTranslation("reportingView.impact.dimensionTables")), tableList);
             UnorderedList columnList = new UnorderedList();
+            columnList.getElement().setAttribute("data-i18n-content", "");
             for (FactColumn c : impact.columns()) {
-                columnList.add(new ListItem("fact_sections." + c.column() + " → " + c.dimTable() + " (tag '" + c.tag() + "')"));
+                columnList.add(new ListItem(getTranslation("reportingView.impact.column",
+                        "fact_sections." + c.column(), c.dimTable(), c.tag())));
             }
-            impactPanel.add(new Span("Report columns"), columnList);
+            impactPanel.add(new Span(getTranslation("reportingView.impact.reportColumns")), columnList);
         }
         if (!impact.problems().isEmpty()) {
             UnorderedList problems = new UnorderedList();
+            problems.getElement().setAttribute("data-i18n-content", ""); // service findings (localized separately)
             for (ValidationIssue i : impact.problems()) {
-                ListItem li = new ListItem((i.isError() ? "Error: " : "Warning: ") + i.message());
+                ListItem li = new ListItem(i.isError()
+                        ? getTranslation("reportingView.impact.error", i.message())
+                        : getTranslation("reportingView.impact.warning", i.message()));
                 li.addClassName(i.isError() ? LumoUtility.TextColor.ERROR : LumoUtility.TextColor.WARNING);
                 problems.add(li);
             }
-            impactPanel.add(new Span("Findings"), problems);
+            impactPanel.add(new Span(getTranslation("reportingView.impact.findings")), problems);
         }
     }
 
     private void confirmRemoveTag(Ontology o) {
-        new ConfirmDialog("Remove tag", "Remove the tag '" + o.tag + "'? It has no assignments.", "Remove", e -> {
+        new ConfirmDialog(getTranslation("reportingView.removeTag.header"),
+                getTranslation("reportingView.removeTag.text", o.tag), getTranslation("common.remove"), e -> {
             try {
                 reporting.removeTag(survey.id, o.id);
-                success("Removed tag '" + o.tag + "'");
+                success(getTranslation("reportingView.removedTag", o.tag));
                 load();
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
-        }, "Cancel", e -> { }).open();
+        }, getTranslation("common.cancel"), e -> { }).open();
     }
 
     private void confirmRemoveAssignment(Assignment a) {
         String tag = a.metadata().ontology == null ? "?" : a.metadata().ontology.tag;
-        new ConfirmDialog("Remove reporting tag", "Remove tag '" + tag + "' from " + a.elementLabel() + "? Answers already recorded "
-                + "at deployed sites stop being classified by it once the survey is exported and applied.", "Remove", e -> {
+        new ConfirmDialog(getTranslation("reportingView.removeAssignment.header"),
+                getTranslation("reportingView.removeAssignment.text", tag, a.elementLabel()), getTranslation("common.remove"), e -> {
             try {
                 reporting.unassign(survey.id, a.metadata().id);
-                success("Removed tag '" + tag + "'");
+                success(getTranslation("reportingView.removedTag", tag));
                 load();
             } catch (AuthoringException ae) {
                 error(ae.getMessage());
             }
-        }, "Cancel", e -> { }).open();
+        }, getTranslation("common.cancel"), e -> { }).open();
     }
 
     private static void success(String message) {

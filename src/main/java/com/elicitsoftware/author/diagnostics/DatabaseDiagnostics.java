@@ -11,6 +11,7 @@ package com.elicitsoftware.author.diagnostics;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.model.Survey;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -94,10 +95,9 @@ public class DatabaseDiagnostics {
         long start = System.nanoTime();
         try (Connection connection = dataSource.getConnection()) {
             if (!tableExists(connection, "surveys")) {
-                return CheckResult.down("survey schema", "survey.surveys does not exist: the Survey preview instance"
-                        + " has not created the schema in this database yet", elapsed(start));
+                return CheckResult.down("survey schema", Translations.get("systemDatabaseView.schema.missing"), elapsed(start));
             }
-            return CheckResult.up("survey schema", "survey.surveys exists", elapsed(start));
+            return CheckResult.up("survey schema", Translations.get("systemDatabaseView.schema.exists"), elapsed(start));
         } catch (SQLException | RuntimeException e) {
             return CheckResult.down("survey schema", e.getMessage(), elapsed(start));
         }
@@ -119,8 +119,8 @@ public class DatabaseDiagnostics {
             }
         } catch (SQLException | RuntimeException e) {
             // Typically "permission denied": the table is there but Author's user may not read it.
-            return new MigrationReport(null, "present, but not readable by " + configuredUser + ": " + e.getMessage(),
-                    false, true);
+            return new MigrationReport(null, Translations.get("systemDatabaseView.migration.unreadable", configuredUser,
+                    String.valueOf(e.getMessage())), false, true);
         }
     }
 
@@ -134,10 +134,11 @@ public class DatabaseDiagnostics {
             statement.setString(1, DURABLE_SEQUENCE);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
-                    return CheckResult.up("Kimball durable-key sequences", "survey." + DURABLE_SEQUENCE + " exists", elapsed(start));
+                    return CheckResult.up("Kimball durable-key sequences",
+                            Translations.get("systemDatabaseView.durableSequences.exists", DURABLE_SEQUENCE), elapsed(start));
                 }
-                return CheckResult.down("Kimball durable-key sequences", "survey." + DURABLE_SEQUENCE
-                        + " is missing: the schema in this database predates the V3 migrations", elapsed(start));
+                return CheckResult.down("Kimball durable-key sequences",
+                        Translations.get("systemDatabaseView.durableSequences.missing", DURABLE_SEQUENCE), elapsed(start));
             }
         } catch (SQLException | RuntimeException e) {
             return CheckResult.down("Kimball durable-key sequences", e.getMessage(), elapsed(start));

@@ -36,6 +36,7 @@ import io.quarkus.panache.common.Sort;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -47,20 +48,25 @@ import java.util.function.Consumer;
  */
 public class RelationshipDialog extends Dialog {
 
-    final ComboBox<StructureNode> upstream = new ComboBox<>("Reads the answer to");
-    final ComboBox<OperatorType> operator = new ComboBox<>("Operator");
-    final TextField referenceValue = new TextField("Value");
-    final ComboBox<ActionType> action = new ComboBox<>("Action");
-    final RadioButtonGroup<String> targetKind = new RadioButtonGroup<>("Target");
-    final ComboBox<StructureNode> target = new ComboBox<>("Target element");
-    final ComboBox<String> token = new ComboBox<>("Token");
-    final TextField description = new TextField("Description");
-    final TextField defaultUpstreamValue = new TextField("Default upstream value");
-    final TextField overrideUpstreamValue = new TextField("Override upstream value");
+    /** Target-kind values of the radio group (technical identifiers; labels come from translations). */
+    static final String KIND_STEP = "step";
+    static final String KIND_SECTION = "section";
+    static final String KIND_QUESTION = "question";
+
+    final ComboBox<StructureNode> upstream = new ComboBox<>();
+    final ComboBox<OperatorType> operator = new ComboBox<>();
+    final TextField referenceValue = new TextField();
+    final ComboBox<ActionType> action = new ComboBox<>();
+    final RadioButtonGroup<String> targetKind = new RadioButtonGroup<>();
+    final ComboBox<StructureNode> target = new ComboBox<>();
+    final ComboBox<String> token = new ComboBox<>();
+    final TextField description = new TextField();
+    final TextField defaultUpstreamValue = new TextField();
+    final TextField overrideUpstreamValue = new TextField();
     final Div sentence = new Div();
-    final Button save = new Button("Save");
-    final Button remove = new Button("Remove rule");
-    final Button cancel = new Button("Cancel");
+    final Button save = new Button();
+    final Button remove = new Button();
+    final Button cancel = new Button();
 
     private final Map<String, HasValidation> fieldsByProperty;
     private final List<StructureNode> questionNodes = new ArrayList<>();
@@ -74,11 +80,24 @@ public class RelationshipDialog extends Dialog {
     public RelationshipDialog(int surveyId, SurveyStructureQuery.Tree tree, RuleService rules, Relationship existing, Relationship preset,
                               Consumer<Relationship> onSaved, Runnable onRemoved) {
         boolean creating = existing == null;
-        setHeaderTitle(creating ? "New rule" : "Edit rule");
+        setHeaderTitle(creating ? getTranslation("relationshipDialog.title.new") : getTranslation("relationshipDialog.title.edit"));
         setModal(true);
         setWidth("44rem");
+        upstream.setLabel(getTranslation("relationshipDialog.upstream"));
+        operator.setLabel(getTranslation("relationshipDialog.operator"));
+        referenceValue.setLabel(getTranslation("relationshipDialog.value"));
+        action.setLabel(getTranslation("relationshipDialog.action"));
+        targetKind.setLabel(getTranslation("relationshipDialog.targetKind"));
+        target.setLabel(getTranslation("relationshipDialog.target"));
+        token.setLabel(getTranslation("relationshipDialog.token"));
+        description.setLabel(getTranslation("relationshipDialog.description"));
+        defaultUpstreamValue.setLabel(getTranslation("relationshipDialog.defaultUpstreamValue"));
+        overrideUpstreamValue.setLabel(getTranslation("relationshipDialog.overrideUpstreamValue"));
+        save.setText(getTranslation("common.save"));
+        remove.setText(getTranslation("relationshipDialog.removeRule"));
+        cancel.setText(getTranslation("common.cancel"));
 
-        // Every mount is its own choice, labelled by its path (UC-019 BR-001): a rule names the mount
+        // Every mount is its own choice, labeled by its path (UC-019 BR-001): a rule names the mount
         // it fires from and the mount it targets, so a section shared by several steps lists each.
         for (StructureNode n : tree.all()) {
             if (n.retired()) {
@@ -107,41 +126,47 @@ public class RelationshipDialog extends Dialog {
         token.setItems(tokens);
         token.setAllowCustomValue(true);
         token.addCustomValueSetListener(e -> {
-            String typed = e.getDetail() == null ? "" : e.getDetail().trim();
+            // The name alone, upper case: the brackets belong to the text that names the token, and the
+            // runtime keys its values on the name (FR-012). A reference typed here settles on its name.
+            String typed = e.getDetail() == null ? "" : Tokens.canonical(e.getDetail());
             if (!typed.isEmpty() && !tokens.contains(typed)) {
                 tokens.add(typed);
                 token.setItems(tokens);
             }
             token.setValue(typed.isEmpty() ? null : typed);
         });
-        token.setHelperText("Optional for Show and Repeat, required for Text. Fills {TOKEN|default} — or a phrase holding it, {Has TOKEN been|Were you} — in the target's text and in every text inside it");
+        // A display-only source can only fill the token from the rule's own default upstream value
+        // (UC-019 BR-006); say so here rather than let the author find out from the deployed survey.
+        Runnable tokenHelper = () -> {
+            StructureNode up = upstream.getValue();
+            boolean fromAnswer = up == null || up.assignmentId() == null
+                    || rules.upstreamCollectsAnswer(surveyId, up.assignmentId());
+            token.setHelperText(getTranslation(fromAnswer
+                    ? "relationshipDialog.token.helper" : "relationshipDialog.token.helper.displayOnly"));
+        };
         description.setMaxLength(255);
         defaultUpstreamValue.setMaxLength(255);
         overrideUpstreamValue.setMaxLength(255);
 
-        targetKind.setItems("Step", "Section", "Question");
-        targetKind.setValue("Question");
+        targetKind.setItems(KIND_STEP, KIND_SECTION, KIND_QUESTION);
+        targetKind.setItemLabelGenerator(k -> getTranslation("relationshipDialog.targetKind." + k));
+        targetKind.setValue(KIND_QUESTION);
         targetKind.addValueChangeListener(e -> refreshTargets());
         target.setItemLabelGenerator(RelationshipDialog::path);
         target.setRequiredIndicatorVisible(true);
         target.setWidthFull();
         refreshTargets();
 
-        FieldHelp.help(upstream, "The question whose answer this rule checks.");
-        FieldHelp.help(operator, "How the answer is compared to the value — equals, greater than, contains, or just whether an answer exists.");
-        FieldHelp.help(referenceValue, "The value the answer is compared against. Leave empty for operators that only test whether an answer exists.");
-        FieldHelp.help(action, "What the rule does when it matches: SHOW reveals the target, REPEAT instantiates it once per the answer, TEXT substitutes the answer into the target's text. "
-                + "A SHOW or REPEAT rule may also carry a token naming the slot the upstream answer fills in the target's texts; a TEXT rule must.");
-        FieldHelp.help(targetKind, "Whether the rule acts on a whole step, a section, or a single question. "
-                + "A rule with a token on a step fills it in every section and question of that step; on a section, in every question of it.");
-        FieldHelp.help(target, "The element the action applies to.");
-        FieldHelp.help(token, "The slot written as {TOKEN} in the target's texts that the upstream answer fills. Any rule may carry one — "
-                + "a SHOW or REPEAT rule that also names a token fills it, as the runtime does — and a TEXT rule must. "
-                + "Pick one the survey already uses or type a new name (up to 10 characters). The same token may be filled by several rules, "
-                + "one per place it is used. The preview shows the upstream question's sample answer in its place.");
-        FieldHelp.help(description, "An optional note for authors. It is not shown to respondents.");
-        FieldHelp.help(defaultUpstreamValue, "The value to assume for the upstream answer when the respondent has not answered it yet.");
-        FieldHelp.help(overrideUpstreamValue, "A fixed value to use for the upstream answer instead of the respondent's actual answer.");
+        FieldHelp.help(upstream, getTranslation("relationshipDialog.help.upstream"));
+        FieldHelp.help(operator, getTranslation("relationshipDialog.help.operator"));
+        FieldHelp.help(referenceValue, getTranslation("relationshipDialog.help.value"));
+        FieldHelp.help(action, getTranslation("relationshipDialog.help.action"));
+        FieldHelp.help(targetKind, getTranslation("relationshipDialog.help.targetKind"));
+        FieldHelp.help(target, getTranslation("relationshipDialog.help.target"));
+        FieldHelp.help(token, getTranslation("relationshipDialog.help.token"));
+        FieldHelp.help(description, getTranslation("relationshipDialog.help.description"));
+        FieldHelp.help(defaultUpstreamValue, getTranslation("relationshipDialog.help.defaultUpstreamValue"));
+        FieldHelp.help(overrideUpstreamValue, getTranslation("relationshipDialog.help.overrideUpstreamValue"));
 
         fieldsByProperty = Map.of("upstreamSqId", upstream, "operatorType", operator, "actionType", action,
                 "downstream", target, "token", token, "upstreamStepId", upstream);
@@ -153,23 +178,25 @@ public class RelationshipDialog extends Dialog {
             action.setValue(seed.actionType);
             referenceValue.setValue(seed.referenceValue == null ? "" : seed.referenceValue);
             if (seed.token != null && !seed.token.isBlank()) {
-                if (!tokens.contains(seed.token.trim())) {
-                    tokens.add(seed.token.trim());
+                // The name the platform means, whatever an import stored: saving the rule corrects the row.
+                String seeded = Tokens.canonical(seed.token);
+                if (!tokens.contains(seeded)) {
+                    tokens.add(seeded);
                     token.setItems(tokens);
                 }
-                token.setValue(seed.token.trim());
+                token.setValue(seeded);
             }
             description.setValue(seed.description == null ? "" : seed.description);
             defaultUpstreamValue.setValue(seed.defaultUpstreamValue == null ? "" : seed.defaultUpstreamValue);
             overrideUpstreamValue.setValue(seed.overrideUpstreamValue == null ? "" : seed.overrideUpstreamValue);
             if (seed.downstreamSqId != null) {
-                targetKind.setValue("Question");
+                targetKind.setValue(KIND_QUESTION);
                 target.setValue(byAssignment(questionNodes, seed.downstreamSqId, seed.downstreamStepId, seed.downstreamSsId));
             } else if (seed.downstreamSsId != null) {
-                targetKind.setValue("Section");
+                targetKind.setValue(KIND_SECTION);
                 target.setValue(byAssignment(sectionNodes, seed.downstreamSsId, seed.downstreamStepId, null));
             } else if (seed.downstreamStepId != null) {
-                targetKind.setValue("Step");
+                targetKind.setValue(KIND_STEP);
                 target.setValue(stepNodes.stream().filter(n -> n.durableId().equals(seed.downstreamStepId)).findFirst().orElse(null));
             }
         }
@@ -178,6 +205,8 @@ public class RelationshipDialog extends Dialog {
         for (var f : List.of(upstream, operator, action, target)) {
             f.addValueChangeListener(e -> updateSentence());
         }
+        upstream.addValueChangeListener(e -> tokenHelper.run());
+        tokenHelper.run(); // after the seed above, so editing an existing rule reads its own source
         referenceValue.addValueChangeListener(e -> updateSentence());
         token.addValueChangeListener(e -> updateSentence());
         updateSentence();
@@ -188,7 +217,7 @@ public class RelationshipDialog extends Dialog {
         form.setColspan(upstream, 2);
         form.setColspan(target, 2);
         form.setColspan(description, 2);
-        Details advanced = new Details("Advanced", new FormLayout(defaultUpstreamValue, overrideUpstreamValue));
+        Details advanced = new Details(getTranslation("relationshipDialog.advanced"), new FormLayout(defaultUpstreamValue, overrideUpstreamValue));
         add(sentence, form, advanced);
 
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -233,7 +262,7 @@ public class RelationshipDialog extends Dialog {
             try {
                 Relationship saved = creating ? rules.create(surveyId, bean) : rules.update(surveyId, bean);
                 close();
-                Notification.show(creating ? "Rule created" : "Rule updated", 3000, Notification.Position.BOTTOM_START)
+                Notification.show(creating ? getTranslation("relationshipDialog.saved.created") : getTranslation("relationshipDialog.saved.updated"), 3000, Notification.Position.BOTTOM_START)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 onSaved.accept(saved);
             } catch (AuthoringException ae) {
@@ -246,7 +275,7 @@ public class RelationshipDialog extends Dialog {
             try {
                 rules.retire(surveyId, existing.relationshipId);
                 close();
-                Notification.show("Rule removed", 3000, Notification.Position.BOTTOM_START).addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                Notification.show(getTranslation("relationshipDialog.removed"), 3000, Notification.Position.BOTTOM_START).addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 onRemoved.run();
             } catch (AuthoringException ae) {
                 showError(ae);
@@ -262,7 +291,17 @@ public class RelationshipDialog extends Dialog {
         for (StructureNode p = n; p != null; p = p.parent()) {
             parts.add(0, p.label());
         }
-        return String.join(" › ", parts);
+        String path = String.join(" › ", parts);
+        // Which question a rule reads decides what its operator and value can be, so name the type too.
+        return typeSuffix(n).isEmpty() ? path : path + " (" + typeSuffix(n) + ")";
+    }
+
+    /** A question node's type as the picker shows it — {@code date picker} — or empty for steps and sections. */
+    private static String typeSuffix(StructureNode n) {
+        if (n == null || n.kind() != StructureNode.Kind.QUESTION || n.detail() == null || n.detail().isBlank()) {
+            return "";
+        }
+        return n.detail().replace('_', ' ').toLowerCase(Locale.ROOT);
     }
 
     /** Whether two question nodes sit in the same section (by the section's durable id, whichever mount each is shown in). */
@@ -295,14 +334,14 @@ public class RelationshipDialog extends Dialog {
 
     private void refreshTargets() {
         StructureNode keep = target.getValue();
-        switch (targetKind.getValue() == null ? "Question" : targetKind.getValue()) {
-            case "Step" -> target.setItems(stepNodes);
-            case "Section" -> target.setItems(sectionNodes);
+        switch (targetKind.getValue() == null ? KIND_QUESTION : targetKind.getValue()) {
+            case KIND_STEP -> target.setItems(stepNodes);
+            case KIND_SECTION -> target.setItems(sectionNodes);
             default -> target.setItems(questionNodes);
         }
-        if (keep != null && ((targetKind.getValue().equals("Step") && keep.kind() == StructureNode.Kind.STEP)
-                || (targetKind.getValue().equals("Section") && keep.kind() == StructureNode.Kind.SECTION)
-                || (targetKind.getValue().equals("Question") && keep.kind() == StructureNode.Kind.QUESTION))) {
+        if (keep != null && ((targetKind.getValue().equals(KIND_STEP) && keep.kind() == StructureNode.Kind.STEP)
+                || (targetKind.getValue().equals(KIND_SECTION) && keep.kind() == StructureNode.Kind.SECTION)
+                || (targetKind.getValue().equals(KIND_QUESTION) && keep.kind() == StructureNode.Kind.QUESTION))) {
             target.setValue(keep);
         }
     }
@@ -317,20 +356,22 @@ public class RelationshipDialog extends Dialog {
         token.setVisible(true);
         token.setRequiredIndicatorVisible(text);
         boolean repeat = a != null && "REPEAT".equals(a.name);
-        targetKind.setItemEnabledProvider(k -> !(repeat && "Step".equals(k)));
+        targetKind.setItemEnabledProvider(k -> !(repeat && KIND_STEP.equals(k)));
     }
 
     /** UC-029 BR-002 / UC-019 BR-003: the rule read back as one sentence. */
     void updateSentence() {
         StructureNode up = upstream.getValue();
         StructureNode t = target.getValue();
-        String op = operator.getValue() == null ? "(operator)" : operator.getValue().name;
-        String act = action.getValue() == null ? "(action)" : action.getValue().name;
+        String op = operator.getValue() == null ? getTranslation("relationshipDialog.sentence.noOperator") : operator.getValue().name;
+        String act = action.getValue() == null ? getTranslation("relationshipDialog.sentence.noAction") : action.getValue().name;
         String val = referenceValue.getValue() == null || referenceValue.getValue().isBlank() ? "" : " " + referenceValue.getValue();
-        String tok = token.getValue() != null && !token.getValue().isBlank() ? " {" + token.getValue() + "}" : "";
+        // Written as a text writes it -- {<S1>} -- since a placeholder naming a bare word fills nothing.
+        String tok = token.getValue() != null && !token.getValue().isBlank()
+                ? " {" + Tokens.reference(token.getValue()) + "}" : "";
         sentence.removeAll();
-        sentence.add(new Span("Question '" + (up == null ? "…" : up.label()) + "' " + op + val + " → " + act + tok + " '"
-                + (t == null ? "…" : t.label()) + "'"));
+        sentence.add(new Span(getTranslation("relationshipDialog.sentence",
+                up == null ? "…" : up.label(), op, val, act, tok, t == null ? "…" : t.label())));
     }
 
     private static String blankToNull(String s) {

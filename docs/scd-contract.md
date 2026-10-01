@@ -77,12 +77,33 @@ Author working DB ──export──▶ survey.elicit ──apply (Admin)──�
 | `sections_questions` | `sections_question_id` | `sections_question_key` |
 | `steps_sections` | `steps_sections_id` | `steps_sections_key` |
 | `relationships` | `relationship_id` | `relationship_key` |
+| `translations` | `translation_id` | `translation_key` |
 | `reports`, `post_survey_actions`, `dimensions`, `ontology`, `metadata` (Type 1) | `id` | `report_key`, `post_survey_action_key`, `dimension_key`, `ontology_key`, `metadata_key` — **expected by Admin's export/update, added by Survey `V015`** |
 
 Element keys are `uuid NOT NULL` with `UNIQUE({entity}_key, version)` and an
 index on `({entity}_key, effective_from, effective_to)`. Admin's import/update
 carry them verbatim; a generated definition (e.g. the meta-survey sample) uses
 UUIDv5 from stable names so regeneration yields identical keys.
+
+`translations` (Survey `V019`) is the ninth versioned table and the only one
+that is not structural. It carries the core columns and the trigger unchanged,
+for the same reason the others do: a respondent who started under one wording
+keeps seeing it, and a corrected translation does not rewrite what earlier
+respondents read. What differs is how it attaches to the rest of the schema.
+The eight reference their neighbors by a durable id in a companion column with
+a `_version` sentinel; a translation names what it translates by that element's
+**element key** alone, in a generic `(element_type, element_key, field,
+language)` target, and holds no durable id of any other table. So no FK
+companion column, no `_version` sentinel, and no cascade when a question is
+versioned: the new version keeps `question_key`, and the translation still
+attaches. Its own durable id, `translation_id`, versions the translation itself
+exactly as `question_id` versions a question.
+
+Two consequences for Author. Retiring an element must close its translations at
+the same instant, because nothing else links them (UC-043 A3, `ElementService`);
+and editing an element's base text must **not** touch them, because a wording
+change is a translator's problem, not a structural one — the translation goes
+out of date by hash instead (UC-043 BR-003).
 
 ## Core columns on every versioned table
 

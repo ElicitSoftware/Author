@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** See the whole survey as a navigable tree of steps, sections and questions, always knowing which element is selected, so that large surveys stay orientable while editing.  
 **Status:** Implemented  
-**Requirements:** [FR-031, NFR-001](../requirements.md)
+**Requirements:** [FR-031, FR-038, NFR-001, NFR-013](../requirements.md)
 
 ## Preconditions
 
@@ -83,6 +83,38 @@ Steps, sections and questions appear in the order respondents would meet them, u
 
 Every element the tree can show has its own address within the survey, so the highlighted row is derived from the address, not from click history.
 
+The address names the element by kind and durable id — a step, a section, a question — and also
+accepts the two forms a reference elsewhere in Author naturally has: an *assignment* (a section's
+mount in a step, a question's place in a section), which selects that element in that container
+rather than in whichever container happens to come first; and a *rule*, which selects the element
+the rule targets and opens the rule's editor over it (UC-007 BR-009). An address naming something
+the tree is not currently showing selects nothing and shows the survey as it would with no
+selection (A2); it is never an error page.
+
+### BR-003a: The board shows the structure; the panels show the survey
+
+The board, the breadcrumb and the structure tree are the survey's *structure* — what a respondent
+would walk through — so they draw an element where it is placed, and an element that is placed
+nowhere appears in none of them. The drawer's Sections and Questions panels are the survey's
+*contents*: every current section and question once, placed or not (UC-015 A7, UC-011 A7). Without
+that, an unplaced element would exist in the database and in the export while being unreachable in
+the tool, which is how one survives an import unnoticed.
+
 ### BR-004: On the designer the tree and board share a selection
 
 While the designer is open, the drawer holds the tools palette above the structure tree and is resizable. Selecting an element on the board selects and scrolls to its tree row, and selecting a tree row selects that element on the board, so the two views always agree.
+
+### BR-005: The selection is previewed as a respondent sees it
+
+Beside the board the designer shows the selected section the way a respondent meets it: the section
+name as the page title and each question rendered as its field, with the question's text, options,
+placeholder, required indicator and tooltip, and any HTML in the text rendered rather than shown as
+markup. A selected question is highlighted within the preview, and selecting a step previews its
+pages. The preview is built by the same code path the question dialog's live preview uses, so the
+two never disagree about how a text will render (FR-038).
+
+### BR-006: The designer asks for a wide enough screen
+
+The designer targets tablet-sized screens and larger. Below 768px it shows a full-screen notice
+asking for a wider screen rather than reflowing the board, its lanes and its drag targets into a
+phone layout that cannot be used (NFR-013).

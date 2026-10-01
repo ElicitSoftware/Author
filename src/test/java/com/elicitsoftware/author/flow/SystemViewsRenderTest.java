@@ -80,7 +80,7 @@ class SystemViewsRenderTest extends QuarkusBrowserlessTest {
     void overviewRendersEverySection() {
         SystemOverviewView view = attach(SystemOverviewView.class);
 
-        assertEquals("System Overview", find(H3.class, view).single().getText());
+        assertEquals(view.getTranslation("systemOverviewView.title"), find(H3.class, view).single().getText());
         assertTrue(containsId(view, SystemOverviewView.BUILD_GRID_ID));
         assertTrue(containsId(view, SystemOverviewView.HEALTH_GRID_ID));
         assertTrue(containsId(view, SystemOverviewView.CONFIG_GRID_ID));
@@ -106,7 +106,7 @@ class SystemViewsRenderTest extends QuarkusBrowserlessTest {
     void databaseViewRendersConnectionAndSchema() {
         SystemDatabaseView view = attach(SystemDatabaseView.class);
 
-        assertEquals("Database", find(H3.class, view).single().getText());
+        assertEquals(view.getTranslation("systemDatabaseView.title"), find(H3.class, view).single().getText());
         assertTrue(containsId(view, SystemDatabaseView.CONNECTION_GRID_ID));
         assertTrue(containsId(view, SystemDatabaseView.SCHEMA_GRID_ID));
         assertNoSecretRendered(view);
@@ -117,7 +117,7 @@ class SystemViewsRenderTest extends QuarkusBrowserlessTest {
     void brandingViewRendersAssetsAndReloads() {
         SystemBrandingView view = attach(SystemBrandingView.class);
 
-        assertEquals("Branding", find(H3.class, view).single().getText());
+        assertEquals(view.getTranslation("systemBrandingView.title"), find(H3.class, view).single().getText());
         assertTrue(containsId(view, SystemBrandingView.SUMMARY_GRID_ID));
         assertTrue(containsId(view, SystemBrandingView.ASSETS_GRID_ID));
 
@@ -131,7 +131,7 @@ class SystemViewsRenderTest extends QuarkusBrowserlessTest {
     void connectionsViewRendersItsTargets() {
         SystemConnectionsView view = attach(SystemConnectionsView.class);
 
-        assertEquals("Connections", find(H3.class, view).single().getText());
+        assertEquals(view.getTranslation("systemConnectionsView.title"), find(H3.class, view).single().getText());
         if (view.rows().isEmpty()) {
             assertTrue(containsId(view, SystemConnectionsView.EMPTY_ID));
         } else {
@@ -144,7 +144,7 @@ class SystemViewsRenderTest extends QuarkusBrowserlessTest {
     void oidcViewShowsIdentityAndMasksTokens() {
         OidcDiagnosticsView view = attach(OidcDiagnosticsView.class);
 
-        assertEquals("OIDC", find(H3.class, view).single().getText());
+        assertEquals(view.getTranslation("oidcDiagnosticsView.title"), find(H3.class, view).single().getText());
         String info = find(Pre.class, view).single().getText();
         assertTrue(info.contains("User: system.admin"), info);
         assertTrue(info.contains("Has elicit_admin: true"), info);

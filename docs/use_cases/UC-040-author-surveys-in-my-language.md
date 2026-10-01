@@ -1,0 +1,92 @@
+# Use Case: Author Surveys in My Language
+
+## Overview
+
+**Use Case ID:** UC-040  
+**Use Case Name:** Author Surveys in My Language  
+**Primary Actor:** Survey Author  
+**Goal:** See every page of the authoring tool — navigation, buttons, menus, grid headers, dialogs, messages, page titles, the survey-model guide and the organization name — in a language they read, laid out right-to-left when that language requires it, so that they can design and export surveys without understanding English.  
+**Status:** Implemented  
+**Requirements:** [FR-049, FR-050, FR-051, FR-052, FR-053, NFR-018, NFR-019, C-023, C-024](../requirements.md)
+
+## Preconditions
+
+- The author is authenticated and has reached the authoring tool (UC-001).
+- The tool ships its own texts in every language it supports (English, Latin American Spanish and Arabic), packaged inside the release.
+- The site may offer fewer than the tool ships; the languages it offers are the ones in the selector.
+
+## Main Success Scenario
+
+1. The author opens the tool.
+2. The system determines the language to use: the language chosen earlier in this browser session, otherwise the browser's preferred language, otherwise English.
+3. The system displays the page with every tool text in that language, and with the page — including the designer board and its lanes — laid out right-to-left when the language is written right-to-left.
+4. The author chooses a different language from the language selector shown in the header of every page.
+5. The system redisplays the current page in the chosen language, applies the matching layout direction, and remembers the choice for the rest of the browser session.
+6. The author works through the tool — the survey list, the designer, dialogs for questions, sections and rules, reporting tags, import and export.
+7. The system presents every page in the chosen language while the survey content the author writes (question text, options, step and section names, tags) is stored and exported exactly as entered, and the author completes their work in their language.
+8. Where the author has translated the survey's content (UC-043), those translations are stored and exported with the survey but are shown only on the Translations page; every other view keeps the survey's base language.
+
+## Alternative Flows
+
+### A1: A text is missing in the chosen language
+
+**Trigger:** A language file lacks the translation for one of the texts on the page (step 3)  
+**Flow:**
+
+1. The system shows the English text for that item and the chosen language for everything else.
+2. Use case continues at step 4.
+
+### A2: The sign-in page is shown by the identity provider
+
+**Trigger:** The author is not yet authenticated when opening the tool (step 1)  
+**Flow:**
+
+1. The identity provider presents its own sign-in page in its own language.
+2. After sign-in, use case continues at step 2.
+
+## Postconditions
+
+### Success Postconditions
+
+- The chosen language is remembered for the browser session and applied to every page until the author logs out or closes the browser.
+- Authored survey content and exported definition files are unaffected by the language choice; only the tool's own texts and layout direction differ.
+
+### Failure Postconditions
+
+- If no language can be determined, the tool is shown in English; the author can still do everything.
+
+## Business Rules
+
+### BR-001: English is the fallback language
+
+English is the default language and the fallback for any text missing from another language file. A text missing from every language file is shown as a visible marker (`!key!`) rather than blank, so the omission is noticed and fixed.
+
+### BR-002: Available languages are the ones the release carries, less any the site withholds
+
+Every language the tool offers is packaged inside the release, so the wording an author reads is the wording that version was built and tested with. A site cannot add a language or change one; it can only offer fewer than the release carries, and a language it withholds is unreachable — absent from the selector and refused in a link.
+
+Languages are curated and arrive in a release, which is what keeps a translation and the code that renders it at the same version. It is also why a survey's content may only be published in one of them (UC-044 BR-004): content in a language no application carries would reach no respondent.
+
+### BR-003: Language precedence
+
+Session choice, then browser preference, then English. A language that is not available is skipped, never partially applied.
+
+### BR-004: Layout direction follows the language
+
+Languages written right-to-left (Arabic, Hebrew, Persian, Urdu and similar) mirror the whole page, including the designer board, its lanes and the drawer; all other languages are laid out left-to-right. The release declares the direction of any language whose script does not follow from its language alone, and a site may override that for one language by configuration.
+
+### BR-005: Authored content keeps its entered language in every view but one
+
+Question text, options, step and section names and tags are stored and exported as entered, whatever language the tool chrome uses; the designer, the dialogs and the preview always show that base language, so an author edits what they see. The one exception is the Translations page (UC-043), which exists to show a survey's content beside its translations; a proposal to show a chosen content language in the editing surfaces too is held in `docs/research/i18n_survey.md` and is not adopted here. Translations are stored with the survey and exported in the definition file, but they are never substituted into the rest of the tool.
+
+### BR-006: Brand names are localized by the brand
+
+The organization name supplied by the mounted brand may carry per-language variants; the tool shows the variant for the current language and falls back to the brand's base text. The brand's technical identifiers are never translated.
+
+### BR-007: The language choice never crosses sessions
+
+The choice is held for the browser session only; nothing about the author's language is stored.
+
+### BR-008: Text size may follow the language
+
+A script whose letters look smaller than Latin at the same size reads smaller, however faithful the translation — Arabic is the case this rule exists for. The release may therefore declare a font scale for a language, and a site may override it by configuration; every page of the tool shown in that language is rendered at that multiple of the author's own text size. A language with no declared scale is rendered exactly as it was before any scale existed, and a scale outside what a layout can absorb is refused rather than applied.

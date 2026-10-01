@@ -5,7 +5,7 @@ application image. It is the printable form of the in-app `How surveys work`
 guide (UC-029), with the step-by-step procedure added.
 
 See [`../use_cases/UC-039-consult-the-authors-manual.md`](../use_cases/UC-039-consult-the-authors-manual.md)
-for the behaviour this implements, and FR-047 / NFR-016 in
+for the behavior this implements, and FR-047 / NFR-016 in
 [`../requirements.md`](../requirements.md).
 
 ## What is here
@@ -13,9 +13,9 @@ for the behaviour this implements, and FR-047 / NFR-016 in
 | Path | Committed? | What it is |
 | --- | --- | --- |
 | `elicit-author-manual.tex` | yes | the manual |
-| `elicit-brand.sty` | yes | the Elicit default brand as LaTeX — colours, IBM Plex, the page furniture and the call-out boxes (UC-039 BR-005) |
+| `elicit-brand.sty` | yes | the Elicit default brand as LaTeX — colors, IBM Plex, the page furniture and the call-out boxes (UC-039 BR-005) |
 | `images/` | yes | the captured screens, plus `elicit-logo.png` for the title page |
-| `capture/` | yes | `capture-screenshots.mjs` and its own `package.json`; regenerates `images/` from a running Author |
+| `capture/` | yes | `capture-screenshots.mjs`, its own `package.json`, and `fixtures/` — the sample survey the figures walk; regenerates `images/` from a running Author |
 | `build-manual.sh` | yes | typesets the PDF and puts it where the application packages it |
 | `build-info.tex` | **no** | generated: the version and build date stamped into this build |
 | `build/` | **no** | generated: LaTeX's working directory and the PDF |
@@ -64,8 +64,10 @@ The capture tool keeps its own `package.json` so that Playwright stays out of
 the Vaadin-managed one at the project root.
 
 The script signs in, walks the sample survey **Family Health History** and
-writes `images/NN-*.png` at 2× for print. It expects that survey to exist, with
-the structure the manual describes:
+writes `images/NN-*.png` at 2× for print. It needs no greenfield database and
+nothing authored by hand: when the deployment does not already hold that survey
+it imports `capture/fixtures/family-health-history.elicit` through Import
+definition (UC-005) first. The fixture is the structure the manual describes:
 
 - steps `About you` and `Each child`
 - sections `You` (questions `First name`, `Has children`, `Child count`) and
@@ -75,8 +77,17 @@ the structure the manual describes:
   `Child count > 0 → section Child`
 - a reporting tag `children` on dimension `family`, assigned to `Has children`
 
+Change the fixture and the figures change with it; the element keys are derived
+from a fixed namespace, so re-importing it into a fresh Author database always
+produces the same survey.
+
+A figure whose screen cannot be found costs that figure and not the run: the
+script reports what it missed at the end and exits non-zero, so a changed
+selector is visible in CI rather than only in the PDF.
+
 Env: `AUTHOR_URL` (default `http://localhost:8084`), `AUTHOR_USER`,
-`AUTHOR_PASSWORD`, `MANUAL_IMAGES`, `MANUAL_SURVEY`.
+`AUTHOR_PASSWORD`, `MANUAL_IMAGES`, `MANUAL_SURVEY`,
+`MANUAL_SURVEY_DEFINITION`.
 
 After regenerating, check that every `\screenshot{…}` in the `.tex` still
 matches what the figure shows — the caption is part of the instruction.

@@ -40,7 +40,7 @@ check it in three places that all call one new pure function:
 2. **`ExportValidation`** reports every backward rule as an error, so export
    is blocked (UC-007 BR-001) until the author fixes it.
 3. **`RelationshipQuery.edges`** marks each backward edge, and the arrow
-   overlay draws a marked edge in the error colour with the reason in its
+   overlay draws a marked edge in the error color with the reason in its
    tooltip.
 
 A reorder is never refused. It is the one legitimate way a stored rule becomes
@@ -200,19 +200,19 @@ each brand defines, e.g. `brand-colors.css:90`):
 ```
 
 The arrowhead is a shared SVG marker (`:310`, `:343`), so an `invalid-head`
-marker in the error colour is needed alongside `head` and `pending-head`.
+marker in the error color is needed alongside `head` and `pending-head`.
 The glyph tooltip (`:351`) already concatenates label, condition and
 description; prefix it with the problem text so hovering a red arrow says
-why. Red on top of the accent colour is a colour-only cue, so the label
+why. Red on top of the accent color is a color-only cue, so the label
 should also change: "Show Consent — points backwards" keeps the
-information readable without colour (NFR-001, UC-020 BR-003).
+information readable without color (NFR-001, UC-020 BR-003).
 
 With **Show rules off** the arrows are hidden and so is the red. The
 validation panel still lists the error, and the reorder notification still
 counts it; a per-row badge on the board is possible but adds a second
 rendering of rule state and is left out of the first cut.
 
-Selection behaviour is unchanged: a red edge selects, opens and re-points
+Selection behavior is unchanged: a red edge selects, opens and re-points
 exactly like any other (`:344-346`), which is how the author fixes it —
 drag the head to a later target, or drag the tail to an earlier question.
 
@@ -307,7 +307,7 @@ the record and uses the old provisional numbers.
 1. The author reorders a step, section or question (UC-016).
 2. The system renumbers positions and rebuilds the board.
 3. For every current rule the system compares the target's position (step, section, question) with the origin's, for every mount of both.
-4. The system draws each backward rule in the error colour, with "points backwards" in its label and the reason in its tooltip, and reports in the move notification how many rules now point backwards.
+4. The system draws each backward rule in the error color, with "points backwards" in its label and the reason in its tooltip, and reports in the move notification how many rules now point backwards.
 5. The author drags the arrow's head to a later target, or its tail to an earlier question, or moves the elements again.
 6. The system re-checks and draws the rule normally; export validation (UC-007) no longer lists it, with the goal achieved.
 
@@ -351,7 +351,7 @@ Direction is computed from current positions on every render and at export; a re
 ### BR-004: Every mount counts
 A rule is valid only if it is forward for every mount of the origin's section and every mount of the target's section.
 
-### BR-005: Colour is never the only cue
+### BR-005: Color is never the only cue
 A backward arrow also changes its label and tooltip, and is listed in text in the validation panel.
 ```
 

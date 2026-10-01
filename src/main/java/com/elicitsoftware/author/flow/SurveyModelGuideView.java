@@ -24,7 +24,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.html.UnorderedList;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 import jakarta.annotation.security.RolesAllowed;
@@ -36,133 +36,91 @@ import java.util.List;
  * UC-029: the survey model explained in the designer's own vocabulary. Eight ideas in a fixed
  * order (BR-002 rules read as a sentence), each headed by the glyph the board uses for it
  * (BR-001 one vocabulary), all stated in text so the diagram is optional (BR-003).
+ * Every text comes from the translation bundle (UC-040), keyed {@code guideView.<section>.<n>}.
  */
 @Route(value = "guide", layout = MainLayout.class)
-@PageTitle("How a survey is put together")
 @RolesAllowed(AuthorRoles.AUTHOR)
-public class SurveyModelGuideView extends VerticalLayout {
+public class SurveyModelGuideView extends VerticalLayout implements HasDynamicTitle {
 
-    /** Section headings in page order; tests assert the sequence UC-029 step 2 prescribes. */
+    /** Section headings in page order; tests assert the sequence UC-029 BR-004 prescribes. */
     final List<H3> headings = new ArrayList<>();
-    final Image diagram = new Image("images/survey-model.png",
-            "The designer board for a small survey called Family history: two step cards, About you and Each child, "
-                    + "each holding section cards (You and Children, then Child) with question rows inside them, "
-                    + "and a Show rule drawn from the question 'Has children' to the question 'Child count'.");
-    final RouterLink surveysLink = new RouterLink("Go to the Surveys list", SurveysView.class);
+    final Image diagram = new Image("images/survey-model.png", getTranslation("guideView.diagram.alt"));
+    final RouterLink surveysLink = new RouterLink(getTranslation("guideView.surveysLink"), SurveysView.class);
 
     public SurveyModelGuideView() {
         addClassName("survey-guide");
-        add(new H2("How a survey is put together"));
-        add(new Paragraph("An Elicit survey is a decision tree the respondent walks through. This page shows the "
-                + "pieces a survey is made of and how the designer draws them, using the same names and glyphs "
-                + "you will see on the board and in the structure tree."));
+        add(new H2(getTranslation("guideView.title")));
+        add(new Paragraph(getTranslation("guideView.intro.p1")));
 
         Div figure = new Div(diagram);
         figure.addClassName("survey-guide-diagram");
         add(figure);
 
-        section(VaadinIcon.ROAD_BRANCH.create(), "Elicit is a decision tree",
-                new Paragraph("A respondent moves through the survey one page at a time. What they answer decides "
-                        + "what they see next: a question can open a section, repeat a group of questions, or change "
-                        + "the wording of a later question. Designing a survey means designing that path."));
+        section(VaadinIcon.BRANCH.create(), getTranslation("guideView.tree.h"),
+                new Paragraph(getTranslation("guideView.tree.p1")));
 
-        section(Glyph.step(1), "Containers nest",
-                new Paragraph("Everything sits inside something else. A survey holds steps, a step holds sections, "
-                        + "and a section holds questions."),
+        section(Glyph.step(1), getTranslation("guideView.containers.h"),
+                new Paragraph(getTranslation("guideView.containers.p1")),
                 bullets(
-                        item(Glyph.step(null), "Step", " — a page in the respondent's progress bar. For you it is a lane on the board that groups related sections."),
-                        item(Glyph.section(), "Section", " — a titled group of questions on that page. For you it is a card inside a lane."),
-                        item(Glyph.question("TEXT"), "Question", " — one input the respondent answers. For you it is a row inside a card, with a glyph that shows its type.")));
+                        item(Glyph.step(null), "guideView.containers.step.term", "guideView.containers.step.desc"),
+                        item(Glyph.section(), "guideView.containers.section.term", "guideView.containers.section.desc"),
+                        item(Glyph.question("TEXT"), "guideView.containers.question.term", "guideView.containers.question.desc")));
 
-        section(VaadinIcon.LIST_OL.create(), "Order is the default path",
-                new Paragraph("Steps run in order, sections run in order within their step, and questions run in "
-                        + "order within their section. Unless a rule says otherwise, that display order is exactly "
-                        + "what the respondent experiences. Dragging an element to a new position changes it."));
+        section(VaadinIcon.LIST_OL.create(), getTranslation("guideView.order.h"),
+                new Paragraph(getTranslation("guideView.order.p1")),
+                new Paragraph(getTranslation("guideView.order.p2")));
 
-        section(Glyph.rule("SHOW"), "Rules are the arrows",
-                new Paragraph("A rule reads the answer to one upstream question, compares it with a reference value "
-                        + "using an operator, and when the comparison holds performs an action on one downstream "
-                        + "target: a step, a section, or a question. Written out, every rule is the same sentence:"),
+        section(Glyph.rule("SHOW"), getTranslation("guideView.rules.h"),
+                new Paragraph(getTranslation("guideView.rules.p1")),
                 ruleSentence(),
                 bullets(
-                        item(Glyph.rule("SHOW"), "Show", " — the target appears only when the rule holds. Until then the respondent never sees it."),
-                        item(Glyph.rule("REPEAT"), "Repeat", " — the target section or question is repeated as many times as the answer says, for example one 'Child' section per child."),
-                        item(Glyph.rule("TEXT"), "Text", " — the answer is written into the target's text wherever a {TOKEN|default} placeholder appears, so a later question can say 'your daughter' instead of 'your child'. "
-                                + "The rule reaches everything inside its target: one Text rule on a step fills the token in every section and question of that step. "
-                                + "A token is a slot name, not a question — several rules may fill the same token, each where it is used.")),
-                new Paragraph("There is no Hide rule. Hiding is the same as not showing: give the element a Show rule "
-                        + "and it stays hidden until that rule holds."),
-                new Paragraph("Operators are Boolean, Greater than, Equal, Not equal, Field exists and Contains. "
-                        + "When several rules point at the same target, all of them must hold."));
+                        item(Glyph.rule("SHOW"), "guideView.rules.show.term", "guideView.rules.show.desc"),
+                        item(Glyph.rule("REPEAT"), "guideView.rules.repeat.term", "guideView.rules.repeat.desc"),
+                        item(Glyph.rule("TEXT"), "guideView.rules.text.term", "guideView.rules.text.desc")),
+                new Paragraph(getTranslation("guideView.rules.p2")),
+                new Paragraph(getTranslation("guideView.rules.p3")));
 
-        section(VaadinIcon.SITEMAP.create(), "The designer draws all of this",
-                new Paragraph("On the board, lanes are steps, cards are sections, rows are questions and arrows are "
-                        + "rules. A card starts closed; one click opens it and selects it, a double click on a lane, "
-                        + "card or row opens its editor, and the \u22ee menu on each element lists everything you can do "
-                        + "to it. A breadcrumb at the top of the page shows where you are (survey, step, section, "
-                        + "question), and the structure tree at the bottom of the drawer follows your selection. Every "
-                        + "element carries its glyph, and the glyph is its handle: drag a glyph from the Controls panel to "
-                        + "create an element, drag it within its container to reorder, or drag it into another container "
-                        + "to show the same element there as well (a section in another step, a question in another "
-                        + "section); Copy to step… in a card's menu makes a separate section instead. Drag a rule glyph onto a question to start a rule, then drag the arrowhead "
-                        + "onto the target. Everything a drag can do, the element's menu can do too."));
+        section(VaadinIcon.SITEMAP.create(), getTranslation("guideView.designer.h"),
+                new Paragraph(getTranslation("guideView.designer.p1")));
 
-        section(VaadinIcon.EDIT.create(), "Designing a survey",
-                new Paragraph("Open a survey from the Surveys list and choose Design…. The drawer on the left is your "
-                        + "toolbox; the board on the right is the survey. Work top-down: steps, then sections, then "
-                        + "questions, then the lists, rules and reporting tags that give them meaning."),
+        section(VaadinIcon.EDIT.create(), getTranslation("guideView.designing.h"),
+                new Paragraph(getTranslation("guideView.designing.p1")),
                 bullets(
-                        item(VaadinIcon.SEARCH.create(), "Search", " — each of the Lists, Sections and Questions panels has its own search "
-                                + "box that narrows that panel as you type: lists by name, description and option text, sections by "
-                                + "name and description, questions by name, text and type. Handy once a survey has dozens of each."),
-                        item(VaadinIcon.TOOLS.create(), "Controls", " — the glyphs for a step, a section, a question of the chosen type, and the "
-                                + "three rules. Drag one onto the board, or use Add step and the Add… items in the menus."),
-                        item(VaadinIcon.LIST.create(), "Lists", " — the lists of options a choice question (radio, combo box, multi-select, "
-                                + "checkbox group) offers. New list… defines one with its options in order; drag a list's glyph onto a "
-                                + "question to give it those options, or pick the list in the question's editor."),
-                        item(Glyph.section(), "Sections", " — every section in the survey, once, with the number of steps it is "
-                                + "mounted in. Drag one into a lane, or use Mount in step…, to show the same section in another "
-                                + "step; it stays one section, so a change to its name or questions reaches every step."),
-                        item(Glyph.question("TEXT"), "Questions", " — every question in the survey, once, with the number of sections it "
-                                + "appears in. Drag one into a card, or use Add to section…, to ask the same question again elsewhere; "
-                                + "it stays one question, so a change to its text reaches every section it is in."),
-                        item(VaadinIcon.TAG.create(), "Reporting tags", " — the \u22ee menu of a question or section offers Reporting tags…; the "
-                                + "survey's Reporting… page lists them all with the tables and columns they produce. Tagged elements "
-                                + "show a tag badge on the board, one entry per tag."),
-                        item(VaadinIcon.LIST_OL.create(), "Survey structure", " — the tree at the bottom of the drawer; click an element to "
-                                + "select it on the board. Show removed reveals retired elements so they can be restored.")),
-                new Paragraph("When the structure is in place, add rules for anything conditional, tag what the report "
-                        + "needs, check the validation panel on the survey overview, and Export… the .elicit file for "
-                        + "the Admin app to install."));
+                        item(VaadinIcon.SEARCH.create(), "guideView.designing.search.term", "guideView.designing.search.desc"),
+                        item(VaadinIcon.TOOLS.create(), "guideView.designing.controls.term", "guideView.designing.controls.desc"),
+                        item(VaadinIcon.LIST.create(), "guideView.designing.lists.term", "guideView.designing.lists.desc"),
+                        item(Glyph.section(), "guideView.designing.sections.term", "guideView.designing.sections.desc"),
+                        item(Glyph.question("TEXT"), "guideView.designing.questions.term", "guideView.designing.questions.desc"),
+                        item(VaadinIcon.TAG.create(), "guideView.designing.reportingTags.term", "guideView.designing.reportingTags.desc"),
+                        item(VaadinIcon.LIST_OL.create(), "guideView.designing.structure.term", "guideView.designing.structure.desc")),
+                new Paragraph(getTranslation("guideView.designing.p2")));
 
-        section(VaadinIcon.TABLE.create(), "Reporting tags",
-                new Paragraph("A reporting tag names a column of the report a site builds from the answers. Tag a question and "
-                        + "its answers fill that column; tag a section as it appears in a step with a fixed value, and every "
-                        + "respondent who reaches it is classified by that value. Tags that share a dimension share one table of "
-                        + "values. Open a survey's Reporting page, or the 'Reporting tags…' item on a question or section, to "
-                        + "manage them. Changing or removing an assigned tag is retroactive: answers already recorded at deployed "
-                        + "sites are reclassified."));
+        section(VaadinIcon.TABLE.create(), getTranslation("guideView.reportingTags.h"),
+                new Paragraph(getTranslation("guideView.reportingTags.p1")));
 
-        section(VaadinIcon.LINK.create(), "Identity and publishing",
-                new Paragraph("Every element gets a key the moment it is created and keeps it for life. Removing an "
-                        + "element retires it rather than deleting it, so answers already recorded at a site keep "
-                        + "their meaning. When the survey is ready you export a .elicit file; the Admin app installs "
-                        + "it at a site the first time and updates it in place after that, matching elements by key."));
+        section(VaadinIcon.LINK.create(), getTranslation("guideView.identity.h"),
+                new Paragraph(getTranslation("guideView.identity.p1")),
+                new Paragraph(getTranslation("guideView.identity.p2")));
 
-        add(new H3("Glyph legend"));
+        add(new H3(getTranslation("guideView.legend.h")));
         Div legend = new Div();
         legend.addClassName("survey-guide-legend");
-        legendRow(legend, Glyph.step(1), "Step, numbered by its display order");
-        legendRow(legend, Glyph.section(), "Section");
-        legendRow(legend, Glyph.question("TEXT"), "Text question — the icon changes with the question type (number, choice, date, …)");
-        legendRow(legend, Glyph.rule("SHOW"), "Show rule");
-        legendRow(legend, Glyph.rule("REPEAT"), "Repeat rule");
-        legendRow(legend, Glyph.rule("TEXT"), "Text rule");
+        legendRow(legend, Glyph.step(1), getTranslation("guideView.legend.step"));
+        legendRow(legend, Glyph.section(), getTranslation("guideView.legend.section"));
+        legendRow(legend, Glyph.question("TEXT"), getTranslation("guideView.legend.question"));
+        legendRow(legend, Glyph.rule("SHOW"), getTranslation("guideView.legend.showRule"));
+        legendRow(legend, Glyph.rule("REPEAT"), getTranslation("guideView.legend.repeatRule"));
+        legendRow(legend, Glyph.rule("TEXT"), getTranslation("guideView.legend.textRule"));
         add(legend);
 
         Div actions = new Div(surveysLink);
         actions.addClassName("survey-guide-actions");
         add(actions);
+    }
+
+    @Override
+    public String getPageTitle() {
+        return getTranslation("guideView.pageTitle");
     }
 
     private void section(Component glyph, String title, Component... body) {
@@ -176,23 +134,24 @@ public class SurveyModelGuideView extends VerticalLayout {
         return new UnorderedList(items);
     }
 
-    private static ListItem item(Component glyph, String term, String rest) {
-        Span name = new Span(term);
+    /** A bullet: the glyph, a bold term, and its description (both translation keys). */
+    private ListItem item(Component glyph, String termKey, String descKey) {
+        Span name = new Span(getTranslation(termKey));
         name.getStyle().set("font-weight", "600");
-        return new ListItem(glyph, new Span(" "), name, new Span(rest));
+        return new ListItem(glyph, new Span(" "), name, new Span(" " + getTranslation(descKey)));
     }
 
     /** "Question (operator) value → (Action) target", the order the runtime evaluates and the arrow draws. */
-    private static Div ruleSentence() {
+    private Div ruleSentence() {
         Div sentence = new Div(
-                Glyph.question("INTEGER"), new Span("How many children?"),
+                Glyph.question("INTEGER"), new Span(getTranslation("guideView.rules.example.question")),
                 new Span("( > )"), new Span("0"),
                 arrow(),
-                Glyph.rule("REPEAT"), new Span("Repeat"),
-                Glyph.section(), new Span("Child"), new Span("that many times"));
+                Glyph.rule("REPEAT"), new Span(getTranslation("guideView.rules.example.action")),
+                Glyph.section(), new Span(getTranslation("guideView.rules.example.section")),
+                new Span(getTranslation("guideView.rules.example.thatManyTimes")));
         sentence.addClassName("survey-guide-rule");
-        sentence.getElement().setAttribute("aria-label",
-                "Example rule: question 'How many children?' greater than 0 repeats section 'Child' that many times");
+        sentence.getElement().setAttribute("aria-label", getTranslation("guideView.rules.example.ariaLabel"));
         return sentence;
     }
 

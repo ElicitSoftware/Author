@@ -75,6 +75,9 @@ survey updates the same rows at every site instead of installing a second copy.
   target by Admin's update — never deleted, so recorded answers survive.
 - Generate first-draft survey structures from a guided
   requirements-collection flow ("survey-to-build-surveys" meta-survey).
+- Present the tool itself in each author's language (browser or on-page choice),
+  including right-to-left layout, with translations a deployment can mount
+  without rebuilding.
 - Teach the definition format to an AI agent: a self-contained specification an
   author can hand to any AI session, away from Author, and get back a draft
   `.elicit` file that Author imports and they refine here.
@@ -119,8 +122,8 @@ survey updates the same rows at every site instead of installing a second copy.
 - **License:** PolyForm Noncommercial 1.0.0.
 - **Stack (do not deviate without explicit approval):**
   - Java 25
-  - Quarkus 3.39.2
-  - Vaadin 25.2.7 (Flow / server-side UI)
+  - Quarkus 3.40.1 LTS
+  - Vaadin 25.3.0 (Flow / server-side UI)
   - Hibernate ORM with Panache (JPA) — *not* jOOQ.
   - PostgreSQL. Author runs against **its own** database instance carrying the
     shared `survey` schema. Author owns no production Flyway migrations; the

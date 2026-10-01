@@ -11,7 +11,10 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
+import com.elicitsoftware.author.survey.TokenSamples;
 import com.elicitsoftware.author.survey.Tokens;
+import com.elicitsoftware.model.QuestionType;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasLabel;
 import com.vaadin.flow.component.HasPlaceholder;
@@ -35,11 +38,11 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.timepicker.TimePicker;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.Set;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Builds the respondent's field for a question the way the Survey app's {@code Elicit*} input
@@ -53,71 +56,193 @@ final class PreviewFields {
     /** The options a choice field shows when the question has no list yet. */
     static final List<String> SAMPLE_OPTIONS = List.of("Option A", "Option B", "Option C");
 
-    /** A value may itself hold placeholders ("{G1's|your} mother"); the runtime resolves those too. */
+    /** A value may itself hold placeholders ("{&lt;G1&gt;'s|your} mother"); the runtime resolves those too. */
     private static final int MAX_NESTING = 5;
 
     private PreviewFields() { }
 
     /**
-     * Substitute placeholders the way the runtime does (QuestionManager.replaceTokens): a placeholder
-     * {phrase|default} whose phrase contains a token with a value becomes the phrase with the token
-     * replaced, else the default, else stays as written — then the runtime's own tidying: "Dennis's"
-     * reads "Dennis'", and "her's"/"his's"/"Your's" lose the stray possessive.
+     * Substitute placeholders the way the runtime does (QuestionManager.replaceTokens).
+     *
+     * <p>A placeholder is {@code {phrase|default}}, and the phrase names its tokens as
+     * {@code <NAME>} (UC-045 BR-003). A phrase is filled all-or-nothing: every reference in it must
+     * have a value, or the placeholder falls back rather than filling partially. The fallback is
+     * the default where the placeholder has one -- {@code {<S1>|}} is an empty default, which is a
+     * default, and renders nothing -- and otherwise the phrase as written, brackets and all, which
+     * is what a respondent reads. {@code {Q#}} and {@code {S#}} are the runtime's own counters and
+     * are left exactly as written.</p>
+     *
+     * <p>A value may itself be a placeholder ({@code "{<G1>'s|your} mother"}), so the text is
+     * resolved repeatedly up to {@link #MAX_NESTING} passes, stopping at a fixed point.</p>
+     *
+     * <p>Then the runtime's own tidying: "Dennis's" reads "Dennis'", and "her's"/"his's"/"Your's"
+     * lose the stray possessive. That tidying is English-only and is applied with no locale check,
+     * exactly as the runtime applies it. It is reproduced here rather than corrected because the
+     * preview's job is to show the author what a respondent will actually read, warts included.</p>
+     *
+     * <p>The four replacements are an independent copy of the ones in
+     * {@code QuestionManager.replaceTokens} -- two string literals with no shared constant, so a
+     * change to either side silently desynchronizes this preview from the runtime. Change one,
+     * change both. Two of them are load-bearing for the Family History Survey rather than
+     * cosmetic; see FHHS C-009 for what depends on them.</p>
+     *
+     * <p>A sample answer stands in for the respondent's own words, so it is treated as the runtime
+     * treats them: HTML-escaped on the way in, and never re-read for placeholders of its own, so
+     * an answer that happens to contain braces is not mistaken for one. A value the author wrote on
+     * a rule is neither escaped nor withheld from the re-reading -- it is prose the respondent is
+     * meant to read, and it is often a placeholder in its own right. {@code TokenSamples.Values}
+     * carries which is which (ElicitSoftware/Author#22).</p>
+     *
+     * <p>Escaping is right for both places a preview lands, because each mirrors the runtime
+     * component it stands for. A display-only question's text goes to {@link #html(String)} and so
+     * to {@code innerHTML}, as it does in Survey's {@code ElicitHtml}, where an escaped
+     * {@code &lt;b&gt;} renders as the literal {@code <b>} a respondent reads. A field's label and a
+     * section's title are plain text, as they are in {@code new TextField(answer.label())}, where
+     * the entities show literally. Both are what the site does.</p>
      */
-    static String substituteTokens(String text, Map<String, String> values) {
+    static String substituteTokens(String text, TokenSamples.Values values) {
         if (text == null || text.isEmpty()) {
             return "";
         }
-        String result = text;
-        for (int pass = 0; pass < MAX_NESTING && result.indexOf('{') >= 0; pass++) {
-            String next = substituteOnce(result, values);
-            if (next.equals(result)) {
-                break;
-            }
-            result = next;
-        }
+        // One pass over the text, over values whose own placeholders were resolved first -- the
+        // runtime's shape (QuestionManager.replaceTokens). Looping over the text instead would
+        // re-read a respondent's words on the second pass.
+        String result = substituteOnce(text, resolveAuthoredValues(values), values.authored());
         return result.replace(" her's ", " her ").replace(" his's ", " his ").replace(" Your's ", " Your ")
                 .replaceAll("s's", "s'");
     }
 
-    private static String substituteOnce(String text, Map<String, String> values) {
-        Matcher m = Tokens.PLACEHOLDER.matcher(text);
-        StringBuilder sb = new StringBuilder();
-        while (m.find()) {
-            String phrase = m.group(1);
-            String def = m.group(2);
-            String replacement = null;
-            // Keys in sorted order, as the runtime's TreeMap walks them; every key the phrase holds is replaced.
-            for (String key : new TreeMap<>(values).keySet()) {
-                if (phrase.contains(key)) {
-                    phrase = phrase.replaceFirst(Pattern.quote(key), Matcher.quoteReplacement(values.get(key)));
-                    replacement = phrase;
+    /**
+     * The values with every authored one's own placeholders resolved, so a rule's value reaches a
+     * sentence as prose and not as braces. The Family History Survey fills {@code S1} with
+     * {@code {<G1>'s|your} mother} and {@code G1} with the patient's name, so "Please indicate if
+     * {@code {<S1>|you}} is still living" needs two rounds. Only authored values are re-read.
+     */
+    private static Map<String, String> resolveAuthoredValues(TokenSamples.Values values) {
+        Set<String> authored = values.authored();
+        if (authored.isEmpty()) {
+            return values.values();
+        }
+        Map<String, String> ready = new HashMap<>(values.values());
+        for (int pass = 0; pass < MAX_NESTING; pass++) {
+            boolean changed = false;
+            for (String token : authored) {
+                String value = ready.get(token);
+                if (value == null || value.indexOf('{') < 0) {
+                    continue;
+                }
+                String next = substituteOnce(value, ready, authored);
+                if (!next.equals(value)) {
+                    ready.put(token, next);
+                    changed = true;
                 }
             }
-            if (replacement == null) {
-                replacement = def != null ? def : m.group();
+            if (!changed) {
+                break;
             }
-            m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
         }
-        m.appendTail(sb);
-        return sb.toString();
+        return ready;
+    }
+
+    private static String substituteOnce(String text, Map<String, String> values, Set<String> authored) {
+        Matcher placeholder = Tokens.PLACEHOLDER.matcher(text);
+        StringBuilder out = new StringBuilder();
+        while (placeholder.find()) {
+            String phrase = placeholder.group(1);
+            String defaultText = placeholder.group(2);
+            String replacement;
+            if (Tokens.BUILT_IN.contains(phrase.trim())) {
+                // {Q#} and {S#} are runtime counters, filled by the Survey app against the answer's own key.
+                replacement = placeholder.group();
+            } else {
+                String filled = fillPhrase(phrase, values, authored);
+                replacement = filled != null ? filled : (defaultText == null ? phrase : defaultText);
+            }
+            placeholder.appendReplacement(out, Matcher.quoteReplacement(replacement));
+        }
+        placeholder.appendTail(out);
+        return out.toString();
+    }
+
+    /**
+     * The phrase with every {@code <NAME>} replaced by its value, or null when it cannot be filled:
+     * when any reference has no value, and when the phrase names no token at all. Either way the
+     * caller falls back, so a phrase is never half filled.
+     */
+    private static String fillPhrase(String phrase, Map<String, String> values, Set<String> authored) {
+        Matcher ref = Tokens.TOKEN_REF.matcher(phrase);
+        StringBuilder filled = new StringBuilder();
+        boolean any = false;
+        while (ref.find()) {
+            any = true;
+            String value = valueOf(ref.group(1), values);
+            if (value == null) {
+                return null;
+            }
+            // A sample answer stands in for the respondent's words, which are escaped. A value the
+            // author wrote is not: it has already had its own placeholders resolved, and escaping
+            // it here would double-escape the sample spliced into it -- and would destroy the
+            // <TOKEN> brackets it carries before they could be read at all.
+            boolean fromAuthor = authored.stream().anyMatch(t -> t.equalsIgnoreCase(ref.group(1)));
+            ref.appendReplacement(filled, Matcher.quoteReplacement(fromAuthor ? value : escapeHtml(value)));
+        }
+        ref.appendTail(filled);
+        return any ? filled.toString() : null;
+    }
+
+    /**
+     * A verbatim copy of {@code QuestionManager.escapeHtml}, down to the order: {@code &} first, so
+     * the ampersands the later replacements introduce are not escaped again. Change one, change
+     * both -- a preview that escapes differently from the runtime is the bug this exists to close.
+     */
+    private static String escapeHtml(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
+    /**
+     * A token's value, matched by name without regard to case, mirroring QuestionManager.valueOf.
+     *
+     * <p>The name is matched as the map holds it. A rule whose token was typed {@code <S1>} rather
+     * than {@code S1} is keyed that way here, and does not fill {@code <S1>} -- which is exactly
+     * what happens at runtime, where the values map is keyed on {@code relationship.token} verbatim
+     * too. The preview shows such a rule as unfilled because the deployed survey leaves it
+     * unfilled.</p>
+     */
+    private static String valueOf(String token, Map<String, String> values) {
+        String exact = values.get(token);
+        if (exact != null) {
+            return exact;
+        }
+        for (Map.Entry<String, String> e : values.entrySet()) {
+            if (e.getKey() != null && e.getKey().equalsIgnoreCase(token)) {
+                return e.getValue();
+            }
+        }
+        return null;
     }
 
     /**
      * True for the display-only types, which collect no value and whose text is rendered as HTML:
      * HTML inline on the page, MODAL in a dialog. Both preview the same way.
      */
-    static boolean isDisplayOnly(String typeName) {
-        return "HTML".equalsIgnoreCase(typeName) || "MODAL".equalsIgnoreCase(typeName);
+    static boolean isDisplayOnly(QuestionType type) {
+        return Tokens.isDisplayOnly(type);
     }
 
     /** An HTML question has no input; the respondent sees its text rendered as HTML. */
     static Component html(String content) {
-        String body = content == null || content.isBlank() ? "<em>HTML content preview</em>" : content;
+        String body = content == null || content.isBlank() ? Translations.get("previewFields.htmlPlaceholder") : content;
         try {
-            return new Html("<div class=\"question-preview-html\">" + body + "</div>");
+            return new Html("<div class=\"question-preview-html\">" + body + "</div>"); // i18n:ignore markup wrapper
         } catch (RuntimeException invalid) {
-            return new Span("Enter valid HTML to preview it.");
+            return new Span(Translations.get("previewFields.invalidHtml"));
         }
     }
 

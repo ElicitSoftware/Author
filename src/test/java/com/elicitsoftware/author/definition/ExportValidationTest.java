@@ -13,7 +13,9 @@ package com.elicitsoftware.author.definition;
 
 import com.elicitsoftware.author.survey.DesignerService;
 import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.Section;
 import com.elicitsoftware.model.SectionsQuestion;
+import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.author.survey.RuleService;
@@ -21,6 +23,7 @@ import com.elicitsoftware.model.Step;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.OperatorType;
 import com.elicitsoftware.model.ActionType;
+import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.test.PostgresTestResource;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -31,6 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** UC-007 Validate Survey Definition. */
@@ -54,9 +58,13 @@ class ExportValidationTest {
         return Survey.find("name", "AuthorFixture").firstResult();
     }
 
+    /** The fixture's step two has no rule of its own; with one Field exists → Show rule the survey is clean (UC-007 BR-012). */
     @Test
+    @TestTransaction
     void populatedFixtureHasNoErrors() {
-        List<ValidationIssue> issues = validation.validate(fixture());
+        Survey s = fixture();
+        buildStepTwo(s);
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().noneMatch(ValidationIssue::isError), issues.toString());
     }
 
@@ -66,6 +74,63 @@ class ExportValidationTest {
         List<ValidationIssue> issues = validation.validate(empty);
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && i.message().contains("no steps")));
         assertTrue(issues.stream().noneMatch(ValidationIssue::isError));
+    }
+
+    /** UC-007 BR-010: an element out of the structure is reported as out of the structure. */
+    @Test
+    @TestTransaction
+    void aSectionInNoStepIsReportedAsThatAndNotAlsoAsEmpty() {
+        Survey s = fixture();
+        unmountSectionC(s.id);
+        em.createNativeQuery("UPDATE survey.sections_questions sq SET effective_to = now() FROM survey.questions q "
+                        + "WHERE sq.question_id = q.question_id AND q.short_text = 'FixtureQ5' AND sq.survey_id = ?1")
+                .setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "sections".equals(i.kind())
+                && i.message().contains("Section 'Fixture Section C' is not in any step")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("Fixture Section C' has no questions")),
+                "BR-010: the emptiness is downstream of the real defect: " + issues);
+    }
+
+    @Test
+    @TestTransaction
+    void aQuestionInNoSectionIsReported() {
+        Survey s = fixture();
+        em.createNativeQuery("UPDATE survey.sections_questions sq SET effective_to = now() FROM survey.questions q "
+                        + "WHERE sq.question_id = q.question_id AND q.short_text = 'FixtureQ5' AND sq.survey_id = ?1")
+                .setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "questions".equals(i.kind())
+                && i.message().contains("FixtureQ5' is not in any section")), issues.toString());
+    }
+
+    /** UC-007 BR-011: a finding never prints an empty name, and never prints null. */
+    @Test
+    @TestTransaction
+    void anElementWithNoNameIsReportedByItsDurableId() {
+        Survey s = fixture();
+        unmountSectionC(s.id);
+        em.createNativeQuery("UPDATE survey.sections SET name = null WHERE survey_id = ?1 AND name = 'Fixture Section C'")
+                .setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> "sections".equals(i.kind()) && i.message().matches(".*Section '#\\d+' is not in any step.*")),
+                issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("null")), issues.toString());
+    }
+
+    private void unmountSectionC(int surveyId) {
+        em.createNativeQuery("UPDATE survey.steps_sections ss SET effective_to = now() FROM survey.sections sec "
+                        + "WHERE ss.section_id = sec.section_id AND sec.name = 'Fixture Section C' AND ss.survey_id = ?1")
+                .setParameter(1, surveyId).executeUpdate();
     }
 
     @Test
@@ -134,16 +199,20 @@ class ExportValidationTest {
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "steps".equals(i.kind()) && i.message().contains("has no sections")), issues.toString());
     }
 
+    /** The fixture's one rule; scoped by name so the step-two rule a test adds is left alone. */
+    private static final String CHILD_COUNT_RULE = "Show child count when children = Y";
+
     /** UC-019 BR-001 / UC-007 step 2: a rule whose downstream path does not hold together blocks export; a full path passes. */
     @Test
     @TestTransaction
     void ruleWithAnIncompletePathIsAnError() {
         Survey s = fixture();
+        buildStepTwo(s);
         Question q5 = Question.find("shortText = ?1 and effectiveTo = ?2", "FixtureQ5", StructuralElement.SENTINEL).firstResult();
         SectionsQuestion sq5 = SectionsQuestion.find("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", s.id, q5.questionId, StructuralElement.SENTINEL).firstResult();
         // The fixture rule reads FixtureQ3 in Section B; point it at FixtureQ5 in Section C with no step or section named.
-        em.createNativeQuery("UPDATE survey.relationships SET downstream_sq_id = ?2, downstream_ss_id = NULL, downstream_step_id = NULL WHERE survey_id = ?1")
-                .setParameter(1, s.id).setParameter(2, sq5.sectionsQuestionId).executeUpdate();
+        em.createNativeQuery("UPDATE survey.relationships SET downstream_sq_id = ?2, downstream_ss_id = NULL, downstream_step_id = NULL WHERE survey_id = ?1 AND description = ?3")
+                .setParameter(1, s.id).setParameter(2, sq5.sectionsQuestionId).setParameter(3, CHILD_COUNT_RULE).executeUpdate();
         em.flush();
         em.clear();
         List<ValidationIssue> errors = validation.validate(Survey.findById(s.id)).stream().filter(ValidationIssue::isError).toList();
@@ -154,7 +223,8 @@ class ExportValidationTest {
         em.createNativeQuery("""
                 UPDATE survey.relationships r SET downstream_ss_id = ss.steps_sections_id, downstream_step_id = ss.step_id
                 FROM survey.steps_sections ss WHERE ss.survey_id = r.survey_id AND ss.section_id = ?2 AND r.survey_id = ?1
-                """).setParameter(1, s.id).setParameter(2, sq5.sectionId).executeUpdate();
+                  AND r.description = ?3
+                """).setParameter(1, s.id).setParameter(2, sq5.sectionId).setParameter(3, CHILD_COUNT_RULE).executeUpdate();
         em.flush();
         em.clear();
         assertTrue(validation.validate(Survey.findById(s.id)).stream().noneMatch(ValidationIssue::isError), "a full path passes");
@@ -165,6 +235,7 @@ class ExportValidationTest {
     @TestTransaction
     void ruleWhoseTargetPrecedesItsOriginIsAnError() {
         Survey s = fixture();
+        buildStepTwo(s);
         Question q4 = Question.find("shortText = ?1 and effectiveTo = ?2", "FixtureQ4", StructuralElement.SENTINEL).firstResult();
         SectionsQuestion sq4 = SectionsQuestion.find("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", s.id, q4.questionId, StructuralElement.SENTINEL).firstResult();
         designer.moveQuestionWithinSection(s.id, sq4.sectionsQuestionId, 0);
@@ -190,6 +261,30 @@ class ExportValidationTest {
         return ruleOntoStepTwo(s, "TEXT", token);
     }
 
+    /**
+     * A rule landing on Fixture Section B, which the fixture mounts in step one only, so the token it
+     * carries is defined but never reaches step two's question.
+     */
+    private Relationship textRuleOntoSectionB(Survey s, String token) {
+        SectionsQuestion name = SectionsQuestion.find("questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
+                "FixtureQ2", s.id, StructuralElement.SENTINEL).firstResult();
+        Section sectionB = Section.find("name = ?1 and effectiveTo = ?2", "Fixture Section B", StructuralElement.SENTINEL).firstResult();
+        StepsSections mount = StepsSections.find("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3",
+                s.id, sectionB.sectionId, StructuralElement.SENTINEL).firstResult();
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = name.sectionsQuestionId;
+        draft.upstreamStepId = mount.stepId;
+        draft.downstreamStepId = mount.stepId;
+        draft.downstreamSsId = mount.stepsSectionsId;
+        draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
+        draft.actionType = ActionType.find("name", "TEXT").firstResult();
+        draft.token = token;
+        Relationship created = rules.create(s.id, draft);
+        em.flush();
+        em.clear();
+        return created;
+    }
+
     private Relationship ruleOntoStepTwo(Survey s, String action, String token) {
         SectionsQuestion name = SectionsQuestion.find("questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
                 "FixtureQ2", s.id, StructuralElement.SENTINEL).firstResult();
@@ -212,31 +307,59 @@ class ExportValidationTest {
     @TestTransaction
     void aPlaceholderWithoutADefaultThatNoRuleFillsIsAnError() {
         Survey s = fixture();
-        setText(s, STEP_TWO_QUESTION, "Anything else, {NAME}?");
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>}?");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "questions".equals(i.kind())
-                && i.message().contains("uses {NAME} without a default and no rule fills it there")), issues.toString());
+                && i.message().contains("uses {<NAME>} without a default and no rule fills it there")), issues.toString());
     }
 
     @Test
     @TestTransaction
     void aPlaceholderWithADefaultThatNoRuleFillsIsAWarning() {
         Survey s = fixture();
-        setText(s, STEP_TWO_QUESTION, "Anything else, {NAME|friend}?");
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "questions".equals(i.kind())
-                && i.message().contains("uses {NAME|friend} but no rule fills it there")), issues.toString());
-        assertTrue(issues.stream().noneMatch(i -> i.isError() && i.message().contains("{NAME}")), issues.toString());
+                && i.message().contains("uses {<NAME>|friend} but no rule fills it there")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.isError() && i.message().contains("{<NAME>}")), issues.toString());
+    }
+
+    /**
+     * UC-007 BR-005 / ElicitSoftware/Author#18: a phrase fills all or nothing, so a reference no rule
+     * reaches stops the whole placeholder. Asking whether <em>any</em> of them was reached called this
+     * filled and exported it, while the respondent read "you both".
+     */
+    @Test
+    @TestTransaction
+    void aPhraseWhoseSecondReferenceNothingReachesIsReported() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME> and <OTHER>|you both}?");
+        textRuleOntoStepTwo(s, "NAME");
+        textRuleOntoSectionB(s, "OTHER");
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "questions".equals(i.kind())
+                && i.message().contains("uses {<NAME> and <OTHER>|you both} but no rule fills it there")), issues.toString());
+    }
+
+    @Test
+    @TestTransaction
+    void aPhraseEveryReferenceOfWhichIsReachedIsFilled() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME> and <OTHER>|you both}?");
+        textRuleOntoStepTwo(s, "NAME");
+        textRuleOntoStepTwo(s, "OTHER");
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("you both")), issues.toString());
     }
 
     @Test
     @TestTransaction
     void aTextRuleOnTheStepFillsEveryQuestionInIt() {
         Survey s = fixture();
-        setText(s, STEP_TWO_QUESTION, "Anything else, {NAME}?");
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>}?");
         textRuleOntoStepTwo(s, "NAME");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("{NAME}")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("{<NAME>}")), issues.toString());
     }
 
     @Test
@@ -246,7 +369,7 @@ class ExportValidationTest {
         Relationship r = textRuleOntoStepTwo(s, "ZZZ");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind()) && r.relationshipId.equals(i.durableId())
-                && i.message().contains("fills {ZZZ} but no text it reaches uses it")), issues.toString());
+                && i.message().contains("fills {<ZZZ>} but no text it reaches uses it")), issues.toString());
     }
 
     /** UC-007 BR-005 / UC-019 BR-005: a token is checked whatever the action of the rule carrying it. */
@@ -254,14 +377,380 @@ class ExportValidationTest {
     @TestTransaction
     void aShowRuleWithATokenFillsItAndIsWarnedWhenNothingUsesIt() {
         Survey s = fixture();
-        setText(s, STEP_TWO_QUESTION, "Anything else, {NAME}?");
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>}?");
         ruleOntoStepTwo(s, "SHOW", "NAME");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("{NAME}")), "a SHOW rule fills the token: " + issues);
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("{<NAME>}")), "a SHOW rule fills the token: " + issues);
 
         Relationship unused = ruleOntoStepTwo(s, "SHOW", "ZZZ");
         issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind()) && unused.relationshipId.equals(i.durableId())
-                && i.message().contains("fills {ZZZ} but no text it reaches uses it")), issues.toString());
+                && i.message().contains("fills {<ZZZ>} but no text it reaches uses it")), issues.toString());
+    }
+    // ---- UC-019 BR-006: a token fed by a question that collects no answer ----------------------
+
+    /** FixtureQ1 is the fixture's HTML question, so it collects nothing a token could take. */
+    private Relationship htmlSourcedRuleOntoStepTwo(Survey s, String defaultUpstreamValue) {
+        SectionsQuestion html = SectionsQuestion.find("questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
+                "FixtureQ1", s.id, StructuralElement.SENTINEL).firstResult();
+        Step one = Step.find("name = ?1 and effectiveTo = ?2", "Fixture Step One", StructuralElement.SENTINEL).firstResult();
+        Step two = Step.find("name = ?1 and effectiveTo = ?2", "Fixture Step Two", StructuralElement.SENTINEL).firstResult();
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = html.sectionsQuestionId;
+        draft.upstreamStepId = one.stepId;
+        draft.downstreamStepId = two.stepId;
+        draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
+        draft.actionType = ActionType.find("name", "TEXT").firstResult();
+        draft.token = "NAME";
+        draft.defaultUpstreamValue = defaultUpstreamValue;
+        Relationship created = rules.create(s.id, draft);
+        em.flush();
+        em.clear();
+        return created;
+    }
+
+    @Test
+    @TestTransaction
+    void aTokenFedByADisplayOnlyQuestionThatCarriesItsOwnValueIsAWarning() {
+        Survey s = fixture();
+        buildStepTwo(s);
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        htmlSourcedRuleOntoStepTwo(s, "{G1's|your} mother");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("display-only HTML")),
+                "it works, but only by way of the constant: " + issues);
+        assertTrue(issues.stream().noneMatch(ValidationIssue::isError), issues.toString());
+    }
+
+    @Test
+    @TestTransaction
+    void aTokenFedByADisplayOnlyQuestionWithNoValueAtAllIsAnError() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        Relationship created = htmlSourcedRuleOntoStepTwo(s, "{G1's|your} mother");
+        // RuleService refuses this shape outright (UC-019 BR-006), so reach the row the only way an
+        // imported definition can carry it: with the constant taken away afterwards.
+        em.createNativeQuery("UPDATE survey.relationships SET default_upstream_value = NULL WHERE id = ?1")
+                .setParameter(1, created.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("nothing ever fills {<NAME>}")),
+                "nothing can ever fill the slot: " + issues);
+    }
+
+    @Test
+    @TestTransaction
+    void aTokenFedByAQuestionThatCollectsAnAnswerIsNotFlagged() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("display-only")), issues.toString());
+    }
+
+    // ---- UC-007 BR-005: a placeholder that names its token as a bare word ----------------------
+
+    @Test
+    @TestTransaction
+    void aPlaceholderNamingItsTokenAsABareWordIsAnError() {
+        Survey s = fixture();
+        // A rule carries NAME, so NAME is a token this survey uses; the text names it without brackets.
+        setText(s, STEP_TWO_QUESTION, "{Does NAME|Do you} have anything to add?");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "questions".equals(i.kind())
+                        && i.message().contains("without angle brackets")
+                        && i.message().contains("{Does <NAME>|Do you}")),
+                "the message should show the corrected placeholder: " + issues);
+    }
+
+    @Test
+    @TestTransaction
+    void aBracketedPlaceholderIsNotFlagged() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "{Does <NAME>|Do you} have anything to add?");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("without angle brackets")), issues.toString());
+    }
+
+    // ---- UC-007 BR-006: a reference no rule defines, markup included ---------------------------
+
+    /** A tag in the phrase reads as a token reference, and filling is all or nothing. */
+    @Test
+    @TestTransaction
+    void aTagInsideAPlaceholderIsReportedAsAnUndefinedTokenWithTheTagMovedOut() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "{<b><NAME></b>|<b>name</b>}");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "questions".equals(i.kind())
+                        && i.message().contains("no rule defines the token b")
+                        && i.message().contains("write <b>{")),
+                "it should name <b> as undefined and suggest moving the tag out: " + issues);
+    }
+
+    /** Markup around the placeholder is how it is meant to be written. */
+    @Test
+    @TestTransaction
+    void aTagOutsideThePlaceholderIsNotFlagged() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "<b>{<NAME>|name}</b>");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule defines the token")), issues.toString());
+    }
+
+    /** The default is used verbatim, so a tag there fills nothing in and is not a reference. */
+    @Test
+    @TestTransaction
+    void aTagInTheDefaultIsNotAReference() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Ask {<NAME>|<i>someone</i>}");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule defines the token")), issues.toString());
+    }
+
+    @Test
+    @TestTransaction
+    void aBareTokenNameInARulesOwnValueIsAnError() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        Relationship created = textRuleOntoStepTwo(s, "NAME");
+        // The value a rule puts in the slot is a placeholder in its own right, and needs brackets too.
+        em.createNativeQuery("UPDATE survey.relationships SET default_upstream_value = ?1 WHERE id = ?2")
+                .setParameter(1, "{NAME's|your} mother").setParameter(2, created.id).executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("{<NAME>'s|your}")),
+                "a rule's own value is checked the same way: " + issues);
+    }
+
+    // ---- UC-007 BR-007: a rule's token is a name, not a reference ------------------------------
+
+    /** Plant a shape RuleService now refuses, the only way an import can carry it (UC-005). */
+    private void plantToken(Relationship created, String token) {
+        em.createNativeQuery("UPDATE survey.relationships SET token = ?1 WHERE id = ?2")
+                .setParameter(1, token).setParameter(2, created.id).executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    /**
+     * Author#21: the runtime keys a text's values on the column verbatim and asks for the name it
+     * parsed out of the reference, so {@code <NAME>} is asked for as {@code NAME} and never matches.
+     */
+    @Test
+    @TestTransaction
+    void aRuleWhoseTokenCarriesItsOwnBracketsIsAnError() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        plantToken(textRuleOntoStepTwo(s, "NAME"), "<NAME>");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("written with the angle brackets")
+                        && i.message().contains("Write NAME")),
+                "the rule is the cause and carries the fix: " + issues);
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule defines the token")),
+                "one finding at the cause, not one per text that names the token: " + issues);
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("but no text it reaches uses it")),
+                "and not the same defect read back as an unused token: " + issues);
+    }
+
+    @Test
+    @TestTransaction
+    void aRuleWhoseTokenHoldsACharacterNoReferenceCanIsAnError() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        plantToken(textRuleOntoStepTwo(s, "NAME"), "NA ME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("which no text can name")),
+                "no phrase could ever spell it: " + issues);
+    }
+
+    /** Every match ignores case, so a lower-case token fills -- it must not block an export. */
+    @Test
+    @TestTransaction
+    void aLowerCaseTokenIsAWarningBecauseItStillFills() {
+        Survey s = fixture();
+        buildStepTwo(s);
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        plantToken(textRuleOntoStepTwo(s, "NAME"), "name");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind())
+                        && i.message().contains("carries the token name rather than NAME")),
+                "FR-012 asks for upper case: " + issues);
+        assertTrue(issues.stream().noneMatch(ValidationIssue::isError), issues.toString());
+    }
+
+    @Test
+    @TestTransaction
+    void aTokenWrittenAsAPlainUpperCaseNameIsNotFlagged() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        textRuleOntoStepTwo(s, "NAME");
+
+        List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
+
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("carries the token")), issues.toString());
+    }
+
+    // ---- UC-007 BR-012 / FR-064: only the first step may stand without a rule ------------------
+
+    /**
+     * The fixture leaves step two without a rule, so it would be built at sign-in. This gives it the usual
+     * one: Field exists on the welcome (FixtureQ1, an HTML question in step one) → Show step two.
+     */
+    private void buildStepTwo(Survey s) {
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf(s, "FixtureQ1").sectionsQuestionId;
+        draft.upstreamStepId = step(s, "Fixture Step One").stepId;
+        draft.downstreamStepId = step(s, "Fixture Step Two").stepId;
+        draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
+        draft.actionType = ActionType.find("name", "SHOW").firstResult();
+        rules.create(s.id, draft);
+        em.flush();
+        em.clear();
+    }
+
+    private SectionsQuestion assignmentOf(Survey s, String shortText) {
+        return SectionsQuestion.find("questionId = (select q.questionId from Question q where q.shortText = ?1 and q.surveyId = ?2 and q.effectiveTo = ?3) and effectiveTo = ?3",
+                shortText, s.id, StructuralElement.SENTINEL).firstResult();
+    }
+
+    private StepsSections mountOf(Survey s, String sectionName) {
+        Section section = Section.find("surveyId = ?1 and name = ?2 and effectiveTo = ?3", s.id, sectionName, StructuralElement.SENTINEL).firstResult();
+        return StepsSections.find("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", s.id, section.sectionId, StructuralElement.SENTINEL).firstResult();
+    }
+
+    /** A Field exists → Show rule from FixtureQ2 in step one, onto a mount and optionally a question in it. */
+    private void showRule(Survey s, StepsSections mount, Integer sqId) {
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = assignmentOf(s, "FixtureQ2").sectionsQuestionId;
+        draft.upstreamStepId = step(s, "Fixture Step One").stepId;
+        draft.downstreamStepId = mount.stepId;
+        draft.downstreamSsId = mount.stepsSectionsId;
+        draft.downstreamSqId = sqId;
+        draft.operatorType = OperatorType.find("name", "FIELD_EXIST").firstResult();
+        draft.actionType = ActionType.find("name", "SHOW").firstResult();
+        rules.create(s.id, draft);
+        em.flush();
+        em.clear();
+    }
+
+    private Step step(Survey s, String name) {
+        return Step.find("surveyId = ?1 and name = ?2 and effectiveTo = ?3", s.id, name, StructuralElement.SENTINEL).firstResult();
+    }
+
+    private Question newTextQuestion(Survey s, int sectionId, String shortText) {
+        Question q = new Question();
+        q.questionType = QuestionType.find("name", "TEXT").firstResult();
+        q.text = "Tell us more";
+        q.shortText = shortText;
+        Question created = designer.createQuestionIn(s.id, sectionId, q, 99);
+        em.flush();
+        em.clear();
+        return created;
+    }
+
+    private List<ValidationIssue> justInTimeErrors(Survey s) {
+        return validation.validate(Survey.findById(s.id)).stream()
+                .filter(i -> i.isError() && (i.message().contains("is not the first step") || i.message().contains("is not in the first step")))
+                .toList();
+    }
+
+    /** UC-007 BR-012: the first step stands without a rule; a later step nothing builds is one error, on the step. */
+    @Test
+    @TestTransaction
+    void aLaterStepNoShowOrRepeatRuleBuildsIsAnErrorOnTheStep() {
+        Survey s = fixture();
+        List<ValidationIssue> errors = justInTimeErrors(s);
+        assertEquals(1, errors.size(), errors.toString());
+        assertEquals("steps", errors.get(0).kind());
+        assertEquals(step(s, "Fixture Step Two").stepId, errors.get(0).durableId());
+        assertTrue(errors.get(0).message().contains("Field exists"), "the message names the usual remedy");
+    }
+
+    /** UC-007 BR-012: a Text rule builds nothing, so it does not stand in for a Show rule. */
+    @Test
+    @TestTransaction
+    void aTextRuleOnALaterStepDoesNotBuildIt() {
+        Survey s = fixture();
+        setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
+        textRuleOntoStepTwo(s, "NAME");
+        List<ValidationIssue> errors = justInTimeErrors(s);
+        assertTrue(errors.size() == 1 && "steps".equals(errors.get(0).kind()), errors.toString());
+    }
+
+    /** UC-007 BR-012: a Show rule on the section as mounted in the step builds everything in it. */
+    @Test
+    @TestTransaction
+    void aShowRuleOnTheMountBuildsTheWholeSection() {
+        Survey s = fixture();
+        StepsSections c = mountOf(s, "Fixture Section C");
+        newTextQuestion(s, c.sectionId, "FixtureQ6");
+        showRule(s, mountOf(s, "Fixture Section C"), null);
+        assertTrue(justInTimeErrors(s).isEmpty(), justInTimeErrors(s).toString());
+    }
+
+    /** UC-007 BR-012: once a step has some rule, the finding moves in to the mount nothing reaches. */
+    @Test
+    @TestTransaction
+    void aSectionNothingReachesInAStepWithRulesIsAnErrorOnTheMount() {
+        Survey s = fixture();
+        Section draft = new Section();
+        draft.name = "Fixture Section D";
+        Section d = designer.createSectionIn(s.id, step(s, "Fixture Step Two").stepId, draft, 99);
+        newTextQuestion(s, d.sectionId, "FixtureQ6");
+        showRule(s, mountOf(s, "Fixture Section C"), null);
+        List<ValidationIssue> errors = justInTimeErrors(s);
+        assertEquals(1, errors.size(), errors.toString());
+        assertEquals("steps_sections", errors.get(0).kind());
+        assertEquals(mountOf(s, "Fixture Section D").stepsSectionsId, errors.get(0).durableId());
+    }
+
+    /** UC-007 BR-012: a rule on one question of a section leaves its neighbors to be reported one by one. */
+    @Test
+    @TestTransaction
+    void aQuestionNothingReachesBesideOneThatIsReachedIsAnErrorOnTheQuestion() {
+        Survey s = fixture();
+        StepsSections c = mountOf(s, "Fixture Section C");
+        newTextQuestion(s, c.sectionId, "FixtureQ6");
+        showRule(s, mountOf(s, "Fixture Section C"), assignmentOf(s, STEP_TWO_QUESTION).sectionsQuestionId);
+        List<ValidationIssue> errors = justInTimeErrors(s);
+        assertEquals(1, errors.size(), errors.toString());
+        assertEquals("sections_questions", errors.get(0).kind());
+        assertEquals(assignmentOf(s, "FixtureQ6").sectionsQuestionId, errors.get(0).durableId());
     }
 }

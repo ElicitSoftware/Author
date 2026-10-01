@@ -28,8 +28,8 @@ for local development and testing, though any OIDC-compliant server works in pro
 
 ## Stack
 
-- Java 25, Quarkus 3.39.2, Maven build
-- Vaadin 25.2.7 (Flow, server-side UI)
+- Java 25, Quarkus 3.40.1 LTS, Maven build
+- Vaadin 25.3.0 (Flow, server-side UI)
 - Hibernate ORM with Panache (JPA) against a local `survey` database
 - PostgreSQL
 - OIDC / Keycloak authorization
@@ -41,10 +41,31 @@ for local development and testing, though any OIDC-compliant server works in pro
 ### Prerequisites
 
 - Java 25
-- Docker. The umbrella repo's `docker-compose.yml` (one level up) runs the support services
-  Author needs: Postgres with a dedicated `author` database next to the site's `survey`
-  database, Keycloak (realm from `../keycloak/elicit-realm.json`, test user `author` /
-  `author`), and the `author-survey` preview instance. Author has no compose file of its own.
+- Docker. [`docker-compose.yml`](docker-compose.yml) in this repo runs the whole platform:
+  Postgres with a dedicated `author` database next to the site's `survey` database, Keycloak
+  (realm from [`keycloak/elicit-realm.json`](keycloak/elicit-realm.json), test user `author` /
+  `author`), the `author-survey` preview instance, and Survey, Admin, FHHS and Pedigree so the
+  end-to-end suites have a site to drive.
+- **An Elicit umbrella checkout around this one.** Author is a private repository and is no
+  longer cloned by the umbrella's `cloneAllProjects.sh`, but it is still expected to sit at
+  `Elicit/Author/`. Shared assets are not duplicated here: the compose file mounts
+  `../elicit-brand` and `../sftp_ssh`, and the end-to-end suites install
+  `../../FHHS/family-history-survey.elicit`. The Survey, Admin, FHHS and Pedigree images come
+  from the umbrella's `buildDockerImages.sh`; the Author image from `./buildDockerImage.sh`.
+
+### End-to-end tests
+
+Three Playwright suites live here and drive the stack above through a browser. They are
+opt-in (`-DskipTests=false`) and need it running:
+
+| Suite | What it covers |
+| --- | --- |
+| [`e2e-tests/`](e2e-tests) | Author → Admin → Survey on one site, plus the respondent journey, CSV registration and search filters |
+| [`e2e_multisite/`](e2e_multisite) | Authoring at a master site and applying the definition at a second one |
+| [`e2e_multisite_multilingual/`](e2e_multisite_multilingual) | The same across three sites in English, Spanish and Arabic |
+
+`e2e_multisite` and `e2e_multisite_multilingual` compile the Author page objects out of
+`e2e-tests/src/test/java`, so the three move together. Each has its own `run.sh`.
 
 ### Running in dev mode
 
@@ -106,10 +127,13 @@ Rules are drawn as arrows between elements, and the survey's **Reporting** page
 (`survey/{id}/reporting`) manages the reporting tags, dimensions and assignments that drive the
 site's dimensional reporting schema, with a preview of the tables and columns they produce; the
 same tags are reachable from a question's or section's menu on the board. The printable
-[author's manual](docs/manual/README.md) ships inside the image alongside that guide. For
-authoring away from the tool, [`docs/ai/AUTHORING_FOR_AI.md`](docs/ai/AUTHORING_FOR_AI.md)
-explains the survey model and the `.elicit` record format to an AI agent, so a draft
-definition can be written in an AI session and imported here. Work follows the AIUP workflow described
+[author's manual](docs/manual/README.md) ships inside the image alongside that guide. A survey can
+also start from an AI draft: [`docs/ai/AUTHORING_FROM_AI.md`](docs/ai/AUTHORING_FROM_AI.md)
+explains the survey model and the `.elicit` record format to an AI agent, and Author offers that
+same document on its **Draft with AI** page (`ai-draft`, beside **New survey** on the surveys
+list), so an author with no checkout can copy it into an AI session and import the draft it
+writes. Author sends nothing to any AI service — the author carries the specification out and the
+draft back. Work follows the AIUP workflow described
 in [`CLAUDE.md`](CLAUDE.md); use case specs live in [`docs/use_cases/`](docs/use_cases/).
 
 ## Related Guides
