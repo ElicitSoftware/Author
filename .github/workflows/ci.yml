@@ -3,9 +3,9 @@
 # release workflow (maven.yml) skips tests entirely and only runs at tag-push time, so without
 # this workflow nothing ever builds Author in CI.
 #
-# Both main and i18n are gated. i18n is a long-lived line that is many commits ahead of main
-# and carries the delimited-token work; while it was ungated, PRs merged into it were never
-# compiled, let alone tested.
+# main is the long-lived line and is gated. Until 2026-10-01 a second line, i18n, ran many commits
+# ahead of it and was gated too; while it was ungated, PRs merged into it were never compiled,
+# let alone tested. It has since been merged into main and deleted.
 
 name: CI
 
@@ -13,11 +13,9 @@ on:
   push:
     branches:
       - main
-      - i18n
   pull_request:
     branches:
       - main
-      - i18n
 
 jobs:
   test:
