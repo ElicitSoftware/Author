@@ -45,7 +45,24 @@ class DisplayedStringsCoverageTest {
 
     /** Files outside a {@code flow} package that still render user-visible text. */
     private static final List<String> EXTRA_FILES = List.of(
-            "src/main/java/com/elicitsoftware/author/ConstraintViolationTranslator.java");
+            "src/main/java/com/elicitsoftware/author/ConstraintViolationTranslator.java",
+            // UC-007 BR-013 / FR-066: validation findings are displayed text too.
+            "src/main/java/com/elicitsoftware/author/definition/ExportValidation.java",
+            "src/main/java/com/elicitsoftware/author/survey/RulePath.java",
+            "src/main/java/com/elicitsoftware/author/survey/RenameLedger.java",
+            "src/main/java/com/elicitsoftware/author/survey/ReportingChangeLedger.java",
+            // NFR-018: messages a service raises are displayed by the view that catches them.
+            "src/main/java/com/elicitsoftware/author/survey/ElementService.java",
+            "src/main/java/com/elicitsoftware/author/survey/DesignerService.java",
+            "src/main/java/com/elicitsoftware/author/survey/RuleService.java",
+            "src/main/java/com/elicitsoftware/author/survey/SurveyService.java",
+            "src/main/java/com/elicitsoftware/author/survey/ListService.java",
+            "src/main/java/com/elicitsoftware/author/survey/ReportingService.java",
+            "src/main/java/com/elicitsoftware/author/survey/ReportingNames.java",
+            "src/main/java/com/elicitsoftware/author/survey/RelationshipQuery.java");
+    // The definition package (importer, exporter, ElicitFormat) raises displayed messages too, all
+    // through error.import.* / error.export.* keys, but it is mostly SQL and file-format literals,
+    // which this scan cannot tell from prose; it is left out rather than drowned in ignore markers.
 
     /** Infrastructure classes under {@code flow} whose literals are not user-visible. */
     private static final Set<String> EXCLUDED_FILES = Set.of(
@@ -53,11 +70,15 @@ class DisplayedStringsCoverageTest {
 
     /** Enclosing call names whose string arguments never reach the screen. */
     private static final Pattern NON_DISPLAY_CONTEXT = Pattern.compile(
-            "^(debug|info|warn|error|trace|debugf|infof|warnf|errorf|tracef|log|"
+            // An AuthoringException or DefinitionException message is what the catching view shows, and a
+            // rerouteToError message is what the error page shows: neither is exempt.
+            "^(?!(AuthoringException|DefinitionException|rerouteToError)$)"
+            + "(debug|info|warn|error|trace|debugf|infof|warnf|errorf|tracef|log|"
             + "\\w*Exception|\\w*Error|"
             + "executeJs|executeJavaScript|callJsFunction|"
             + "addClassName|addClassNames|setClassName|setClassNames|removeClassName|removeClassNames|"
             + "setId|setTestId|set|getStyle|"
+            + "list|find|count|update|delete|createQuery|createNativeQuery|compile|"
             + "equals|equalsIgnoreCase|startsWith|endsWith|contains|matches|replace|replaceAll|replaceFirst|"
             + "split|indexOf|lastIndexOf|of|get|resolve|getResourceAsStream|getProperty|getenv|forName|"
             + "Route|RouteAlias|JsModule|StyleSheet|CssImport|ConfigProperty|Path|Produces|Consumes|"

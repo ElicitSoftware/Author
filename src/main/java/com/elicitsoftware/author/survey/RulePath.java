@@ -11,6 +11,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.StepsSections;
@@ -63,30 +64,31 @@ public final class RulePath {
     }
 
     /**
-     * Why the path does not hold together, as a predicate on "the rule": no target at all, a section
+     * Why the path does not hold together, as a sentence about {@code subject} — "Rule 'x'" in a
+     * validation finding, "The rule" in the dialog (UC-007 BR-013): no target at all, a section
      * outside the named step, a question outside the named section, or a question in another section
      * that names no mount. Missing elements are not reported here; the referential checks do that.
      */
-    public static Optional<String> problem(Relationship r, RuleOrdering.Board board) {
+    public static Optional<String> problem(Relationship r, RuleOrdering.Board board, String subject) {
         if (r.downstreamStepId == null && r.downstreamSsId == null && r.downstreamSqId == null) {
-            return Optional.of("must target a step, a section or a question");
+            return Optional.of(Translations.get("validation.rule.noTarget", subject));
         }
         StepsSections mount = board.mount(r.downstreamSsId).orElse(null);
         SectionsQuestion target = board.assignment(r.downstreamSqId).orElse(null);
         if (mount != null && r.downstreamStepId != null && !mount.stepId.equals(r.downstreamStepId)) {
-            return Optional.of("targets section " + board.sectionLabel(mount.sectionId) + " through step "
-                    + board.stepLabel(r.downstreamStepId) + ", which does not hold that section");
+            return Optional.of(Translations.get("validation.rule.sectionNotInStep", subject,
+                    board.sectionLabel(mount.sectionId), board.stepLabel(r.downstreamStepId)));
         }
         if (target != null && mount != null && !target.sectionId.equals(mount.sectionId)) {
-            return Optional.of("targets question " + board.questionLabel(target.questionId) + " through section "
-                    + board.sectionLabel(mount.sectionId) + ", which does not hold that question");
+            return Optional.of(Translations.get("validation.rule.questionNotInSection", subject,
+                    board.questionLabel(target.questionId), board.sectionLabel(mount.sectionId)));
         }
         if (target != null && r.downstreamSsId == null) {
             SectionsQuestion origin = board.assignment(r.upstreamSqId).orElse(null);
             boolean ownSection = origin != null && origin.sectionId.equals(target.sectionId);
             if (!ownSection || r.downstreamStepId != null) {
-                return Optional.of("targets question " + board.questionLabel(target.questionId)
-                        + " outside the upstream question's section without naming the step and section it is shown in");
+                return Optional.of(Translations.get("validation.rule.questionWithoutPlace", subject,
+                        board.questionLabel(target.questionId)));
             }
         }
         return Optional.empty();

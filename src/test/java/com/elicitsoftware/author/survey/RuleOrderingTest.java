@@ -105,7 +105,7 @@ class RuleOrderingTest {
 
     private static void backward(Optional<String> problem) {
         assertTrue(problem.isPresent(), "expected a backward rule");
-        assertTrue(problem.get().contains("is not after"), problem.get());
+        assertTrue(problem.get().contains("must come after"), problem.get());
     }
 
     @Test
@@ -141,11 +141,11 @@ class RuleOrderingTest {
     @Test
     void reason_namesBothEndsWithTheirPlaces() {
         String p = board().problem(rule(111, null, null, 100)).orElseThrow();
-        assertEquals("downstream question 'Name' in step 'Intro' › 'About you' is not after "
+        assertEquals("downstream question 'Name' in step 'Intro' › 'About you' must come after "
                 + "upstream question 'How many' in step 'Intro' › 'Family'", p);
-        assertEquals("downstream step 'Intro' is not after upstream question 'Child name' in step 'Details' › 'Children'",
+        assertEquals("downstream step 'Intro' must come after upstream question 'Child name' in step 'Details' › 'Children'",
                 board().problem(rule(120, 1, null, null)).orElseThrow());
-        assertEquals("downstream section 'About you' in step 'Intro' is not after upstream question 'Children?' in step 'Intro' › 'Family'",
+        assertEquals("downstream section 'About you' in step 'Intro' must come after upstream question 'Children?' in step 'Intro' › 'Family'",
                 board().problem(rule(110, null, 1000, null)).orElseThrow());
     }
 

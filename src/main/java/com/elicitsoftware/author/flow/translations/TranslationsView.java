@@ -116,7 +116,7 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
         int id = event.getRouteParameters().getInteger(SurveyEditorView.SURVEY_ID).orElse(-1);
         Survey found = surveyService.find(id).orElse(null);
         if (found == null) {
-            event.rerouteToError(NotFoundException.class, "No survey with id " + id);
+            event.rerouteToError(NotFoundException.class, getTranslation("surveyDesignerView.noSurvey", String.valueOf(id)));
             return;
         }
         survey = found;

@@ -90,8 +90,8 @@ class ExportValidationTest {
 
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "sections".equals(i.kind())
-                && i.message().contains("Section 'Fixture Section C' is not in any step")), issues.toString());
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("Fixture Section C' has no questions")),
+                && i.message().contains("Section 'Fixture Section C' is not used")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("Fixture Section C' is empty")),
                 "BR-010: the emptiness is downstream of the real defect: " + issues);
     }
 
@@ -107,7 +107,7 @@ class ExportValidationTest {
 
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "questions".equals(i.kind())
-                && i.message().contains("FixtureQ5' is not in any section")), issues.toString());
+                && i.message().contains("FixtureQ5' is not used")), issues.toString());
     }
 
     /** UC-007 BR-011: a finding never prints an empty name, and never prints null. */
@@ -122,7 +122,7 @@ class ExportValidationTest {
         em.clear();
 
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
-        assertTrue(issues.stream().anyMatch(i -> "sections".equals(i.kind()) && i.message().matches(".*Section '#\\d+' is not in any step.*")),
+        assertTrue(issues.stream().anyMatch(i -> "sections".equals(i.kind()) && i.message().matches(".*Section '#\\d+' is not used.*")),
                 issues.toString());
         assertTrue(issues.stream().noneMatch(i -> i.message().contains("null")), issues.toString());
     }
@@ -144,7 +144,7 @@ class ExportValidationTest {
         em.clear();
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
-                && i.message().contains("targets a removed or missing question assignment")), issues.toString());
+                && i.message().contains("has a downstream question that is no longer in that section")), issues.toString());
     }
 
     @Test
@@ -158,7 +158,7 @@ class ExportValidationTest {
         em.clear();
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "metadata".equals(i.kind())
-                && i.message().contains("removed or missing")), "UC-024 step 3: " + issues);
+                && i.message().contains("has been removed")), "UC-024 step 3: " + issues);
     }
 
     @Test
@@ -171,7 +171,7 @@ class ExportValidationTest {
         em.clear();
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "ontology".equals(i.kind())
-                && i.message().contains("reporting build would fail")), "UC-024 BR-002: " + issues);
+                && i.message().contains("could not build reports")), "UC-024 BR-002: " + issues);
     }
 
     @Test
@@ -184,7 +184,7 @@ class ExportValidationTest {
         em.clear();
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "questions".equals(i.kind())
-                && i.message().contains("has no options")), issues.toString());
+                && i.message().contains("uses an empty list")), issues.toString());
     }
 
     @Test
@@ -196,7 +196,7 @@ class ExportValidationTest {
         em.flush();
         em.clear();
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
-        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "steps".equals(i.kind()) && i.message().contains("has no sections")), issues.toString());
+        assertTrue(issues.stream().anyMatch(i -> !i.isError() && "steps".equals(i.kind()) && i.message().contains("is empty")), issues.toString());
     }
 
     /** The fixture's one rule; scoped by name so the step-two rule a test adds is left alone. */
@@ -217,7 +217,7 @@ class ExportValidationTest {
         em.clear();
         List<ValidationIssue> errors = validation.validate(Survey.findById(s.id)).stream().filter(ValidationIssue::isError).toList();
         assertTrue(errors.size() == 1 && "relationships".equals(errors.get(0).kind())
-                && errors.get(0).message().contains("without naming the step and section"), errors.toString());
+                && errors.get(0).message().contains("does not say which step and section"), errors.toString());
 
         // Name the mount and its step, the way the FHHS seed does: no error, and not backwards either.
         em.createNativeQuery("""
@@ -310,7 +310,7 @@ class ExportValidationTest {
         setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>}?");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "questions".equals(i.kind())
-                && i.message().contains("uses {<NAME>} without a default and no rule fills it there")), issues.toString());
+                && i.message().contains("uses {<NAME>}, but no rule fills it in here and it has no default")), issues.toString());
     }
 
     @Test
@@ -320,7 +320,7 @@ class ExportValidationTest {
         setText(s, STEP_TWO_QUESTION, "Anything else, {<NAME>|friend}?");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "questions".equals(i.kind())
-                && i.message().contains("uses {<NAME>|friend} but no rule fills it there")), issues.toString());
+                && i.message().contains("uses {<NAME>|friend}, but no rule fills it in here")), issues.toString());
         assertTrue(issues.stream().noneMatch(i -> i.isError() && i.message().contains("{<NAME>}")), issues.toString());
     }
 
@@ -338,7 +338,7 @@ class ExportValidationTest {
         textRuleOntoSectionB(s, "OTHER");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "questions".equals(i.kind())
-                && i.message().contains("uses {<NAME> and <OTHER>|you both} but no rule fills it there")), issues.toString());
+                && i.message().contains("uses {<NAME> and <OTHER>|you both}, but no rule fills it in here")), issues.toString());
     }
 
     @Test
@@ -369,7 +369,7 @@ class ExportValidationTest {
         Relationship r = textRuleOntoStepTwo(s, "ZZZ");
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind()) && r.relationshipId.equals(i.durableId())
-                && i.message().contains("fills {<ZZZ>} but no text it reaches uses it")), issues.toString());
+                && i.message().contains("has the token ZZZ, but nothing in its downstream target uses {<ZZZ>}")), issues.toString());
     }
 
     /** UC-007 BR-005 / UC-019 BR-005: a token is checked whatever the action of the rule carrying it. */
@@ -385,7 +385,7 @@ class ExportValidationTest {
         Relationship unused = ruleOntoStepTwo(s, "SHOW", "ZZZ");
         issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind()) && unused.relationshipId.equals(i.durableId())
-                && i.message().contains("fills {<ZZZ>} but no text it reaches uses it")), issues.toString());
+                && i.message().contains("has the token ZZZ, but nothing in its downstream target uses {<ZZZ>}")), issues.toString());
     }
     // ---- UC-019 BR-006: a token fed by a question that collects no answer ----------------------
 
@@ -420,7 +420,7 @@ class ExportValidationTest {
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind())
-                        && i.message().contains("display-only HTML")),
+                        && i.message().contains("only shows text (HTML)")),
                 "it works, but only by way of the constant: " + issues);
         assertTrue(issues.stream().noneMatch(ValidationIssue::isError), issues.toString());
     }
@@ -441,7 +441,7 @@ class ExportValidationTest {
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
-                        && i.message().contains("nothing ever fills {<NAME>}")),
+                        && i.message().contains("cannot fill {<NAME>}")),
                 "nothing can ever fill the slot: " + issues);
     }
 
@@ -454,7 +454,7 @@ class ExportValidationTest {
 
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("display-only")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("only shows text")), issues.toString());
     }
 
     // ---- UC-007 BR-005: a placeholder that names its token as a bare word ----------------------
@@ -500,8 +500,8 @@ class ExportValidationTest {
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "questions".equals(i.kind())
-                        && i.message().contains("no rule defines the token b")
-                        && i.message().contains("write <b>{")),
+                        && i.message().contains("no rule has a token named b")
+                        && i.message().contains("move it outside the braces: <b>{")),
                 "it should name <b> as undefined and suggest moving the tag out: " + issues);
     }
 
@@ -515,7 +515,7 @@ class ExportValidationTest {
 
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule defines the token")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule has a token named")), issues.toString());
     }
 
     /** The default is used verbatim, so a tag there fills nothing in and is not a reference. */
@@ -528,7 +528,7 @@ class ExportValidationTest {
 
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule defines the token")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule has a token named")), issues.toString());
     }
 
     @Test
@@ -574,12 +574,12 @@ class ExportValidationTest {
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
-                        && i.message().contains("written with the angle brackets")
-                        && i.message().contains("Write NAME")),
+                        && i.message().contains("Write it without angle brackets")
+                        && i.message().contains("angle brackets: NAME")),
                 "the rule is the cause and carries the fix: " + issues);
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule defines the token")),
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("no rule has a token named")),
                 "one finding at the cause, not one per text that names the token: " + issues);
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("but no text it reaches uses it")),
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("but nothing in its downstream target uses")),
                 "and not the same defect read back as an unused token: " + issues);
     }
 
@@ -593,7 +593,7 @@ class ExportValidationTest {
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "relationships".equals(i.kind())
-                        && i.message().contains("which no text can name")),
+                        && i.message().contains("which is not a valid name")),
                 "no phrase could ever spell it: " + issues);
     }
 
@@ -609,7 +609,7 @@ class ExportValidationTest {
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "relationships".equals(i.kind())
-                        && i.message().contains("carries the token name rather than NAME")),
+                        && i.message().contains("has the token name. It works, but write NAME")),
                 "FR-012 asks for upper case: " + issues);
         assertTrue(issues.stream().noneMatch(ValidationIssue::isError), issues.toString());
     }
@@ -623,7 +623,7 @@ class ExportValidationTest {
 
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
 
-        assertTrue(issues.stream().noneMatch(i -> i.message().contains("carries the token")), issues.toString());
+        assertTrue(issues.stream().noneMatch(i -> i.message().contains("It works, but")), issues.toString());
     }
 
     // ---- UC-007 BR-012 / FR-064: only the first step may stand without a rule ------------------
@@ -686,7 +686,7 @@ class ExportValidationTest {
 
     private List<ValidationIssue> justInTimeErrors(Survey s) {
         return validation.validate(Survey.findById(s.id)).stream()
-                .filter(i -> i.isError() && (i.message().contains("is not the first step") || i.message().contains("is not in the first step")))
+                .filter(i -> i.isError() && i.message().contains("has no Show or Repeat rule"))
                 .toList();
     }
 

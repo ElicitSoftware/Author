@@ -68,19 +68,35 @@ public final class ReportingNames {
         return dimensionName == null || dimensionName.isBlank() ? dimTableForTag(tag) : dimTableForDimension(dimensionName);
     }
 
+    /** What is wrong with a name; the caller words it from the language files (UC-007 BR-013, NFR-018). */
+    public enum IdentifierDefect {
+        EMPTY("empty"), CHARACTERS("characters"), TOO_LONG("tooLong");
+
+        private final String keySuffix;
+
+        IdentifierDefect(String keySuffix) {
+            this.keySuffix = keySuffix;
+        }
+
+        /** The last segment of the {@code validation.tag.table.*} / {@code validation.tag.column.*} key. */
+        public String keySuffix() {
+            return keySuffix;
+        }
+    }
+
     /**
      * Why the ETL would reject {@code identifier}, or empty when it is usable as a table or column
      * name at a deployed site.
      */
-    public static Optional<String> identifierProblem(String identifier) {
+    public static Optional<IdentifierDefect> identifierDefect(String identifier) {
         if (identifier == null || identifier.isBlank()) {
-            return Optional.of("is empty");
+            return Optional.of(IdentifierDefect.EMPTY);
         }
         if (!IDENTIFIER.matcher(identifier).matches()) {
-            return Optional.of("'" + identifier + "' contains characters other than a-z, 0-9 and _");
+            return Optional.of(IdentifierDefect.CHARACTERS);
         }
         if (identifier.length() > MAX_IDENTIFIER_LENGTH) {
-            return Optional.of("'" + identifier + "' is longer than " + MAX_IDENTIFIER_LENGTH + " characters");
+            return Optional.of(IdentifierDefect.TOO_LONG);
         }
         return Optional.empty();
     }

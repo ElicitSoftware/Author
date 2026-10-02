@@ -11,6 +11,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.ConstraintViolationTranslator;
 import com.elicitsoftware.author.definition.ExportValidation;
@@ -136,7 +137,7 @@ public class DesignerService {
         currentSection(surveyId, sectionId);
         Step step = currentStep(surveyId, targetStepId);
         if (ordering.currentLane(surveyId, targetStepId).stream().anyMatch(ss -> ss.sectionId == sectionId)) {
-            throw new AuthoringException("Step '" + step.name + "' already contains this section; a section can be mounted once per step");
+            throw new AuthoringException(Translations.get("error.designer.sectionAlreadyInStep", step.name));
         }
         return mount(surveyId, step, sectionId, position);
     }
@@ -147,7 +148,7 @@ public class DesignerService {
         currentQuestion(surveyId, questionId);
         Section section = currentSection(surveyId, targetSectionId);
         if (ordering.currentQuestions(surveyId, targetSectionId).stream().anyMatch(sq -> sq.questionId == questionId)) {
-            throw new AuthoringException("Section '" + section.name + "' already contains this question");
+            throw new AuthoringException(Translations.get("error.designer.questionAlreadyInSection", section.name));
         }
         return assign(surveyId, targetSectionId, questionId, position);
     }
@@ -157,7 +158,7 @@ public class DesignerService {
     public void retireSectionAssignment(int surveyId, int stepsSectionsId) {
         StepsSections ss = StepsSections.<StepsSections>find("surveyId = ?1 and stepsSectionsId = ?2 and effectiveTo = ?3",
                 surveyId, stepsSectionsId, StructuralElement.SENTINEL).firstResultOptional()
-                .orElseThrow(() -> new AuthoringException("Section assignment not found"));
+                .orElseThrow(() -> new AuthoringException(Translations.get("error.designer.sectionAssignmentGone")));
         Step step = currentStep(surveyId, ss.stepId);
         if (elements.currentStepAssignmentsOfSection(surveyId, ss.sectionId).size() == 1) {
             // Last mount: retire the section with its assignments and rules at one instant, so that
@@ -177,7 +178,7 @@ public class DesignerService {
     public void retireQuestionAssignment(int surveyId, int sectionsQuestionId) {
         SectionsQuestion sq = SectionsQuestion.<SectionsQuestion>find("surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3",
                 surveyId, sectionsQuestionId, StructuralElement.SENTINEL).firstResultOptional()
-                .orElseThrow(() -> new AuthoringException("Question assignment not found"));
+                .orElseThrow(() -> new AuthoringException(Translations.get("error.designer.questionAssignmentGone")));
         if (elements.currentAssignmentsOfQuestion(surveyId, sq.questionId).size() == 1) {
             // Last assignment: retire the question with its assignment and rules at one instant, so
             // that UC-010 restore of the question brings the assignment back with it.
@@ -213,7 +214,7 @@ public class DesignerService {
     public void moveStep(int surveyId, int stepId, int newIndex) {
         List<Step> steps = ordering.currentSteps(surveyId);
         Step step = steps.stream().filter(s -> s.stepId == stepId).findFirst()
-                .orElseThrow(() -> new AuthoringException("Step not found"));
+                .orElseThrow(() -> new AuthoringException(Translations.get("error.step.notFound")));
         if (!reposition(steps, step, newIndex)) {
             return;
         }
@@ -224,7 +225,7 @@ public class DesignerService {
     public void moveSectionWithinStep(int surveyId, int stepsSectionsId, int newIndex) {
         StepsSections ss = StepsSections.<StepsSections>find("surveyId = ?1 and stepsSectionsId = ?2 and effectiveTo = ?3",
                 surveyId, stepsSectionsId, StructuralElement.SENTINEL).firstResultOptional()
-                .orElseThrow(() -> new AuthoringException("Section assignment not found"));
+                .orElseThrow(() -> new AuthoringException(Translations.get("error.designer.sectionAssignmentGone")));
         Step step = currentStep(surveyId, ss.stepId);
         List<StepsSections> lane = ordering.currentLane(surveyId, step.stepId);
         StepsSections managed = lane.stream().filter(x -> Objects.equals(x.stepsSectionsId, stepsSectionsId)).findFirst().orElseThrow();
@@ -238,7 +239,7 @@ public class DesignerService {
     public void moveQuestionWithinSection(int surveyId, int sectionsQuestionId, int newIndex) {
         SectionsQuestion sq = SectionsQuestion.<SectionsQuestion>find("surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3",
                 surveyId, sectionsQuestionId, StructuralElement.SENTINEL).firstResultOptional()
-                .orElseThrow(() -> new AuthoringException("Question assignment not found"));
+                .orElseThrow(() -> new AuthoringException(Translations.get("error.designer.questionAssignmentGone")));
         List<SectionsQuestion> rows = ordering.currentQuestions(surveyId, sq.sectionId);
         SectionsQuestion managed = rows.stream().filter(x -> Objects.equals(x.sectionsQuestionId, sectionsQuestionId)).findFirst().orElseThrow();
         if (!reposition(rows, managed, newIndex)) {
@@ -256,7 +257,7 @@ public class DesignerService {
         Step step = currentStep(surveyId, edited.stepId);
         if (!Objects.equals(step.name, edited.name)) {
             renames.record(surveyId, "steps", step.stepId, step.name, edited.name);
-            recordStale(surveyId, step.stepKey, "name", "step name");
+            recordStale(surveyId, step.stepKey, "name", Translations.get("designer.stale.stepName"));
         }
         copy(edited, step);
         return flushTranslated(step);
@@ -268,7 +269,7 @@ public class DesignerService {
         Section section = currentSection(surveyId, edited.sectionId);
         if (!Objects.equals(section.name, edited.name)) {
             renames.record(surveyId, "sections", section.sectionId, section.name, edited.name);
-            recordStale(surveyId, section.sectionKey, "name", "section name");
+            recordStale(surveyId, section.sectionKey, "name", Translations.get("designer.stale.sectionName"));
         }
         copy(edited, section);
         return flushTranslated(section);
@@ -281,19 +282,19 @@ public class DesignerService {
      */
     private void noteWordingChanges(int surveyId, Question stored, Question edited) {
         if (!Objects.equals(stored.text, edited.text)) {
-            recordStale(surveyId, stored.questionKey, "text", "question");
+            recordStale(surveyId, stored.questionKey, "text", Translations.get("designer.stale.question"));
         }
         if (!Objects.equals(stored.shortText, edited.shortText)) {
-            recordStale(surveyId, stored.questionKey, "short_text", "short text");
+            recordStale(surveyId, stored.questionKey, "short_text", Translations.get("designer.stale.shortText"));
         }
         if (!Objects.equals(stored.toolTip, edited.toolTip)) {
-            recordStale(surveyId, stored.questionKey, "tool_tip", "tooltip");
+            recordStale(surveyId, stored.questionKey, "tool_tip", Translations.get("designer.stale.tooltip"));
         }
         if (!Objects.equals(stored.placeholder, edited.placeholder)) {
-            recordStale(surveyId, stored.questionKey, "placeholder", "placeholder");
+            recordStale(surveyId, stored.questionKey, "placeholder", Translations.get("designer.stale.placeholder"));
         }
         if (!Objects.equals(stored.validationText, edited.validationText)) {
-            recordStale(surveyId, stored.questionKey, "validation_text", "validation message");
+            recordStale(surveyId, stored.questionKey, "validation_text", Translations.get("designer.stale.validationText"));
         }
     }
 
@@ -307,10 +308,10 @@ public class DesignerService {
         Question question = currentQuestion(surveyId, questionId);
         String type = question.questionType == null ? "" : question.questionType.name;
         if (!com.elicitsoftware.author.definition.ExportValidation.CHOICE_TYPES.contains(type)) {
-            throw new AuthoringException("A " + (type.isEmpty() ? "question of this type" : type + " question") + " does not take a list of options");
+            throw new AuthoringException(type.isEmpty() ? Translations.get("error.designer.noListForThisType") : Translations.get("error.designer.noListForType", type));
         }
         elements.selectGroup(surveyId, selectGroupId).filter(StructuralElement::isCurrent)
-                .orElseThrow(() -> new AuthoringException("The list no longer exists"));
+                .orElseThrow(() -> new AuthoringException(Translations.get("error.list.gone")));
         question.selectGroupId = selectGroupId;
         return flushTranslated(question);
     }
@@ -331,17 +332,17 @@ public class DesignerService {
 
     public Step currentStep(int surveyId, int stepId) {
         return elements.step(surveyId, stepId).filter(StructuralElement::isCurrent)
-                .orElseThrow(() -> new AuthoringException("Step not found or removed"));
+                .orElseThrow(() -> new AuthoringException(Translations.get("error.step.goneOrRemoved")));
     }
 
     public Section currentSection(int surveyId, int sectionId) {
         return elements.section(surveyId, sectionId).filter(StructuralElement::isCurrent)
-                .orElseThrow(() -> new AuthoringException("Section not found or removed"));
+                .orElseThrow(() -> new AuthoringException(Translations.get("error.section.goneOrRemoved")));
     }
 
     public Question currentQuestion(int surveyId, int questionId) {
         return elements.question(surveyId, questionId).filter(StructuralElement::isCurrent)
-                .orElseThrow(() -> new AuthoringException("Question not found or removed"));
+                .orElseThrow(() -> new AuthoringException(Translations.get("error.question.goneOrRemoved")));
     }
 
     /** Current rules that read from or target the given assignments or step, for badges and menus. */
@@ -408,34 +409,34 @@ public class DesignerService {
 
     private static void validate(Step step) {
         if (step.name == null || step.name.isBlank()) {
-            throw new AuthoringException("A step needs a name", "name");
+            throw new AuthoringException(Translations.get("error.step.nameRequired"), "name");
         }
         if (step.name.length() > 255) {
-            throw new AuthoringException("Step names are at most 255 characters", "name");
+            throw new AuthoringException(Translations.get("error.step.nameTooLong"), "name");
         }
     }
 
     private static void validate(Section section) {
         if (section.name == null || section.name.isBlank()) {
-            throw new AuthoringException("A section needs a name", "name");
+            throw new AuthoringException(Translations.get("error.section.nameRequired"), "name");
         }
         if (section.name.length() > 255) {
-            throw new AuthoringException("Section names are at most 255 characters", "name");
+            throw new AuthoringException(Translations.get("error.section.nameTooLong"), "name");
         }
     }
 
     private static void validate(Question question) {
         if (question.questionType == null) {
-            throw new AuthoringException("Choose a question type", "questionType");
+            throw new AuthoringException(Translations.get("error.question.typeRequired"), "questionType");
         }
         if (question.text == null || question.text.isBlank()) {
-            throw new AuthoringException("A question needs its text", "text");
+            throw new AuthoringException(Translations.get("error.question.textRequired"), "text");
         }
         if (ExportValidation.CHOICE_TYPES.contains(question.questionType.name) && question.selectGroupId == null) {
-            throw new AuthoringException("A " + question.questionType.name + " question needs a list of options", "selectGroupId");
+            throw new AuthoringException(Translations.get("error.question.listRequired", question.questionType.name), "selectGroupId");
         }
         if (question.minValue != null && question.maxValue != null && question.minValue > question.maxValue) {
-            throw new AuthoringException("The minimum cannot exceed the maximum", "minValue");
+            throw new AuthoringException(Translations.get("error.question.minOverMax"), "minValue");
         }
     }
 

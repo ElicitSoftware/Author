@@ -11,6 +11,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.ConstraintViolationTranslator;
 import com.elicitsoftware.model.Question;
@@ -71,7 +72,7 @@ public class RuleService {
 
     @Transactional
     public Relationship update(int surveyId, Relationship edited) {
-        Relationship r = current(surveyId, edited.relationshipId).orElseThrow(() -> new AuthoringException("Rule not found or removed"));
+        Relationship r = current(surveyId, edited.relationshipId).orElseThrow(() -> new AuthoringException(Translations.get("error.rule.gone")));
         validate(surveyId, edited); // validate the draft first so a refused edit leaves the managed row untouched
         copy(edited, r);
         return flushTranslated(r);
@@ -90,23 +91,23 @@ public class RuleService {
      */
     @Transactional
     public Relationship repoint(int surveyId, int relationshipId, End end, String anchor, String mountAnchor) {
-        Relationship managed = current(surveyId, relationshipId).orElseThrow(() -> new AuthoringException("Rule not found or removed"));
+        Relationship managed = current(surveyId, relationshipId).orElseThrow(() -> new AuthoringException(Translations.get("error.rule.gone")));
         Relationship r = new Relationship(); // work on a copy: a refused re-point must not dirty the managed row
         copy(managed, r);
         String[] parts = anchor == null ? new String[0] : anchor.split("-", 2);
         if (parts.length != 2) {
-            throw new AuthoringException("Drop the arrow on a step, a section or a question");
+            throw new AuthoringException(Translations.get("error.rule.dropOnElement"));
         }
         int id;
         try {
             id = Integer.parseInt(parts[1]);
         } catch (NumberFormatException e) {
-            throw new AuthoringException("Drop the arrow on a step, a section or a question");
+            throw new AuthoringException(Translations.get("error.rule.dropOnElement"));
         }
         Integer mountId = mountAnchor != null && mountAnchor.startsWith("ss-") ? parseOrNull(mountAnchor.substring(3)) : null;
         if (end == End.SOURCE) {
             if (!"sq".equals(parts[0])) {
-                throw new AuthoringException("A rule reads from a question", "upstreamSqId");
+                throw new AuthoringException(Translations.get("error.rule.readsFromQuestion"), "upstreamSqId");
             }
             r.upstreamSqId = id;
             r.upstreamStepId = mountId != null ? stepOfMount(surveyId, mountId).orElse(null) : stepOfQuestionAssignment(surveyId, id).orElse(null);
@@ -121,7 +122,7 @@ public class RuleService {
                     r.downstreamSqId = id;
                     r.downstreamSsId = mountId;
                 }
-                default -> throw new AuthoringException("Drop the arrow on a step, a section or a question");
+                default -> throw new AuthoringException(Translations.get("error.rule.dropOnElement"));
             }
         }
         validate(surveyId, r);
@@ -139,14 +140,14 @@ public class RuleService {
 
     @Transactional
     public void retire(int surveyId, int relationshipId) {
-        Relationship r = current(surveyId, relationshipId).orElseThrow(() -> new AuthoringException("Rule not found or removed"));
+        Relationship r = current(surveyId, relationshipId).orElseThrow(() -> new AuthoringException(Translations.get("error.rule.gone")));
         r.effectiveTo = OffsetDateTime.now();
         em.flush();
     }
 
     @Transactional
     public void restore(int surveyId, int relationshipId) {
-        Relationship r = any(surveyId, relationshipId).orElseThrow(() -> new AuthoringException("Rule not found"));
+        Relationship r = any(surveyId, relationshipId).orElseThrow(() -> new AuthoringException(Translations.get("error.rule.gone")));
         if (r.isCurrent()) {
             return;
         }
@@ -175,47 +176,51 @@ public class RuleService {
 
     // ---- internals -------------------------------------------------------------------------
 
+    /** The rule being saved, as the subject of the sentences a validation finding shares with it (UC-007 BR-013). */
+    private static String theRule() {
+        return Translations.get("validation.where.theRule");
+    }
+
     void validate(int surveyId, Relationship r) {
         if (r.upstreamSqId == null) {
-            throw new AuthoringException("Choose the question the rule reads from", "upstreamSqId");
+            throw new AuthoringException(Translations.get("error.rule.upstreamRequired"), "upstreamSqId");
         }
         if (SectionsQuestion.count("surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3", surveyId, r.upstreamSqId, StructuralElement.SENTINEL) == 0) {
-            throw new AuthoringException("The rule reads from a removed or missing question assignment", "upstreamSqId");
+            throw new AuthoringException(Translations.get("validation.rule.readsRemovedQuestion", theRule()), "upstreamSqId");
         }
         RuleOrdering.Board board = ordering.load(surveyId);
         RulePath.complete(r, board); // UC-019 BR-001: the chosen target implies its step and section
         if (r.downstreamStepId != null && board.step(r.downstreamStepId).isEmpty()) {
-            throw new AuthoringException("The rule targets a removed or missing step", "downstream");
+            throw new AuthoringException(Translations.get("validation.rule.targetsRemovedStep", theRule()), "downstream");
         }
         if (r.downstreamSsId != null && board.mount(r.downstreamSsId).isEmpty()) {
-            throw new AuthoringException("The rule targets a removed or missing section assignment", "downstream");
+            throw new AuthoringException(Translations.get("validation.rule.targetsRemovedSection", theRule()), "downstream");
         }
         if (r.downstreamSqId != null && board.assignment(r.downstreamSqId).isEmpty()) {
-            throw new AuthoringException("The rule targets a removed or missing question assignment", "downstream");
+            throw new AuthoringException(Translations.get("validation.rule.targetsRemovedQuestion", theRule()), "downstream");
         }
-        RulePath.problem(r, board).ifPresent(problem -> {
-            throw new AuthoringException("The rule " + problem, "downstream");
+        RulePath.problem(r, board, theRule()).ifPresent(problem -> {
+            throw new AuthoringException(problem, "downstream");
         });
         if (r.downstreamSqId != null && r.downstreamSqId.equals(r.upstreamSqId)) {
-            throw new AuthoringException("A rule cannot target the question it reads from", "downstream");
+            throw new AuthoringException(Translations.get("error.rule.selfTarget"), "downstream");
         }
         // UC-033 A1 / A2: the target must come after the origin, for every mount of both (BR-001, BR-004).
         board.problem(r).ifPresent(problem -> {
-            throw new AuthoringException("The rule points backwards: " + problem
-                    + ". The downstream target must come after the upstream question", "downstream");
+            throw new AuthoringException(Translations.get("validation.rule.backwards", theRule(), problem), "downstream");
         });
         if (r.operatorType == null) {
-            throw new AuthoringException("Choose an operator", "operatorType");
+            throw new AuthoringException(Translations.get("error.rule.operatorRequired"), "operatorType");
         }
         if (r.actionType == null) {
-            throw new AuthoringException("Choose an action", "actionType");
+            throw new AuthoringException(Translations.get("error.rule.actionRequired"), "actionType");
         }
         // UC-019 BR-005: a rule of any action may carry a token; A2: a Text rule must.
         if (r.token != null && r.token.isBlank()) {
             r.token = null;
         }
         if ("TEXT".equals(r.actionType.name) && r.token == null) {
-            throw new AuthoringException("A Text rule needs the token it replaces", "token");
+            throw new AuthoringException(Translations.get("error.rule.textNeedsToken"), "token");
         }
         if (r.token != null) {
             // FR-012: the token is the name alone. The brackets belong to the text that names it, and
@@ -225,27 +230,23 @@ public class RuleService {
             // that, so the limit counts the name and not brackets that are about to be dropped.
             r.token = Tokens.canonical(r.token);
             if (r.token.length() > Tokens.MAX_LENGTH) {
-                throw new AuthoringException("Token names are at most " + Tokens.MAX_LENGTH + " characters", "token");
+                throw new AuthoringException(Translations.get("error.rule.tokenTooLong", String.valueOf(Tokens.MAX_LENGTH)), "token");
             }
             if (!Tokens.TOKEN_NAME.matcher(r.token).matches()) {
-                throw new AuthoringException("A token name starts with a letter and holds letters, digits and"
-                        + " underscores only, so no text could ever name '" + r.token + "'", "token");
+                throw new AuthoringException(Translations.get("error.rule.tokenInvalid", r.token), "token");
             }
             // UC-019 BR-006: a token holds an answer or the rule's own value. A display-only question
             // has no answer to give, so a rule on one fills nothing unless it carries a value.
             if (!upstreamCollectsAnswer(surveyId, r.upstreamSqId)
                     && (r.defaultUpstreamValue == null || r.defaultUpstreamValue.isBlank())) {
-                throw new AuthoringException("A " + upstreamTypeName(surveyId, r.upstreamSqId)
-                        + " question collects no answer, so {" + Tokens.reference(r.token) + "} would stay unfilled."
-                        + " Read from a question the respondent answers, or give the rule a default"
-                        + " upstream value to fill the token with", "upstreamSqId");
+                throw new AuthoringException(Translations.get("error.rule.displayOnlySource", upstreamTypeName(surveyId, r.upstreamSqId), "{" + Tokens.reference(r.token) + "}"), "upstreamSqId");
             }
         }
         if ("REPEAT".equals(r.actionType.name) && r.target() == Relationship.Target.STEP) {
-            throw new AuthoringException("Repeat applies to a section or a question, not a step", "downstream");
+            throw new AuthoringException(Translations.get("error.rule.repeatNotStep"), "downstream");
         }
         if (r.upstreamStepId != null && Step.count("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3", surveyId, r.upstreamStepId, StructuralElement.SENTINEL) == 0) {
-            throw new AuthoringException("The rule's upstream step is removed or missing", "upstreamStepId");
+            throw new AuthoringException(Translations.get("validation.rule.readsRemovedStep", theRule()), "upstreamStepId");
         }
         if (r.description == null || r.description.isBlank()) {
             r.description = RelationshipQuery.condition(r);
@@ -265,7 +266,7 @@ public class RuleService {
     /** The upstream question's type name for a message, or "display-only" when it cannot be resolved. */
     private String upstreamTypeName(int surveyId, Integer upstreamSqId) {
         QuestionType type = upstreamType(surveyId, upstreamSqId);
-        return type == null || type.name == null ? "display-only" : type.name;
+        return type == null || type.name == null ? Translations.get("error.rule.displayOnlyType") : type.name;
     }
 
     private QuestionType upstreamType(int surveyId, Integer upstreamSqId) {

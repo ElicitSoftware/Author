@@ -256,13 +256,13 @@ class RuleServiceTest {
         draft.downstreamStepId = Step.<Step>find("name", "Fixture Step One").firstResult().stepId;
         AuthoringException path = assertThrows(AuthoringException.class, () -> rules.create(s.id, draft));
         assertEquals("downstream", path.field(), "UC-019 BR-001: a step that does not hold the question's section");
-        assertTrue(path.getMessage().contains("without naming the step and section"), path.getMessage());
+        assertTrue(path.getMessage().contains("does not say which step and section"), path.getMessage());
 
         draft.downstreamStepId = null;
         draft.downstreamSsId = mountOf("Fixture Section A").stepsSectionsId;
         path = assertThrows(AuthoringException.class, () -> rules.create(s.id, draft));
         assertEquals("downstream", path.field(), "UC-019 BR-001: a section that does not hold the question");
-        assertTrue(path.getMessage().contains("does not hold that question"), path.getMessage());
+        assertTrue(path.getMessage().contains("that question is not in that section"), path.getMessage());
     }
 
     /** UC-019 BR-001: a rule created the way the FHHS seed writes it — step, section and question all named — is accepted as is. */

@@ -121,7 +121,7 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver, 
         durableId = event.getRouteParameters().getInteger(DURABLE_ID).orElse(-1);
         survey = surveyService.find(surveyId).orElse(null);
         if (survey == null) {
-            event.rerouteToError(NotFoundException.class, "No survey with id " + surveyId);
+            event.rerouteToError(NotFoundException.class, getTranslation("surveyDesignerView.noSurvey", String.valueOf(surveyId)));
             return;
         }
         kind = StructureNode.Kind.valueOf(kindParam.toUpperCase(Locale.ROOT));
@@ -131,7 +131,8 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver, 
             case QUESTION -> elementService.question(surveyId, durableId).orElse(null);
         };
         if (element == null) {
-            event.rerouteToError(NotFoundException.class, "No " + kindParam + " " + durableId + " in survey " + surveyId);
+            event.rerouteToError(NotFoundException.class,
+                    getTranslation("elementView.notFound", kindParam, String.valueOf(durableId), String.valueOf(surveyId)));
             return;
         }
         render();

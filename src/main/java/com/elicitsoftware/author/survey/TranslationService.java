@@ -11,6 +11,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.Section;
@@ -187,11 +188,11 @@ public class TranslationService {
     public Translation upsert(int surveyId, String elementType, UUID targetKey, String field,
                               String language, String value) {
         if (!TranslatableFields.isTranslatable(elementType, field)) {
-            throw new AuthoringException(elementType + "." + field + " carries no respondent-facing text");
+            throw new AuthoringException(Translations.get("error.translation.notTranslatable", elementType + "." + field));
         }
         String baseText = baseText(surveyId, elementType, targetKey, field);
         if (baseText == null) {
-            throw new AuthoringException("The element this translation belongs to no longer has that text");
+            throw new AuthoringException(Translations.get("error.translation.textGone"));
         }
         Translation existing = current(surveyId, targetKey, field, language);
         if (value == null || value.isBlank()) {

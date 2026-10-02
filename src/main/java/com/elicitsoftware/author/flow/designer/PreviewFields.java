@@ -54,7 +54,10 @@ import java.util.regex.Matcher;
 final class PreviewFields {
 
     /** The options a choice field shows when the question has no list yet. */
-    static final List<String> SAMPLE_OPTIONS = List.of("Option A", "Option B", "Option C");
+    static List<String> sampleOptions() {
+        return List.of(Translations.get("previewFields.sampleOption", "A"),
+                Translations.get("previewFields.sampleOption", "B"), Translations.get("previewFields.sampleOption", "C"));
+    }
 
     /** A value may itself hold placeholders ("{&lt;G1&gt;'s|your} mother"); the runtime resolves those too. */
     private static final int MAX_NESTING = 5;
@@ -256,7 +259,7 @@ final class PreviewFields {
      */
     static Component field(String typeName, String label, String placeholder, String toolTip, boolean required,
                            Collection<String> variants, List<String> options) {
-        Component field = input(typeName, options == null || options.isEmpty() ? SAMPLE_OPTIONS : options);
+        Component field = input(typeName, options == null || options.isEmpty() ? sampleOptions() : options);
         if (field instanceof HasLabel hl) {
             hl.setLabel(label);
         }

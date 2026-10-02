@@ -49,18 +49,18 @@ class ReportingNamesTest {
     void hyphensAreDroppedFromTheColumnButKeptInAnOwnTableName() {
         assertEquals("bladdercancer_key", ReportingNames.factColumn("Bladder-Cancer"), "ETL: replace(tag,'-','')");
         assertEquals("dim_bladder-cancer", ReportingNames.dimTableForTag("Bladder-Cancer"), "ETL keeps the hyphen in the table name");
-        assertTrue(ReportingNames.identifierProblem(ReportingNames.dimTableForTag("Bladder-Cancer")).isPresent(),
+        assertTrue(ReportingNames.identifierDefect(ReportingNames.dimTableForTag("Bladder-Cancer")).isPresent(),
                 "UC-023 BR-003: a hyphenated own-table tag would fail the site's build");
-        assertTrue(ReportingNames.identifierProblem(ReportingNames.dimTableForDimension("cancer")).isEmpty());
+        assertTrue(ReportingNames.identifierDefect(ReportingNames.dimTableForDimension("cancer")).isEmpty());
     }
 
     @Test
     void identifiersLongerThanPostgresAllowsAreProblems() {
         String tag = "x".repeat(64);
-        assertTrue(ReportingNames.identifierProblem(ReportingNames.factColumn(tag)).orElse("").contains("63"),
+        assertTrue(ReportingNames.identifierDefect(ReportingNames.factColumn(tag)).orElse(null) == ReportingNames.IdentifierDefect.TOO_LONG,
                 "UC-024 BR-002: 63 characters is the PostgreSQL limit");
-        assertTrue(ReportingNames.identifierProblem("").isPresent());
-        assertTrue(ReportingNames.identifierProblem("dim_ok_1").isEmpty());
+        assertTrue(ReportingNames.identifierDefect("").isPresent());
+        assertTrue(ReportingNames.identifierDefect("dim_ok_1").isEmpty());
     }
 
     @Test

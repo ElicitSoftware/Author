@@ -11,6 +11,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.ConstraintViolationTranslator;
 import com.elicitsoftware.model.Question;
@@ -78,7 +79,7 @@ public class ElementService {
     @Transactional
     public <E extends StructuralElement> E create(E element) {
         if (element.surveyId == null) {
-            throw new AuthoringException("An element must belong to a survey");
+            throw new AuthoringException(Translations.get("error.element.noSurvey"));
         }
         element.setDurableId(((Number) em.createNativeQuery("SELECT nextval('" + element.durableSequence() + "')")
                 .getSingleResult()).intValue());
@@ -140,33 +141,33 @@ public class ElementService {
         String label;
         switch (kind) {
             case QUESTION -> {
-                Question q = question(surveyId, durableId).orElseThrow(() -> new AuthoringException("Question not found"));
-                label = "Question '" + q.shortText + "'";
+                Question q = question(surveyId, durableId).orElseThrow(() -> new AuthoringException(Translations.get("error.question.notFound")));
+                label = Translations.get("validation.where.question", q.shortText);
                 List<SectionsQuestion> sqs = currentAssignmentsOfQuestion(surveyId, durableId);
-                sqs.forEach(sq -> dependents.add("assignment of the question to section " + sectionName(surveyId, sq.sectionId)));
+                sqs.forEach(sq -> dependents.add(Translations.get("element.dependent.questionInSection", sectionName(surveyId, sq.sectionId))));
                 relationshipsTouching(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(), null, null)
-                        .forEach(r -> dependents.add("rule '" + r.description + "'"));
+                        .forEach(r -> dependents.add(Translations.get("element.dependent.rule", r.description)));
             }
             case SECTION -> {
-                Section s = section(surveyId, durableId).orElseThrow(() -> new AuthoringException("Section not found"));
-                label = "Section '" + s.name + "'";
+                Section s = section(surveyId, durableId).orElseThrow(() -> new AuthoringException(Translations.get("error.section.notFound")));
+                label = Translations.get("validation.where.section", s.name);
                 List<StepsSections> sss = currentStepAssignmentsOfSection(surveyId, durableId);
-                sss.forEach(ss -> dependents.add("assignment of the section to step " + stepName(surveyId, ss.stepId)));
+                sss.forEach(ss -> dependents.add(Translations.get("element.dependent.sectionInStep", stepName(surveyId, ss.stepId))));
                 List<SectionsQuestion> sqs = currentQuestionAssignmentsOfSection(surveyId, durableId);
-                sqs.forEach(sq -> dependents.add("assignment of question " + questionName(surveyId, sq.questionId) + " to the section"));
+                sqs.forEach(sq -> dependents.add(Translations.get("element.dependent.questionOfSection", questionName(surveyId, sq.questionId))));
                 relationshipsTouching(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(),
                         sss.stream().map(ss -> ss.stepsSectionsId).toList(), null)
-                        .forEach(r -> dependents.add("rule '" + r.description + "'"));
+                        .forEach(r -> dependents.add(Translations.get("element.dependent.rule", r.description)));
             }
             case STEP -> {
-                Step st = step(surveyId, durableId).orElseThrow(() -> new AuthoringException("Step not found"));
-                label = "Step '" + st.name + "'";
+                Step st = step(surveyId, durableId).orElseThrow(() -> new AuthoringException(Translations.get("error.step.notFound")));
+                label = Translations.get("validation.where.step", st.name);
                 List<StepsSections> sss = currentSectionAssignmentsOfStep(surveyId, durableId);
-                sss.forEach(ss -> dependents.add("assignment of section " + sectionName(surveyId, ss.sectionId) + " to the step"));
+                sss.forEach(ss -> dependents.add(Translations.get("element.dependent.sectionOfStep", sectionName(surveyId, ss.sectionId))));
                 relationshipsTouching(surveyId, List.of(), sss.stream().map(ss -> ss.stepsSectionsId).toList(), durableId)
-                        .forEach(r -> dependents.add("rule '" + r.description + "'"));
+                        .forEach(r -> dependents.add(Translations.get("element.dependent.rule", r.description)));
             }
-            default -> throw new AuthoringException("Unsupported element kind " + kind);
+            default -> throw new AuthoringException(Translations.get("error.element.unsupportedKind", String.valueOf(kind)));
         }
         return new RemovalPlan(kind, durableId, label, dependents, blockers);
     }
@@ -176,7 +177,7 @@ public class ElementService {
     public RemovalPlan remove(int surveyId, StructureNode.Kind kind, int durableId) {
         RemovalPlan plan = planRemoval(surveyId, kind, durableId);
         if (plan.blocked()) {
-            throw new AuthoringException("Cannot remove " + plan.label() + ": " + String.join("; ", plan.blockers()));
+            throw new AuthoringException(Translations.get("error.element.cannotRemove", plan.label(), String.join("; ", plan.blockers())));
         }
         OffsetDateTime now = OffsetDateTime.now();
         switch (kind) {
@@ -210,7 +211,7 @@ public class ElementService {
                     translations.retireTranslationsOf(surveyId, s.stepKey, now);
                 });
             }
-            default -> throw new AuthoringException("Unsupported element kind " + kind);
+            default -> throw new AuthoringException(Translations.get("error.element.unsupportedKind", String.valueOf(kind)));
         }
         em.flush();
         return plan;
@@ -221,7 +222,7 @@ public class ElementService {
     public void removeSelectGroup(int surveyId, int durableId) {
         long users = Question.count("surveyId = ?1 and selectGroupId = ?2 and effectiveTo = ?3", surveyId, durableId, StructuralElement.SENTINEL);
         if (users > 0) {
-            throw new AuthoringException("This list is still used by " + users + " question(s); change or remove them first");
+            throw new AuthoringException(Translations.get("error.list.inUse", String.valueOf(users)));
         }
         OffsetDateTime now = OffsetDateTime.now();
         SelectItem.<SelectItem>list("surveyId = ?1 and selectGroupId = ?2 and effectiveTo = ?3", surveyId, durableId, StructuralElement.SENTINEL)
@@ -237,7 +238,7 @@ public class ElementService {
     @Transactional
     public void removeSelectItem(int surveyId, int durableId) {
         OffsetDateTime now = OffsetDateTime.now();
-        SelectItem item = selectItem(surveyId, durableId).orElseThrow(() -> new AuthoringException("Option not found"));
+        SelectItem item = selectItem(surveyId, durableId).orElseThrow(() -> new AuthoringException(Translations.get("error.option.notFound")));
         item.effectiveTo = now;
         translations.retireTranslationsOf(surveyId, item.selectItemKey, now);
         em.flush();
@@ -247,7 +248,7 @@ public class ElementService {
 
     /** Computes what a restore brings back and what blocks it, without changing anything. */
     public RestorePlan planRestore(int surveyId, StructureNode.Kind kind, int durableId) {
-        StructuralElement element = find(surveyId, kind, durableId).orElseThrow(() -> new AuthoringException("Element not found"));
+        StructuralElement element = find(surveyId, kind, durableId).orElseThrow(() -> new AuthoringException(Translations.get("error.element.notFound")));
         String label = labelOf(kind, element);
         List<String> dependents = new ArrayList<>();
         List<String> blockers = new ArrayList<>();
@@ -260,36 +261,36 @@ public class ElementService {
                 List<SectionsQuestion> sqs = SectionsQuestion.list("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
                 for (SectionsQuestion sq : sqs) {
                     if (section(surveyId, sq.sectionId).map(StructuralElement::isCurrent).orElse(false)) {
-                        dependents.add("assignment of the question to section " + sectionName(surveyId, sq.sectionId));
+                        dependents.add(Translations.get("element.dependent.questionInSection", sectionName(surveyId, sq.sectionId)));
                     } else {
-                        blockers.add("section " + sectionName(surveyId, sq.sectionId) + " is removed; restore it first");
+                        blockers.add(Translations.get("element.blocker.sectionRemoved", sectionName(surveyId, sq.sectionId)));
                     }
                 }
                 relationshipsClosedAt(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(), List.of(), null, closedAt)
-                        .forEach(r -> dependents.add("rule '" + r.description + "'"));
+                        .forEach(r -> dependents.add(Translations.get("element.dependent.rule", r.description)));
             }
             case SECTION -> {
                 List<StepsSections> sss = StepsSections.list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
                 for (StepsSections ss : sss) {
                     if (step(surveyId, ss.stepId).map(StructuralElement::isCurrent).orElse(false)) {
-                        dependents.add("assignment of the section to step " + stepName(surveyId, ss.stepId));
+                        dependents.add(Translations.get("element.dependent.sectionInStep", stepName(surveyId, ss.stepId)));
                     } else {
-                        blockers.add("step " + stepName(surveyId, ss.stepId) + " is removed; restore it first");
+                        blockers.add(Translations.get("element.blocker.stepRemoved", stepName(surveyId, ss.stepId)));
                     }
                 }
                 List<SectionsQuestion> sqs = SectionsQuestion.list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
-                sqs.forEach(sq -> dependents.add("assignment of question " + questionName(surveyId, sq.questionId) + " to the section"));
+                sqs.forEach(sq -> dependents.add(Translations.get("element.dependent.questionOfSection", questionName(surveyId, sq.questionId))));
                 relationshipsClosedAt(surveyId, sqs.stream().map(sq -> sq.sectionsQuestionId).toList(),
                         sss.stream().map(ss -> ss.stepsSectionsId).toList(), null, closedAt)
-                        .forEach(r -> dependents.add("rule '" + r.description + "'"));
+                        .forEach(r -> dependents.add(Translations.get("element.dependent.rule", r.description)));
             }
             case STEP -> {
                 List<StepsSections> sss = StepsSections.list("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3", surveyId, durableId, closedAt);
-                sss.forEach(ss -> dependents.add("assignment of section " + sectionName(surveyId, ss.sectionId) + " to the step"));
+                sss.forEach(ss -> dependents.add(Translations.get("element.dependent.sectionOfStep", sectionName(surveyId, ss.sectionId))));
                 relationshipsClosedAt(surveyId, List.of(), sss.stream().map(ss -> ss.stepsSectionsId).toList(), durableId, closedAt)
-                        .forEach(r -> dependents.add("rule '" + r.description + "'"));
+                        .forEach(r -> dependents.add(Translations.get("element.dependent.rule", r.description)));
             }
-            default -> throw new AuthoringException("Unsupported element kind " + kind);
+            default -> throw new AuthoringException(Translations.get("error.element.unsupportedKind", String.valueOf(kind)));
         }
         return new RestorePlan(kind, durableId, label, dependents, blockers);
     }
@@ -302,9 +303,9 @@ public class ElementService {
     public RestorePlan restore(int surveyId, StructureNode.Kind kind, int durableId) {
         RestorePlan plan = planRestore(surveyId, kind, durableId);
         if (plan.blocked()) {
-            throw new AuthoringException("Cannot restore " + plan.label() + ": " + String.join("; ", plan.blockers()));
+            throw new AuthoringException(Translations.get("error.element.cannotRestore", plan.label(), String.join("; ", plan.blockers())));
         }
-        StructuralElement element = find(surveyId, kind, durableId).orElseThrow(() -> new AuthoringException("Element not found"));
+        StructuralElement element = find(surveyId, kind, durableId).orElseThrow(() -> new AuthoringException(Translations.get("error.element.notFound")));
         if (element.isCurrent()) {
             return plan;
         }
@@ -342,7 +343,7 @@ public class ElementService {
                 });
                 ((Step) element).displayOrder = DisplayOrdering.parkedOrder((Step) element);
             }
-            default -> throw new AuthoringException("Unsupported element kind " + kind);
+            default -> throw new AuthoringException(Translations.get("error.element.unsupportedKind", String.valueOf(kind)));
         }
         em.flush();
         if (kind != StructureNode.Kind.QUESTION) {
@@ -359,10 +360,10 @@ public class ElementService {
     public int purgeRemoved(int surveyId) {
         Survey s = Survey.findById(surveyId);
         if (s == null) {
-            throw new AuthoringException("Survey not found");
+            throw new AuthoringException(Translations.get("error.survey.notFound"));
         }
         if (s.publishedBy != null && s.publishedComment != null) {
-            throw new AuthoringException("This survey has been exported; removed elements are kept so sites can retire them");
+            throw new AuthoringException(Translations.get("error.survey.exportedKeepsRemoved"));
         }
         int n = 0;
         for (String table : List.of("relationships", "sections_questions", "steps_sections", "questions", "select_items", "select_groups", "sections", "steps")) {
@@ -433,9 +434,9 @@ public class ElementService {
 
     private static String labelOf(StructureNode.Kind kind, StructuralElement element) {
         return switch (kind) {
-            case QUESTION -> "Question '" + ((Question) element).shortText + "'";
-            case SECTION -> "Section '" + ((Section) element).name + "'";
-            case STEP -> "Step '" + ((Step) element).name + "'";
+            case QUESTION -> Translations.get("validation.where.question", ((Question) element).shortText);
+            case SECTION -> Translations.get("validation.where.section", ((Section) element).name);
+            case STEP -> Translations.get("validation.where.step", ((Step) element).name);
         };
     }
 

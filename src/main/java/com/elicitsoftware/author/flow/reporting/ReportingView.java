@@ -169,7 +169,7 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
         int id = event.getRouteParameters().getInteger(SurveyEditorView.SURVEY_ID).orElse(-1);
         Survey s = surveyService.find(id).orElse(null);
         if (s == null) {
-            event.rerouteToError(NotFoundException.class, "No survey with id " + id);
+            event.rerouteToError(NotFoundException.class, getTranslation("surveyDesignerView.noSurvey", String.valueOf(id)));
             return;
         }
         survey = s;

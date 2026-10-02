@@ -355,10 +355,10 @@ class DesignerServiceTest {
         s.initialDisplayKey = "0001-0009-0000-0009-0000-0000-0000";
         em.flush();
         List<ValidationIssue> issues = validation.validate(s);
-        assertTrue(issues.stream().anyMatch(i -> i.isError() && i.message().contains("initial display key")), "UC-016 BR-002: " + issues);
+        assertTrue(issues.stream().anyMatch(i -> i.isError() && i.message().contains("starting point")), "UC-016 BR-002: " + issues);
 
         ordering.syncInitialDisplayKey(s.id);
-        assertFalse(validation.validate(Survey.findById(s.id)).stream().anyMatch(i -> i.message().contains("initial display key")));
+        assertFalse(validation.validate(Survey.findById(s.id)).stream().anyMatch(i -> i.message().contains("starting point")));
     }
 
     @Test

@@ -30,6 +30,7 @@ button and menu labels short.
 | survey, step, section, question | The structural levels of a survey (a survey has steps, a step has sections, a section has questions) | Translate consistently; the same word everywhere |
 | element | Any of step, section or question | Translate consistently |
 | rule, relationship | A condition on one answer that shows, hides or repeats a downstream element | Translate consistently |
+| upstream, downstream | The direction a survey flows: a rule's upstream question is the one whose answer it reads, its downstream target the step, section or question it acts on, which comes later | Translate consistently; the same pair of words in every rule message |
 | token | A placeholder inside question text such as `{<NAME>|default}`; the key is the part in angle brackets | Translate as "placeholder" if clearer; never as a credential |
 | access code | The credential a respondent types (issued by the Admin console) | Never call it a token |
 | export | Producing the definition file for the Admin console | Use "export", never "publish" |
@@ -127,10 +128,89 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `surveyEditorView.lastEditedBy` | Last edited by {0}. | Survey overview · attribution sentence | 40 | params: {0} = user name |
 | `surveyEditorView.lastExportedBy` | Last exported by {0}: {1} | Survey overview · attribution sentence | 80 | params: {0} = user name, {1} = release note |
 | `surveyEditorView.validation` | Validation | Survey overview · heading of the validation panel | 20 |  |
-| `surveyEditorView.readyToExport` | Ready to export: no findings. | Survey overview · paragraph when validation finds nothing | 40 |  |
+| `surveyEditorView.readyToExport` | Ready to export. No problems found. | Survey overview · paragraph when validation finds nothing | 40 |  |
 | `surveyEditorView.issue.error` | Error: {0} | Survey overview · validation list item | 100 | params: {0} = finding text identical |
 | `surveyEditorView.issue.warning` | Warning: {0} | Survey overview · validation list item | 100 | params: {0} = finding text |
 | `validation.finding.location` | — in {0} | Survey overview and export dialog · where a validation finding's element sits, appended to the finding | 40 | params: {0} = path of step/section/question names, already joined |
+| `validation.where.step` | Step ''{0}'' | Validation finding · names a step; starts the sentence it is inserted into | 60 | params: {0} = step name |
+| `validation.where.section` | Section ''{0}'' | Validation finding · names a section; starts the sentence it is inserted into | 60 | params: {0} = section name |
+| `validation.where.sectionInStep` | Section ''{0}'' in step ''{1}'' | Validation finding · names a section as placed in one step; starts the sentence it is inserted into | 90 | params: {0} = section name, {1} = step name |
+| `validation.where.question` | Question ''{0}'' | Validation finding · names a question; starts the sentence it is inserted into | 60 | params: {0} = question short text |
+| `validation.where.questionInSection` | Question ''{0}'' in section ''{1}'' | Validation finding · names a question as placed in one section; starts the sentence it is inserted into | 90 | params: {0} = question short text, {1} = section name |
+| `validation.where.rule` | Rule ''{0}'' | Validation finding · names a rule; starts the sentence it is inserted into | 60 | params: {0} = rule description |
+| `validation.where.theRule` | The rule | Validation finding · the rule being saved in the rule dialog; starts the sentence it is inserted into | 30 |  |
+| `validation.survey.noSteps` | This survey has no steps yet. Add a step to start. | Validation finding · warning: the survey is empty | 120 |  |
+| `validation.mount.stepRemoved` | A section is placed in a step that has been removed. Move it to another step. | Validation finding · error: a section sits in a step that no longer exists | 160 |  |
+| `validation.mount.sectionRemoved` | A step holds a section that has been removed. Take it out of the step. | Validation finding · error: a step still holds a section that no longer exists | 160 |  |
+| `validation.assignment.questionRemoved` | A section holds a question that has been removed. Take it out of the section. | Validation finding · error: a section still holds a question that no longer exists | 160 |  |
+| `validation.assignment.sectionRemoved` | A question is placed in a section that has been removed. Move it to another section. | Validation finding · error: a question sits in a section that no longer exists | 160 |  |
+| `validation.question.listRemoved` | Question ''{0}'' uses a list of options that has been removed. Choose another list. | Validation finding · error: the question uses a list of options that no longer exists | 180 | params: {0} = question short text |
+| `validation.question.noList` | Question ''{0}'' has no list of options. A {1} question needs one. | Validation finding · error: a choice question has no list of options | 180 | params: {0} = question short text, {1} = question type name, kept as written (RADIO, COMBOBOX) |
+| `validation.question.emptyList` | Question ''{0}'' uses an empty list. Add options to the list. | Validation finding · error: the list a choice question uses has no options | 160 | params: {0} = question short text |
+| `validation.question.noText` | Question ''{0}'' has no question text. Enter what respondents should read. | Validation finding · error: the question has no text for respondents | 180 | params: {0} = question short text |
+| `validation.option.listRemoved` | Option ''{0}'' belongs to a list that has been removed. | Validation finding · error: an option belongs to a list that no longer exists | 140 | params: {0} = option text |
+| `validation.step.empty` | Step ''{0}'' is empty. Add a section to it. | Validation finding · warning: the step holds no sections | 120 | params: {0} = step name |
+| `validation.section.unplaced` | Section ''{0}'' is not used. Place it in a step, or remove it. | Validation finding · warning: the section is in no step | 150 | params: {0} = section name |
+| `validation.section.empty` | Section ''{0}'' is empty. Add a question to it. | Validation finding · warning: the section holds no questions | 120 | params: {0} = section name |
+| `validation.question.unplaced` | Question ''{0}'' is not used. Place it in a section, or remove it. | Validation finding · warning: the question is in no section | 150 | params: {0} = question short text |
+| `validation.survey.startingPoint` | The survey''s starting point is not set, or points to a section that is no longer in the survey. Set "{0}" in "{1}". | Validation finding · error: the survey does not say which section it opens on | 260 | params: {0} = the field label surveyMetadataDialog.initialDisplayKey, {1} = the dialog title surveyMetadataDialog.editSurvey, both already translated |
+| `validation.order.steps` | Two steps share position {0}. Reorder them. | Validation finding · warning: two steps have the same position | 120 | params: {0} = position number |
+| `validation.order.sections` | Two sections in this step share position {0}. Reorder them. | Validation finding · warning: two sections of one step have the same position | 140 | params: {0} = position number |
+| `validation.order.questions` | Two questions in this section share position {0}. Reorder them. | Validation finding · warning: two questions of one section have the same position | 140 | params: {0} = position number |
+| `validation.rule.noTarget` | {0} has no downstream target. Choose the step, section or question it acts on. | Validation finding · error, also shown when saving a rule: the rule has no downstream target | 180 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule") |
+| `validation.rule.sectionNotInStep` | {0} has downstream section ''{1}'' in step ''{2}'', but that section is not in that step. Choose the downstream target again. | Validation finding · error, also shown when saving a rule: the downstream section is not in the step the rule names | 240 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule"), {1} = section name, {2} = step name |
+| `validation.rule.questionNotInSection` | {0} has downstream question ''{1}'' in section ''{2}'', but that question is not in that section. Choose the downstream target again. | Validation finding · error, also shown when saving a rule: the downstream question is not in the section the rule names | 240 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule"), {1} = question short text, {2} = section name |
+| `validation.rule.questionWithoutPlace` | {0} has downstream question ''{1}'' in a different section from its upstream question, but does not say which step and section. Choose the downstream target again. | Validation finding · error, also shown when saving a rule: the downstream question is in another section than the upstream question and the rule does not say which step and section | 280 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule"), {1} = question short text |
+| `validation.rule.readsRemovedQuestion` | {0} has an upstream question that has been removed. Choose another upstream question. | Validation finding · error, also shown when saving a rule: the upstream question no longer exists | 180 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule") |
+| `validation.rule.readsRemovedStep` | {0} has an upstream step that has been removed. Choose the upstream question again. | Validation finding · error: the upstream step no longer exists | 180 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule") |
+| `validation.rule.targetsRemovedStep` | {0} has a downstream step that has been removed. Choose another downstream target. | Validation finding · error, also shown when saving a rule: the downstream step no longer exists | 160 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule") |
+| `validation.rule.targetsRemovedSection` | {0} has a downstream section that is no longer in that step. Choose another downstream target. | Validation finding · error, also shown when saving a rule: the downstream section is no longer in the step | 180 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule") |
+| `validation.rule.targetsRemovedQuestion` | {0} has a downstream question that is no longer in that section. Choose another downstream target. | Validation finding · error, also shown when saving a rule: the downstream question is no longer in the section | 180 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule") |
+| `validation.rule.incomplete` | {0} is incomplete. Choose its operator and its action. | Validation finding · error: the rule has no operator or no action | 140 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule") |
+| `validation.rule.backwards` | {0} points backwards: {1}. | Validation finding · error, also shown when saving a rule: the downstream target comes before the upstream question; keep the same words for "points backwards" as surveyDesignerView.backward.one | 400 | params: {0} = the rule as the subject of the sentence ("Rule 'x'" or "The rule"), {1} = the reason, a validation.rule.backwards.* phrase |
+| `validation.rule.backwards.question` | downstream question ''{0}'' in step ''{1}'' › ''{2}'' must come after upstream question ''{3}'' in step ''{4}'' › ''{5}'' | Validation finding · reason a rule points backwards when its downstream target is a question; continues a sentence, so no capital and no full stop | 320 | params: {0} = downstream question, {1} = its step, {2} = its section, {3} = the upstream question, {4} = its step, {5} = its section |
+| `validation.rule.backwards.section` | downstream section ''{0}'' in step ''{1}'' must come after upstream question ''{2}'' in step ''{3}'' › ''{4}'' | Validation finding · reason a rule points backwards when its downstream target is a section; continues a sentence, so no capital and no full stop | 300 | params: {0} = downstream section, {1} = its step, {2} = the upstream question, {3} = its step, {4} = its section |
+| `validation.rule.backwards.step` | downstream step ''{0}'' must come after upstream question ''{1}'' in step ''{2}'' › ''{3}'' | Validation finding · reason a rule points backwards when its downstream target is a step; continues a sentence, so no capital and no full stop | 280 | params: {0} = downstream step, {1} = the upstream question, {2} = its step, {3} = its section |
+| `validation.rule.backwards.edge` | Points backwards: {0} | Validation finding · Designer board, tooltip of a rule arrow that points backwards | 360 | params: {0} = the reason, a validation.rule.backwards.* phrase |
+| `validation.step.noBuildingRule` | Step ''{0}'' has no Show or Repeat rule. Every step after the first needs one. Add a Show rule on the step — usually "Field exists" on an upstream question. | Validation finding · error: a step after the first has no Show or Repeat rule; Show, Repeat and Field exists as in the guide (guideView.rules.*) | 320 | params: {0} = step name |
+| `validation.section.noBuildingRule` | Section ''{0}'' in step ''{1}'' has no Show or Repeat rule. Everything after the first step needs one. Add a Show rule on the section in this step — usually "Field exists" on an upstream question. | Validation finding · error: a section after the first step has no Show or Repeat rule; Show, Repeat and Field exists as in the guide (guideView.rules.*) | 360 | params: {0} = section name, {1} = step name |
+| `validation.question.noBuildingRule` | Question ''{0}'' in section ''{1}'' in step ''{2}'' has no Show or Repeat rule. Everything after the first step needs one. Add a Show rule on the question, its section or its step — usually "Field exists" on an upstream question. | Validation finding · error: a question after the first step has no Show or Repeat rule; Show, Repeat and Field exists as in the guide (guideView.rules.*) | 400 | params: {0} = question short text, {1} = section name, {2} = step name |
+| `validation.token.unfilledWithDefault` | {0} uses {1}, but no rule fills it in here. Respondents will always see "{2}". | Validation finding · warning: no rule fills a placeholder, so its default always shows | 240 | params: {0} = the element as the subject of the sentence (a validation.where.* phrase), {1} = the placeholder as written, {2} = its default text |
+| `validation.token.unfilledNoDefault` | {0} uses {1}, but no rule fills it in here and it has no default, so respondents would see {1} itself. Add a rule that fills it, or give it a default: {2}. | Validation finding · error: no rule fills a placeholder and it has no default | 340 | params: {0} = the element as the subject of the sentence (a validation.where.* phrase), {1} = the placeholder as written, {2} = the same placeholder with a default added |
+| `validation.token.undelimited` | {0} uses {1} without angle brackets around the token. Write {2}. | Validation finding · error: a placeholder names its token without angle brackets | 220 | params: {0} = the element as the subject of the sentence (a validation.where.* phrase), {1} = the placeholder as written, {2} = the corrected placeholder |
+| `validation.token.undelimitedWithDefault` | {0} uses {1} without angle brackets around the token. Write {2}. Until then respondents always see "{3}". | Validation finding · error: a placeholder names its token without angle brackets, so its default always shows | 300 | params: {0} = the element as the subject of the sentence (a validation.where.* phrase), {1} = the placeholder as written, {2} = the corrected placeholder, {3} = its default text |
+| `validation.token.undefined` | {0} uses {1} in {2}, but no rule has a token named {3}, so respondents always see "{5}". Add the token to a rule. If {1} is formatting, move it outside the braces: {4} | Validation finding · error: a placeholder names a token no rule has, or holds formatting inside its braces | 420 | params: {0} = the element as the subject of the sentence (a validation.where.* phrase), {1} = the name in angle brackets, {2} = the placeholder as written, {3} = the token name, {4} = where formatting belongs, {5} = the default text |
+| `validation.token.undefinedNoDefault` | {0} uses {1} in {2}, but no rule has a token named {3}, so respondents always see the text as written. Add the token to a rule. If {1} is formatting, move it outside the braces: {4} | Validation finding · error: a placeholder with no default names a token no rule has, or holds formatting inside its braces | 420 | params: {0} = the element as the subject of the sentence (a validation.where.* phrase), {1} = the name in angle brackets, {2} = the placeholder as written, {3} = the token name, {4} = where formatting belongs |
+| `validation.rule.tokenUnused` | {0} has the token {1}, but nothing in its downstream target uses {2}. Add it to a text there, or remove the token from the rule. | Validation finding · warning: nothing in the rule downstream target uses the rule token | 260 | params: {0} = the rule ("Rule 'x'"), {1} = token name, {2} = the token as a text writes it |
+| `validation.rule.displayOnlyNoValue` | {0} cannot fill {1}: its upstream question ''{2}'' only shows text ({3}) and has no answer. Choose an upstream question the respondent answers, or set the rule''s "{4}". | Validation finding · error: the upstream question only shows text and has no value of its own, so its token is never filled | 360 | params: {0} = the rule, {1} = the token as a text writes it, {2} = question short text, {3} = question type name, kept as written (HTML, MODAL), {4} = the field label relationshipDialog.defaultUpstreamValue, already translated |
+| `validation.rule.displayOnlyConstant` | {0} has upstream question ''{2}'', which only shows text ({3}) and has no answer, so {1} is always the rule''s "{4}". To use a real answer, choose an upstream question the respondent answers. | Validation finding · warning: the upstream question only shows text, so its token is always the rule own value | 360 | params: {0} = the rule, {1} = the token as a text writes it, {2} = question short text, {3} = question type name, kept as written, {4} = the field label relationshipDialog.defaultUpstreamValue, already translated |
+| `validation.rule.tokenBracketed` | {0} has the token {1}. Write it without angle brackets: {2}. Brackets belong only in the text, as {3}. | Validation finding · error: the rule token was stored with its angle brackets | 240 | params: {0} = the rule, {1} = the token as stored, {2} = the token name, {3} = the token as a text writes it |
+| `validation.rule.tokenInvalid` | {0} has the token "{1}", which is not a valid name. Use only letters, digits and underscores. | Validation finding · error: the rule token holds a character a token name cannot have | 220 | params: {0} = the rule, {1} = the token as stored |
+| `validation.rule.tokenLeadingDigit` | {0} has the token {1}. It works, but a token name should start with a letter. Rename it. | Validation finding · warning: the rule token does not start with a letter | 200 | params: {0} = the rule, {1} = the token as stored |
+| `validation.rule.tokenCase` | {0} has the token {1}. It works, but write {2} so the token list does not show both. | Validation finding · warning: the rule token is not in upper case | 200 | params: {0} = the rule, {1} = the token as stored, {2} = the token in upper case |
+| `validation.rename.step` | Step ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in past reports too. | Validation finding · warning that an edit also changes what sites already using the survey report: a step was renamed | 260 | params: {0} = old name, {1} = new name |
+| `validation.rename.section` | Section ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in past reports too. | Validation finding · warning that an edit also changes what sites already using the survey report: a section was renamed | 260 | params: {0} = old name, {1} = new name |
+| `validation.tag.redefined` | Tag {0} was changed to {1}. Answers already collected at sites using this survey will be reported under the new tag. | Validation finding · warning that an edit also changes what sites already using the survey report: a tag in use was renamed or moved to another dimension | 280 | params: {0} = the tag before, quoted with its table, {1} = the tag after |
+| `validation.tag.reassigned` | {0}: tag {1} was changed to {2}. Answers already collected at sites using this survey will be reported under the new tag. | Validation finding · warning that an edit also changes what sites already using the survey report: an element was given another tag or value | 300 | params: {0} = element name, {1} = the tag and value before, quoted, {2} = the tag and value after |
+| `validation.tag.unassigned` | {0}: tag {1} was removed. Answers already collected at sites using this survey will no longer be reported under it. | Validation finding · warning that an edit also changes what sites already using the survey report: a tag was taken off an element | 300 | params: {0} = element name, {1} = the tag and value, quoted |
+| `validation.tag.assignmentBroken` | Tag ''{0}'' is assigned, but not to one section or question. Remove the assignment and add it again. | Validation finding · Reporting: error, a tag assignment does not point at exactly one element | 240 | params: {0} = tag |
+| `validation.tag.assignedToRemoved.section` | Tag ''{0}'' is assigned to a section that has been removed{1}. Remove the assignment. | Validation finding · Reporting: warning, a tag is assigned to a section that no longer exists | 220 | params: {0} = tag, {1} = empty, or a space and the section name in brackets |
+| `validation.tag.assignedToRemoved.question` | Tag ''{0}'' is assigned to a question that has been removed{1}. Remove the assignment. | Validation finding · Reporting: warning, a tag is assigned to a question that no longer exists | 220 | params: {0} = tag, {1} = empty, or a space and the question name in brackets |
+| `validation.tag.assignedTwice` | Tag ''{0}'' is assigned to {1} {2} times with different values. Keep one. | Validation finding · Reporting: warning, one tag is on one element more than once with different values | 220 | params: {0} = tag, {1} = element name, {2} = how many times |
+| `validation.tag.table.empty` | Tag ''{0}'' gives the reporting table an empty name. Rename the tag or its dimension; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces an empty reporting table name | 280 | params: {0} = tag; dynamic |
+| `validation.tag.table.characters` | Tag ''{0}'' gives the reporting table the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag or its dimension; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces a reporting table name with characters a table name cannot have | 340 | params: {0} = tag, {1} = table name; dynamic |
+| `validation.tag.table.tooLong` | Tag ''{0}'' gives the reporting table the name ''{1}'', which is longer than {2} characters. Rename the tag or its dimension; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces a reporting table name that is too long | 340 | params: {0} = tag, {1} = table name, {2} = the limit; dynamic |
+| `validation.tag.column.empty` | Tag ''{0}'' gives the report column an empty name. Rename the tag; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces an empty report column name | 240 | params: {0} = tag; dynamic |
+| `validation.tag.column.characters` | Tag ''{0}'' gives the report column the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces a report column name with characters a column name cannot have | 300 | params: {0} = tag, {1} = column name; dynamic |
+| `validation.tag.column.tooLong` | Tag ''{0}'' gives the report column the name ''{1}'', which is longer than {2} characters. Rename the tag; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces a report column name that is too long | 300 | params: {0} = tag, {1} = column name, {2} = the limit; dynamic |
+| `validation.tag.unused` | Tag ''{0}'' is not used. Assign it to a section or question, or delete it. | Validation finding · Reporting: warning, a tag is on no element | 180 | params: {0} = tag |
+| `validation.tag.sameColumn` | Tags {0} produce the same report column, ''{1}''. Rename one of them. | Validation finding · Reporting: error, several tags produce one report column | 220 | params: {0} = the tags, quoted and comma separated, {1} = column name |
+| `validation.tag.tableClash` | Tag ''{0}'' has no dimension, so its reporting table is ''{1}'' — the same table dimension ''{2}'' uses. Rename the tag or give it a dimension. | Validation finding · Reporting: error, a tag without a dimension produces the table a dimension already uses | 300 | params: {0} = tag, {1} = table name, {2} = dimension name |
+| `validation.tag.otherSurvey` | Tag ''{0}'' and a tag in another survey both produce the report column ''{1}'', but for different tables (''{2}'' and ''{3}''). A site that installs both surveys could not build its reports. Rename one of the tags. | Validation finding · Reporting: warning, another survey maps the same report column to a different table | 400 | params: {0} = tag, {1} = column name, {2} = this survey table, {3} = the other survey table |
+| `validation.translation.missing.one` | {0}: 1 text is not translated yet. Respondents will see it in the survey''s own language. | Validation finding · warning: one text of a published language is not translated | 220 | params: {0} = language tag |
+| `validation.translation.missing.many` | {0}: {1} texts are not translated yet. Respondents will see them in the survey''s own language. | Validation finding · warning: several texts of a published language are not translated | 220 | params: {0} = language tag, {1} = how many |
+| `validation.translation.stale.one` | {0}: 1 translation is out of date because the original text changed. Respondents will see the original until it is translated again. | Validation finding · warning: one translation is out of date | 260 | params: {0} = language tag |
+| `validation.translation.stale.many` | {0}: {1} translations are out of date because the original text changed. Respondents will see the original until they are translated again. | Validation finding · warning: several translations are out of date | 260 | params: {0} = language tag, {1} = how many |
 | `surveyMetadataDialog.newSurvey` | New survey | Survey details dialog · dialog title when creating | 20 |  |
 | `surveyMetadataDialog.editSurvey` | Edit survey | Survey details dialog · dialog title when editing | 20 |  |
 | `surveyMetadataDialog.name` | Name | Survey details dialog · field label | 20 |  |
@@ -150,9 +230,9 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `exportDialog.export` | Export | Export dialog · primary button | 15 |  |
 | `exportDialog.issue.error` | Error: {0} | Export dialog · validation list item | 100 | params: {0} = finding text identical |
 | `exportDialog.issue.warning` | Warning: {0} | Export dialog · validation list item | 100 | params: {0} = finding text |
-| `exportDialog.errorsBlock` | {0} error(s) block the export; fix them in the editor first. | Export dialog · paragraph | 80 | params: {0} = number of errors |
-| `exportDialog.warningsDoNotBlock` | Warnings do not block the export. | Export dialog · paragraph | 50 |  |
-| `exportDialog.retroactiveReminder` | Reminder: renaming a step or section and changing a question's ontology tag apply retroactively at deployed sites (historical reports and answers are relabeled). | Export dialog · secondary paragraph | 200 |  |
+| `exportDialog.errorsBlock` | Fix {0} error(s) before you can export. | Export dialog · paragraph | 80 | params: {0} = number of errors |
+| `exportDialog.warningsDoNotBlock` | You can export with warnings. | Export dialog · paragraph | 50 |  |
+| `exportDialog.retroactiveReminder` | Reminder: renaming a step or section, or changing a question's tag, also relabels past reports and answers at sites already using this survey. | Export dialog · secondary paragraph | 200 |  |
 | `exportDialog.download` | Download {0} | Export dialog · download link | 40 | params: {0} = file name |
 | `exportDialog.revisionSummary` | Revision {0}: {1} | Export dialog · paragraph after export | 80 | params: {0} = revision number, {1} = list of table names with counts |
 | `importDefinitionView.pageTitle` | Import definition | Import page · browser tab title | 25 |  |
@@ -169,7 +249,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `importDefinitionView.openInEditor` | Open in editor | Import page · primary button | 20 |  |
 | `importDefinitionView.importFailed` | Import failed: {0} | Import page · error paragraph | 80 | params: {0} = reason |
 | `importDefinitionView.validation` | Validation | Import page · heading of the validation findings shown after an import | 20 |  |
-| `importDefinitionView.validationClean` | No findings: this definition is ready to export. | Import page · paragraph when validation finds nothing in the imported definition | 70 |  |
+| `importDefinitionView.validationClean` | No problems found. This survey is ready to export. | Import page · paragraph when validation finds nothing in the imported definition | 70 |  |
 | `importDefinitionView.issue.error` | Error: {0} | Import page · validation list item | 100 | params: {0} = finding text identical |
 | `importDefinitionView.issue.warning` | Warning: {0} | Import page · validation list item | 100 | params: {0} = finding text |
 | `aiDraftView.pageTitle` | Draft with AI | AI draft page · browser tab title | 25 |  |
@@ -495,7 +575,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `reportingView.impact.reportColumns` | Report columns | Reporting tags page · list caption | 25 |  |
 | `reportingView.impact.error` | Error: {0} | Reporting tags page · list item prefix | 40 | params: {0} = finding text; identical |
 | `reportingView.impact.warning` | Warning: {0} | Reporting tags page · list item prefix | 40 | params: {0} = finding text |
-| `reportingView.impact.findings` | Findings | Reporting tags page · list caption | 25 |  |
+| `reportingView.impact.findings` | Problems | Reporting tags page · list caption | 25 |  |
 | `reportingView.removeTag.header` | Remove tag | Remove tag confirmation · dialog header | 25 |  |
 | `reportingView.removeTag.text` | Remove the tag "{0}"? It has no assignments. | Remove tag confirmation · dialog text | 80 | params: {0} = tag name |
 | `reportingView.removedTag` | Removed tag "{0}" | Reporting tags page · success notification | 40 | params: {0} = tag name |
@@ -865,6 +945,165 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `translationImport.warnings` | Worth checking: | Import result dialog · heading above the list of warnings | 40 |  |
 | `designer.staleTranslations` | The {0} changed. Its {1} translation(s) ({2}) are now out of date and will not be shown to respondents until they are translated again. | Designer · notification after a wording change | 180 | params: {0} = what changed (question, step name, ...), {1} = how many languages, {2} = the language tags |
 | `designer.staleTranslations.open` | Open translations | Designer · button in that notification | 20 |  |
+| `error.name.required` | Name is required | Error message · a name field was left empty | 60 |  |
+| `error.name.tooLong` | Name must be 255 characters or fewer | Error message · a name is too long | 80 |  |
+| `error.list.gone` | The list no longer exists | Error message · the list of options was removed meanwhile | 60 |  |
+| `error.list.descriptionTooLong` | Description must be 255 characters or fewer | Error message · list of options dialog | 90 |  |
+| `error.list.dataTypeTooLong` | Data type must be 50 characters or fewer | Error message · list of options dialog | 90 |  |
+| `error.list.optionTextRequired` | Every option needs its display text | Error message · list of options dialog, under the options | 80 |  |
+| `error.list.optionTextTooLong` | Option text must be 255 characters or fewer | Error message · list of options dialog, under the options | 90 |  |
+| `error.list.optionTwice` | Option ''{0}'' appears twice | Error message · list of options dialog, under the options | 90 | params: {0} = option text |
+| `error.list.codedValueTooLong` | Coded value must be 255 characters or fewer | Error message · list of options dialog, under the options | 90 |  |
+| `error.survey.gone` | Survey {0} no longer exists | Error message · the survey was deleted meanwhile | 80 | params: {0} = survey id |
+| `error.survey.notLanguageTag` | ''{0}'' is not a language tag. Choose one of the languages Elicit carries. | Error message · survey details and Translations page | 160 | params: {0} = what was typed |
+| `error.survey.baseLanguage` | {0} is the language this survey is written in; it needs no translation. | Error message · Translations page, publishing the survey own language | 160 | params: {0} = language tag |
+| `error.survey.languagePublished` | {0} is already one of this survey''s published languages. | Error message · Translations page | 140 | params: {0} = language tag |
+| `error.survey.languagesFull` | This survey already publishes as many languages as it can hold. | Error message · Translations page | 140 |  |
+| `error.survey.languageUnsupported` | {0} is not one of the languages Elicit carries, so no site could show it. Contact ElicitSoftware to have it translated; it becomes available in the next release. | Error message · survey details and Translations page; ElicitSoftware stays | 320 | params: {0} = language tag |
+| `error.survey.exportNeedsAuthor` | An export must be attributed to a signed-in author | Error message · export dialog | 140 |  |
+| `error.survey.hasRespondents` | Survey ''{0}'' has {1} respondents in this database; Author does not delete recorded answers | Error message · delete survey dialog; Author is the product name | 220 | params: {0} = survey name, {1} = number of respondents |
+| `error.survey.titleRequired` | Title is required | Error message · survey details dialog | 60 |  |
+| `error.survey.titleTooLong` | Title must be 255 characters or fewer | Error message · survey details dialog | 90 |  |
+| `error.survey.descriptionTooLong` | Description must be 2000 characters or fewer | Error message · survey details dialog | 90 |  |
+| `error.survey.initialDisplayKeyTooLong` | Initial display key must be 255 characters or fewer | Error message · survey details dialog; same field name as surveyMetadataDialog.initialDisplayKey | 120 |  |
+| `error.survey.postSurveyUrlTooLong` | Post-survey address must be 255 characters or fewer | Error message · survey details dialog; same field name as surveyMetadataDialog.postSurveyUrl | 120 |  |
+| `error.designer.sectionAlreadyInStep` | Step ''{0}'' already contains this section; a section can be mounted once per step | Error message · designer, dropping a section | 200 | params: {0} = step name |
+| `error.designer.questionAlreadyInSection` | Section ''{0}'' already contains this question | Error message · designer, dropping a question | 140 | params: {0} = section name |
+| `error.designer.sectionAssignmentGone` | Section assignment not found | Error message · designer, the section was taken out of the step meanwhile | 90 |  |
+| `error.designer.questionAssignmentGone` | Question assignment not found | Error message · designer, the question was taken out of the section meanwhile | 90 |  |
+| `error.step.notFound` | Step not found | Error message · designer and element page | 60 |  |
+| `error.step.goneOrRemoved` | Step not found or removed | Error message · designer | 80 |  |
+| `error.section.goneOrRemoved` | Section not found or removed | Error message · designer | 80 |  |
+| `error.question.goneOrRemoved` | Question not found or removed | Error message · designer | 80 |  |
+| `error.designer.noListForType` | A {0} question does not take a list of options | Error message · designer, giving a list to a question that takes none | 140 | params: {0} = question type name, kept as written |
+| `error.designer.noListForThisType` | A question of this type does not take a list of options | Error message · designer, giving a list to a question that takes none | 140 |  |
+| `error.step.nameRequired` | A step needs a name | Error message · step dialog | 60 |  |
+| `error.step.nameTooLong` | Step names are at most 255 characters | Error message · step dialog | 90 |  |
+| `error.section.nameRequired` | A section needs a name | Error message · section dialog | 60 |  |
+| `error.section.nameTooLong` | Section names are at most 255 characters | Error message · section dialog | 90 |  |
+| `error.question.typeRequired` | Choose a question type | Error message · question dialog | 60 |  |
+| `error.question.textRequired` | A question needs its text | Error message · question dialog | 60 |  |
+| `error.question.listRequired` | A {0} question needs a list of options | Error message · question dialog | 140 | params: {0} = question type name, kept as written |
+| `error.question.minOverMax` | The minimum cannot exceed the maximum | Error message · question dialog | 90 |  |
+| `designer.stale.stepName` | step name | Designer · what changed, inserted into designer.staleTranslations as {0} | 40 |  |
+| `designer.stale.sectionName` | section name | Designer · what changed, inserted into designer.staleTranslations as {0} | 40 |  |
+| `designer.stale.question` | question | Designer · what changed, inserted into designer.staleTranslations as {0} | 40 |  |
+| `designer.stale.shortText` | short text | Designer · what changed, inserted into designer.staleTranslations as {0} | 40 |  |
+| `designer.stale.tooltip` | tooltip | Designer · what changed, inserted into designer.staleTranslations as {0} | 40 |  |
+| `designer.stale.placeholder` | placeholder | Designer · what changed, inserted into designer.staleTranslations as {0} | 40 |  |
+| `designer.stale.validationText` | validation message | Designer · what changed, inserted into designer.staleTranslations as {0} | 40 |  |
+| `error.rule.gone` | Rule not found or removed | Error message · rule dialog and designer | 80 |  |
+| `error.rule.dropOnElement` | Drop the arrow on a step, a section or a question | Error message · designer, dragging a rule arrow | 120 |  |
+| `error.rule.readsFromQuestion` | A rule reads from a question | Error message · designer, dragging the upstream end of a rule arrow | 80 |  |
+| `error.rule.upstreamRequired` | Choose the question the rule reads from | Error message · rule dialog, no upstream question chosen | 100 |  |
+| `error.rule.selfTarget` | A rule cannot target the question it reads from | Error message · rule dialog, upstream and downstream are the same question | 120 |  |
+| `error.rule.operatorRequired` | Choose an operator | Error message · rule dialog | 50 |  |
+| `error.rule.actionRequired` | Choose an action | Error message · rule dialog | 50 |  |
+| `error.rule.textNeedsToken` | A Text rule needs the token it replaces | Error message · rule dialog; Text is the rule action | 100 |  |
+| `error.rule.tokenTooLong` | Token names are at most {0} characters | Error message · rule dialog | 100 | params: {0} = the limit |
+| `error.rule.tokenInvalid` | A token name starts with a letter and holds letters, digits and underscores only, so no text could ever name ''{0}'' | Error message · rule dialog | 260 | params: {0} = the token as typed |
+| `error.rule.displayOnlySource` | A {0} question collects no answer, so {1} would stay unfilled. Read from a question the respondent answers, or give the rule a default upstream value to fill the token with | Error message · rule dialog; default upstream value as in relationshipDialog.defaultUpstreamValue | 380 | params: {0} = question type name, kept as written, {1} = the token as a text writes it |
+| `error.rule.displayOnlyType` | display-only | Error message · stands in for a question type name that cannot be read | 40 |  |
+| `error.rule.repeatNotStep` | Repeat applies to a section or a question, not a step | Error message · rule dialog; Repeat is the rule action | 140 |  |
+| `error.element.noSurvey` | An element must belong to a survey | Error message · internal guard | 80 |  |
+| `error.question.notFound` | Question not found | Error message · element page | 60 |  |
+| `error.section.notFound` | Section not found | Error message · element page | 60 |  |
+| `error.element.notFound` | Element not found | Error message · element page | 60 |  |
+| `error.option.notFound` | Option not found | Error message · list of options | 60 |  |
+| `error.element.unsupportedKind` | Unsupported element kind {0} | Error message · internal guard | 80 | params: {0} = element kind |
+| `element.dependent.questionInSection` | assignment of the question to section {0} | Remove and restore confirmation · list item: what else is removed or restored with a question | 120 | params: {0} = section name, already quoted |
+| `element.dependent.sectionInStep` | assignment of the section to step {0} | Remove and restore confirmation · list item: what else is removed or restored with a section | 120 | params: {0} = step name, already quoted |
+| `element.dependent.questionOfSection` | assignment of question {0} to the section | Remove and restore confirmation · list item: what else is removed or restored with a section | 120 | params: {0} = question name, already quoted |
+| `element.dependent.sectionOfStep` | assignment of section {0} to the step | Remove and restore confirmation · list item: what else is removed or restored with a step | 120 | params: {0} = section name, already quoted |
+| `element.dependent.rule` | rule ''{0}'' | Remove and restore confirmation · list item: a rule removed or restored with the element | 100 | params: {0} = rule description |
+| `element.blocker.sectionRemoved` | section {0} is removed; restore it first | Remove and restore confirmation · why a question cannot be restored | 140 | params: {0} = section name, already quoted |
+| `element.blocker.stepRemoved` | step {0} is removed; restore it first | Remove and restore confirmation · why a section cannot be restored | 140 | params: {0} = step name, already quoted |
+| `error.element.cannotRemove` | Cannot remove {0}: {1} | Error message · element page | 300 | params: {0} = the element (a validation.where.* phrase), {1} = the reasons |
+| `error.element.cannotRestore` | Cannot restore {0}: {1} | Error message · element page | 300 | params: {0} = the element (a validation.where.* phrase), {1} = the reasons |
+| `error.list.inUse` | This list is still used by {0} question(s); change or remove them first | Error message · designer, removing a list of options | 180 | params: {0} = number of questions |
+| `error.survey.notFound` | Survey not found | Error message · internal guard | 60 |  |
+| `error.survey.exportedKeepsRemoved` | This survey has been exported; removed elements are kept so sites can retire them | Error message · purging removed elements of an exported survey | 200 |  |
+| `reporting.scope.invalid` | invalid | Reporting tags page · Applies-to column, an assignment that points at nothing | 30 |  |
+| `reporting.scope.sectionInStep` | Section in step | Reporting tags page · Applies-to column and tag dialogs | 40 |  |
+| `reporting.scope.questionEverywhere` | Question everywhere | Reporting tags page · Applies-to column and tag dialogs | 40 |  |
+| `reporting.scope.questionInSection` | Question in section | Reporting tags page · Applies-to column and tag dialogs | 40 |  |
+| `reporting.value.theAnswer` | (the answer) | Reporting tags page · Value column when the respondent answer is reported | 30 |  |
+| `reporting.where.everywhere` | wherever it appears | Reporting tags page · Where column for a tag on a question in every place it is used | 40 |  |
+| `error.tag.gone` | The tag no longer exists | Error message · Reporting tags page | 60 |  |
+| `error.tag.inUse.one` | Tag ''{0}'' is assigned to 1 element; remove those assignments first | Error message · removing a tag that is assigned once | 160 | params: {0} = tag |
+| `error.tag.inUse.many` | Tag ''{0}'' is assigned to {1} elements; remove those assignments first | Error message · removing a tag that is assigned | 160 | params: {0} = tag, {1} = how many elements |
+| `error.tag.scopeRequired` | Choose what the tag applies to | Error message · tag assignment dialog | 80 |  |
+| `error.tag.required` | Choose a tag | Error message · tag assignment dialog | 40 |  |
+| `error.tag.elementGone` | The element no longer exists in this survey | Error message · tag assignment dialog | 100 |  |
+| `error.tag.alreadyAssigned` | This element already carries the tag ''{0}'' | Error message · tag assignment dialog | 120 | params: {0} = tag |
+| `error.tag.assignmentGone` | The assignment no longer exists | Error message · Reporting tags page | 80 |  |
+| `error.tag.nameRequired` | Tag is required | Error message · tag dialog | 40 |  |
+| `error.tag.tooLong` | Tag must be 255 characters or fewer | Error message · tag dialog | 90 |  |
+| `error.tag.characters` | Tag may contain only letters, digits, spaces and hyphens, and must start with a letter or digit | Error message · tag dialog | 220 |  |
+| `error.tag.hyphenNoDimension` | A tag without a dimension names its own table, and a hyphen is not allowed in a table name; choose a dimension or remove the hyphen | Error message · tag dialog | 300 |  |
+| `error.tag.column.empty` | The report column is empty | Error message · tag dialog | 80 |  |
+| `error.tag.column.characters` | The report column ''{0}'' contains characters other than a-z, 0-9 and _ | Error message · tag dialog | 200 | params: {0} = column name; dynamic |
+| `error.tag.column.tooLong` | The report column ''{0}'' is longer than {1} characters | Error message · tag dialog | 200 | params: {0} = column name, {1} = the limit; dynamic |
+| `error.tag.table.empty` | The dimension table is empty | Error message · tag dialog | 80 |  |
+| `error.tag.table.characters` | The dimension table ''{0}'' contains characters other than a-z, 0-9 and _ | Error message · tag dialog | 200 | params: {0} = table name; dynamic |
+| `error.tag.table.tooLong` | The dimension table ''{0}'' is longer than {1} characters | Error message · tag dialog | 200 | params: {0} = table name, {1} = the limit; dynamic |
+| `error.dimension.tooLong` | Dimension must be 50 characters or fewer | Error message · tag dialog | 90 |  |
+| `error.dimension.characters` | Dimension may contain only letters, digits and underscores (it names a table) | Error message · tag dialog | 200 |  |
+| `error.tag.valueTooLong` | Value must be 255 characters or fewer | Error message · tag assignment dialog | 90 |  |
+| `error.translation.notTranslatable` | {0} carries no respondent-facing text | Error message · Translations page | 140 | params: {0} = table and field name, kept as written |
+| `error.translation.textGone` | The element this translation belongs to no longer has that text | Error message · Translations page | 160 |  |
+| `error.handoff.tooLarge` | That file is larger than {0} MB | Error message · Translations page, importing a file | 80 | params: {0} = size limit in MB |
+| `error.handoff.notJson` | That file is not readable JSON: {0} | Error message · Translations page, importing a file | 300 | params: {0} = the parser message, in English |
+| `error.handoff.notRequest` | That is not a translation request: the file does not carry {0} | Error message · Translations page, importing a file | 200 | params: {0} = the format marker, kept as written |
+| `error.handoff.otherSurvey` | That file belongs to another survey | Error message · Translations page, importing a file | 80 |  |
+| `error.handoff.noLanguage` | That file names no language | Error message · Translations page, importing a file | 80 |  |
+| `translationImport.item.unnamed` | (unnamed) | Translations page, result of importing a returned translation file · stands in for an item that has no id | 30 |  |
+| `translationImport.reject.notUuid` | {0}: element_key is not a UUID | Translations page, result of importing a returned translation file · rejected item; element_key and UUID stay | 120 | params: {0} = item id |
+| `translationImport.reject.notTranslatable` | {0}: {1} carries no respondent-facing text | Translations page, result of importing a returned translation file · rejected item | 160 | params: {0} = item id, {1} = table and field name, kept as written |
+| `translationImport.reject.elementGone` | {0}: that element no longer exists, or has been retired | Translations page, result of importing a returned translation file · rejected item | 160 | params: {0} = item id |
+| `translationImport.reject.placeholderCount` | {0}: the source has {1} placeholder(s) and the translation has {2}; each one fills in an earlier answer | Translations page, result of importing a returned translation file · rejected item | 240 | params: {0} = item id, {1} = placeholders in the source, {2} = placeholders in the translation |
+| `translationImport.reject.tokens` | {0}: tokens {1} do not match the source''s {2} | Translations page, result of importing a returned translation file · rejected item | 200 | params: {0} = item id, {1} = tokens in the translation, {2} = tokens in the source |
+| `translationImport.reject.unbalanced` | {0}: unbalanced braces or bars in the translation | Translations page, result of importing a returned translation file · rejected item | 140 | params: {0} = item id |
+| `translationImport.reject.tooLong` | {0}: {1} characters, over the {2} allowed | Translations page, result of importing a returned translation file · rejected item | 140 | params: {0} = item id, {1} = its length, {2} = the limit |
+| `translationImport.reject.duplicateOption` | {0}: another option of this question is translated the same way | Translations page, result of importing a returned translation file · rejected item | 180 | params: {0} = item id |
+| `translationImport.warn.tagsDiffer` | {0}: the HTML tags differ from the source''s | Translations page, result of importing a returned translation file · warning on an imported item | 140 | params: {0} = item id |
+| `translationImport.warn.baseChanged` | {0}: the base text changed since the file was exported | Translations page, result of importing a returned translation file · warning on an imported item | 160 | params: {0} = item id |
+| `error.import.line` | Line {0}: {1} | Import page, why a definition file was refused · prefix naming the line of the file | 600 | params: {0} = line number, {1} = what is wrong on that line |
+| `error.import.notExport` | This is not a survey definition export: the file does not start with ''# {0}'' | Import page, why a definition file was refused · the file lacks its first line | 220 | params: {0} = the format marker, kept as written |
+| `error.import.noColon` | invalid record, missing colon separator | Import page, why a definition file was refused · continues error.import.line | 120 |  |
+| `error.import.recordBeforeSurvey` | a {0} record appears before the surveys record | Import page, why a definition file was refused · continues error.import.line; surveys is a record name and stays | 160 | params: {0} = record name, kept as written |
+| `error.import.multipleSurveys` | multiple surveys records; only one survey per file | Import page, why a definition file was refused · continues error.import.line; surveys is a record name and stays | 160 |  |
+| `error.import.unknownRecord` | unknown record type ''{0}'' | Import page, why a definition file was refused · continues error.import.line | 120 | params: {0} = record name |
+| `error.import.readFailed` | Failed to read the file: {0} | Import page, why a definition file was refused · the file could not be read | 300 | params: {0} = the system message, in English |
+| `error.import.notDefinition` | This is not a survey definition: the file must start with ''# {0}'' or ''# {1}'' | Import page, why a definition file was refused · the file lacks its first line | 260 | params: {0}, {1} = the two format markers, kept as written |
+| `error.import.noSurveysRecord` | This file contains no surveys record, so it is not a survey definition export | Import page, why a definition file was refused · surveys is a record name and stays | 220 |  |
+| `error.import.alreadyOpen` | This survey is already open in Author as ''{0}'' (id {1}). Open it from the Surveys list instead of importing it again. | Import page, why a definition file was refused · Author is the product name | 300 | params: {0} = survey name, {1} = survey id |
+| `error.import.translationNotTranslatable` | translations row targets a field that carries no respondent-facing text: {0} | Import page, why a definition file was refused · continues error.import.line; translations is a record name and stays | 240 | params: {0} = table and field name, kept as written |
+| `error.import.translationEmpty` | translations row for {0} has an empty value; a removed translation is a closed effective_to, not a blank | Import page, why a definition file was refused · continues error.import.line; translations and effective_to stay | 300 | params: {0} = table and field name, kept as written |
+| `error.import.translationMissing` | translations row has no {0} | Import page, why a definition file was refused · continues error.import.line; translations is a record name and stays | 140 | params: {0} = field name, kept as written |
+| `error.import.invalidValue` | Invalid {0} in file: {1} | Import page, why a definition file was refused · continues error.import.line | 300 | params: {0} = field name, kept as written, {1} = the value found |
+| `error.import.tokenTooLong` | the rule''s token ''{0}'' is {1} characters; a token name is at most {2}, the width of the column that carries it. Shorten it here and in every text that names it | Import page, why a definition file was refused · continues error.import.line | 420 | params: {0} = token, {1} = its length, {2} = the limit |
+| `error.import.tokenInvalid` | the rule''s token ''{0}'' is not a name a text could write between angle brackets, so no placeholder could ever name it | Import page, why a definition file was refused · continues error.import.line | 320 | params: {0} = token as written in the file |
+| `error.import.emptyHeader` | File carries an empty "{0}" header | Import page, why a definition file was refused · continues error.import.line | 140 | params: {0} = header name, kept as written |
+| `error.import.badHeader` | Unparseable "{0}" header value: {1} | Import page, why a definition file was refused · continues error.import.line | 240 | params: {0} = header name, kept as written, {1} = the value found |
+| `error.import.noSourceId` | Expected non-null source id for {0} | Import page, why a definition file was refused · continues error.import.line | 200 | params: {0} = record and reference name, kept as written |
+| `error.import.noIdMapping` | No ID mapping found for {0} source_id={1} | Import page, why a definition file was refused · continues error.import.line; source_id stays | 240 | params: {0} = record and reference name, kept as written, {1} = the id in the file |
+| `error.import.fieldCount` | {0} requires {1} fields, got {2} | Import page, why a definition file was refused · continues error.import.line | 160 | params: {0} = record name, kept as written, {1} = fields required, {2} = fields found |
+| `error.export.hasErrors` | The definition has {0} error(s) that must be fixed before export | Error message · export dialog | 180 | params: {0} = number of errors |
+| `ruleLabel.show` | Show {0} | Designer board · label on a rule arrow | 80 | params: {0} = target name |
+| `ruleLabel.repeat` | Repeat {0} | Designer board · label on a rule arrow | 80 | params: {0} = target name |
+| `ruleLabel.replace` | Replace {0} | Designer board · label on a Text rule arrow | 80 | params: {0} = the token, or the target name |
+| `ruleLabel.rule` | Rule | Designer board · label on a rule arrow whose action is not set | 30 |  |
+| `ruleLabel.target` | target | Designer board · stands in for a target that has no name | 30 |  |
+| `ruleCondition.isTrue` | is true | Designer board · rule condition in an arrow tooltip, Boolean operator | 30 |  |
+| `ruleCondition.exists` | exists | Designer board · rule condition in an arrow tooltip, Field exists operator | 30 |  |
+| `ruleArrows.backwards` | points backwards | Designer board · appended to the label of a rule arrow that points backwards; same words as validation.rule.backwards | 40 |  |
+| `ruleArrows.dragSource` | Drag to read from another question | Designer board · tooltip on the upstream end of a rule arrow | 80 |  |
+| `ruleArrows.dragTarget` | Drag to another target | Designer board · tooltip on the downstream end of a rule arrow | 60 |  |
+| `ruleArrows.when` | when | Designer board · joins a rule label and its condition in the arrow tooltip | 20 |  |
+| `elementView.notFound` | No {0} {1} in survey {2} | Element page · error page when the element does not exist | 120 | params: {0} = element kind as in the address (step, section, question), {1} = its id, {2} = survey id |
+| `previewFields.sampleOption` | Option {0} | Question dialog · sample option in the preview of a choice question that has no list yet | 30 | params: {0} = a letter |
+| `system.build.unknown` | unknown | System overview · version or build time when the build did not record it | 30 |  |
 
 ## English source file
 
@@ -927,10 +1166,89 @@ surveyEditorView.neverExported=Never exported.
 surveyEditorView.lastEditedBy=Last edited by {0}.
 surveyEditorView.lastExportedBy=Last exported by {0}: {1}
 surveyEditorView.validation=Validation
-surveyEditorView.readyToExport=Ready to export: no findings.
+surveyEditorView.readyToExport=Ready to export. No problems found.
 surveyEditorView.issue.error=Error: {0}
 surveyEditorView.issue.warning=Warning: {0}
 validation.finding.location=— in {0}
+validation.where.step=Step ''{0}''
+validation.where.section=Section ''{0}''
+validation.where.sectionInStep=Section ''{0}'' in step ''{1}''
+validation.where.question=Question ''{0}''
+validation.where.questionInSection=Question ''{0}'' in section ''{1}''
+validation.where.rule=Rule ''{0}''
+validation.where.theRule=The rule
+validation.survey.noSteps=This survey has no steps yet. Add a step to start.
+validation.mount.stepRemoved=A section is placed in a step that has been removed. Move it to another step.
+validation.mount.sectionRemoved=A step holds a section that has been removed. Take it out of the step.
+validation.assignment.questionRemoved=A section holds a question that has been removed. Take it out of the section.
+validation.assignment.sectionRemoved=A question is placed in a section that has been removed. Move it to another section.
+validation.question.listRemoved=Question ''{0}'' uses a list of options that has been removed. Choose another list.
+validation.question.noList=Question ''{0}'' has no list of options. A {1} question needs one.
+validation.question.emptyList=Question ''{0}'' uses an empty list. Add options to the list.
+validation.question.noText=Question ''{0}'' has no question text. Enter what respondents should read.
+validation.option.listRemoved=Option ''{0}'' belongs to a list that has been removed.
+validation.step.empty=Step ''{0}'' is empty. Add a section to it.
+validation.section.unplaced=Section ''{0}'' is not used. Place it in a step, or remove it.
+validation.section.empty=Section ''{0}'' is empty. Add a question to it.
+validation.question.unplaced=Question ''{0}'' is not used. Place it in a section, or remove it.
+validation.survey.startingPoint=The survey''s starting point is not set, or points to a section that is no longer in the survey. Set "{0}" in "{1}".
+validation.order.steps=Two steps share position {0}. Reorder them.
+validation.order.sections=Two sections in this step share position {0}. Reorder them.
+validation.order.questions=Two questions in this section share position {0}. Reorder them.
+validation.rule.noTarget={0} has no downstream target. Choose the step, section or question it acts on.
+validation.rule.sectionNotInStep={0} has downstream section ''{1}'' in step ''{2}'', but that section is not in that step. Choose the downstream target again.
+validation.rule.questionNotInSection={0} has downstream question ''{1}'' in section ''{2}'', but that question is not in that section. Choose the downstream target again.
+validation.rule.questionWithoutPlace={0} has downstream question ''{1}'' in a different section from its upstream question, but does not say which step and section. Choose the downstream target again.
+validation.rule.readsRemovedQuestion={0} has an upstream question that has been removed. Choose another upstream question.
+validation.rule.readsRemovedStep={0} has an upstream step that has been removed. Choose the upstream question again.
+validation.rule.targetsRemovedStep={0} has a downstream step that has been removed. Choose another downstream target.
+validation.rule.targetsRemovedSection={0} has a downstream section that is no longer in that step. Choose another downstream target.
+validation.rule.targetsRemovedQuestion={0} has a downstream question that is no longer in that section. Choose another downstream target.
+validation.rule.incomplete={0} is incomplete. Choose its operator and its action.
+validation.rule.backwards={0} points backwards: {1}.
+validation.rule.backwards.question=downstream question ''{0}'' in step ''{1}'' › ''{2}'' must come after upstream question ''{3}'' in step ''{4}'' › ''{5}''
+validation.rule.backwards.section=downstream section ''{0}'' in step ''{1}'' must come after upstream question ''{2}'' in step ''{3}'' › ''{4}''
+validation.rule.backwards.step=downstream step ''{0}'' must come after upstream question ''{1}'' in step ''{2}'' › ''{3}''
+validation.rule.backwards.edge=Points backwards: {0}
+validation.step.noBuildingRule=Step ''{0}'' has no Show or Repeat rule. Every step after the first needs one. Add a Show rule on the step — usually "Field exists" on an upstream question.
+validation.section.noBuildingRule=Section ''{0}'' in step ''{1}'' has no Show or Repeat rule. Everything after the first step needs one. Add a Show rule on the section in this step — usually "Field exists" on an upstream question.
+validation.question.noBuildingRule=Question ''{0}'' in section ''{1}'' in step ''{2}'' has no Show or Repeat rule. Everything after the first step needs one. Add a Show rule on the question, its section or its step — usually "Field exists" on an upstream question.
+validation.token.unfilledWithDefault={0} uses {1}, but no rule fills it in here. Respondents will always see "{2}".
+validation.token.unfilledNoDefault={0} uses {1}, but no rule fills it in here and it has no default, so respondents would see {1} itself. Add a rule that fills it, or give it a default: {2}.
+validation.token.undelimited={0} uses {1} without angle brackets around the token. Write {2}.
+validation.token.undelimitedWithDefault={0} uses {1} without angle brackets around the token. Write {2}. Until then respondents always see "{3}".
+validation.token.undefined={0} uses {1} in {2}, but no rule has a token named {3}, so respondents always see "{5}". Add the token to a rule. If {1} is formatting, move it outside the braces: {4}
+validation.token.undefinedNoDefault={0} uses {1} in {2}, but no rule has a token named {3}, so respondents always see the text as written. Add the token to a rule. If {1} is formatting, move it outside the braces: {4}
+validation.rule.tokenUnused={0} has the token {1}, but nothing in its downstream target uses {2}. Add it to a text there, or remove the token from the rule.
+validation.rule.displayOnlyNoValue={0} cannot fill {1}: its upstream question ''{2}'' only shows text ({3}) and has no answer. Choose an upstream question the respondent answers, or set the rule''s "{4}".
+validation.rule.displayOnlyConstant={0} has upstream question ''{2}'', which only shows text ({3}) and has no answer, so {1} is always the rule''s "{4}". To use a real answer, choose an upstream question the respondent answers.
+validation.rule.tokenBracketed={0} has the token {1}. Write it without angle brackets: {2}. Brackets belong only in the text, as {3}.
+validation.rule.tokenInvalid={0} has the token "{1}", which is not a valid name. Use only letters, digits and underscores.
+validation.rule.tokenLeadingDigit={0} has the token {1}. It works, but a token name should start with a letter. Rename it.
+validation.rule.tokenCase={0} has the token {1}. It works, but write {2} so the token list does not show both.
+validation.rename.step=Step ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in past reports too.
+validation.rename.section=Section ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in past reports too.
+validation.tag.redefined=Tag {0} was changed to {1}. Answers already collected at sites using this survey will be reported under the new tag.
+validation.tag.reassigned={0}: tag {1} was changed to {2}. Answers already collected at sites using this survey will be reported under the new tag.
+validation.tag.unassigned={0}: tag {1} was removed. Answers already collected at sites using this survey will no longer be reported under it.
+validation.tag.assignmentBroken=Tag ''{0}'' is assigned, but not to one section or question. Remove the assignment and add it again.
+validation.tag.assignedToRemoved.section=Tag ''{0}'' is assigned to a section that has been removed{1}. Remove the assignment.
+validation.tag.assignedToRemoved.question=Tag ''{0}'' is assigned to a question that has been removed{1}. Remove the assignment.
+validation.tag.assignedTwice=Tag ''{0}'' is assigned to {1} {2} times with different values. Keep one.
+validation.tag.table.empty=Tag ''{0}'' gives the reporting table an empty name. Rename the tag or its dimension; sites could not build reports with this name.
+validation.tag.table.characters=Tag ''{0}'' gives the reporting table the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag or its dimension; sites could not build reports with this name.
+validation.tag.table.tooLong=Tag ''{0}'' gives the reporting table the name ''{1}'', which is longer than {2} characters. Rename the tag or its dimension; sites could not build reports with this name.
+validation.tag.column.empty=Tag ''{0}'' gives the report column an empty name. Rename the tag; sites could not build reports with this name.
+validation.tag.column.characters=Tag ''{0}'' gives the report column the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag; sites could not build reports with this name.
+validation.tag.column.tooLong=Tag ''{0}'' gives the report column the name ''{1}'', which is longer than {2} characters. Rename the tag; sites could not build reports with this name.
+validation.tag.unused=Tag ''{0}'' is not used. Assign it to a section or question, or delete it.
+validation.tag.sameColumn=Tags {0} produce the same report column, ''{1}''. Rename one of them.
+validation.tag.tableClash=Tag ''{0}'' has no dimension, so its reporting table is ''{1}'' — the same table dimension ''{2}'' uses. Rename the tag or give it a dimension.
+validation.tag.otherSurvey=Tag ''{0}'' and a tag in another survey both produce the report column ''{1}'', but for different tables (''{2}'' and ''{3}''). A site that installs both surveys could not build its reports. Rename one of the tags.
+validation.translation.missing.one={0}: 1 text is not translated yet. Respondents will see it in the survey''s own language.
+validation.translation.missing.many={0}: {1} texts are not translated yet. Respondents will see them in the survey''s own language.
+validation.translation.stale.one={0}: 1 translation is out of date because the original text changed. Respondents will see the original until it is translated again.
+validation.translation.stale.many={0}: {1} translations are out of date because the original text changed. Respondents will see the original until they are translated again.
 surveyMetadataDialog.newSurvey=New survey
 surveyMetadataDialog.editSurvey=Edit survey
 surveyMetadataDialog.name=Name
@@ -950,9 +1268,9 @@ exportDialog.releaseNote.required=Enter a release note
 exportDialog.export=Export
 exportDialog.issue.error=Error: {0}
 exportDialog.issue.warning=Warning: {0}
-exportDialog.errorsBlock={0} error(s) block the export; fix them in the editor first.
-exportDialog.warningsDoNotBlock=Warnings do not block the export.
-exportDialog.retroactiveReminder=Reminder: renaming a step or section and changing a question's ontology tag apply retroactively at deployed sites (historical reports and answers are relabeled).
+exportDialog.errorsBlock=Fix {0} error(s) before you can export.
+exportDialog.warningsDoNotBlock=You can export with warnings.
+exportDialog.retroactiveReminder=Reminder: renaming a step or section, or changing a question's tag, also relabels past reports and answers at sites already using this survey.
 exportDialog.download=Download {0}
 exportDialog.revisionSummary=Revision {0}: {1}
 importDefinitionView.pageTitle=Import definition
@@ -969,7 +1287,7 @@ importDefinitionView.retiredSkipped=, {0} retired record(s) skipped
 importDefinitionView.openInEditor=Open in editor
 importDefinitionView.importFailed=Import failed: {0}
 importDefinitionView.validation=Validation
-importDefinitionView.validationClean=No findings: this definition is ready to export.
+importDefinitionView.validationClean=No problems found. This survey is ready to export.
 importDefinitionView.issue.error=Error: {0}
 importDefinitionView.issue.warning=Warning: {0}
 aiDraftView.pageTitle=Draft with AI
@@ -1295,7 +1613,7 @@ reportingView.impact.column={0} → {1} (tag "{2}")
 reportingView.impact.reportColumns=Report columns
 reportingView.impact.error=Error: {0}
 reportingView.impact.warning=Warning: {0}
-reportingView.impact.findings=Findings
+reportingView.impact.findings=Problems
 reportingView.removeTag.header=Remove tag
 reportingView.removeTag.text=Remove the tag "{0}"? It has no assignments.
 reportingView.removedTag=Removed tag "{0}"
@@ -1665,4 +1983,163 @@ translationImport.rejected=These were not imported:
 translationImport.warnings=Worth checking:
 designer.staleTranslations=The {0} changed. Its {1} translation(s) ({2}) are now out of date and will not be shown to respondents until they are translated again.
 designer.staleTranslations.open=Open translations
+error.name.required=Name is required
+error.name.tooLong=Name must be 255 characters or fewer
+error.list.gone=The list no longer exists
+error.list.descriptionTooLong=Description must be 255 characters or fewer
+error.list.dataTypeTooLong=Data type must be 50 characters or fewer
+error.list.optionTextRequired=Every option needs its display text
+error.list.optionTextTooLong=Option text must be 255 characters or fewer
+error.list.optionTwice=Option ''{0}'' appears twice
+error.list.codedValueTooLong=Coded value must be 255 characters or fewer
+error.survey.gone=Survey {0} no longer exists
+error.survey.notLanguageTag=''{0}'' is not a language tag. Choose one of the languages Elicit carries.
+error.survey.baseLanguage={0} is the language this survey is written in; it needs no translation.
+error.survey.languagePublished={0} is already one of this survey''s published languages.
+error.survey.languagesFull=This survey already publishes as many languages as it can hold.
+error.survey.languageUnsupported={0} is not one of the languages Elicit carries, so no site could show it. Contact ElicitSoftware to have it translated; it becomes available in the next release.
+error.survey.exportNeedsAuthor=An export must be attributed to a signed-in author
+error.survey.hasRespondents=Survey ''{0}'' has {1} respondents in this database; Author does not delete recorded answers
+error.survey.titleRequired=Title is required
+error.survey.titleTooLong=Title must be 255 characters or fewer
+error.survey.descriptionTooLong=Description must be 2000 characters or fewer
+error.survey.initialDisplayKeyTooLong=Initial display key must be 255 characters or fewer
+error.survey.postSurveyUrlTooLong=Post-survey address must be 255 characters or fewer
+error.designer.sectionAlreadyInStep=Step ''{0}'' already contains this section; a section can be mounted once per step
+error.designer.questionAlreadyInSection=Section ''{0}'' already contains this question
+error.designer.sectionAssignmentGone=Section assignment not found
+error.designer.questionAssignmentGone=Question assignment not found
+error.step.notFound=Step not found
+error.step.goneOrRemoved=Step not found or removed
+error.section.goneOrRemoved=Section not found or removed
+error.question.goneOrRemoved=Question not found or removed
+error.designer.noListForType=A {0} question does not take a list of options
+error.designer.noListForThisType=A question of this type does not take a list of options
+error.step.nameRequired=A step needs a name
+error.step.nameTooLong=Step names are at most 255 characters
+error.section.nameRequired=A section needs a name
+error.section.nameTooLong=Section names are at most 255 characters
+error.question.typeRequired=Choose a question type
+error.question.textRequired=A question needs its text
+error.question.listRequired=A {0} question needs a list of options
+error.question.minOverMax=The minimum cannot exceed the maximum
+designer.stale.stepName=step name
+designer.stale.sectionName=section name
+designer.stale.question=question
+designer.stale.shortText=short text
+designer.stale.tooltip=tooltip
+designer.stale.placeholder=placeholder
+designer.stale.validationText=validation message
+error.rule.gone=Rule not found or removed
+error.rule.dropOnElement=Drop the arrow on a step, a section or a question
+error.rule.readsFromQuestion=A rule reads from a question
+error.rule.upstreamRequired=Choose the question the rule reads from
+error.rule.selfTarget=A rule cannot target the question it reads from
+error.rule.operatorRequired=Choose an operator
+error.rule.actionRequired=Choose an action
+error.rule.textNeedsToken=A Text rule needs the token it replaces
+error.rule.tokenTooLong=Token names are at most {0} characters
+error.rule.tokenInvalid=A token name starts with a letter and holds letters, digits and underscores only, so no text could ever name ''{0}''
+error.rule.displayOnlySource=A {0} question collects no answer, so {1} would stay unfilled. Read from a question the respondent answers, or give the rule a default upstream value to fill the token with
+error.rule.displayOnlyType=display-only
+error.rule.repeatNotStep=Repeat applies to a section or a question, not a step
+error.element.noSurvey=An element must belong to a survey
+error.question.notFound=Question not found
+error.section.notFound=Section not found
+error.element.notFound=Element not found
+error.option.notFound=Option not found
+error.element.unsupportedKind=Unsupported element kind {0}
+element.dependent.questionInSection=assignment of the question to section {0}
+element.dependent.sectionInStep=assignment of the section to step {0}
+element.dependent.questionOfSection=assignment of question {0} to the section
+element.dependent.sectionOfStep=assignment of section {0} to the step
+element.dependent.rule=rule ''{0}''
+element.blocker.sectionRemoved=section {0} is removed; restore it first
+element.blocker.stepRemoved=step {0} is removed; restore it first
+error.element.cannotRemove=Cannot remove {0}: {1}
+error.element.cannotRestore=Cannot restore {0}: {1}
+error.list.inUse=This list is still used by {0} question(s); change or remove them first
+error.survey.notFound=Survey not found
+error.survey.exportedKeepsRemoved=This survey has been exported; removed elements are kept so sites can retire them
+reporting.scope.invalid=invalid
+reporting.scope.sectionInStep=Section in step
+reporting.scope.questionEverywhere=Question everywhere
+reporting.scope.questionInSection=Question in section
+reporting.value.theAnswer=(the answer)
+reporting.where.everywhere=wherever it appears
+error.tag.gone=The tag no longer exists
+error.tag.inUse.one=Tag ''{0}'' is assigned to 1 element; remove those assignments first
+error.tag.inUse.many=Tag ''{0}'' is assigned to {1} elements; remove those assignments first
+error.tag.scopeRequired=Choose what the tag applies to
+error.tag.required=Choose a tag
+error.tag.elementGone=The element no longer exists in this survey
+error.tag.alreadyAssigned=This element already carries the tag ''{0}''
+error.tag.assignmentGone=The assignment no longer exists
+error.tag.nameRequired=Tag is required
+error.tag.tooLong=Tag must be 255 characters or fewer
+error.tag.characters=Tag may contain only letters, digits, spaces and hyphens, and must start with a letter or digit
+error.tag.hyphenNoDimension=A tag without a dimension names its own table, and a hyphen is not allowed in a table name; choose a dimension or remove the hyphen
+error.tag.column.empty=The report column is empty
+error.tag.column.characters=The report column ''{0}'' contains characters other than a-z, 0-9 and _
+error.tag.column.tooLong=The report column ''{0}'' is longer than {1} characters
+error.tag.table.empty=The dimension table is empty
+error.tag.table.characters=The dimension table ''{0}'' contains characters other than a-z, 0-9 and _
+error.tag.table.tooLong=The dimension table ''{0}'' is longer than {1} characters
+error.dimension.tooLong=Dimension must be 50 characters or fewer
+error.dimension.characters=Dimension may contain only letters, digits and underscores (it names a table)
+error.tag.valueTooLong=Value must be 255 characters or fewer
+error.translation.notTranslatable={0} carries no respondent-facing text
+error.translation.textGone=The element this translation belongs to no longer has that text
+error.handoff.tooLarge=That file is larger than {0} MB
+error.handoff.notJson=That file is not readable JSON: {0}
+error.handoff.notRequest=That is not a translation request: the file does not carry {0}
+error.handoff.otherSurvey=That file belongs to another survey
+error.handoff.noLanguage=That file names no language
+translationImport.item.unnamed=(unnamed)
+translationImport.reject.notUuid={0}: element_key is not a UUID
+translationImport.reject.notTranslatable={0}: {1} carries no respondent-facing text
+translationImport.reject.elementGone={0}: that element no longer exists, or has been retired
+translationImport.reject.placeholderCount={0}: the source has {1} placeholder(s) and the translation has {2}; each one fills in an earlier answer
+translationImport.reject.tokens={0}: tokens {1} do not match the source''s {2}
+translationImport.reject.unbalanced={0}: unbalanced braces or bars in the translation
+translationImport.reject.tooLong={0}: {1} characters, over the {2} allowed
+translationImport.reject.duplicateOption={0}: another option of this question is translated the same way
+translationImport.warn.tagsDiffer={0}: the HTML tags differ from the source''s
+translationImport.warn.baseChanged={0}: the base text changed since the file was exported
+error.import.line=Line {0}: {1}
+error.import.notExport=This is not a survey definition export: the file does not start with ''# {0}''
+error.import.noColon=invalid record, missing colon separator
+error.import.recordBeforeSurvey=a {0} record appears before the surveys record
+error.import.multipleSurveys=multiple surveys records; only one survey per file
+error.import.unknownRecord=unknown record type ''{0}''
+error.import.readFailed=Failed to read the file: {0}
+error.import.notDefinition=This is not a survey definition: the file must start with ''# {0}'' or ''# {1}''
+error.import.noSurveysRecord=This file contains no surveys record, so it is not a survey definition export
+error.import.alreadyOpen=This survey is already open in Author as ''{0}'' (id {1}). Open it from the Surveys list instead of importing it again.
+error.import.translationNotTranslatable=translations row targets a field that carries no respondent-facing text: {0}
+error.import.translationEmpty=translations row for {0} has an empty value; a removed translation is a closed effective_to, not a blank
+error.import.translationMissing=translations row has no {0}
+error.import.invalidValue=Invalid {0} in file: {1}
+error.import.tokenTooLong=the rule''s token ''{0}'' is {1} characters; a token name is at most {2}, the width of the column that carries it. Shorten it here and in every text that names it
+error.import.tokenInvalid=the rule''s token ''{0}'' is not a name a text could write between angle brackets, so no placeholder could ever name it
+error.import.emptyHeader=File carries an empty "{0}" header
+error.import.badHeader=Unparseable "{0}" header value: {1}
+error.import.noSourceId=Expected non-null source id for {0}
+error.import.noIdMapping=No ID mapping found for {0} source_id={1}
+error.import.fieldCount={0} requires {1} fields, got {2}
+error.export.hasErrors=The definition has {0} error(s) that must be fixed before export
+ruleLabel.show=Show {0}
+ruleLabel.repeat=Repeat {0}
+ruleLabel.replace=Replace {0}
+ruleLabel.rule=Rule
+ruleLabel.target=target
+ruleCondition.isTrue=is true
+ruleCondition.exists=exists
+ruleArrows.backwards=points backwards
+ruleArrows.dragSource=Drag to read from another question
+ruleArrows.dragTarget=Drag to another target
+ruleArrows.when=when
+elementView.notFound=No {0} {1} in survey {2}
+previewFields.sampleOption=Option {0}
+system.build.unknown=unknown
 ```

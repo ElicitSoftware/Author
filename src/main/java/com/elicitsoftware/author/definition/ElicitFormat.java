@@ -11,6 +11,7 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -118,12 +119,12 @@ public final class ElicitFormat {
         }
         String value = line.substring(REVISION_HEADER.length()).trim();
         if (value.isEmpty()) {
-            throw new IllegalArgumentException("File carries an empty \"" + REVISION_HEADER + "\" header");
+            throw new IllegalArgumentException(Translations.get("error.import.emptyHeader", REVISION_HEADER));
         }
         try {
             return OffsetDateTime.parse(value);
         } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Unparseable \"" + REVISION_HEADER + "\" header value: " + value, e);
+            throw new IllegalArgumentException(Translations.get("error.import.badHeader", REVISION_HEADER, value), e);
         }
     }
 
@@ -257,7 +258,7 @@ public final class ElicitFormat {
         try {
             return UUID.fromString(value.trim());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid " + what + " in file: " + value, e);
+            throw new IllegalArgumentException(Translations.get("error.import.invalidValue", what, value), e);
         }
     }
 
@@ -280,11 +281,11 @@ public final class ElicitFormat {
 
     public static Long resolveRequired(Long oldId, Map<Long, Long> map, String entityDesc) {
         if (oldId == null) {
-            throw new IllegalStateException("Expected non-null source id for " + entityDesc);
+            throw new IllegalStateException(Translations.get("error.import.noSourceId", entityDesc));
         }
         Long newId = map.get(oldId);
         if (newId == null) {
-            throw new IllegalStateException("No ID mapping found for " + entityDesc + " source_id=" + oldId);
+            throw new IllegalStateException(Translations.get("error.import.noIdMapping", entityDesc, String.valueOf(oldId)));
         }
         return newId;
     }
@@ -296,7 +297,7 @@ public final class ElicitFormat {
     public static void requireFields(String table, String[] fields) {
         int required = REQUIRED_FIELDS.getOrDefault(table, 0);
         if (fields.length < required) {
-            throw new IllegalArgumentException(table + " requires " + required + " fields, got " + fields.length);
+            throw new IllegalArgumentException(Translations.get("error.import.fieldCount", table, String.valueOf(required), String.valueOf(fields.length)));
         }
     }
 }

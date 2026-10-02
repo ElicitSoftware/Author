@@ -11,6 +11,7 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.model.Survey;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -51,7 +52,7 @@ public class SurveyDefinitionExporter {
         List<ValidationIssue> issues = validation.validate(survey);
         List<String> errors = issues.stream().filter(ValidationIssue::isError).map(ValidationIssue::message).toList();
         if (!errors.isEmpty()) {
-            throw new DefinitionException("The definition has " + errors.size() + " error(s) that must be fixed before export", errors);
+            throw new DefinitionException(Translations.get("error.export.hasErrors", String.valueOf(errors.size())), errors);
         }
         return write(survey, ElicitFormat.FORMAT_VERSION, "", issues.stream().filter(i -> !i.isError()).toList());
     }

@@ -30,6 +30,7 @@ button and menu labels short.
 | survey, step, section, question | The structural levels of a survey (a survey has steps, a step has sections, a section has questions) | Translate consistently; the same word everywhere |
 | element | Any of step, section or question | Translate consistently |
 | rule, relationship | A condition on one answer that shows, hides or repeats a downstream element | Translate consistently |
+| upstream, downstream | The direction a survey flows: a rule's upstream question is the one whose answer it reads, its downstream target the step, section or question it acts on, which comes later | Translate consistently; the same pair of words in every rule message |
 | token | A placeholder inside question text such as `{<NAME>|default}`; the key is the part in angle brackets | Translate as "placeholder" if clearer; never as a credential |
 | access code | The credential a respondent types (issued by the Admin console) | Never call it a token |
 | export | Producing the definition file for the Admin console | Use "export", never "publish" |

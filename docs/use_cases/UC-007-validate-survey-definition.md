@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Learn, before exporting, which problems would make the definition fail or behave unexpectedly at a deployed site, and which edits will apply retroactively there.  
 **Status:** Draft  
-**Requirements:** [FR-005, FR-022, FR-018, FR-024, FR-061, FR-062, FR-064, C-011, C-012](../requirements.md)
+**Requirements:** [FR-005, FR-022, FR-018, FR-024, FR-061, FR-062, FR-064, FR-066, C-011, C-012](../requirements.md)
 
 ## Preconditions
 
@@ -20,7 +20,7 @@
 2. The system checks the current elements of the survey: every reference from one element to another resolves to a current element; every relationship has a downstream path that holds together (a step, a section mounted in it, a question assigned to that section; a question outside the upstream question's own section names its step and section) and a valid operator and action; every choice-type question refers to a select group that has at least one current item; every placeholder a step name, section name or question text uses is filled by a rule that reaches it, and every placeholder name a rule carries, whatever its action, is a name a text could write between angle brackets and is used by a text it reaches (BR-005..BR-007); every step has at least one section, every section is mounted in a step and holds at least one question, and every question is assigned to a section; every question outside the first step is reached by a Show or Repeat rule (BR-012); ordering values are unique within their parent; the survey's initial display key names a current section assignment.
 3. The system classifies each finding as an error (blocks export) or a warning (informational).
 4. The system adds a retroactivity warning for each step or section whose name changed since the last export and for each question whose ontology assignment changed since the last export.
-5. The system displays the findings in the validation panel, each naming where in the survey its element sits and, where an element can be opened, linked to it.
+5. The system displays the findings in the validation panel, each worded for the author and in the author's language (BR-013), each naming where in the survey its element sits and, where an element can be opened, linked to it.
 6. The author selects a finding and the system opens the element in the designer, selected on the board and in the structure tree, so that it can be corrected; with no errors present, the goal is achieved and export is allowed.
 
 ## Alternative Flows
@@ -177,8 +177,9 @@ they export, they count, and every rule and tag that names them stays with them.
 is anywhere a respondent can arrive, and — before UC-015 A7 and UC-011 A7 — anywhere the author
 could see, which is how one survives an import unnoticed.
 
-Each is its own warning, named for what is actually wrong: *is not in any step* for a section, *is
-not in any section* for a question. A section that is in no step is not also reported as having no
+Each is its own warning, named for what is actually wrong and what to do about it: *is not used.
+Place it in a step, or remove it* for a section, *is not used. Place it in a section, or remove it*
+for a question. A section that is in no step is not also reported as having no
 questions, because the emptiness is downstream of the real defect and fixing the mount is what a
 reader should be told to do.
 
@@ -226,3 +227,25 @@ section mount when the step has some rule but nothing reaches that mount or its 
 each unreached question. A step or section with no questions builds nothing and is not reported here
 (it is already a warning). The message names the remedy — add a Show rule, usually Field exists,
 targeting the element — and links to it (BR-009).
+
+### BR-013: A finding is written for the author, in the author's language
+
+A finding is read by someone who builds surveys, not by someone who knows how a survey is stored.
+Each one therefore says what is wrong and then what to do about it, in short sentences and in the
+words the tool's own screens use: a section is *placed in* a step and a question in a section (never
+an assignment or a mount); a rule has an *upstream* question and a *downstream* target — the
+tool's words for the direction a survey flows, kept in every finding about a rule (stakeholder
+decision of 2026-10-02); a rule *has* a token; a choice question uses a *list of options*; an element that is
+gone *has been removed*. How the Survey runtime behaves is the reason a check exists, and belongs in
+this specification and in the guide — not in the finding.
+
+`Rule '…' points backwards` is kept word for word, because the designer's arrow label says the same
+thing (UC-033) and an author should meet one phrase for one defect.
+
+Every finding is resolved through the translation mechanism (UC-040, NFR-018), in the language of
+the author looking at it: the sentence comes from the language file, and only what the author wrote
+— a name, a placeholder, a token — is carried into it unchanged. Fields a finding points the author
+to (the initial display key, a rule's default upstream value) are named by the label the form shows
+in that language. A retroactivity warning (step 4) is worded when it is shown, not when the edit was
+made, so it follows the reader's language rather than the editor's. Outside a browser session — a
+test, a REST call — findings are in English.
