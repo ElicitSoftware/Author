@@ -14,12 +14,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code samples/census-household-survey.elicit} as this journey drives it: where every question
  * sits, how a respondent answers it, and what a respondent should read in each language.
  *
- * <p>Structure (six steps, eleven sections, twenty-five questions, twelve rules -- see
+ * <p>Structure (six steps, eleven sections, twenty-six questions, thirteen rules -- see
  * {@code samples/README.md}):</p>
  * <pre>
  * 1 Welcome              1 Introduction        HTML intro, CHECKBOX consent
  * 2 About You            1 About you           TEXT, INTEGER, RADIO, COMBOBOX
  *                        2 Race and language   CHECKBOX_GROUP, TEXT (shown by CONTAINS 'OTHER'), MULTI_SELECT
+ *                                              INTEGER speakers (question REPEATed per language selected)
  * 3 Your Home            1 Housing             RADIO tenure, DATE_PICKER, CHECKBOX (shown by NOT_EQUAL 'OWN')
  *                        2 Rent details        DOUBLE          (section shown by EQUAL 'RENT')
  *                        3 Vehicles            INTEGER count
@@ -111,6 +112,15 @@ final class CensusHouseholdSurvey {
 
     static String languages() {
         return suffix(2, 0, 2, 0, 3, 0);
+    }
+
+    /**
+     * The speakers question for one language. The languages MULTI_SELECT REPEATs it once per
+     * language selected, and the instance is the language's position in its list, not a running
+     * count (Survey UC-002 BR-012): English is 1 and Spanish 2 whichever were picked.
+     */
+    static String speakers(int languagePosition) {
+        return suffix(2, 0, 2, 0, 4, languagePosition);
     }
 
     // ---- step 3: Your Home ---------------------------------------------------------------------
@@ -271,6 +281,14 @@ final class CensusHouseholdSurvey {
         if (shown(section, done, languages())) {
             section.chooseOptionsAt(section.keyEndingWith(languages()), 0, 1);    // English, Spanish
             record(done, answered, languages());
+        }
+        // The selection REPEATs the speakers question once per language, so English (position 1)
+        // and Spanish (position 2) are answered on a later pass over the same section.
+        for (int language = 1; language <= 2; language++) {
+            if (shown(section, done, speakers(language))) {
+                section.fillById(section.keyEndingWith(speakers(language)), language == 1 ? "3" : "2");
+                record(done, answered, speakers(language));
+            }
         }
 
         // Step 3, Housing. Rented (1) reveals the Rent details section and the subsidy question.

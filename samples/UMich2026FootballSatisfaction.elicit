@@ -1,0 +1,74 @@
+# ELICIT_SURVEY_DRAFT_V1
+# University of Michigan 2026 football - visitor satisfaction survey (AI draft)
+# Schedule source: mgoblue.com announcement of 2026-01-27. One "game" section, repeated once per game selected in step 1:
+# a REPEAT rule reads the multi-select and fills <GAME> with each selected game (see docs/ai/AUTHORING_FROM_AI.md,
+# "Repeating once per selected item").
+
+surveys: 1||UMFootball2026|1|Michigan Football 2026 Visitor Satisfaction|Game-day satisfaction survey for visitors to the 2026 University of Michigan football games: who they attended with, concessions, and restrooms, asked once per game attended. AI draft generated 2026-10-02.|0001-0001-0000-0001-0000-0000-0000||AI draft (Claude)|
+select_groups: 1||Games2026|2026 Michigan football games|Text|0||||
+select_groups: 2||AttendedWith|Attended alone or with someone else|Text|0||||
+select_groups: 3||Companions|Who the respondent attended with|Text|0||||
+select_groups: 4||YesNo|Yes or no|Text|0||||
+select_groups: 5||Rating5|Five-point rating, excellent to very poor|Text|0||||
+select_groups: 6||Cleanliness5|Five-point cleanliness rating|Text|0||||
+select_items: 1||1|Sep 5 - vs. Western Michigan (home)|1|G01|0||||
+select_items: 2||1|Sep 12 - vs. Oklahoma (home)|2|G02|0||||
+select_items: 3||1|Sep 19 - vs. UTEP (home)|3|G03|0||||
+select_items: 4||1|Sep 26 - vs. Iowa (home)|4|G04|0||||
+select_items: 5||1|Oct 3 - at Minnesota (away)|5|G05|0||||
+select_items: 6||1|Oct 17 - vs. Penn State (home)|6|G06|0||||
+select_items: 7||1|Oct 24 - vs. Indiana (home)|7|G07|0||||
+select_items: 8||1|Oct 31 - at Rutgers (away)|8|G08|0||||
+select_items: 9||1|Nov 7 - vs. Michigan State (home)|9|G09|0||||
+select_items: 10||1|Nov 14 - at Oregon (away)|10|G10|0||||
+select_items: 11||1|Nov 21 - vs. UCLA (home)|11|G11|0||||
+select_items: 12||1|Nov 28 - at Ohio State (away)|12|G12|0||||
+select_items: 13||2|Alone|1|ALONE|0||||
+select_items: 14||2|With someone else|2|WITH|0||||
+select_items: 15||3|Spouse|1|SPOUSE|0||||
+select_items: 16||3|Child|2|CHILD|0||||
+select_items: 17||3|Parent|3|PARENT|0||||
+select_items: 18||3|Sibling|4|SIBLING|0||||
+select_items: 19||3|Friend|5|FRIEND|0||||
+select_items: 20||3|Other|6|OTHER|0||||
+select_items: 21||4|Yes|1|1|0||||
+select_items: 22||4|No|2|0|0||||
+select_items: 23||5|Excellent|1|5|0||||
+select_items: 24||5|Good|2|4|0||||
+select_items: 25||5|Fair|3|3|0||||
+select_items: 26||5|Poor|4|2|0||||
+select_items: 27||5|Very poor|5|1|0||||
+select_items: 28||6|Very clean|1|5|0||||
+select_items: 29||6|Clean|2|4|0||||
+select_items: 30||6|Neither clean nor dirty|3|3|0||||
+select_items: 31||6|Dirty|4|2|0||||
+select_items: 32||6|Very dirty|5|1|0||||
+steps: 1||1|Games attended|games_attended|Which 2026 games the respondent attended|0||||
+steps: 2||2|Your game days|game_days|Game-day experience, asked once per game attended|0||||
+sections: 1||1|Your 2026 games|your_games||0||||
+sections: 2||2|{<GAME>\|Game day}|game_day_visit|Repeated once per game attended|0||||
+steps_sections: 1||1|1|1|1|0001-0001-0000-0001-0000-0000-0000|0||||
+steps_sections: 2||2|2|2|1|0001-0002-0000-0001-0000-0000-0000|0||||
+questions: 1||4|<p>Thank you for coming out to Michigan football this season. Tell us which games you attended, and we will ask a few short questions about each one: who you came with, the concessions, and the restrooms.</p>|Introduction||f|||||||||0||||
+questions: 2||10|Which 2026 Michigan football games did you attend? Select all that apply.|Games attended||t||||1|||||0||||
+questions: 3||7|Did you attend this game alone or with someone else?|Alone or with someone||t||||2|||||0||||
+questions: 4||11|Who did you attend with? Select all that apply.|Attended with||t||||3|||||0||||
+questions: 5||7|Did you buy anything from the concession stands at this game?|Bought concessions||t||||4|||||0||||
+questions: 6||7|How would you rate the quality of what you bought from the concession stands?|Concession quality||t||||5|||||0||||
+questions: 7||7|How would you rate the value for money of what you bought from the concession stands?|Concession value||t||||5|||||0||||
+questions: 8||7|Did you use the restrooms at this game?|Used restrooms||t||||4|||||0||||
+questions: 9||7|How clean were the restrooms?|Restroom cleanliness||t||||6|||||0||||
+sections_questions: 1||1|1|1|0||||
+sections_questions: 2||2|1|2|0||||
+sections_questions: 3||3|2|1|0||||
+sections_questions: 4||4|2|2|0||||
+sections_questions: 5||5|2|3|0||||
+sections_questions: 6||6|2|4|0||||
+sections_questions: 7||7|2|5|0||||
+sections_questions: 8||8|2|6|0||||
+sections_questions: 9||9|2|7|0||||
+relationships: 1||1|2|2|2||5|2|Repeat the game-day section once per game attended|GAME||||0||||
+relationships: 2|||3|||4|3|1|Ask who they attended with when not alone||WITH|||0||||
+relationships: 3|||5|||6|3|1|Ask concession quality when they bought something||1|||0||||
+relationships: 4|||5|||7|3|1|Ask concession value when they bought something||1|||0||||
+relationships: 5|||8|||9|3|1|Ask restroom cleanliness when they used the restrooms||1|||0||||

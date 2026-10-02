@@ -244,6 +244,67 @@ class TokenSamplesTest {
                 "the author's own phrase, which the preview must re-read for <G1>");
     }
 
+    // ---- UC-019 BR-008: inside a per-item instance a token holds the item's text -----------------
+
+    /** A MULTI_SELECT over list 7, whose first item reads "Western Michigan". */
+    private static Map<Integer, TokenSamples.Sample> gamesSample(String sample) {
+        return TokenSamples.samplesOf(List.of(question(40, "MULTI_SELECT", "Text", 7, sample)), Map.of(7, "Western Michigan"));
+    }
+
+    @Test
+    void aRepeatReadingAMultiSelectPreviewsTheFirstItemOfTheList() {
+        TokenSamples samples = TokenSamples.of(List.of(rule("REPEAT", "GAME", null, 400, 10, 200, null)),
+                MOUNTS, ASSIGNMENTS, gamesSample(null));
+
+        TokenSamples.Values title = samples.forMount(10, 200, null);
+        assertEquals("Western Michigan", title.values().get("GAME"), "the repeated section's title");
+        assertFalse(title.authored().contains("GAME"), "an item's text is escaped and not re-read, like an answer");
+        assertEquals("Western Michigan", samples.forMount(10, 200, 300).values().get("GAME"), "and every question in it");
+    }
+
+    @Test
+    void theItemOutranksTheRulesConstantInsideAnInstance() {
+        // For a coded answer the constant normally wins (theConstantWinsForACodedAnswer). Inside an
+        // instance it is the same for every item, so the item's text is what the respondent reads.
+        TokenSamples samples = TokenSamples.of(List.of(rule("REPEAT", "GAME", "a game", 400, 10, 200, null)),
+                MOUNTS, ASSIGNMENTS, gamesSample("G02"));
+        assertEquals("Western Michigan", samples.forMount(10, 200, 300).values().get("GAME"));
+    }
+
+    @Test
+    void aTextRuleFromTheSameMultiSelectOntoTheRepeatedSectionPreviewsTheItemToo() {
+        TokenSamples samples = TokenSamples.of(List.of(
+                rule("REPEAT", null, null, 400, 10, 200, null),
+                rule("TEXT", "OPP", "some", 400, 10, 200, null)),
+                MOUNTS, ASSIGNMENTS, gamesSample(null));
+        assertEquals("Western Michigan", samples.forMount(10, 200, 300).values().get("OPP"));
+    }
+
+    @Test
+    void aRepeatedQuestionPreviewsTheItemOnThatQuestionOnly() {
+        TokenSamples samples = TokenSamples.of(List.of(rule("REPEAT", "WHO", null, 400, null, null, 300)),
+                MOUNTS, ASSIGNMENTS, gamesSample(null));
+        assertEquals("Western Michigan", samples.forMount(10, 200, 300).values().get("WHO"));
+        assertNull(samples.forMount(10, 200, 301).values().get("WHO"), "the question beside it is not repeated");
+    }
+
+    @Test
+    void outsideAnInstanceAMultiSelectFillsATokenAsAnyCodedAnswerDoes() {
+        // A Text rule onto a section nothing repeats: the constant wins, as for any choice question.
+        TokenSamples samples = TokenSamples.of(List.of(rule("TEXT", "GAMES", "your games", 400, 10, 200, null)),
+                MOUNTS, ASSIGNMENTS, gamesSample("G02"));
+        TokenSamples.Values values = samples.forMount(10, 200, 300);
+        assertEquals("your games", values.values().get("GAMES"));
+        assertTrue(values.authored().contains("GAMES"));
+    }
+
+    @Test
+    void aCountDrivenRepeatIsUnchanged() {
+        TokenSamples samples = TokenSamples.of(List.of(rule("REPEAT", "N", "several", 400, 10, 200, null)),
+                MOUNTS, ASSIGNMENTS, samplesOf(question(40, "INTEGER", "Number", null, "3")));
+        assertEquals("several", samples.forMount(10, 200, 300).values().get("N"));
+    }
+
     private static Relationship rule(String action, String token, String defaultValue, int upstreamSq, Integer step, Integer ss, Integer sq) {
         Relationship r = new Relationship();
         r.actionType = new ActionType();

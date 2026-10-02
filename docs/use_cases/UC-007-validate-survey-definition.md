@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Learn, before exporting, which problems would make the definition fail or behave unexpectedly at a deployed site, and which edits will apply retroactively there.  
 **Status:** Draft  
-**Requirements:** [FR-005, FR-022, FR-018, FR-024, FR-061, FR-062, FR-064, FR-066, C-011, C-012](../requirements.md)
+**Requirements:** [FR-005, FR-022, FR-018, FR-024, FR-061, FR-062, FR-064, FR-066, FR-067, C-011, C-012](../requirements.md)
 
 ## Preconditions
 
@@ -249,3 +249,14 @@ to (the initial display key, a rule's default upstream value) are named by the l
 in that language. A retroactivity warning (step 4) is worded when it is shown, not when the edit was
 made, so it follows the reader's language rather than the editor's. Outside a browser session — a
 test, a REST call — findings are in English.
+
+### BR-014: A Repeat that reads a selection must be able to hold
+
+A Repeat rule whose upstream question is a multi-select or a checkbox group repeats its downstream
+once per selected item, and only while the rule's own condition holds (UC-019 BR-007). Boolean and
+Greater than can never hold for a selection, so such a rule builds nothing for any respondent: the
+repeated section or question simply never appears, and nothing says why. It is an **error**
+(BR-001). The rule dialog refuses it when it is saved (UC-019 A6); it is checked again here because
+a definition that was imported, or drafted outside the tool (UC-042), never passed through that
+dialog. The message names the remedy: change the operator to Field exists.
+

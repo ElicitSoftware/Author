@@ -36,7 +36,8 @@ rectangle "Elicit Author" {
     usecase "UC-017\nConfigure Repeating Elements" as UC017
     usecase "UC-018\nRename Step or Section" as UC018
 
-    ' Logic & Relationships (FR-019..FR-022, FR-041, FR-064)
+    ' Logic & Relationships (FR-019..FR-022, FR-041, FR-064, FR-067)
+    ' FR-067 (repeat per selected item) is an alternative flow of UC-019, checked again by UC-007.
     usecase "UC-019\nCreate Conditional Relationship" as UC019
     usecase "UC-020\nVisualize Relationship Graph" as UC020
     usecase "UC-033\nValidate Rule Direction" as UC033
