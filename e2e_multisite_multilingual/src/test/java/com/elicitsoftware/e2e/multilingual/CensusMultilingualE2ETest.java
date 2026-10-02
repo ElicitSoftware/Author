@@ -366,7 +366,7 @@ class CensusMultilingualE2ETest extends MultilingualTestBase {
             openAuthor(page, USA, "/survey/" + surveyIdInAuthor);
             SurveyEditorPage editor = new SurveyEditorPage(page);
             String findings = editor.validationText();
-            assertTrue(findings.contains(ARABIC + " is published but 1 string(s) are not translated"),
+            assertTrue(findings.contains(ARABIC + ": 1 text is not translated yet"),
                     "validation should warn about the one untranslated Arabic string:\n" + findings);
 
             Recording.beat(USA, "an incomplete language is a warning, not an error — exporting anyway");
