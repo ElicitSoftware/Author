@@ -97,7 +97,7 @@ class ReportingViewTest extends QuarkusBrowserlessTest {
         test(dialog.save).click();
         assertFalse(dialog.isOpened(), "UC-023 step 5: created");
         assertEquals(4, view.tags.getGenericDataView().getItems().count());
-        assertTrue(text(view.impactPanel).contains("not assigned"), "UC-024 step 3: a tag without assignments is a warning");
+        assertTrue(text(view.impactPanel).contains("is not used"), "UC-024 step 3: a tag without assignments is a warning");
     }
 
     @Test

@@ -11,6 +11,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.ConstraintViolationTranslator;
 import com.elicitsoftware.author.security.CurrentUser;
@@ -96,7 +97,7 @@ public class SurveyService {
         validate(edited);
         Survey s = Survey.findById(id);
         if (s == null) {
-            throw new AuthoringException("Survey " + id + " no longer exists");
+            throw new AuthoringException(Translations.get("error.survey.gone", String.valueOf(id)));
         }
         copyMetadata(edited, s);
         s.publishedBy = currentUser.name();
@@ -127,17 +128,14 @@ public class SurveyService {
     public Survey publishLanguage(int surveyId, String tag) {
         Survey s = Survey.findById(surveyId);
         if (s == null) {
-            throw new AuthoringException("Survey " + surveyId + " no longer exists");
+            throw new AuthoringException(Translations.get("error.survey.gone", String.valueOf(surveyId)));
         }
         String canonical = LanguageTags.canonical(tag);
         if (canonical == null) {
-            throw new AuthoringException("'" + (tag == null ? "" : tag.strip())
-                    + "' is not a language tag. Choose one of the languages Elicit carries.", "contentLanguages");
+            throw new AuthoringException(Translations.get("error.survey.notLanguageTag", tag == null ? "" : tag.strip()), "contentLanguages");
         }
         if (canonical.equals(LanguageTags.canonical(s.baseLanguage))) {
-            throw new AuthoringException(canonical
-                    + " is the language this survey is written in; it needs no translation.",
-                    "contentLanguages");
+            throw new AuthoringException(Translations.get("error.survey.baseLanguage", canonical), "contentLanguages");
         }
         if (!contentLanguages.supports(canonical)) {
             throw new AuthoringException(unsupported(canonical), "contentLanguages");
@@ -152,16 +150,14 @@ public class SurveyService {
             }
         }
         if (published.contains(canonical)) {
-            throw new AuthoringException(canonical
-                    + " is already one of this survey's published languages.", "contentLanguages");
+            throw new AuthoringException(Translations.get("error.survey.languagePublished", canonical), "contentLanguages");
         }
         published.add(canonical);
         String set = normalizeLanguages(String.join(",", published));
         // content_languages is varchar(255). Twenty tags is about seventy characters, so this is a
         // guard against a silent truncation rather than a limit anyone meets.
         if (set != null && set.length() > 255) {
-            throw new AuthoringException(
-                    "This survey already publishes as many languages as it can hold.", "contentLanguages");
+            throw new AuthoringException(Translations.get("error.survey.languagesFull"), "contentLanguages");
         }
         s.contentLanguages = set;
         s.publishedBy = currentUser.name();
@@ -174,11 +170,11 @@ public class SurveyService {
     public Survey stampExport(int id, String releaseNote) {
         Survey s = Survey.findById(id);
         if (s == null) {
-            throw new AuthoringException("Survey " + id + " no longer exists");
+            throw new AuthoringException(Translations.get("error.survey.gone", String.valueOf(id)));
         }
         String by = currentUser.name();
         if (by == null || by.isBlank()) {
-            throw new AuthoringException("An export must be attributed to a signed-in author");
+            throw new AuthoringException(Translations.get("error.survey.exportNeedsAuthor"));
         }
         s.publishedBy = by;
         s.publishedComment = releaseNote == null || releaseNote.isBlank() ? null : releaseNote.trim();
@@ -223,15 +219,14 @@ public class SurveyService {
     public void delete(int id) {
         Survey s = Survey.findById(id);
         if (s == null) {
-            throw new AuthoringException("Survey " + id + " no longer exists");
+            throw new AuthoringException(Translations.get("error.survey.gone", String.valueOf(id)));
         }
         // BR-004. Author's database holds definitions, not responses; one that holds responses is
         // a site's database, and recorded answers are never deleted from here.
         Number respondents = (Number) em.createNativeQuery("SELECT count(*) FROM survey.respondents WHERE survey_id = ?1")
                 .setParameter(1, id).getSingleResult();
         if (respondents.longValue() > 0) {
-            throw new AuthoringException("Survey '" + s.name + "' has " + respondents + " respondents in this database;"
-                    + " Author does not delete recorded answers");
+            throw new AuthoringException(Translations.get("error.survey.hasRespondents", s.name, String.valueOf(respondents)));
         }
         // BR-005. The importer reuses a tag by (name, tag), so another survey's metadata may point at
         // a tag this survey owns. Hand such a tag to that survey rather than delete it from under it.
@@ -293,39 +288,34 @@ public class SurveyService {
     }
 
     /**
-     * A tag the applications do not carry, refused with the one route to getting one.
-     * <p>
-     * English, like every other message this class raises: service-layer exceptions are not
-     * translated here yet, and a lone translated string among them would be the odd one out. The
-     * author-facing guidance that is translated sits on the controls themselves.
+     * A tag the applications do not carry, refused with the one route to getting one, in the
+     * author's language like every other message this class raises (NFR-018).
      */
     private static String unsupported(String canonical) {
-        return canonical + " is not one of the languages Elicit carries, so no site could show it."
-                + " Contact ElicitSoftware to have it translated; it becomes available in the next"
-                + " release.";
+        return Translations.get("error.survey.languageUnsupported", canonical);
     }
 
     private void validate(Survey s) {
         if (s.name == null || s.name.isBlank()) {
-            throw new AuthoringException("Name is required", "name");
+            throw new AuthoringException(Translations.get("error.name.required"), "name");
         }
         if (s.name.length() > 255) {
-            throw new AuthoringException("Name must be 255 characters or fewer", "name");
+            throw new AuthoringException(Translations.get("error.name.tooLong"), "name");
         }
         if (s.title == null || s.title.isBlank()) {
-            throw new AuthoringException("Title is required", "title");
+            throw new AuthoringException(Translations.get("error.survey.titleRequired"), "title");
         }
         if (s.title.length() > 255) {
-            throw new AuthoringException("Title must be 255 characters or fewer", "title");
+            throw new AuthoringException(Translations.get("error.survey.titleTooLong"), "title");
         }
         if (s.description != null && s.description.length() > 2000) {
-            throw new AuthoringException("Description must be 2000 characters or fewer", "description");
+            throw new AuthoringException(Translations.get("error.survey.descriptionTooLong"), "description");
         }
         if (s.initialDisplayKey != null && s.initialDisplayKey.length() > 255) {
-            throw new AuthoringException("Initial display key must be 255 characters or fewer", "initialDisplayKey");
+            throw new AuthoringException(Translations.get("error.survey.initialDisplayKeyTooLong"), "initialDisplayKey");
         }
         if (s.postSurveyUrl != null && s.postSurveyUrl.length() > 255) {
-            throw new AuthoringException("Post-survey address must be 255 characters or fewer", "postSurveyUrl");
+            throw new AuthoringException(Translations.get("error.survey.postSurveyUrlTooLong"), "postSurveyUrl");
         }
         // UC-044 BR-004. The metadata dialog is the other way into the published set, and until
         // now the only checked path was publishLanguage -- a tag typed here was stored unexamined.
@@ -339,8 +329,7 @@ public class SurveyService {
                 }
                 String canonical = LanguageTags.canonical(raw);
                 if (canonical == null) {
-                    throw new AuthoringException("'" + raw.strip()
-                            + "' is not a language tag. Choose one of the languages Elicit carries.", "contentLanguages");
+                    throw new AuthoringException(Translations.get("error.survey.notLanguageTag", raw.strip()), "contentLanguages");
                 }
                 if (!contentLanguages.supports(canonical) && !already.contains(canonical)) {
                     throw new AuthoringException(unsupported(canonical), "contentLanguages");

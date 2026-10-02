@@ -25,8 +25,10 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.router.RouterLink;
+import java.util.Locale;
 import java.util.Map;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -102,6 +104,29 @@ class SurveyEditorViewTest extends QuarkusBrowserlessTest {
         }
     }
 
+    /**
+     * UC-007 BR-013 / FR-066: a finding is worded in the language of the author reading it. The
+     * fixture's step two has no rule (BR-012), so the panel has that error to say in Spanish.
+     */
+    @Test
+    @TestSecurity(user = "editor.author", roles = {"elicit_author"})
+    void findingsAreInTheAuthorsLanguage() {
+        Locale before = UI.getCurrent().getLocale();
+        UI.getCurrent().getSession().setLocale(Locale.forLanguageTag("es-419"));
+        UI.getCurrent().setLocale(Locale.forLanguageTag("es-419"));
+        try {
+            SurveyEditorView view = open("AuthorFixture");
+            assertTrue(view.issues.stream().anyMatch(i -> i.isError()
+                            && i.message().startsWith("El paso 'Fixture Step Two' no tiene una regla Mostrar o Repetir.")),
+                    view.issues.toString());
+            assertTrue(view.issues.stream().noneMatch(i -> i.message().contains("Step 'Fixture Step Two'")),
+                    "no English finding is left beside it: " + view.issues);
+        } finally {
+            UI.getCurrent().getSession().setLocale(before);
+            UI.getCurrent().setLocale(before);
+        }
+    }
+
     @Test
     @TestSecurity(user = "editor.author", roles = {"elicit_author"})
     void exportDialogOpensWithReleaseNote() {
@@ -156,7 +181,7 @@ class SurveyEditorViewTest extends QuarkusBrowserlessTest {
         SurveyEditorView view = open("AuthorFixture");
         RouterLink link = view.findings.getChildren().flatMap(Component::getChildren)
                 .filter(RouterLink.class::isInstance).map(RouterLink.class::cast)
-                .filter(l -> l.getText().contains("has no questions"))
+                .filter(l -> l.getText().contains("is empty"))
                 .findFirst().orElseThrow(() -> new AssertionError("no link for the empty section: " + view.issues));
 
         assertTrue(link.getHref().contains("/design"), link.getHref());

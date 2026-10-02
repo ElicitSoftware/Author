@@ -179,7 +179,7 @@ public class SurveyEditorPage extends AuthorPageObject {
 
     /** True once the validation panel reports nothing blocking or noteworthy. */
     public boolean isReadyToExport() {
-        return page.getByText("Ready to export: no findings.").count() > 0;
+        return page.getByText("Ready to export. No problems found.").count() > 0;
     }
 
     /** The validation panel's text, for a readable assertion message. */

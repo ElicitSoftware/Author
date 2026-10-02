@@ -11,6 +11,7 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -31,6 +32,16 @@ public class RuleArrowsOverlay extends Component {
 
     public RuleArrowsOverlay() {
         getElement().setAttribute("aria-hidden", "true");
+    }
+
+    /** The overlay's own words, in the author's language (NFR-018); the script keeps English defaults. */
+    @Override
+    protected void onAttach(AttachEvent attachEvent) {
+        super.onAttach(attachEvent);
+        getElement().setProperty("textBackwards", getTranslation("ruleArrows.backwards"));
+        getElement().setProperty("textDragSource", getTranslation("ruleArrows.dragSource"));
+        getElement().setProperty("textDragTarget", getTranslation("ruleArrows.dragTarget"));
+        getElement().setProperty("textWhen", getTranslation("ruleArrows.when"));
     }
 
     public void setEdges(String json) {

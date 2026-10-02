@@ -162,7 +162,7 @@ class ReportingServiceTest {
         assertEquals("unknown", m.value);
         List<ValidationIssue> issues = validation.validate(s);
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "metadata".equals(i.kind())
-                && i.message().contains("reclassified")), "UC-022 BR-002: warned at export: " + issues);
+                && i.message().contains("reported under the new tag")), "UC-022 BR-002: warned at export: " + issues);
         surveys.stampExport(s.id, "release");
         assertTrue(ledger.since(s.id).isEmpty(), "UC-008 step 4 clears the record");
     }
@@ -286,7 +286,7 @@ class ReportingServiceTest {
         Impact impact = service.impact(s.id);
         assertTrue(impact.hasErrors(), "UC-024 BR-002: two tags on one column");
         assertTrue(impact.problems().stream().anyMatch(p -> p.isError() && p.message().contains("has_children_key")), impact.problems().toString());
-        assertTrue(impact.problems().stream().anyMatch(p -> !p.isError() && p.message().contains("not assigned")), "UC-024 step 3");
+        assertTrue(impact.problems().stream().anyMatch(p -> !p.isError() && p.message().contains("is not used")), "UC-024 step 3");
         List<ValidationIssue> issues = validation.validate(s);
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "ontology".equals(i.kind())), "UC-024 A2: blocks the export");
     }

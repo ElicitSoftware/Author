@@ -11,6 +11,7 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.survey.Tokens;
 import com.elicitsoftware.author.survey.TranslatableFields;
 import io.quarkus.logging.Log;
@@ -105,23 +106,22 @@ public class SurveyDefinitionImporter {
                             fileRevision = parsed;
                         }
                     } catch (IllegalArgumentException e) {
-                        throw new DefinitionException("Line " + lineNumber + ": " + e.getMessage());
+                        throw new DefinitionException(Translations.get("error.import.line", String.valueOf(lineNumber), e.getMessage()));
                     }
                     continue;
                 }
                 if (!versionValidated) {
-                    throw new DefinitionException("This is not a survey definition export: the file does not start with '# "
-                            + ElicitFormat.FORMAT_VERSION + "'");
+                    throw new DefinitionException(Translations.get("error.import.notExport", ElicitFormat.FORMAT_VERSION));
                 }
                 int colon = line.indexOf(':');
                 if (colon < 0) {
-                    throw new DefinitionException("Line " + lineNumber + ": invalid record, missing colon separator");
+                    throw new DefinitionException(Translations.get("error.import.line", String.valueOf(lineNumber), Translations.get("error.import.noColon")));
                 }
                 String table = line.substring(0, colon).trim().toLowerCase();
                 String[] fields = ElicitFormat.parseFields(line.substring(colon + 1).trim());
                 try {
                     if (!"surveys".equals(table) && surveyId == null) {
-                        throw new DefinitionException("a " + table + " record appears before the surveys record");
+                        throw new DefinitionException(Translations.get("error.import.recordBeforeSurvey", table));
                     }
                     if (ElicitFormat.VERSIONED_TABLES.contains(table)) {
                         requireFields(table, fields);
@@ -133,7 +133,7 @@ public class SurveyDefinitionImporter {
                     switch (table) {
                         case "surveys" -> {
                             if (surveyId != null) {
-                                throw new DefinitionException("multiple surveys records; only one survey per file");
+                                throw new DefinitionException(Translations.get("error.import.multipleSurveys"));
                             }
                             requireFields(table, fields);
                             surveyKey = parseKeyOrMint(fields[1], "survey_key");
@@ -157,25 +157,24 @@ public class SurveyDefinitionImporter {
                         case "ontology" -> ontologyIdMap.put(parseLongOrNull(fields[0]), insertOrReuseOntology(fields, surveyId, dimensionIdMap));
                         case "metadata" -> insertMetadata(fields, surveyId, stepsSectionIdMap, questionIdMap, sectionsQuestionIdMap, ontologyIdMap);
                         case "translations" -> insertTranslation(fields, surveyId);
-                        default -> throw new DefinitionException("unknown record type '" + table + "'");
+                        default -> throw new DefinitionException(Translations.get("error.import.unknownRecord", table));
                     }
                     counts.merge(table, 1, Integer::sum);
                 } catch (DefinitionException e) {
-                    throw new DefinitionException("Line " + lineNumber + ": " + e.getMessage(), e.details());
+                    throw new DefinitionException(Translations.get("error.import.line", String.valueOf(lineNumber), e.getMessage()), e.details());
                 } catch (RuntimeException e) {
                     Log.debugf(e, "Import failed at line %d", lineNumber);
-                    throw new DefinitionException("Line " + lineNumber + ": " + rootMessage(e), e);
+                    throw new DefinitionException(Translations.get("error.import.line", String.valueOf(lineNumber), rootMessage(e)), e);
                 }
             }
         } catch (IOException e) {
-            throw new DefinitionException("Failed to read the file: " + e.getMessage(), e);
+            throw new DefinitionException(Translations.get("error.import.readFailed", e.getMessage()), e);
         }
         if (!versionValidated) {
-            throw new DefinitionException("This is not a survey definition: the file must start with '# "
-                    + ElicitFormat.FORMAT_VERSION + "' or '# " + ElicitFormat.DRAFT_FORMAT_VERSION + "'");
+            throw new DefinitionException(Translations.get("error.import.notDefinition", ElicitFormat.FORMAT_VERSION, ElicitFormat.DRAFT_FORMAT_VERSION));
         }
         if (surveyId == null) {
-            throw new DefinitionException("This file contains no surveys record, so it is not a survey definition export");
+            throw new DefinitionException(Translations.get("error.import.noSurveysRecord"));
         }
         em.flush();
         return new ImportResult(surveyId.intValue(), surveyKey, surveyName, fileRevision, counts, skipped, draftFormat);
@@ -193,8 +192,7 @@ public class SurveyDefinitionImporter {
         Object existing = em.createNativeQuery("SELECT id, name FROM survey.surveys WHERE survey_key = ?1")
                 .setParameter(1, surveyKey).getResultStream().findFirst().orElse(null);
         if (existing instanceof Object[] row) {
-            throw new DefinitionException("This survey is already open in Author as '" + row[1] + "' (id " + row[0]
-                    + "). Open it from the Surveys list instead of importing it again.");
+            throw new DefinitionException(Translations.get("error.import.alreadyOpen", String.valueOf(row[1]), String.valueOf(row[0])));
         }
     }
 
@@ -255,13 +253,11 @@ public class SurveyDefinitionImporter {
         String elementType = nullIfEmpty(f[2]);
         String field = nullIfEmpty(f[4]);
         if (!TranslatableFields.isTranslatable(elementType, field)) {
-            throw new DefinitionException("translations row targets a field that carries no "
-                    + "respondent-facing text: " + elementType + "." + field);
+            throw new DefinitionException(Translations.get("error.import.translationNotTranslatable", elementType + "." + field));
         }
         String value = nullIfEmpty(f[6]);
         if (value == null) {
-            throw new DefinitionException("translations row for " + elementType + "." + field
-                    + " has an empty value; a removed translation is a closed effective_to, not a blank");
+            throw new DefinitionException(Translations.get("error.import.translationEmpty", elementType + "." + field));
         }
         Query q = em.createNativeQuery("""
                 INSERT INTO survey.translations
@@ -283,12 +279,12 @@ public class SurveyDefinitionImporter {
     private static UUID parseKeyStrict(String raw, String what) {
         String value = nullIfEmpty(raw);
         if (value == null) {
-            throw new DefinitionException("translations row has no " + what);
+            throw new DefinitionException(Translations.get("error.import.translationMissing", what));
         }
         try {
             return UUID.fromString(value.trim());
         } catch (IllegalArgumentException e) {
-            throw new DefinitionException("Invalid " + what + " in file: " + value);
+            throw new DefinitionException(Translations.get("error.import.invalidValue", what, value));
         }
     }
 
@@ -480,13 +476,10 @@ public class SurveyDefinitionImporter {
         }
         String token = Tokens.canonical(written);
         if (token.length() > Tokens.MAX_LENGTH) {
-            throw new DefinitionException("the rule's token '" + token + "' is " + token.length()
-                    + " characters; a token name is at most " + Tokens.MAX_LENGTH
-                    + ", the width of the column that carries it. Shorten it here and in every text that names it");
+            throw new DefinitionException(Translations.get("error.import.tokenTooLong", token, String.valueOf(token.length()), String.valueOf(Tokens.MAX_LENGTH)));
         }
         if (!Tokens.TOKEN_NAME.matcher(token).matches()) {
-            throw new DefinitionException("the rule's token '" + written + "' is not a name a text could write"
-                    + " between angle brackets, so no placeholder could ever name it");
+            throw new DefinitionException(Translations.get("error.import.tokenInvalid", written));
         }
         return token;
     }

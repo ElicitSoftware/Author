@@ -11,6 +11,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.ConstraintViolationTranslator;
 import com.elicitsoftware.model.Question;
@@ -56,7 +57,7 @@ public class ListService {
 
     public SelectGroup list(int surveyId, int selectGroupId) {
         return elements.selectGroup(surveyId, selectGroupId).filter(StructuralElement::isCurrent)
-                .orElseThrow(() -> new AuthoringException("The list no longer exists"));
+                .orElseThrow(() -> new AuthoringException(Translations.get("error.list.gone")));
     }
 
     public List<SelectItem> options(int surveyId, int selectGroupId) {
@@ -153,21 +154,21 @@ public class ListService {
     private static void copy(SelectGroup from, SelectGroup to) {
         to.name = from.name.trim();
         to.description = from.description == null || from.description.isBlank() ? null : from.description.trim();
-        to.dataType = from.dataType == null || from.dataType.isBlank() ? "Text" : from.dataType.trim();
+        to.dataType = from.dataType == null || from.dataType.isBlank() ? "Text" : from.dataType.trim(); // i18n:ignore
     }
 
     static void validate(SelectGroup g) {
         if (g.name == null || g.name.isBlank()) {
-            throw new AuthoringException("Name is required", "name");
+            throw new AuthoringException(Translations.get("error.name.required"), "name");
         }
         if (g.name.length() > 255) {
-            throw new AuthoringException("Name must be 255 characters or fewer", "name");
+            throw new AuthoringException(Translations.get("error.name.tooLong"), "name");
         }
         if (g.description != null && g.description.length() > 255) {
-            throw new AuthoringException("Description must be 255 characters or fewer", "description");
+            throw new AuthoringException(Translations.get("error.list.descriptionTooLong"), "description");
         }
         if (g.dataType != null && g.dataType.length() > 50) {
-            throw new AuthoringException("Data type must be 50 characters or fewer", "dataType");
+            throw new AuthoringException(Translations.get("error.list.dataTypeTooLong"), "dataType");
         }
     }
 
@@ -181,17 +182,17 @@ public class ListService {
         for (OptionDraft o : options) {
             String text = o.displayText() == null ? "" : o.displayText().trim();
             if (text.isEmpty()) {
-                throw new AuthoringException("Every option needs its display text", "options");
+                throw new AuthoringException(Translations.get("error.list.optionTextRequired"), "options");
             }
             if (text.length() > 255) {
-                throw new AuthoringException("Option text must be 255 characters or fewer", "options");
+                throw new AuthoringException(Translations.get("error.list.optionTextTooLong"), "options");
             }
             if (!seen.add(text.toLowerCase(Locale.ROOT))) {
-                throw new AuthoringException("Option '" + text + "' appears twice", "options");
+                throw new AuthoringException(Translations.get("error.list.optionTwice", text), "options");
             }
             String coded = o.codedValue() == null || o.codedValue().isBlank() ? text : o.codedValue().trim();
             if (coded.length() > 255) {
-                throw new AuthoringException("Coded value must be 255 characters or fewer", "options");
+                throw new AuthoringException(Translations.get("error.list.codedValueTooLong"), "options");
             }
             out.add(new OptionDraft(o.selectItemId(), text, coded));
         }

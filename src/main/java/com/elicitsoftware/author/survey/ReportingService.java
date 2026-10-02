@@ -14,6 +14,7 @@ package com.elicitsoftware.author.survey;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.ConstraintViolationTranslator;
 import com.elicitsoftware.author.definition.ValidationIssue;
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.model.Dimension;
 import com.elicitsoftware.model.Metadata;
 import com.elicitsoftware.model.Metadata.ElementRef;
@@ -29,11 +30,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 /**
  * Reporting tags and their assignments (UC-021 assign, UC-022 reassign, UC-023 manage tags and
@@ -57,17 +58,17 @@ public class ReportingService {
 
         public static String scopeLabel(ElementRef ref) {
             if (ref == null) {
-                return "invalid";
+                return Translations.get("reporting.scope.invalid");
             }
             return switch (ref) {
-                case STEPS_SECTIONS -> "Section in step";
-                case QUESTION -> "Question everywhere";
-                case SECTIONS_QUESTION -> "Question in section";
+                case STEPS_SECTIONS -> Translations.get("reporting.scope.sectionInStep");
+                case QUESTION -> Translations.get("reporting.scope.questionEverywhere");
+                case SECTIONS_QUESTION -> Translations.get("reporting.scope.questionInSection");
             };
         }
 
         public String valueLabel() {
-            return metadata.value == null ? "(the answer)" : metadata.value;
+            return metadata.value == null ? Translations.get("reporting.value.theAnswer") : metadata.value;
         }
     }
 
@@ -135,7 +136,7 @@ public class ReportingService {
     /** UC-023 A4: in-place edit; a changed tag or dimension on an assigned tag is retroactive. */
     @Transactional
     public Ontology updateTag(int surveyId, int ontologyId, String tag, String dimensionName) {
-        Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException("The tag no longer exists"));
+        Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException(Translations.get("error.tag.gone")));
         String cleanTag = validateTag(tag, dimensionName);
         Dimension dimension = ensureDimension(dimensionName);
         String before = describe(o);
@@ -150,8 +151,7 @@ public class ReportingService {
         }
         if (changed) {
             for (Metadata m : Metadata.<Metadata>list("ontology.id", ontologyId)) {
-                ledger.record(surveyId, KIND_ASSIGNMENT, m.id, "Tag " + before + " was redefined as " + describe(o)
-                        + "; answers already recorded at deployed sites are reclassified");
+                ledger.record(surveyId, KIND_ASSIGNMENT, m.id, "validation.tag.redefined", before, describe(o));
             }
         }
         return o;
@@ -160,11 +160,11 @@ public class ReportingService {
     /** UC-023 A2: a tag in use cannot be removed. */
     @Transactional
     public void removeTag(int surveyId, int ontologyId) {
-        Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException("The tag no longer exists"));
+        Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException(Translations.get("error.tag.gone")));
         long uses = assignmentCount(ontologyId);
         if (uses > 0) {
-            throw new AuthoringException("Tag '" + o.tag + "' is assigned to " + uses + (uses == 1 ? " element" : " elements")
-                    + "; remove those assignments first");
+            throw new AuthoringException(uses == 1 ? Translations.get("error.tag.inUse.one", o.tag)
+                    : Translations.get("error.tag.inUse.many", o.tag, String.valueOf(uses)));
         }
         o.delete();
         em.flush();
@@ -220,17 +220,17 @@ public class ReportingService {
     @Transactional
     public Metadata assign(int surveyId, ElementRef ref, int durableId, int ontologyId, String value) {
         if (ref == null) {
-            throw new AuthoringException("Choose what the tag applies to", "scope");
+            throw new AuthoringException(Translations.get("error.tag.scopeRequired"), "scope");
         }
-        Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException("Choose a tag", "tag"));
+        Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException(Translations.get("error.tag.required"), "tag"));
         Labels labels = labels(surveyId);
         if (!labels.exists(ref, durableId)) {
-            throw new AuthoringException("The element no longer exists in this survey", "scope");
+            throw new AuthoringException(Translations.get("error.tag.elementGone"), "scope");
         }
         for (Metadata existing : Metadata.<Metadata>list("surveyId", surveyId)) {
             if (existing.elementRef() == ref && Objects.equals(existing.elementId(), durableId)
                     && existing.ontology != null && Objects.equals(existing.ontology.id, ontologyId)) {
-                throw new AuthoringException("This element already carries the tag '" + o.tag + "'", "tag");
+                throw new AuthoringException(Translations.get("error.tag.alreadyAssigned", o.tag), "tag");
             }
         }
         Metadata m = new Metadata();
@@ -255,7 +255,7 @@ public class ReportingService {
     @Transactional
     public Metadata reassign(int surveyId, int metadataId, int ontologyId, String value) {
         Metadata m = assignment(surveyId, metadataId);
-        Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException("Choose a tag", "tag"));
+        Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException(Translations.get("error.tag.required"), "tag"));
         String cleanValue = validateValue(value);
         boolean changed = !Objects.equals(m.ontology == null ? null : m.ontology.id, ontologyId) || !Objects.equals(m.value, cleanValue);
         if (!changed) {
@@ -269,8 +269,8 @@ public class ReportingService {
         } catch (RuntimeException e) {
             throw ConstraintViolationTranslator.translate(e);
         }
-        ledger.record(surveyId, KIND_ASSIGNMENT, m.id, labels(surveyId).resolve(m).elementLabel() + ": " + before
-                + " was changed to " + describe(m) + "; answers already recorded at deployed sites are reclassified");
+        ledger.record(surveyId, KIND_ASSIGNMENT, m.id, "validation.tag.reassigned",
+                labels(surveyId).resolve(m).elementLabel(), before, describe(m));
         return m;
     }
 
@@ -278,11 +278,11 @@ public class ReportingService {
     @Transactional
     public void unassign(int surveyId, int metadataId) {
         Metadata m = assignment(surveyId, metadataId);
-        String message = labels(surveyId).resolve(m).elementLabel() + ": " + describe(m)
-                + " was removed; answers already recorded at deployed sites stop being classified by it";
+        String element = labels(surveyId).resolve(m).elementLabel();
+        String removed = describe(m);
         m.delete();
         em.flush();
-        ledger.record(surveyId, KIND_ASSIGNMENT, metadataId, message);
+        ledger.record(surveyId, KIND_ASSIGNMENT, metadataId, "validation.tag.unassigned", element, removed);
     }
 
     // ---- impact (UC-024) -----------------------------------------------------------------------
@@ -299,11 +299,12 @@ public class ReportingService {
                 usesByTag.merge(m.ontology.id, 1, Integer::sum);
             }
             if (m.elementRef() == null) {
-                problems.add(ValidationIssue.error(KIND_ASSIGNMENT, m.id, "An assignment of tag '" + tagOf(m)
-                        + "' does not name exactly one element"));
+                problems.add(ValidationIssue.error(KIND_ASSIGNMENT, m.id,
+                        Translations.get("validation.tag.assignmentBroken", tagOf(m))));
             } else if (a.dangling()) {
-                problems.add(ValidationIssue.warning(KIND_ASSIGNMENT, m.id, "Tag '" + tagOf(m) + "' is assigned to a removed or missing "
-                        + a.scopeLabel().toLowerCase(Locale.ROOT) + (a.elementLabel().isBlank() ? "" : " (" + a.elementLabel() + ")")));
+                problems.add(ValidationIssue.warning(KIND_ASSIGNMENT, m.id, Translations.get(
+                        a.ref() == ElementRef.STEPS_SECTIONS ? "validation.tag.assignedToRemoved.section" : "validation.tag.assignedToRemoved.question",
+                        tagOf(m), a.elementLabel().isBlank() ? "" : " (" + a.elementLabel() + ")")));
             }
         }
         Map<String, List<Assignment>> byElementAndTag = new HashMap<>();
@@ -314,8 +315,8 @@ public class ReportingService {
             }
         }
         byElementAndTag.values().stream().filter(l -> l.size() > 1).forEach(l -> problems.add(ValidationIssue.warning(
-                KIND_ASSIGNMENT, l.get(0).metadata().id, "Tag '" + tagOf(l.get(0).metadata()) + "' is assigned "
-                        + l.size() + " times to " + l.get(0).elementLabel() + " with different values")));
+                KIND_ASSIGNMENT, l.get(0).metadata().id, Translations.get("validation.tag.assignedTwice",
+                        tagOf(l.get(0).metadata()), l.get(0).elementLabel(), String.valueOf(l.size())))));
 
         Map<String, DimTableBuilder> tables = new TreeMap<>();
         Map<String, List<Ontology>> byColumn = new TreeMap<>();
@@ -323,13 +324,15 @@ public class ReportingService {
         for (Ontology o : tags) {
             String table = ReportingNames.dimTable(o);
             String column = ReportingNames.factColumn(o.tag);
-            ReportingNames.identifierProblem(table).ifPresent(p -> problems.add(ValidationIssue.error(KIND_TAG, o.id,
-                    "Tag '" + o.tag + "': its dimension table " + p + "; the site's reporting build would fail")));
-            ReportingNames.identifierProblem(column).ifPresent(p -> problems.add(ValidationIssue.error(KIND_TAG, o.id,
-                    "Tag '" + o.tag + "': its report column " + p + "; the site's reporting build would fail")));
+            // The key's last segment is the defect: validation.tag.table.empty, .characters, .tooLong.
+            String limit = String.valueOf(ReportingNames.MAX_IDENTIFIER_LENGTH);
+            ReportingNames.identifierDefect(table).ifPresent(d -> problems.add(ValidationIssue.error(KIND_TAG, o.id,
+                    Translations.get("validation.tag.table." + d.keySuffix(), o.tag, table, limit))));
+            ReportingNames.identifierDefect(column).ifPresent(d -> problems.add(ValidationIssue.error(KIND_TAG, o.id,
+                    Translations.get("validation.tag.column." + d.keySuffix(), o.tag, column, limit))));
             int uses = usesByTag.getOrDefault(o.id, 0);
             if (uses == 0) {
-                problems.add(ValidationIssue.warning(KIND_TAG, o.id, "Tag '" + o.tag + "' is not assigned to any element"));
+                problems.add(ValidationIssue.warning(KIND_TAG, o.id, Translations.get("validation.tag.unused", o.tag)));
             }
             tables.computeIfAbsent(table, t -> new DimTableBuilder(t, o.dimension != null ? o.dimension.name : o.tag, o.dimension != null))
                     .add(o.tag, uses);
@@ -338,8 +341,8 @@ public class ReportingService {
         }
         byColumn.forEach((column, owners) -> {
             if (owners.size() > 1) {
-                problems.add(ValidationIssue.error(KIND_TAG, owners.get(0).id, "Tags " + owners.stream().map(o -> "'" + o.tag + "'").toList()
-                        + " all produce the report column '" + column + "'"));
+                problems.add(ValidationIssue.error(KIND_TAG, owners.get(0).id, Translations.get("validation.tag.sameColumn",
+                        owners.stream().map(o -> "'" + o.tag + "'").collect(Collectors.joining(", ")), column)));
             }
         });
         for (Ontology o : tags) {
@@ -347,8 +350,8 @@ public class ReportingService {
                 String own = ReportingNames.dimTableForTag(o.tag);
                 for (Ontology other : tags) {
                     if (other.dimension != null && own.equals(ReportingNames.dimTable(other))) {
-                        problems.add(ValidationIssue.error(KIND_TAG, o.id, "Tag '" + o.tag + "' has no dimension, so it names its own table '"
-                                + own + "', which is also the table of dimension '" + other.dimension.name + "'"));
+                        problems.add(ValidationIssue.error(KIND_TAG, o.id,
+                                Translations.get("validation.tag.tableClash", o.tag, own, other.dimension.name)));
                         break;
                     }
                 }
@@ -363,9 +366,8 @@ public class ReportingService {
                 String otherTable = ReportingNames.dimTable(other);
                 for (Ontology o : mine) {
                     if (!otherTable.equals(ReportingNames.dimTable(o))) {
-                        problems.add(ValidationIssue.warning(KIND_TAG, o.id, "Tag '" + o.tag + "' produces column '" + column
-                                + "' against '" + ReportingNames.dimTable(o) + "', but another survey in this database maps the same column to '"
-                                + otherTable + "'"));
+                        problems.add(ValidationIssue.warning(KIND_TAG, o.id, Translations.get("validation.tag.otherSurvey",
+                                o.tag, column, ReportingNames.dimTable(o), otherTable)));
                     }
                 }
             }
@@ -440,7 +442,7 @@ public class ReportingService {
             if (node == null) {
                 return new Assignment(m, ref, "", "", true, null);
             }
-            String where = ref == ElementRef.QUESTION ? "wherever it appears" : path(node.parent());
+            String where = ref == ElementRef.QUESTION ? Translations.get("reporting.where.everywhere") : path(node.parent());
             return new Assignment(m, ref, node.label(), where, node.retired(), node);
         }
     }
@@ -473,7 +475,7 @@ public class ReportingService {
     private Metadata assignment(int surveyId, int metadataId) {
         Metadata m = Metadata.findById(metadataId);
         if (m == null || !Objects.equals(m.surveyId, surveyId)) {
-            throw new AuthoringException("The assignment no longer exists");
+            throw new AuthoringException(Translations.get("error.tag.assignmentGone"));
         }
         return m;
     }
@@ -481,7 +483,7 @@ public class ReportingService {
     private static Survey survey(int surveyId) {
         Survey s = Survey.findById(surveyId);
         if (s == null) {
-            throw new AuthoringException("Survey " + surveyId + " no longer exists");
+            throw new AuthoringException(Translations.get("error.survey.gone", String.valueOf(surveyId)));
         }
         return s;
     }
@@ -494,49 +496,51 @@ public class ReportingService {
         return "'" + o.tag + "' (" + ReportingNames.dimTable(o) + ")";
     }
 
+    /** An assignment's tag and value as a retroactivity warning prints them; the language file supplies the word "tag". */
     private static String describe(Metadata m) {
-        return "tag '" + tagOf(m) + "'" + (m.value == null ? "" : " = '" + m.value + "'");
+        return "'" + tagOf(m) + "'" + (m.value == null ? "" : " = '" + m.value + "'");
     }
 
     /** UC-023 BR-002/BR-003: a tag must survive the ETL's identifier rules for both the names it produces. */
     static String validateTag(String tag, String dimensionName) {
         if (tag == null || tag.isBlank()) {
-            throw new AuthoringException("Tag is required", "tag");
+            throw new AuthoringException(Translations.get("error.tag.nameRequired"), "tag");
         }
         String clean = tag.trim();
         if (clean.length() > 255) {
-            throw new AuthoringException("Tag must be 255 characters or fewer", "tag");
+            throw new AuthoringException(Translations.get("error.tag.tooLong"), "tag");
         }
         if (!ReportingNames.TAG_CHARS.matcher(clean).matches()) {
-            throw new AuthoringException("Tag may contain only letters, digits, spaces and hyphens, and must start with a letter or digit", "tag");
+            throw new AuthoringException(Translations.get("error.tag.characters"), "tag");
         }
         boolean ownTable = dimensionName == null || dimensionName.isBlank();
         if (ownTable && clean.contains("-")) {
-            throw new AuthoringException("A tag without a dimension names its own table, and a hyphen is not allowed in a table name; "
-                    + "choose a dimension or remove the hyphen", "tag");
+            throw new AuthoringException(Translations.get("error.tag.hyphenNoDimension"), "tag");
         }
-        ReportingNames.identifierProblem(ReportingNames.factColumn(clean)).ifPresent(p -> {
-            throw new AuthoringException("The report column " + p, "tag");
-        });
+        requireIdentifier(ReportingNames.factColumn(clean), "error.tag.column.", "tag");
         if (ownTable) {
-            ReportingNames.identifierProblem(ReportingNames.dimTableForTag(clean)).ifPresent(p -> {
-                throw new AuthoringException("The dimension table " + p, "tag");
-            });
+            requireIdentifier(ReportingNames.dimTableForTag(clean), "error.tag.table.", "tag");
         }
         return clean;
+    }
+
+    /** Refuses a name the site's ETL would reject; the key's last segment is the defect (empty, characters, tooLong). */
+    private static void requireIdentifier(String identifier, String keyPrefix, String field) {
+        ReportingNames.identifierDefect(identifier).ifPresent(defect -> {
+            throw new AuthoringException(Translations.get(keyPrefix + defect.keySuffix(), identifier,
+                    String.valueOf(ReportingNames.MAX_IDENTIFIER_LENGTH)), field);
+        });
     }
 
     static String validateDimension(String name) {
         String clean = name.trim();
         if (clean.length() > 50) {
-            throw new AuthoringException("Dimension must be 50 characters or fewer", "dimension");
+            throw new AuthoringException(Translations.get("error.dimension.tooLong"), "dimension");
         }
         if (!ReportingNames.DIMENSION_CHARS.matcher(clean).matches()) {
-            throw new AuthoringException("Dimension may contain only letters, digits and underscores (it names a table)", "dimension");
+            throw new AuthoringException(Translations.get("error.dimension.characters"), "dimension");
         }
-        ReportingNames.identifierProblem(ReportingNames.dimTableForDimension(clean)).ifPresent(p -> {
-            throw new AuthoringException("The dimension table " + p, "dimension");
-        });
+        requireIdentifier(ReportingNames.dimTableForDimension(clean), "error.tag.table.", "dimension");
         return clean;
     }
 
@@ -546,7 +550,7 @@ public class ReportingService {
         }
         String clean = value.trim();
         if (clean.length() > 255) {
-            throw new AuthoringException("Value must be 255 characters or fewer", "value");
+            throw new AuthoringException(Translations.get("error.tag.valueTooLong"), "value");
         }
         return clean;
     }

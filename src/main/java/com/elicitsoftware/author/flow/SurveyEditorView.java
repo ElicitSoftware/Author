@@ -95,7 +95,7 @@ public class SurveyEditorView extends VerticalLayout implements BeforeEnterObser
     public void beforeEnter(BeforeEnterEvent event) {
         int id = event.getRouteParameters().getInteger(SURVEY_ID).orElse(-1);
         if (surveyService.find(id).isEmpty()) {
-            event.rerouteToError(NotFoundException.class, "No survey with id " + id);
+            event.rerouteToError(NotFoundException.class, getTranslation("surveyDesignerView.noSurvey", String.valueOf(id)));
             return;
         }
         load(id);

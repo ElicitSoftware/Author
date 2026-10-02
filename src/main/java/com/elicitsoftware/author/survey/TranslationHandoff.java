@@ -11,6 +11,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.model.Survey;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -146,21 +147,21 @@ public class TranslationHandoff {
         try {
             byte[] bytes = in.readAllBytes();
             if (bytes.length > MAX_FILE_BYTES) {
-                throw new AuthoringException("That file is larger than " + (MAX_FILE_BYTES / (1024 * 1024)) + " MB");
+                throw new AuthoringException(Translations.get("error.handoff.tooLarge", String.valueOf(MAX_FILE_BYTES / (1024 * 1024))));
             }
             root = MAPPER.readTree(new String(bytes, StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new AuthoringException("That file is not readable JSON: " + e.getMessage());
+            throw new AuthoringException(Translations.get("error.handoff.notJson", e.getMessage()));
         }
         if (root == null || !FORMAT.equals(root.path("format").asText())) {
-            throw new AuthoringException("That is not a translation request: the file does not carry " + FORMAT);
+            throw new AuthoringException(Translations.get("error.handoff.notRequest", FORMAT));
         }
         if (!String.valueOf(survey.surveyKey).equals(root.path("survey_key").asText())) {
-            throw new AuthoringException("That file belongs to another survey");
+            throw new AuthoringException(Translations.get("error.handoff.otherSurvey"));
         }
         String language = root.path("language").asText(null);
         if (language == null || language.isBlank()) {
-            throw new AuthoringException("That file names no language");
+            throw new AuthoringException(Translations.get("error.handoff.noLanguage"));
         }
 
         int imported = 0;
@@ -172,7 +173,7 @@ public class TranslationHandoff {
         Map<String, Set<String>> optionLabelsPerGroup = new LinkedHashMap<>();
 
         for (JsonNode item : root.path("items")) {
-            String id = item.path("id").asText("(unnamed)");
+            String id = item.path("id").asText(Translations.get("translationImport.item.unnamed"));
             String translation = item.path("translation").asText("");
             if (translation.isBlank()) {
                 skipped++;
@@ -184,16 +185,16 @@ public class TranslationHandoff {
             try {
                 key = UUID.fromString(item.path("element_key").asText());
             } catch (IllegalArgumentException e) {
-                rejections.add(id + ": element_key is not a UUID");
+                rejections.add(Translations.get("translationImport.reject.notUuid", id));
                 continue;
             }
             if (!TranslatableFields.isTranslatable(elementType, field)) {
-                rejections.add(id + ": " + elementType + "." + field + " carries no respondent-facing text");
+                rejections.add(Translations.get("translationImport.reject.notTranslatable", id, elementType + "." + field));
                 continue;
             }
             String baseText = translations.baseText(survey.id, elementType, key, field);
             if (baseText == null) {
-                rejections.add(id + ": that element no longer exists, or has been retired");
+                rejections.add(Translations.get("translationImport.reject.elementGone", id));
                 continue;
             }
             // Two checks, because neither is sufficient alone. The token set catches a renamed or
@@ -204,34 +205,33 @@ public class TranslationHandoff {
             int sourcePlaceholders = Tokens.placeholders(baseText).size();
             int givenPlaceholders = Tokens.placeholders(translation).size();
             if (sourcePlaceholders != givenPlaceholders) {
-                rejections.add(id + ": the source has " + sourcePlaceholders + " placeholder(s) and the "
-                        + "translation has " + givenPlaceholders + "; each one fills in an earlier answer");
+                rejections.add(Translations.get("translationImport.reject.placeholderCount", id, String.valueOf(sourcePlaceholders), String.valueOf(givenPlaceholders)));
                 continue;
             }
             Set<String> sourceTokens = tokensOf(survey.id, baseText);
             Set<String> given = tokensOf(survey.id, translation);
             if (!sourceTokens.equals(given)) {
-                rejections.add(id + ": tokens " + given + " do not match the source's " + sourceTokens);
+                rejections.add(Translations.get("translationImport.reject.tokens", id, String.valueOf(given), String.valueOf(sourceTokens)));
                 continue;
             }
             if (unbalanced(translation)) {
-                rejections.add(id + ": unbalanced braces or bars in the translation");
+                rejections.add(Translations.get("translationImport.reject.unbalanced", id));
                 continue;
             }
             int budget = TranslationBudget.of(elementType, field, baseText);
             if (translation.length() > budget) {
-                rejections.add(id + ": " + translation.length() + " characters, over the " + budget + " allowed");
+                rejections.add(Translations.get("translationImport.reject.tooLong", id, String.valueOf(translation.length()), String.valueOf(budget)));
                 continue;
             }
             if ("select_items".equals(elementType)) {
                 Set<String> seen = optionLabelsPerGroup.computeIfAbsent(elementType, k -> new HashSet<>());
                 if (!seen.add(translation)) {
-                    rejections.add(id + ": another option of this question is translated the same way");
+                    rejections.add(Translations.get("translationImport.reject.duplicateOption", id));
                     continue;
                 }
             }
             if (tagsDiffer(baseText, translation)) {
-                warnings.add(id + ": the HTML tags differ from the source's");
+                warnings.add(Translations.get("translationImport.warn.tagsDiffer", id));
             }
 
             String before = currentValue(survey.id, key, field, language);
@@ -243,7 +243,7 @@ public class TranslationHandoff {
             }
             if (!ContentHash.of(baseText).equals(item.path("source_hash").asText())) {
                 stale++;
-                warnings.add(id + ": the base text changed since the file was exported");
+                warnings.add(Translations.get("translationImport.warn.baseChanged", id));
             }
         }
         return new ImportResult(imported, unchanged, skipped, stale, rejections, warnings);

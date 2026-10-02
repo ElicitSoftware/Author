@@ -11,6 +11,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.Section;
@@ -27,6 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -114,7 +116,7 @@ public class RelationshipQuery {
             edges.add(new RuleEdge(r.relationshipId, r.relationshipKey,
                     "sq-" + r.upstreamSqId, sourceFallbacks,
                     target, targetFallbacks, action, operator, label(r, targetName), condition(r), r.description, !r.isCurrent(),
-                    problem.isPresent(), problem.map(p -> "Points backwards: " + p).orElse(null)));
+                    problem.isPresent(), problem.map(p -> Translations.get("validation.rule.backwards.edge", p)).orElse(null)));
         }
         edges.sort(Comparator.comparing(RuleEdge::relationshipId));
         return edges;
@@ -142,29 +144,30 @@ public class RelationshipQuery {
 
     /** The arrow label reads what the rule does: {@code "Show <target>"}, {@code "Repeat <target>"}, {@code "Replace <TOKEN>"}. */
     public static String label(Relationship r, String targetName) {
-        String name = targetName == null || targetName.isBlank() ? "target" : targetName;
+        String name = targetName == null || targetName.isBlank() ? Translations.get("ruleLabel.target") : targetName;
         String action = r.actionType == null ? "" : r.actionType.name;
         return switch (action) {
-            case "SHOW" -> "Show " + name;
-            case "REPEAT" -> "Repeat " + name;
-            case "TEXT" -> "Replace " + (r.token != null && !r.token.isBlank() ? Tokens.reference(r.token) : name);
-            default -> (action.isBlank() ? "Rule" : action) + " " + name;
+            case "SHOW" -> Translations.get("ruleLabel.show", name);
+            case "REPEAT" -> Translations.get("ruleLabel.repeat", name);
+            case "TEXT" -> Translations.get("ruleLabel.replace", r.token != null && !r.token.isBlank() ? Tokens.reference(r.token) : name);
+            default -> (action.isBlank() ? Translations.get("ruleLabel.rule") : action) + " " + name;
         };
     }
 
     /** UC-019 BR-003: the condition "(operator) value" and the token the rule carries, if any — shown in the tooltip. */
     public static String condition(Relationship r) {
-        String op = r.operatorType == null ? "?" : switch (r.operatorType.name) {
-            case "BOOLEAN" -> "is true";
-            case "GREATER THAN", "GREATER_THAN" -> ">";
-            case "LESS THAN", "LESS_THAN" -> "<";
+        String operator = r.operatorType == null ? "" : r.operatorType.name;
+        boolean unary = Set.of("BOOLEAN", "FIELD_EXIST", "FIELD EXIST").contains(operator);
+        String op = r.operatorType == null ? "?" : switch (operator) {
+            case "BOOLEAN" -> Translations.get("ruleCondition.isTrue");
+            case "GREATER THAN", "GREATER_THAN" -> ">"; // i18n:ignore
+            case "LESS THAN", "LESS_THAN" -> "<"; // i18n:ignore
             case "EQUAL" -> "=";
-            case "NOT_EQUAL", "NOT EQUAL" -> "≠";
-            case "FIELD_EXIST", "FIELD EXIST" -> "exists";
+            case "NOT_EQUAL", "NOT EQUAL" -> "≠"; // i18n:ignore
+            case "FIELD_EXIST", "FIELD EXIST" -> Translations.get("ruleCondition.exists"); // i18n:ignore
             case "CONTAINS" -> "∋";
             default -> r.operatorType.symbol != null && !r.operatorType.symbol.isBlank() ? r.operatorType.symbol : r.operatorType.name;
         };
-        boolean unary = "is true".equals(op) || "exists".equals(op);
         String value = unary || r.referenceValue == null || r.referenceValue.isBlank() ? "" : " " + r.referenceValue;
         String token = r.token != null && !r.token.isBlank() ? " " + Tokens.reference(r.token) : "";
         return op + value + token;

@@ -33,6 +33,10 @@ class ElicitRuleArrows extends LitElement {
     selectedAnchor: { type: String, attribute: 'selected-anchor' },
     pendingSource: { type: String, attribute: 'pending-source' },
     pendingAction: { type: String, attribute: 'pending-action' },
+    textBackwards: { type: String },
+    textDragSource: { type: String },
+    textDragTarget: { type: String },
+    textWhen: { type: String },
     _lines: { state: true },
     _pointer: { state: true },
     _size: { state: true }
@@ -87,6 +91,10 @@ class ElicitRuleArrows extends LitElement {
     this.selectedAnchor = '';
     this.pendingSource = '';
     this.pendingAction = '';
+    this.textBackwards = 'points backwards';
+    this.textDragSource = 'Drag to read from another question';
+    this.textDragTarget = 'Drag to another target';
+    this.textWhen = 'when';
     this._lines = [];
     this._pointer = null;
     this._size = { w: 0, h: 0 };
@@ -356,17 +364,17 @@ class ElicitRuleArrows extends LitElement {
     const invalid = !!e.invalid && !e.retired;
     const cls = `edge ${e.retired ? 'retired' : ''} ${invalid ? 'invalid' : ''} ${selected ? 'selected' : ''} ${dim ? 'focus-dim' : ''}`;
     const d = beingDragged ? this._path(from, to) : this._channelPath(from, to, l.cx);
-    const label = invalid ? `${e.label} — points backwards` : e.label;
+    const label = invalid ? `${e.label} — ${this.textBackwards}` : e.label;
     return svg`<g class="${cls}" data-edge-id="${id}">
       <path class="line" d="${d}" marker-end="url(#${invalid ? 'invalid-head' : 'head'})"></path>
       <path class="hit" d="${d}" @click=${() => this._emit('edge-selected', { edgeId: id })}></path>
-      <circle class="end" cx="${from.x}" cy="${from.y}" r="5" @pointerdown=${(ev) => this._grabEnd(ev, id, 'SOURCE')}><title>Drag to read from another question</title></circle>
-      <circle class="end" cx="${to.x}" cy="${to.y}" r="5" @pointerdown=${(ev) => this._grabEnd(ev, id, 'TARGET')}><title>Drag to another target</title></circle>
+      <circle class="end" cx="${from.x}" cy="${from.y}" r="5" @pointerdown=${(ev) => this._grabEnd(ev, id, 'SOURCE')}><title>${this.textDragSource}</title></circle>
+      <circle class="end" cx="${to.x}" cy="${to.y}" r="5" @pointerdown=${(ev) => this._grabEnd(ev, id, 'TARGET')}><title>${this.textDragTarget}</title></circle>
       <g class="glyph" transform="translate(${mid.x},${mid.y})"
          @pointerdown=${(ev) => this._grabEnd(ev, id, 'TARGET')}>
         <circle r="11"></circle>
         <text>${GLYPH[e.action] || '?'}</text>
-        <title>${invalid && e.problem ? e.problem + '. ' : ''}${e.label}${e.condition ? ' — when ' + e.condition : ''}${e.description ? ' (' + e.description + ')' : ''}</title>
+        <title>${invalid && e.problem ? e.problem + '. ' : ''}${e.label}${e.condition ? ' — ' + this.textWhen + ' ' + e.condition : ''}${e.description ? ' (' + e.description + ')' : ''}</title>
       </g>
       <text class="label" style="text-anchor:start" x="2" y="${mid.y - 8}">${label}</text>
     </g>`;

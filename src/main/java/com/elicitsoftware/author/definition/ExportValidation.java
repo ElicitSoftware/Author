@@ -21,6 +21,7 @@ import com.elicitsoftware.model.Step;
 import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Survey;
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.survey.RenameLedger;
 import com.elicitsoftware.author.survey.ReportingChangeLedger;
 import com.elicitsoftware.author.survey.ReportingService;
@@ -50,6 +51,10 @@ import java.util.function.Function;
  * questions in no section (BR-010), questions outside the first step that no Show or Repeat rule builds
  * (BR-012), duplicate ordering. Errors block export; warnings do not.
  * Read-only (UC-007 BR-004).
+ *
+ * <p>Every finding is worded for the author and resolved through the language files (UC-007 BR-013 /
+ * FR-066): the sentence is a {@code validation.*} key, and only what the author wrote — a name, a
+ * placeholder, a token — is passed into it.</p>
  */
 @ApplicationScoped
 public class ExportValidation {
@@ -82,7 +87,7 @@ public class ExportValidation {
         List<Relationship> relationships = Relationship.<Relationship>list("surveyId", sid).stream().filter(StructuralElement::isCurrent).toList();
 
         if (steps.isEmpty()) {
-            issues.add(ValidationIssue.warning("surveys", sid, "The survey has no steps"));
+            issues.add(ValidationIssue.warning("surveys", sid, Translations.get("validation.survey.noSteps")));
         }
 
         Set<Integer> stepsWithSections = new HashSet<>();
@@ -94,20 +99,20 @@ public class ExportValidation {
 
         for (StepsSections ss : stepsSections.values()) {
             if (!steps.containsKey(ss.stepId)) {
-                issues.add(ValidationIssue.error("steps_sections", ss.stepsSectionsId, "Section assignment refers to a removed or missing step"));
+                issues.add(ValidationIssue.error("steps_sections", ss.stepsSectionsId, Translations.get("validation.mount.stepRemoved")));
             }
             if (!sections.containsKey(ss.sectionId)) {
-                issues.add(ValidationIssue.error("steps_sections", ss.stepsSectionsId, "Section assignment refers to a removed or missing section"));
+                issues.add(ValidationIssue.error("steps_sections", ss.stepsSectionsId, Translations.get("validation.mount.sectionRemoved")));
             }
             stepsWithSections.add(ss.stepId);
             mountedSections.add(ss.sectionId);
         }
         for (SectionsQuestion sq : sectionsQuestions.values()) {
             if (!questions.containsKey(sq.questionId)) {
-                issues.add(ValidationIssue.error("sections_questions", sq.sectionsQuestionId, "Question assignment refers to a removed or missing question"));
+                issues.add(ValidationIssue.error("sections_questions", sq.sectionsQuestionId, Translations.get("validation.assignment.questionRemoved")));
             }
             if (!sections.containsKey(sq.sectionId)) {
-                issues.add(ValidationIssue.error("sections_questions", sq.sectionsQuestionId, "Question assignment refers to a removed or missing section"));
+                issues.add(ValidationIssue.error("sections_questions", sq.sectionsQuestionId, Translations.get("validation.assignment.sectionRemoved")));
             }
             sectionsWithQuestions.add(sq.sectionId);
             assignedQuestions.add(sq.questionId);
@@ -115,21 +120,21 @@ public class ExportValidation {
         for (Question q : questions.values()) {
             String type = q.questionType == null ? "" : q.questionType.name;
             if (q.selectGroupId != null && !groups.containsKey(q.selectGroupId)) {
-                issues.add(ValidationIssue.error("questions", q.questionId, label(q) + " refers to a removed or missing list"));
+                issues.add(ValidationIssue.error("questions", q.questionId, Translations.get("validation.question.listRemoved", name(q))));
             } else if (CHOICE_TYPES.contains(type)) {
                 if (q.selectGroupId == null) {
-                    issues.add(ValidationIssue.error("questions", q.questionId, label(q) + " is a " + type + " question without a list of options"));
+                    issues.add(ValidationIssue.error("questions", q.questionId, Translations.get("validation.question.noList", name(q), type)));
                 } else if (!groupsWithItems.contains(q.selectGroupId)) {
-                    issues.add(ValidationIssue.error("questions", q.questionId, label(q) + " uses a list that has no options"));
+                    issues.add(ValidationIssue.error("questions", q.questionId, Translations.get("validation.question.emptyList", name(q))));
                 }
             }
             if (q.text == null || q.text.isBlank()) {
-                issues.add(ValidationIssue.error("questions", q.questionId, label(q) + " has no text"));
+                issues.add(ValidationIssue.error("questions", q.questionId, Translations.get("validation.question.noText", name(q))));
             }
         }
         for (SelectItem i : items) {
             if (!groups.containsKey(i.selectGroupId)) {
-                issues.add(ValidationIssue.error("select_items", i.selectItemId, "Option '" + i.displayText + "' belongs to a removed or missing list"));
+                issues.add(ValidationIssue.error("select_items", i.selectItemId, Translations.get("validation.option.listRemoved", i.displayText)));
             }
         }
         Map<Integer, String> sectionNames = new HashMap<>();
@@ -138,36 +143,36 @@ public class ExportValidation {
         questions.values().forEach(q -> questionNames.put(q.questionId, RuleOrdering.questionLabel(q)));
         RuleOrdering.Board board = new RuleOrdering.Board(steps.values(), stepsSections.values(), sectionsQuestions.values(), sectionNames, questionNames);
         for (Relationship r : relationships) {
-            String rule = "Rule '" + r.description + "'";
+            String rule = rule(r);
             // UC-019 BR-001: the downstream path — step, section in it, question in that — must hold together.
-            RulePath.problem(r, board).ifPresent(p -> issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " " + p)));
+            RulePath.problem(r, board, rule).ifPresent(p -> issues.add(ValidationIssue.error("relationships", r.relationshipId, p)));
             if (!sectionsQuestions.containsKey(r.upstreamSqId)) {
-                issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " reads from a removed or missing question assignment"));
+                issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get("validation.rule.readsRemovedQuestion", rule)));
             }
             if (r.upstreamStepId != null && !steps.containsKey(r.upstreamStepId)) {
-                issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " reads from a removed or missing step"));
+                issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get("validation.rule.readsRemovedStep", rule)));
             }
             if (r.downstreamStepId != null && !steps.containsKey(r.downstreamStepId)) {
-                issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " targets a removed or missing step"));
+                issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get("validation.rule.targetsRemovedStep", rule)));
             }
             if (r.downstreamSsId != null && !stepsSections.containsKey(r.downstreamSsId)) {
-                issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " targets a removed or missing section assignment"));
+                issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get("validation.rule.targetsRemovedSection", rule)));
             }
             if (r.downstreamSqId != null && !sectionsQuestions.containsKey(r.downstreamSqId)) {
-                issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " targets a removed or missing question assignment"));
+                issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get("validation.rule.targetsRemovedQuestion", rule)));
             }
             if (r.operatorType == null || r.actionType == null) {
-                issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " has no operator or action"));
+                issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get("validation.rule.incomplete", rule)));
             }
             // UC-033 A3: a rule the respondent can never see fire blocks export (UC-007 BR-001).
-            board.problem(r).ifPresent(p -> issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " points backwards: " + p)));
+            board.problem(r).ifPresent(p -> issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get("validation.rule.backwards", rule, p))));
         }
         checkTokens(issues, steps, sections, questions, stepsSections, sectionsQuestions, relationships, board);
         justInTime(issues, steps, sections, questions, stepsSections, sectionsQuestions, relationships, board);
         for (Step s : steps.values()) {
             if (!stepsWithSections.contains(s.stepId)) {
                 issues.add(ValidationIssue.warning("steps", s.stepId,
-                        "Step '" + StructureNode.nameOr(s.name, s.stepId) + "' has no sections"));
+                        Translations.get("validation.step.empty", StructureNode.nameOr(s.name, s.stepId))));
             }
         }
         for (Section s : sections.values()) {
@@ -175,14 +180,14 @@ public class ExportValidation {
             // UC-007 BR-010: a section out of the structure is reported as that, and not also as
             // empty -- the emptiness is downstream of the real defect, and mounting it is the fix.
             if (!mountedSections.contains(s.sectionId)) {
-                issues.add(ValidationIssue.warning("sections", s.sectionId, "Section '" + name + "' is not in any step"));
+                issues.add(ValidationIssue.warning("sections", s.sectionId, Translations.get("validation.section.unplaced", name)));
             } else if (!sectionsWithQuestions.contains(s.sectionId)) {
-                issues.add(ValidationIssue.warning("sections", s.sectionId, "Section '" + name + "' has no questions"));
+                issues.add(ValidationIssue.warning("sections", s.sectionId, Translations.get("validation.section.empty", name)));
             }
         }
         for (Question q : questions.values()) {
             if (!assignedQuestions.contains(q.questionId)) {
-                issues.add(ValidationIssue.warning("questions", q.questionId, label(q) + " is not in any section"));
+                issues.add(ValidationIssue.warning("questions", q.questionId, Translations.get("validation.question.unplaced", name(q))));
             }
         }
         if (!stepsSections.isEmpty()) {
@@ -190,7 +195,9 @@ public class ExportValidation {
             Set<String> keys = new HashSet<>();
             stepsSections.values().forEach(ss -> keys.add(ss.displayKey));
             if (survey.initialDisplayKey == null || !keys.contains(survey.initialDisplayKey)) {
-                issues.add(ValidationIssue.error("surveys", sid, "The initial display key does not name a current section assignment"));
+                // The field and the dialog are named as the form labels them, in the reader's language (BR-013).
+                issues.add(ValidationIssue.error("surveys", sid, Translations.get("validation.survey.startingPoint",
+                        Translations.get("surveyMetadataDialog.initialDisplayKey"), Translations.get("surveyMetadataDialog.editSurvey"))));
             }
         }
         // UC-007 step 4 / UC-018 BR-001: renames since the last export are retroactive at deployed sites.
@@ -199,10 +206,10 @@ public class ExportValidation {
         reportingChanges.since(sid).forEach(c -> issues.add(ValidationIssue.warning(c.kind(), c.durableId(), c.message())));
         // UC-024 BR-002: a name the site's ETL would reject blocks the export; the rest are warnings.
         issues.addAll(reporting.impact(sid).problems());
-        duplicateOrders(issues, "steps", steps.values().stream().map(s -> Map.entry(s.stepId, "step:" + s.displayOrder)).toList());
-        duplicateOrders(issues, "steps_sections", stepsSections.values().stream()
+        duplicateOrders(issues, "steps", "validation.order.steps", steps.values().stream().map(s -> Map.entry(s.stepId, "step:" + s.displayOrder)).toList());
+        duplicateOrders(issues, "steps_sections", "validation.order.sections", stepsSections.values().stream()
                 .map(ss -> Map.entry(ss.stepsSectionsId, ss.stepId + ":" + ss.sectionDisplayOrder)).toList());
-        duplicateOrders(issues, "sections_questions", sectionsQuestions.values().stream()
+        duplicateOrders(issues, "sections_questions", "validation.order.questions", sectionsQuestions.values().stream()
                 .map(sq -> Map.entry(sq.sectionsQuestionId, sq.sectionId + ":" + sq.displayOrder)).toList());
         // UC-043 / FR-060: warnings, never errors. An author may legitimately export a survey whose
         // translations are behind -- every one of those strings falls back to the base language at
@@ -266,9 +273,8 @@ public class ExportValidation {
                 continue;
             }
             if (missing == total) {
-                issues.add(ValidationIssue.error("steps", step.stepId, "Step '" + StructureNode.nameOr(step.name, step.stepId)
-                        + "' is not the first step and no Show or Repeat rule builds it, so every respondent's sign-in"
-                        + " creates it before the first page. " + remedy("the step")));
+                issues.add(ValidationIssue.error("steps", step.stepId, Translations.get("validation.step.noBuildingRule",
+                        StructureNode.nameOr(step.name, step.stepId))));
                 continue;
             }
             for (Map.Entry<StepsSections, List<SectionsQuestion>> e : unreached.entrySet()) {
@@ -277,29 +283,22 @@ public class ExportValidation {
                 if (out.isEmpty()) {
                     continue;
                 }
-                String where = " in step " + board.stepLabel(step.stepId);
+                String stepName = board.stepLabel(step.stepId);
                 if (out.size() == bySection.getOrDefault(ss.sectionId, List.of()).size()) {
-                    issues.add(ValidationIssue.error("steps_sections", ss.stepsSectionsId, "Section "
-                            + board.sectionLabel(ss.sectionId) + where + " is not in the first step and no Show or Repeat"
-                            + " rule builds it, so every respondent's sign-in creates it before the first page. "
-                            + remedy("the section in this step")));
+                    issues.add(ValidationIssue.error("steps_sections", ss.stepsSectionsId, Translations.get(
+                            "validation.section.noBuildingRule", board.sectionLabel(ss.sectionId), stepName)));
                     continue;
                 }
                 for (SectionsQuestion sq : out) {
-                    issues.add(ValidationIssue.error("sections_questions", sq.sectionsQuestionId, label(questions.get(sq.questionId))
-                            + " in section " + board.sectionLabel(ss.sectionId) + where + " is not in the first step and no"
-                            + " Show or Repeat rule builds it, so every respondent's sign-in creates it before the first page. "
-                            + remedy("the question, its section or its step")));
+                    issues.add(ValidationIssue.error("sections_questions", sq.sectionsQuestionId, Translations.get(
+                            "validation.question.noBuildingRule", name(questions.get(sq.questionId)),
+                            board.sectionLabel(ss.sectionId), stepName)));
                 }
             }
         }
     }
 
     private static final Set<String> BUILDING_ACTIONS = Set.of("SHOW", "REPEAT");
-
-    private static String remedy(String target) {
-        return "Add a Show rule targeting " + target + ", usually Field exists on a question the respondent has already passed";
-    }
 
     /** Whether a Show or Repeat rule reaches the question as it is shown in this mount (UC-019 BR-005). */
     private static boolean reaches(List<Relationship> builders, StepsSections ss, SectionsQuestion sq) {
@@ -320,13 +319,14 @@ public class ExportValidation {
         return false;
     }
 
-    private static void duplicateOrders(List<ValidationIssue> issues, String kind, List<Map.Entry<Integer, String>> keyed) {
+    private static void duplicateOrders(List<ValidationIssue> issues, String kind, String messageKey,
+                                        List<Map.Entry<Integer, String>> keyed) {
         Map<String, Integer> seen = new HashMap<>();
         for (Map.Entry<Integer, String> e : keyed) {
             Integer first = seen.putIfAbsent(e.getValue(), e.getKey());
             if (first != null) {
-                issues.add(ValidationIssue.warning(kind, e.getKey(), "Two elements share the same position ("
-                        + e.getValue().replaceFirst("^[^:]*:", "order ") + ")"));
+                issues.add(ValidationIssue.warning(kind, e.getKey(),
+                        Translations.get(messageKey, e.getValue().replaceFirst("^[^:]*:", ""))));
             }
         }
     }
@@ -357,7 +357,7 @@ public class ExportValidation {
         for (Step s : steps.values()) {
             for (Tokens.Placeholder ph : Tokens.placeholders(s.name)) {
                 if (!fills.fills(ph, s.stepId, null, null)) {
-                    unfilled(issues, "steps", s.stepId, "Step '" + s.name + "'", ph);
+                    unfilled(issues, "steps", s.stepId, Translations.get("validation.where.step", s.name), ph);
                 }
             }
         }
@@ -368,7 +368,8 @@ public class ExportValidation {
             }
             for (Tokens.Placeholder ph : Tokens.placeholders(sec.name)) {
                 if (!fills.fills(ph, ss.stepId, ss.stepsSectionsId, null)) {
-                    unfilled(issues, "sections", sec.sectionId, "Section '" + sec.name + "' in step " + board.stepLabel(ss.stepId), ph);
+                    unfilled(issues, "sections", sec.sectionId,
+                            Translations.get("validation.where.sectionInStep", sec.name, board.stepLabel(ss.stepId)), ph);
                 }
             }
         }
@@ -383,7 +384,8 @@ public class ExportValidation {
                         ? fills.fills(ph, null, null, sq.sectionsQuestionId)
                         : mounts.stream().allMatch(ss -> fills.fills(ph, ss.stepId, ss.stepsSectionsId, sq.sectionsQuestionId));
                 if (!filled) {
-                    unfilled(issues, "questions", q.questionId, label(q) + " in section " + board.sectionLabel(sq.sectionId), ph);
+                    unfilled(issues, "questions", q.questionId,
+                            Translations.get("validation.where.questionInSection", name(q), board.sectionLabel(sq.sectionId)), ph);
                 }
             }
         }
@@ -405,9 +407,8 @@ public class ExportValidation {
                 continue;
             }
             if (!reachUses(r, tok, steps, sections, questions, stepsSections, sectionsQuestions, questionsBySection)) {
-                issues.add(ValidationIssue.warning("relationships", r.relationshipId,
-                        "Rule '" + r.description + "' fills {" + Tokens.reference(tok)
-                                + "} but no text it reaches uses it"));
+                issues.add(ValidationIssue.warning("relationships", r.relationshipId, Translations.get(
+                        "validation.rule.tokenUnused", rule(r), tok, "{" + Tokens.reference(tok) + "}")));
             }
             displayOnlySource(issues, r, tok, questions, sectionsQuestions);
         }
@@ -448,16 +449,16 @@ public class ExportValidation {
             }
         }
         for (Step s : steps.values()) {
-            undefinedHere(issues, "steps", s.stepId, "Step '" + s.name + "'", s.name, defined);
+            undefinedHere(issues, "steps", s.stepId, Translations.get("validation.where.step", s.name), s.name, defined);
         }
         for (Section s : sections.values()) {
-            undefinedHere(issues, "sections", s.sectionId, "Section '" + s.name + "'", s.name, defined);
+            undefinedHere(issues, "sections", s.sectionId, Translations.get("validation.where.section", s.name), s.name, defined);
         }
         for (Question q : questions.values()) {
-            undefinedHere(issues, "questions", q.questionId, label(q), q.text, defined);
+            undefinedHere(issues, "questions", q.questionId, Translations.get("validation.where.question", name(q)), q.text, defined);
         }
         for (Relationship r : relationships) {
-            undefinedHere(issues, "relationships", r.relationshipId, "Rule '" + r.description + "'",
+            undefinedHere(issues, "relationships", r.relationshipId, rule(r),
                     r.defaultUpstreamValue, defined);
         }
     }
@@ -470,11 +471,10 @@ public class ExportValidation {
                     continue;
                 }
                 String ref = Tokens.reference(name);
-                issues.add(ValidationIssue.error(kind, id, where + " uses " + ref + " in " + ph.text()
-                        + ", but no rule defines the token " + name + ", so the placeholder never fills and"
-                        + " respondents always read "
-                        + (ph.defaultText() == null ? "it as written" : "\"" + ph.defaultText() + "\"")
-                        + ". If " + ref + " is markup, it belongs outside the braces: write " + ref + "{"));
+                String outside = ref + "{…}";
+                issues.add(ValidationIssue.error(kind, id, ph.defaultText() == null
+                        ? Translations.get("validation.token.undefinedNoDefault", where, ref, ph.text(), name, outside)
+                        : Translations.get("validation.token.undefined", where, ref, ph.text(), name, outside, ph.defaultText())));
             }
         }
     }
@@ -494,18 +494,16 @@ public class ExportValidation {
         if (upstream == null || Tokens.collectsAnswer(upstream.questionType)) {
             return;
         }
-        String type = upstream.questionType == null ? "display-only" : upstream.questionType.name;
-        String rule = "Rule '" + r.description + "'";
+        String type = upstream.questionType == null ? "?" : upstream.questionType.name;
+        String slot = "{" + Tokens.reference(tok) + "}";
+        // The field is named as the rule dialog labels it, in the reader's language (BR-013).
+        String field = Translations.get("relationshipDialog.defaultUpstreamValue");
         if (r.defaultUpstreamValue == null || r.defaultUpstreamValue.isBlank()) {
-            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " fills {"
-                    + Tokens.reference(tok) + "} from " + label(upstream) + ", a display-only " + type
-                    + " question that collects no answer, and carries no value of its own, so nothing ever fills {"
-                    + Tokens.reference(tok) + "}"));
+            issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get(
+                    "validation.rule.displayOnlyNoValue", rule(r), slot, name(upstream), type, field)));
         } else {
-            issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " fills {"
-                    + Tokens.reference(tok) + "} from " + label(upstream) + ", a display-only " + type
-                    + " question that collects no answer; only the rule's own value fills the token."
-                    + " Read it from a question the respondent answers"));
+            issues.add(ValidationIssue.warning("relationships", r.relationshipId, Translations.get(
+                    "validation.rule.displayOnlyConstant", rule(r), slot, name(upstream), type, field)));
         }
     }
 
@@ -535,32 +533,24 @@ public class ExportValidation {
             return false; // already the name alone, upper case: nothing to say
         }
         String name = Tokens.canonical(tok);
-        String rule = "Rule '" + r.description + "'";
+        String rule = rule(r);
         if (!Tokens.bare(tok).equals(tok)) {
-            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " carries the token "
-                    + tok + ", written with the angle brackets a text uses to name it. A phrase naming "
-                    + tok + " asks for the token " + Tokens.bare(tok) + ", and " + tok + " is not "
-                    + Tokens.bare(tok) + ", so nothing this rule reaches ever fills. Write " + name));
+            issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get(
+                    "validation.rule.tokenBracketed", rule, tok, name, "{" + Tokens.reference(name) + "}")));
             return true;
         }
         if (!Tokens.nameable(tok)) {
-            issues.add(ValidationIssue.error("relationships", r.relationshipId, rule + " carries the token "
-                    + tok + ", which no text can name: a token name holds letters, digits and underscores"
-                    + " only, so nothing this rule reaches ever fills"));
+            issues.add(ValidationIssue.error("relationships", r.relationshipId,
+                    Translations.get("validation.rule.tokenInvalid", rule, tok)));
             return true;
         }
         if (!Tokens.TOKEN_NAME.matcher(name).matches()) {
-            issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " carries the token "
-                    + tok + ", which does not start with a letter. It still fills "
-                    + Tokens.reference(tok) + ", but a token name reads as a name: rename it to start with"
-                    + " a letter"));
+            issues.add(ValidationIssue.warning("relationships", r.relationshipId,
+                    Translations.get("validation.rule.tokenLeadingDigit", rule, tok)));
             return false;
         }
-        issues.add(ValidationIssue.warning("relationships", r.relationshipId, rule + " carries the token "
-                + tok + " rather than " + name + ". It still fills " + Tokens.reference(tok)
-                + ", because the runtime matches a token's name without regard to case, but the survey's"
-                + " token list then offers " + tok + " and " + name + " as two names for one slot. Write "
-                + name));
+        issues.add(ValidationIssue.warning("relationships", r.relationshipId,
+                Translations.get("validation.rule.tokenCase", rule, tok, name)));
         return false;
     }
 
@@ -586,16 +576,16 @@ public class ExportValidation {
             return;
         }
         for (Step s : steps.values()) {
-            bareTokens(issues, "steps", s.stepId, "Step '" + s.name + "'", s.name, known);
+            bareTokens(issues, "steps", s.stepId, Translations.get("validation.where.step", s.name), s.name, known);
         }
         for (Section s : sections.values()) {
-            bareTokens(issues, "sections", s.sectionId, "Section '" + s.name + "'", s.name, known);
+            bareTokens(issues, "sections", s.sectionId, Translations.get("validation.where.section", s.name), s.name, known);
         }
         for (Question q : questions.values()) {
-            bareTokens(issues, "questions", q.questionId, label(q), q.text, known);
+            bareTokens(issues, "questions", q.questionId, Translations.get("validation.where.question", name(q)), q.text, known);
         }
         for (Relationship r : relationships) {
-            bareTokens(issues, "relationships", r.relationshipId, "Rule '" + r.description + "'",
+            bareTokens(issues, "relationships", r.relationshipId, rule(r),
                     r.defaultUpstreamValue, known);
         }
     }
@@ -612,19 +602,19 @@ public class ExportValidation {
                 suggestion = suggestion.replaceAll("(?<![A-Za-z0-9_])" + java.util.regex.Pattern.quote(name)
                         + "(?![A-Za-z0-9_>])", java.util.regex.Matcher.quoteReplacement(Tokens.reference(name)));
             }
-            issues.add(ValidationIssue.error(kind, id, where + " uses " + ph.text() + ", which names the token"
-                    + (bare.size() == 1 ? " " : "s ") + String.join(", ", bare)
-                    + " without angle brackets, so no rule fills it"
-                    + (ph.defaultText() == null ? "" : " and respondents always read \"" + ph.defaultText() + "\"")
-                    + ". Write " + suggestion));
+            issues.add(ValidationIssue.error(kind, id, ph.defaultText() == null
+                    ? Translations.get("validation.token.undelimited", where, ph.text(), suggestion)
+                    : Translations.get("validation.token.undelimitedWithDefault", where, ph.text(), suggestion, ph.defaultText())));
         }
     }
 
     private static void unfilled(List<ValidationIssue> issues, String kind, Integer id, String where, Tokens.Placeholder ph) {
         if (ph.defaultText() != null) {
-            issues.add(ValidationIssue.warning(kind, id, where + " uses " + ph.text() + " but no rule fills it there, so respondents always read the default"));
+            issues.add(ValidationIssue.warning(kind, id,
+                    Translations.get("validation.token.unfilledWithDefault", where, ph.text(), ph.defaultText())));
         } else {
-            issues.add(ValidationIssue.error(kind, id, where + " uses " + ph.text() + " without a default and no rule fills it there"));
+            issues.add(ValidationIssue.error(kind, id, Translations.get("validation.token.unfilledNoDefault",
+                    where, ph.text(), "{" + ph.phrase() + "|…}")));
         }
     }
 
@@ -662,19 +652,25 @@ public class ExportValidation {
         for (String language : translations.contentLanguages(survey)) {
             TranslationService.Counts counts = translations.counts(survey.id, language);
             if (counts.missing() > 0) {
-                issues.add(ValidationIssue.warning("translations", survey.id,
-                        language + " is published but " + counts.missing()
-                                + " string(s) are not translated; they will show in the base language"));
+                issues.add(ValidationIssue.warning("translations", survey.id, Translations.get(
+                        counts.missing() == 1 ? "validation.translation.missing.one" : "validation.translation.missing.many",
+                        language, String.valueOf(counts.missing()))));
             }
             if (counts.stale() > 0) {
-                issues.add(ValidationIssue.warning("translations", survey.id,
-                        counts.stale() + " translation(s) in " + language
-                                + " are out of date and will not be shown until they are translated again"));
+                issues.add(ValidationIssue.warning("translations", survey.id, Translations.get(
+                        counts.stale() == 1 ? "validation.translation.stale.one" : "validation.translation.stale.many",
+                        language, String.valueOf(counts.stale()))));
             }
         }
     }
 
-    private static String label(Question q) {
-        return "Question '" + (q.shortText != null && !q.shortText.isBlank() ? q.shortText : "#" + q.questionId) + "'";
+    /** What a finding calls a question: its short text, or its durable id when it has none (BR-011). */
+    private static String name(Question q) {
+        return q.shortText != null && !q.shortText.isBlank() ? q.shortText : "#" + q.questionId;
+    }
+
+    /** A rule as the subject of a finding. */
+    private static String rule(Relationship r) {
+        return Translations.get("validation.where.rule", r.description);
     }
 }

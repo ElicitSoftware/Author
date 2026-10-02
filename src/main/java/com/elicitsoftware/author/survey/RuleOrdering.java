@@ -11,6 +11,7 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.Section;
@@ -104,23 +105,25 @@ public class RuleOrdering {
             return mountsBySection.getOrDefault(sectionId, List.of());
         }
 
+        /** The section's name as a finding prints it; the language file supplies the quotes. */
         public String sectionLabel(Integer sectionId) {
-            return quote(sectionName.get(sectionId));
+            return nameOrUnknown(sectionName.get(sectionId));
         }
 
         public String questionLabel(Integer questionId) {
-            return quote(questionName.get(questionId));
+            return nameOrUnknown(questionName.get(questionId));
         }
 
         public String stepLabel(Integer stepId) {
             Step step = steps.get(stepId);
-            return quote(step == null ? null : step.name);
+            return nameOrUnknown(step == null ? null : step.name);
         }
 
         /**
-         * Empty when the rule points forward from every mount it fires from; otherwise a sentence such as
-         * {@code "downstream question 'Consent' in step 'Intro' › 'About you' is not after upstream question
-         * 'How many' in step 'Intro' › 'Family'"}, naming the first backward pairing found.
+         * Empty when the rule points forward from every mount it fires from; otherwise the reason, in
+         * the reader's language (UC-007 BR-013), such as {@code "downstream question 'Consent' in
+         * step 'Intro' › 'About you' must come after upstream question 'How many' in step 'Intro' ›
+         * 'Family'"}, naming the first backward pairing found.
          */
         public Optional<String> problem(Relationship r) {
             SectionsQuestion origin = r.upstreamSqId == null ? null : assignments.get(r.upstreamSqId);
@@ -129,8 +132,9 @@ public class RuleOrdering {
             }
             for (StepsSections originMount : firingMounts(r, origin)) {
                 Position from = new Position(stepOrder(originMount), originMount.sectionDisplayOrder, origin.displayOrder);
-                String upstream = "upstream question " + quote(questionName.get(origin.questionId)) + inStep(originMount)
-                        + " › " + quote(sectionName.get(originMount.sectionId));
+                String readQuestion = questionLabel(origin.questionId);
+                String readStep = stepLabel(originMount.stepId);
+                String readSection = sectionLabel(originMount.sectionId);
                 if (r.downstreamSqId != null) {
                     SectionsQuestion target = assignments.get(r.downstreamSqId);
                     if (target == null) {
@@ -138,19 +142,22 @@ public class RuleOrdering {
                     }
                     for (StepsSections targetMount : targetMounts(r, origin, originMount, target)) {
                         if (!new Position(stepOrder(targetMount), targetMount.sectionDisplayOrder, target.displayOrder).after(from)) {
-                            return Optional.of("downstream question " + quote(questionName.get(target.questionId)) + inStep(targetMount)
-                                    + " › " + quote(sectionName.get(targetMount.sectionId)) + " is not after " + upstream);
+                            return Optional.of(Translations.get("validation.rule.backwards.question",
+                                    questionLabel(target.questionId), stepLabel(targetMount.stepId),
+                                    sectionLabel(targetMount.sectionId), readQuestion, readStep, readSection));
                         }
                     }
                 } else if (r.downstreamSsId != null) {
                     StepsSections target = mounts.get(r.downstreamSsId);
                     if (target != null && !new Position(stepOrder(target), target.sectionDisplayOrder, WHOLE).after(from)) {
-                        return Optional.of("downstream section " + quote(sectionName.get(target.sectionId)) + inStep(target) + " is not after " + upstream);
+                        return Optional.of(Translations.get("validation.rule.backwards.section",
+                                sectionLabel(target.sectionId), stepLabel(target.stepId), readQuestion, readStep, readSection));
                     }
                 } else if (r.downstreamStepId != null) {
                     Step target = steps.get(r.downstreamStepId);
                     if (target != null && !new Position(target.displayOrder, WHOLE, WHOLE).after(from)) {
-                        return Optional.of("downstream step " + quote(target.name) + " is not after " + upstream);
+                        return Optional.of(Translations.get("validation.rule.backwards.step",
+                                nameOrUnknown(target.name), readQuestion, readStep, readSection));
                     }
                 }
             }
@@ -198,13 +205,8 @@ public class RuleOrdering {
             return step != null && step.displayOrder != null ? step.displayOrder : mount.stepDisplayOrder;
         }
 
-        private String inStep(StepsSections mount) {
-            Step step = steps.get(mount.stepId);
-            return " in step " + quote(step == null ? null : step.name);
-        }
-
-        private static String quote(String name) {
-            return "'" + (name == null || name.isBlank() ? "?" : name) + "'";
+        private static String nameOrUnknown(String name) {
+            return name == null || name.isBlank() ? "?" : name;
         }
     }
 
