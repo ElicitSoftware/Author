@@ -35,9 +35,9 @@ public class DesignerPage extends AuthorPageObject {
 
     /**
      * UC-016: adds a step; {@code dimensionName} (null = same as the name) is what the reporting
-     * star schema records for it. Survey's {@code surveyreport.dim_step.value} is unique across
-     * every survey of a site, so a test that installs the same survey repeatedly must give each
-     * run its own dimension names or the Survey ETL refuses to start.
+     * star schema records for it. {@code dim_step.value} is unique within one survey's reporting
+     * schema (Survey UC-008 BR-008), so distinct dimension names per run are no longer needed;
+     * the parameter stays so a test can still name the dimension.
      */
     public void addStep(String name, String dimensionName) {
         buttonByText("Add step").click();

@@ -81,6 +81,15 @@ public class Survey extends PanacheEntityBase {
     @Column(name = "published_comment")
     public String publishedComment;
 
+    /**
+     * The name of this survey's reporting schema in this database, assigned by the preview
+     * Survey's reporting build (Survey V021, UC-008 BR-006) and null until then. Read-only here:
+     * Survey owns it, and Author only reads it to drop the schema before deleting the survey
+     * (UC-047 BR-008).
+     */
+    @Column(name = "report_schema", length = 63, insertable = false, updatable = false)
+    public String reportSchema;
+
     @PrePersist
     void ensureSurveyKey() {
         if (surveyKey == null) {

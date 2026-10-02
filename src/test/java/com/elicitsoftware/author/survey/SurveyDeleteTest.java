@@ -33,6 +33,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** UC-047 Delete Survey. */
@@ -62,6 +63,37 @@ class SurveyDeleteTest {
         return Survey.<Survey>find("name", name).firstResult();
     }
 
+    /** A stand-in for the preview Survey (UC-047 BR-008): records the keys it was asked to drop, or refuses. */
+    private static final class PreviewSurveyStub extends PreviewSurveyClient {
+        final List<UUID> dropped = new java.util.ArrayList<>();
+        final boolean refuse;
+
+        PreviewSurveyStub(boolean refuse) {
+            this.refuse = refuse;
+        }
+
+        @Override
+        public void dropReportingSchema(UUID surveyKey) {
+            if (refuse) {
+                throw new com.elicitsoftware.author.AuthoringException("preview down");
+            }
+            dropped.add(surveyKey);
+        }
+    }
+
+    private PreviewSurveyStub previewSurvey(boolean refuse) {
+        PreviewSurveyStub stub = new PreviewSurveyStub(refuse);
+        io.quarkus.test.junit.QuarkusMock.installMockForType(stub, PreviewSurveyClient.class);
+        return stub;
+    }
+
+    /** Pretends the preview Survey built the survey's reporting schema (Survey UC-008 BR-006). */
+    private void builtInPreview(int surveyId, String schema) {
+        em.createNativeQuery("UPDATE survey.surveys SET report_schema = ?2 WHERE id = ?1")
+                .setParameter(1, surveyId).setParameter(2, schema).executeUpdate();
+        em.clear();
+    }
+
     private long rows(String table, int surveyId) {
         return ((Number) em.createNativeQuery("SELECT count(*) FROM survey." + table + " WHERE survey_id = ?1")
                 .setParameter(1, surveyId).getSingleResult()).longValue();
@@ -71,6 +103,7 @@ class SurveyDeleteTest {
     @TestTransaction
     @TestSecurity(user = "author.one", roles = {"elicit_author"})
     void delete_removesTheSurveyAndEveryRowItOwns() {
+        PreviewSurveyStub preview = previewSurvey(false);
         int id = fixture("AuthorFixture").id;
         assertTrue(rows("questions", id) > 0, "the fixture has structure to delete");
 
@@ -80,6 +113,40 @@ class SurveyDeleteTest {
             assertEquals(0, rows(table, id), "UC-047 BR-001: nothing left in " + table);
         }
         assertTrue(service.find(id).isEmpty());
+        assertTrue(preview.dropped.isEmpty(), "UC-047 BR-008: a survey never built in the preview makes no call");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void delete_dropsThePreviewsReportingSchemaFirst() {
+        PreviewSurveyStub preview = previewSurvey(false);
+        Survey s = fixture("AuthorFixture");
+        int id = s.id;
+        UUID key = s.surveyKey;
+        builtInPreview(id, "report_authorfixture");
+
+        service.delete(id);
+
+        assertEquals(List.of(key), preview.dropped, "UC-047 BR-008: the preview Survey was asked to drop the schema, by the survey's key");
+        assertTrue(service.find(id).isEmpty());
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void delete_isRefusedWhenThePreviewCannotDropTheSchema() {
+        previewSurvey(true);
+        int id = fixture("AuthorFixture").id;
+        builtInPreview(id, "report_authorfixture");
+        long questions = rows("questions", id);
+
+        assertThrows(com.elicitsoftware.author.AuthoringException.class, () -> service.delete(id));
+
+        assertEquals(questions, rows("questions", id), "UC-047 A7: the survey is unchanged");
+        assertTrue(service.find(id).isPresent());
+        assertEquals("report_authorfixture", em.createNativeQuery("SELECT report_schema FROM survey.surveys WHERE id = ?1")
+                .setParameter(1, id).getSingleResult(), "UC-047 A7: the schema name is unchanged too");
     }
 
     @Test

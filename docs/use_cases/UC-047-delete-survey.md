@@ -24,8 +24,9 @@
 6. The author types the survey's name.
 7. The system enables Delete once the typed name matches the survey's name exactly.
 8. The author chooses Delete.
-9. The system deletes the survey and every record belonging to it, including any respondents and answers that previewing it recorded.
-10. The system closes the confirmation, removes the survey from the list and reports that it was deleted.
+9. When the survey has a reporting schema in Author's database (built by the preview Survey from its preview answers), the system first asks the preview Survey to drop it (BR-008).
+10. The system deletes the survey and every record belonging to it, including any respondents and answers that previewing it recorded.
+11. The system closes the confirmation, removes the survey from the list and reports that it was deleted.
 
 ## Alternative Flows
 
@@ -77,11 +78,20 @@
 1. The system reports that the survey no longer exists.
 2. Use case ends.
 
+### A7: The reporting schema cannot be dropped
+
+**Trigger:** The preview Survey cannot be reached, or refuses or fails the drop (step 9)  
+**Flow:**
+
+1. The system refuses the delete and shows why, naming the preview Survey's answer or the connection failure.
+2. The survey, its preview answers and its reporting schema are unchanged; the author may try again once the preview Survey is up.
+3. Use case ends.
+
 ## Postconditions
 
 ### Success Postconditions
 
-- The survey and every record that belonged to it are gone from Author, current and retired alike, together with the respondents and answers recorded by previewing it.
+- The survey and every record that belonged to it are gone from Author, current and retired alike, together with the respondents and answers recorded by previewing it and the reporting schema the preview Survey had built for it, if any.
 - The survey key is free again, so importing the backup, or any export of the survey (UC-005), is accepted and restores it under the same survey and element keys.
 - No deployed site is changed.
 
@@ -118,3 +128,7 @@ The backup holds every record the survey owns, retired ones included, and is tak
 ### BR-007: Advice, not obligation
 
 The backup is urged and is one click away, but it is not required: the author may delete without one (A1).
+
+### BR-008: The reporting schema goes first, through the preview Survey
+
+Each survey the preview Survey has built has a reporting schema of its own in Author's database, named on the survey's `report_schema` (Survey UC-008 BR-006). Author connects as `survey_user`, which cannot drop a schema, so it asks the preview Survey to (`DELETE /api/etl/schema/<survey_key>`, Survey UC-011) before its own delete: the delete removes the row that holds the schema's only name, and dropping first means neither failure leaves a schema nothing names. A survey whose `report_schema` is null has nothing to drop and makes no call, which is every survey while the preview's reporting ETL is off. If the call fails the delete is refused (A7); if the delete fails after the drop, the survey remains, without a schema, and the preview Survey's next build creates it again. The preview Survey's address is the setting `author.preview.survey.url`.

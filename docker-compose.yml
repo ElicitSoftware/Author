@@ -261,10 +261,13 @@ services:
       TZ: America/Detroit
       # Preview only: an author types any access code to walk through a draft.
       accessCode.autoRegister: true
-      # Preview only: never build or update the reporting schema. Author's database holds
-      # many surveys (whose step names collide in surveyreport.dim_step) and nothing reports
-      # on preview answers.
+      # Preview only: the reporting ETL stays off. Every survey would get a reporting schema
+      # of its own (Survey UC-008), so nothing collides any more; it is off because nothing
+      # reports on preview answers yet. The reporting work turns it on when it needs the
+      # preview to model what a site builds. The drop below is what UC-047 calls before
+      # deleting a survey, so a schema never outlives its survey once the ETL is on.
       elicit.etl.enabled: "false"
+      elicit.etl.drop.enabled: "true"
       brand.file.system.path: /opt/brand
       # Both of Survey's datasources move from the `survey` database to `author`.
       quarkus.datasource.jdbc.url: jdbc:postgresql://db:5432/author?connectTimeout=30&socketTimeout=600&tcpKeepAlive=true&tcpKeepAlivesIdle=60
@@ -307,6 +310,8 @@ services:
     environment:
       TZ: America/Detroit
       brand.file.system.path: /opt/brand
+      # The preview Survey, which drops a survey's reporting schema before Author deletes it (UC-047).
+      author.preview.survey.url: http://author-survey:8080
       # Author connects as survey_user (Survey's grants cover every definition table)
       # to the `author` database; the schema there is created by author-survey.
       quarkus.datasource.jdbc.url: jdbc:postgresql://db:5432/author?connectTimeout=30&socketTimeout=600&tcpKeepAlive=true&tcpKeepAlivesIdle=60

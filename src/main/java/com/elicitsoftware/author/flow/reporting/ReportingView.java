@@ -216,7 +216,7 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
                         ? getTranslation("reportingView.impact.assignmentOne", t.assignments())
                         : getTranslation("reportingView.impact.assignmentMany", t.assignments());
                 tableList.add(new ListItem(getTranslation("reportingView.impact.table",
-                        "surveyreport." + t.name(), source, String.join(", ", t.tags()), count)));
+                        t.name(), source, String.join(", ", t.tags()), count)));
             }
             impactPanel.add(new Span(getTranslation("reportingView.impact.dimensionTables")), tableList);
             UnorderedList columnList = new UnorderedList();
@@ -226,6 +226,16 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
                         "fact_sections." + c.column(), c.dimTable(), c.tag())));
             }
             impactPanel.add(new Span(getTranslation("reportingView.impact.reportColumns")), columnList);
+        }
+        if (!impact.perItemColumns().isEmpty()) {
+            // Survey UC-008 BR-012: a section repeated per selected item fills the two fixed columns.
+            UnorderedList fixedList = new UnorderedList();
+            fixedList.getElement().setAttribute("data-i18n-content", "");
+            for (FactColumn c : impact.perItemColumns()) {
+                fixedList.add(new ListItem(getTranslation("reportingView.impact.perItemColumn",
+                        "fact_sections." + c.column(), c.dimTable())));
+            }
+            impactPanel.add(new Span(getTranslation("reportingView.impact.perItemColumns")), fixedList);
         }
         if (!impact.problems().isEmpty()) {
             UnorderedList problems = new UnorderedList();

@@ -110,16 +110,15 @@ Base URLs can be overridden with `-Dsite1.survey.baseUrl=…`, `-Dsite1.admin.ba
 ## Known limits
 
 - Author runs on site 1 only; site 2 imports definitions and exports respondents.
-- The reporting star (`surveyreport`) is only populated for survey id 1; the imported
-  respondents are complete in `survey.*` but do not appear in reporting.
+- Every survey reports in a schema of its own (`report_<slug>`, Survey UC-008); the imported
+  respondents are complete in `survey.*` and the site's build loads the ones that finished.
 - The Survey runtime hides, at login, every question of the first step's sections that a rule
   names as its downstream section or step; Author therefore stores same-section question rules
   question-only. A rule in the first step that targets a question in another section of that
   step is not covered.
-- `surveyreport.dim_step.value` and `dim_section.value` are unique per site: two different
-  surveys sharing a step or section dimension name make the Survey ETL fail (and the Survey app
-  fail to start). Revisions of one survey are fine, since dimension rows are keyed by the
-  durable step/section id.
+- `dim_step.value` and `dim_section.value` are unique within one survey's reporting schema, so
+  two surveys may share a step or section dimension name. Revisions of one survey are fine,
+  since dimension rows are keyed by the durable step/section id.
 - Both sites must share the same `.elicit` lineage: element keys and versions are what the
   respondent import resolves; a survey authored separately on each site cannot be merged.
 - The respondent import still parses `answers.step` / `answers.section` as integers; a survey

@@ -278,6 +278,22 @@ class ReportingServiceTest {
     }
 
     @Test
+    void impact_listsNoPerItemColumnsForASurveyWithoutAPerItemRepeat() {
+        assertTrue(service.impact(fixture().id).perItemColumns().isEmpty(), "UC-024 BR-003: nothing repeats per item here");
+    }
+
+    @Test
+    @TestTransaction
+    void impact_refusesATagNamedLikeAFixedColumn() {
+        Survey s = fixture();
+        service.createTag(s.id, "Item", "fixture_age");
+        Impact impact = service.impact(s.id);
+        assertTrue(impact.hasErrors(), "UC-024 BR-002: item_key is a fixed column of fact_sections");
+        assertTrue(impact.problems().stream().anyMatch(p -> p.isError() && p.message().contains("item_key") && p.message().contains("fixed column")),
+                impact.problems().toString());
+    }
+
+    @Test
     @TestTransaction
     void impact_flagsColumnCollisionsAndUnassignedTags() {
         Survey s = fixture();
