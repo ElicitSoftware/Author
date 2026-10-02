@@ -205,6 +205,22 @@ public class SurveyService {
             "reports", "post_survey_actions");
 
     /**
+     * What previewing the survey recorded, in delete order: dependents reference answers, and all
+     * three reference the respondent. They go before {@link #SURVEY_CHILD_TABLES}, whose
+     * relationships, questions, assignments and post-survey actions they reference in turn.
+     */
+    private static final List<String> RESPONDENT_CHILD_TABLES = List.of("dependents", "respondent_psa", "answers");
+
+    /**
+     * UC-047 A4: how many respondents previewing the survey has recorded in Author's database.
+     * The confirmation states it, because they are deleted with the survey (BR-004).
+     */
+    public long previewRespondents(int id) {
+        return ((Number) em.createNativeQuery("SELECT count(*) FROM survey.respondents WHERE survey_id = ?1")
+                .setParameter(1, id).getSingleResult()).longValue();
+    }
+
+    /**
      * UC-047: physically deletes the survey and every row that belongs to it, retired rows
      * included. Unlike removal (UC-009), nothing is kept: the recovery path is an export taken
      * beforehand, which imports back under the same survey and element keys (UC-005).
@@ -213,7 +229,7 @@ public class SurveyService {
      * re-importing the export is what lets Author update them again (BR-003).
      *
      * @param id the survey
-     * @throws AuthoringException when the survey is gone, or has respondents in this database
+     * @throws AuthoringException when the survey is gone
      */
     @Transactional
     public void delete(int id) {
@@ -221,13 +237,14 @@ public class SurveyService {
         if (s == null) {
             throw new AuthoringException(Translations.get("error.survey.gone", String.valueOf(id)));
         }
-        // BR-004. Author's database holds definitions, not responses; one that holds responses is
-        // a site's database, and recorded answers are never deleted from here.
-        Number respondents = (Number) em.createNativeQuery("SELECT count(*) FROM survey.respondents WHERE survey_id = ?1")
-                .setParameter(1, id).getSingleResult();
-        if (respondents.longValue() > 0) {
-            throw new AuthoringException(Translations.get("error.survey.hasRespondents", s.name, String.valueOf(respondents)));
+        // BR-004. The only respondents in Author's database are the ones the preview recorded;
+        // they mean nothing without the survey and go with it.
+        for (String table : RESPONDENT_CHILD_TABLES) {
+            em.createNativeQuery("DELETE FROM survey." + table
+                            + " WHERE respondent_id IN (SELECT id FROM survey.respondents WHERE survey_id = ?1)")
+                    .setParameter(1, id).executeUpdate();
         }
+        em.createNativeQuery("DELETE FROM survey.respondents WHERE survey_id = ?1").setParameter(1, id).executeUpdate();
         // BR-005. The importer reuses a tag by (name, tag), so another survey's metadata may point at
         // a tag this survey owns. Hand such a tag to that survey rather than delete it from under it.
         em.createNativeQuery("""

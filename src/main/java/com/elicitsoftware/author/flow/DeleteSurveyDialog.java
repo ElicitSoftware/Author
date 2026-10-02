@@ -31,13 +31,15 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.io.ByteArrayInputStream;
 
 /**
- * UC-047: the guarded delete of a whole survey. Says what goes, urges a backup first (the file is
- * the only way back), and for an exported survey says that the sites keep their copies and can
- * only be changed again from that file. Delete stays disabled until the survey's name is typed.
+ * UC-047: the guarded delete of a whole survey. Says what goes, preview answers included, urges a
+ * backup first (the file is the only way back), and for an exported survey says that the sites
+ * keep their copies and can only be changed again from that file. Delete stays disabled until the
+ * survey's name is typed.
  */
 public class DeleteSurveyDialog extends Dialog {
 
     final Paragraph permanent = new Paragraph();
+    final Paragraph previewAnswers = new Paragraph();
     final Paragraph exportState = new Paragraph();
     final Paragraph advice = new Paragraph();
     final Anchor backup;
@@ -53,6 +55,10 @@ public class DeleteSurveyDialog extends Dialog {
         setWidth("36em");
 
         permanent.setText(getTranslation("deleteSurveyDialog.permanent"));
+        // A4 / BR-004: what the preview recorded goes with the survey, so say how much there is.
+        long respondents = surveyService.previewRespondents(survey.id);
+        previewAnswers.setText(getTranslation("deleteSurveyDialog.previewAnswers", String.valueOf(respondents)));
+        previewAnswers.setVisible(respondents > 0);
         // BR-003: an exported survey is the master of copies Author cannot reach.
         exportState.setText(SurveyService.isExported(survey)
                 ? getTranslation("deleteSurveyDialog.exported", survey.publishedBy, survey.publishedComment)
@@ -95,7 +101,7 @@ public class DeleteSurveyDialog extends Dialog {
         cancel.setText(getTranslation("common.cancel"));
         cancel.addClickListener(e -> close());
 
-        add(permanent, exportState, advice, backup, confirmName, error);
+        add(permanent, previewAnswers, exportState, advice, backup, confirmName, error);
         getFooter().add(cancel, delete);
     }
 }
