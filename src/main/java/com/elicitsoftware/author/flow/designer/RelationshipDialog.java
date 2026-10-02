@@ -12,6 +12,7 @@ package com.elicitsoftware.author.flow.designer;
  */
 
 import com.elicitsoftware.author.AuthoringException;
+import com.elicitsoftware.author.survey.RepeatSource;
 import com.elicitsoftware.author.survey.RuleService;
 import com.elicitsoftware.author.survey.StructureNode;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
@@ -69,6 +70,8 @@ public class RelationshipDialog extends Dialog {
     final Button cancel = new Button();
 
     private final Map<String, HasValidation> fieldsByProperty;
+    private final boolean creating;
+    private final List<OperatorType> operators;
     private final List<StructureNode> questionNodes = new ArrayList<>();
     private final List<StructureNode> sectionNodes = new ArrayList<>();
     private final List<StructureNode> stepNodes = new ArrayList<>();
@@ -79,7 +82,7 @@ public class RelationshipDialog extends Dialog {
      */
     public RelationshipDialog(int surveyId, SurveyStructureQuery.Tree tree, RuleService rules, Relationship existing, Relationship preset,
                               Consumer<Relationship> onSaved, Runnable onRemoved) {
-        boolean creating = existing == null;
+        creating = existing == null;
         setHeaderTitle(creating ? getTranslation("relationshipDialog.title.new") : getTranslation("relationshipDialog.title.edit"));
         setModal(true);
         setWidth("44rem");
@@ -114,7 +117,8 @@ public class RelationshipDialog extends Dialog {
         upstream.setRequiredIndicatorVisible(true);
         upstream.setWidthFull();
 
-        operator.setItems(OperatorType.listAll(Sort.by("id")));
+        operators = OperatorType.listAll(Sort.by("id"));
+        operator.setItems(operators);
         operator.setItemLabelGenerator(o -> o.name);
         operator.setRequiredIndicatorVisible(true);
         action.setItems(ActionType.listAll(Sort.by("id")));
@@ -202,6 +206,9 @@ public class RelationshipDialog extends Dialog {
         }
         action.addValueChangeListener(e -> updateActionFields());
         updateActionFields();
+        action.addValueChangeListener(e -> updateRepeatSource());
+        upstream.addValueChangeListener(e -> updateRepeatSource());
+        updateRepeatSource(); // after the seed above: an arrow drawn from a multi-select arrives with no operator
         for (var f : List.of(upstream, operator, action, target)) {
             f.addValueChangeListener(e -> updateSentence());
         }
@@ -357,6 +364,21 @@ public class RelationshipDialog extends Dialog {
         token.setRequiredIndicatorVisible(text);
         boolean repeat = a != null && "REPEAT".equals(a.name);
         targetKind.setItemEnabledProvider(k -> !(repeat && KIND_STEP.equals(k)));
+    }
+
+    /**
+     * UC-019 A6: a Repeat rule reading a multi-select or a checkbox group repeats its target once per
+     * selected item (BR-007) and fills its token with that item's text (BR-008). Say so where the
+     * operator is chosen, and start a new rule on the operator that always holds.
+     */
+    void updateRepeatSource() {
+        ActionType a = action.getValue();
+        StructureNode up = upstream.getValue();
+        boolean perItem = a != null && "REPEAT".equals(a.name) && up != null && RepeatSource.perItem(up.detail());
+        operator.setHelperText(perItem ? getTranslation("relationshipDialog.operator.helper.perItem") : null);
+        if (perItem && creating && operator.getValue() == null) {
+            operators.stream().filter(o -> "FIELD_EXIST".equals(o.name)).findFirst().ifPresent(operator::setValue);
+        }
     }
 
     /** UC-029 BR-002 / UC-019 BR-003: the rule read back as one sentence. */

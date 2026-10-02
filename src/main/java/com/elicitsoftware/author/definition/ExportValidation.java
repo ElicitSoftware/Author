@@ -22,6 +22,7 @@ import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.author.i18n.Translations;
+import com.elicitsoftware.author.survey.RepeatSource;
 import com.elicitsoftware.author.survey.RenameLedger;
 import com.elicitsoftware.author.survey.ReportingChangeLedger;
 import com.elicitsoftware.author.survey.ReportingService;
@@ -163,6 +164,17 @@ public class ExportValidation {
             }
             if (r.operatorType == null || r.actionType == null) {
                 issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get("validation.rule.incomplete", rule)));
+            }
+            // UC-007 BR-014: a Repeat reading a multi-select with an operator that never holds for a
+            // selection repeats nothing, for anyone. The rule dialog refuses it (UC-019 A6); an imported
+            // or drafted definition never passed through the dialog.
+            if (r.actionType != null && "REPEAT".equals(r.actionType.name) && RepeatSource.neverHoldsForASelection(r.operatorType)) {
+                SectionsQuestion upstream = sectionsQuestions.get(r.upstreamSqId);
+                Question read = upstream == null ? null : questions.get(upstream.questionId);
+                if (read != null && RepeatSource.perItem(read.questionType)) {
+                    issues.add(ValidationIssue.error("relationships", r.relationshipId,
+                            Translations.get("validation.rule.repeatSelectionOperator", rule, r.operatorType.name)));
+                }
             }
             // UC-033 A3: a rule the respondent can never see fire blocks export (UC-007 BR-001).
             board.problem(r).ifPresent(p -> issues.add(ValidationIssue.error("relationships", r.relationshipId, Translations.get("validation.rule.backwards", rule, p))));

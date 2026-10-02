@@ -15,6 +15,7 @@ import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.model.ActionType;
 import com.elicitsoftware.model.OperatorType;
 import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.Step;
@@ -139,6 +140,53 @@ class RuleServiceTest {
         assertEquals(2, query.edges(s.id, true).size(), "UC-020 A1: removed rules on request");
         rules.restore(s.id, created.relationshipId);
         assertTrue(rules.current(s.id, created.relationshipId).isPresent());
+    }
+
+    /**
+     * UC-019 A6 / BR-007: a Repeat reading a multi-select repeats once per selected item while its
+     * condition holds, so an operator that can never hold for a selection is refused, and Field
+     * exists, with the token the items fill, is saved.
+     */
+    @Test
+    @TestTransaction
+    void create_repeatFromAMultiSelect_needsAnOperatorThatCanHold() {
+        Survey s = fixture();
+        SectionsQuestion children = assignmentOf("FixtureQ3");
+        Question q3 = Question.find("shortText = ?1 and effectiveTo = ?2", "FixtureQ3", StructuralElement.SENTINEL).firstResult();
+        q3.questionType = QuestionType.find("name", "MULTI_SELECT").firstResult();
+        em.flush();
+        Step two = step("Fixture Step Two");
+        int sectionC = elements.currentSectionAssignmentsOfStep(s.id, two.stepId).get(0).stepsSectionsId;
+
+        Relationship draft = new Relationship();
+        draft.upstreamSqId = children.sectionsQuestionId;
+        draft.downstreamSsId = sectionC;
+        draft.actionType = action("REPEAT");
+        draft.operatorType = operator("GREATER THAN");
+        draft.referenceValue = "0";
+        AuthoringException refused = assertThrows(AuthoringException.class, () -> rules.create(s.id, draft));
+        assertEquals("operatorType", refused.field(), "the operator field is the one marked");
+        assertTrue(refused.getMessage().contains("GREATER THAN"), refused.getMessage());
+
+        draft.operatorType = operator("BOOLEAN");
+        assertEquals("operatorType", assertThrows(AuthoringException.class, () -> rules.create(s.id, draft)).field());
+
+        draft.operatorType = operator("FIELD_EXIST");
+        draft.referenceValue = null;
+        draft.token = "ITEM";
+        Relationship created = rules.create(s.id, draft);
+        assertEquals("REPEAT", created.actionType.name);
+        assertEquals("ITEM", created.token, "BR-008: the token each instance fills with its item's text");
+        assertEquals(two.stepId, created.downstreamStepId, "BR-001: the section's step completes the path");
+
+        // The check is about what the rule reads, not about Repeat: a count still takes Greater than.
+        Relationship count = new Relationship();
+        count.upstreamSqId = assignmentOf("FixtureQ4").sectionsQuestionId;
+        count.downstreamSsId = sectionC;
+        count.actionType = action("REPEAT");
+        count.operatorType = operator("GREATER THAN");
+        count.referenceValue = "0";
+        assertNotNull(rules.create(s.id, count).relationshipKey);
     }
 
     @Test

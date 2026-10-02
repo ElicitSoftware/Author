@@ -14,6 +14,7 @@ package com.elicitsoftware.author.survey;
 import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.Relationship;
 import com.elicitsoftware.model.SectionsQuestion;
+import com.elicitsoftware.model.SelectItem;
 import com.elicitsoftware.model.StepsSections;
 import com.elicitsoftware.model.StructuralElement;
 
@@ -35,7 +36,9 @@ import java.util.Set;
  * it (Survey's {@code TokenSource.fill}): the sample answer stands in for the respondent's own
  * words and wins for a free-text or date source, while the rule's own constant wins for a coded,
  * numeric or boolean one, and is the only thing a rule reading a display-only question can write
- * (UC-011 BR-004, UC-019 BR-006). A rule with neither previews as the placeholder's default.
+ * (UC-011 BR-004, UC-019 BR-006). A rule with neither previews as the placeholder's default. One
+ * case comes before all of that: in a section or question a Repeat rule builds once per selected
+ * item of a multi-select, a rule reading that multi-select writes the item's text (UC-019 BR-008).
  * <p>
  * Each value carries where it came from, because the preview must treat the two differently:
  * a sample answer is escaped and never re-read for placeholders, a constant is neither
@@ -51,8 +54,16 @@ public final class TokenSamples {
      *                      would at runtime: true when it is the respondent's own words or a moment
      *                      they chose, false when it is an option code or a bare figure that would
      *                      read as nonsense in a sentence. Mirrors {@code TokenSource.prefersAnswer}.
+     * @param firstItem     for a question answered by selecting several items of a list, the text of
+     *                      the list's first item, which is what a preview shows inside an instance a
+     *                      Repeat rule builds per selected item (UC-019 BR-008); null otherwise
      */
-    public record Sample(String value, boolean beatsConstant) { }
+    public record Sample(String value, boolean beatsConstant, String firstItem) {
+
+        public Sample(String value, boolean beatsConstant) {
+            this(value, beatsConstant, null);
+        }
+    }
 
     /**
      * A place's token values and which of them the author wrote. Mirrors the runtime's
@@ -101,10 +112,13 @@ public final class TokenSamples {
 
     /** The survey's current rules, mounts and assignments, with each question's sample answer. */
     public static TokenSamples load(int surveyId) {
+        Map<Integer, String> firstItems = new HashMap<>();
+        SelectItem.<SelectItem>list("surveyId = ?1 and effectiveTo = ?2 order by displayOrder", surveyId, StructuralElement.SENTINEL)
+                .forEach(i -> firstItems.putIfAbsent(i.selectGroupId, i.displayText));
         return of(Relationship.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL),
                 StepsSections.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL),
                 SectionsQuestion.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL),
-                samplesOf(Question.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)));
+                samplesOf(Question.list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL), firstItems));
     }
 
     /**
@@ -117,10 +131,20 @@ public final class TokenSamples {
      * runtime's {@code question == null || isDisplayOnly(type)} branch.
      */
     public static Map<Integer, Sample> samplesOf(Collection<Question> questions) {
+        return samplesOf(questions, Map.of());
+    }
+
+    /**
+     * {@link #samplesOf(Collection)}, with the first item of each list, by durable select group id,
+     * for the questions a Repeat rule can repeat per selected item (UC-019 BR-008).
+     */
+    public static Map<Integer, Sample> samplesOf(Collection<Question> questions, Map<Integer, String> firstItems) {
         Map<Integer, Sample> samples = new HashMap<>();
         for (Question q : questions) {
             if (Tokens.collectsAnswer(q.questionType)) {
-                samples.put(q.questionId, new Sample(q.sample, Tokens.answerBeatsConstant(q.questionType, q.selectGroupId)));
+                String firstItem = RepeatSource.perItem(q.questionType) && q.selectGroupId != null
+                        ? blankToNull(firstItems.get(q.selectGroupId)) : null;
+                samples.put(q.questionId, new Sample(q.sample, Tokens.answerBeatsConstant(q.questionType, q.selectGroupId), firstItem));
             }
         }
         return samples;
@@ -145,7 +169,8 @@ public final class TokenSamples {
             if (r.token == null || r.token.isBlank()) {
                 continue;
             }
-            feeds.add(feed(r, samples.get(questionOfAssignment.get(r.upstreamSqId))));
+            feeds.add(feed(r, samples.get(questionOfAssignment.get(r.upstreamSqId)),
+                    RepeatSource.reachesRepeatedInstance(r, rules)));
         }
         return new TokenSamples(feeds, mounts, assignments);
     }
@@ -157,12 +182,17 @@ public final class TokenSamples {
      * does. Getting this backwards would not merely preview the wrong string -- it would label the
      * value's source wrongly, and the preview escapes and re-reads on that label.
      */
-    private static Feed feed(Relationship r, Sample sample) {
+    private static Feed feed(Relationship r, Sample sample, boolean inRepeatedInstance) {
         String constant = blankToNull(r.defaultUpstreamValue);
         String answer = sample == null ? null : blankToNull(sample.value());
         String value;
         boolean authored;
-        if (sample != null && sample.beatsConstant() && answer != null) {
+        if (inRepeatedInstance && sample != null && sample.firstItem() != null) {
+            // UC-019 BR-008: inside an instance built from a selected item the slot holds that
+            // item's text, over the rule's constant. A preview shows one instance: the first item's.
+            value = sample.firstItem();
+            authored = false;
+        } else if (sample != null && sample.beatsConstant() && answer != null) {
             value = answer;
             authored = false;
         } else if (constant != null) {

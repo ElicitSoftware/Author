@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Connect an upstream question's answer to a downstream step, section or question with an operator, a reference value and an action (Show, Repeat or Text), by drawing the rule on the designer board or from a question's menu.  
 **Status:** Implemented  
-**Requirements:** [FR-012, FR-019, FR-020, FR-022, NFR-007, NFR-012](../requirements.md)
+**Requirements:** [FR-012, FR-019, FR-020, FR-022, FR-067, NFR-007, NFR-012](../requirements.md)
 
 ## Preconditions
 
@@ -72,6 +72,16 @@ text could write between angle brackets, or whose name exceeds 10 characters (st
 1. The system moves that end of the rule to the new element in the card it was dropped in, completes the path (BR-001), subject to A3, and redraws.
 2. Use case ends.
 
+### A6: Repeat that reads a multi-select
+
+**Trigger:** The action is Repeat and the upstream question is a multi-select or a checkbox group (step 5)  
+**Flow:**
+
+1. The system says, under the operator, that the rule repeats its downstream once for each item the respondent selects and fills its token with that item's text (BR-007, BR-008), and on a new rule whose operator has not been chosen it sets the operator to Field exists.
+2. The author optionally names the token and writes it in a placeholder in the downstream's texts — a section named `Michigan vs. {<GAME>|this game}`, for example.
+3. An operator that can never hold for a selection — Boolean or Greater than — marks the operator field and refuses to save (BR-007).
+4. Use case continues at step 6.
+
 ## Postconditions
 
 ### Success Postconditions
@@ -111,3 +121,17 @@ A token holds one of two things: the respondent's answer to the question the rul
 Which questions those are is read from `question_types.data_type`, which the platform leaves empty for exactly `HTML` and `MODAL` and sets for all fourteen types that collect a value. The flag rather than the two names, because the Survey runtime asks the same question of the same row when it decides what a token holds (Survey UC-002 BR-010), and a display-only type added later is then covered in both modules without either being edited.
 
 A rule that carries a token and reads a display-only question is refused when it has no default upstream value, since it can never fill the slot. One that has a constant is accepted but warned about at export (UC-007): it works, but only by accident of the constant, and the slot no longer has anything to do with the question the rule reads. The Family History Survey drives the possessive on its Mother and Father steps this way — `FIELD_EXIST` on an `HTML` question, with the phrase in the constant — and those rules are what the warning exists to retire. The designer's preview follows the same rule: where a rule cannot fill its token, the preview shows the placeholder's default, which is what the respondent would read, rather than the source question's sample answer (UC-011 BR-005).
+
+### BR-007: A Repeat reads a count or a selection
+
+What a Repeat rule builds is decided by the question it reads (Survey UC-002 BR-012). A question answered with a number repeats the downstream that many times, instances 1 to N. A question answered by selecting several items from a list — `MULTI_SELECT` or `CHECKBOX_GROUP` — repeats it once for each item selected, and each instance belongs to its item: it is numbered by the item's position in the list, not by a running count, so a respondent who goes back and changes the selection keeps the answers already given about every item that stays selected, and gets them back for an item unselected and selected again. The instances appear in list order, whatever order the items were picked in.
+
+The instances are built only while the rule's own condition holds, as for every rule, and the condition is evaluated against the selection as it is stored: the selected items' coded values. Field exists always holds, and is the operator this rule wants — nothing selected then builds nothing. Contains holds while one named item is among those selected, which makes the whole repeat conditional on that item; Equal and Not equal compare the whole selection with the reference value. Boolean and Greater than can never hold for a selection, so a Repeat reading a multi-select with either would build nothing for any respondent; it is refused when saved (A6) and reported as an error at export (UC-007 BR-014), since an imported or drafted definition never passed through this dialog.
+
+The downstream is a section or a question (A3). Because an instance is tied to an item's position, the order of a list that drives a repeat is part of the survey's structure: reordering its items, or inserting one, in a later revision changes which instance belongs to which item for respondents who start after that revision. Respondents already answering are unaffected — they keep the list as it was when they started.
+
+### BR-008: Inside a per-item instance, a token holds the item's text
+
+Within an instance built from a selected item (BR-007), a token filled by a rule that reads the same multi-select question holds that item's display text (Survey UC-002 BR-013) — translated where the survey publishes the item's translation. That is the Repeat rule itself when it carries a token, which reaches every text in the repeated section or question (BR-005), and equally a Text rule from the same question onto the repeated section. The item's text outranks the rule's default upstream value, which BR-006 and UC-011 BR-004 would otherwise prefer for a coded answer: the constant is the same in every instance, and the item is the one thing that tells them apart. A default upstream value on such a rule is therefore only what a respondent reads if the item cannot be found.
+
+The designer's previews show one instance, with the first item of the list in the slot (UC-011 BR-004). The item's text is treated as an answer is: escaped, and never re-read as a placeholder.

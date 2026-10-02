@@ -3,7 +3,9 @@
 **Audience: an AI agent.** This document is self-contained. With it and a
 description of the survey someone wants, you can write a complete `.elicit`
 definition file that the Elicit **Author** application will import. You do not
-need access to the Elicit source, a database, or a running server.
+need access to the Elicit source, a database, or a running server. If you can
+browse the web, section 9 says where the public source is; it is further reading,
+not a requirement.
 
 Your output is a **draft**. A person opens it in Author, fixes whatever Author's
 validation reports, and exports the finished survey for deployment. So aim for a
@@ -50,7 +52,11 @@ There are three actions:
 - **SHOW** — the target appears only when the rule holds. Until then the
   respondent never sees it.
 - **REPEAT** — the target section or question is repeated as many times as the
-  answer says, for example one "Child" section per child.
+  answer says, for example one "Child" section per child. When the question the
+  rule reads is a `MULTI_SELECT` or a `CHECKBOX_GROUP`, the target is repeated
+  once for each item the respondent selects instead, and the rule's token is filled
+  with that item's text — one "Game" section per game attended, each titled with
+  its game. See *Repeating once per selected item* in section 5.
 - **TEXT** — the answer is written into the target's text wherever a
   `{<TOKEN>|default}` placeholder appears, so a later question can say "your
   daughter" rather than "your child".
@@ -325,6 +331,10 @@ can use and a draft they have to repair.
     from a question on an earlier step. A step nothing builds is reported once, on
     the step; a section or question nothing builds inside a step that has other
     rules is reported on that section or question.
+14. **A REPEAT that reads a `MULTI_SELECT` or `CHECKBOX_GROUP` must use an operator
+    that can hold for a selection.** Use `FIELD_EXIST`. `BOOLEAN` and
+    `GREATER THAN` are never true for a selection, so such a rule would repeat
+    nothing for anyone.
 
 **Warnings — allowed, but a person will have to look at them:**
 
@@ -336,6 +346,49 @@ can use and a draft they have to repair.
 **REPEAT has one more constraint worth knowing:** a section cannot repeat itself.
 The question that says *how many* must sit in an **earlier** section than the block
 it repeats. Put the count question in its own section before the repeating one.
+
+### Repeating once per selected item
+
+When the same questions are asked about each thing a respondent picked from a
+list — each game attended, each medication taken, each site visited — do **not**
+write one step and one SHOW rule per item. Write the questions once, and repeat
+them:
+
+1. Ask the list question as a `MULTI_SELECT` (or `CHECKBOX_GROUP`) in an early
+   step.
+2. Put the per-item questions in **one** section, mounted in a later step, and name
+   the section with a placeholder: `Michigan vs. {<GAME>|this game}`.
+3. Write **one** REPEAT rule from the list question to that section's mount, with
+   operator `FIELD_EXIST`, no reference value, and the token the section names:
+
+```
+relationships: 1||1|2|2|2||5|2|One game section per game attended|GAME||||0||||
+```
+
+Read field by field: upstream step `1`, upstream question assignment `2` (the
+`MULTI_SELECT`), downstream step `2`, downstream section mount `2`, no downstream
+question, operator `5` (`FIELD_EXIST`), action `2` (`REPEAT`), a description, token
+`GAME`, then the empty value fields and the `0||||` tail.
+
+What the respondent gets:
+
+- **One instance of the section per selected item**, in the order of the list, not
+  the order they clicked. Nothing selected builds nothing.
+- **The item's `display_text` in the token**, in every text of that instance — the
+  section name and each question in it, including questions a SHOW rule reveals
+  later inside the instance. So write a `display_text` that reads well in a
+  sentence, and write the placeholder's default for the case where it does not
+  fill.
+- **Answers that stay with their item.** Each instance belongs to its item by the
+  item's position in the list, so a respondent who goes back and changes the
+  selection keeps what they answered about every item still selected.
+
+The REPEAT rule is also the rule that builds the section (error 13), so the section
+needs no SHOW rule as well. Rules *inside* the repeated section — "ask who they came
+with when they did not come alone" — are written once, between the section's own
+questions, as question-only rules (`downstream_sq_id` alone); they apply in every
+instance. The target may be a section or a question, not a step. A number still
+repeats 1 to N as before; only a list question repeats per item.
 
 ---
 
@@ -454,6 +507,8 @@ the option's `coded_value`, not its `display_text`. And question 1 is a `RADIO`
    - every step after the first is built by a SHOW or REPEAT rule — on the step,
      on each of its mounts, or on each of its questions — normally `FIELD_EXIST` →
      `SHOW` from an earlier question;
+   - anything asked once per selected item is one section and one REPEAT rule from
+     the `MULTI_SELECT`, on `FIELD_EXIST` — never one step or section per item;
    - every choice question has a list with options;
    - `initial_display_key` matches a `steps_sections` display key;
    - every `{<TOKEN>}` names its token in angle brackets and has a default or a
@@ -464,3 +519,30 @@ the option's `coded_value`, not its `display_text`. And question 1 is a `RADIO`
 
 Then tell them to open Author, choose **Import definition**, upload the file, and
 work through whatever validation reports before exporting.
+
+---
+
+## 9. If you can read the source
+
+Everything a draft needs is above. If you can browse the web, the applications
+that install and run a definition are public, and reading them settles a question
+faster than inferring the answer: how an operator is evaluated, what a REPEAT
+builds, what a token is filled with, how a record is parsed.
+
+| Repository | What it is | Read first |
+| --- | --- | --- |
+| <https://github.com/ElicitSoftware/Survey> | The application respondents answer in. It evaluates every rule. | `src/main/java/com/elicitsoftware/QuestionManager.java` (builds a respondent's answers and applies the rules), `RepeatSource.java` beside it (what a REPEAT builds from a number and from a selection), `TokenSource.java` (what fills a token), `model/Relationship.java` (`evaluateOperator`: what each operator compares), `src/main/resources/db/migration/V001__Create_Survey_Schema.sql` and `V003__Populate_Schema.sql` (the tables and the lookup rows of section 6), `docs/use_cases/UC-002-answer-survey-questions.md` (the behavior, stated as rules) |
+| <https://github.com/ElicitSoftware/Admin> | The application that installs a definition at a site. | `src/main/java/com/elicitsoftware/service/SurveyDefinitionExportService.java` (the file format of section 2, as written), `SurveyDefinitionImportService.java` and `SurveyDefinitionFileFields.java` beside it (as read) |
+| <https://github.com/ElicitSoftware/FHHS> | The Family History Survey, a deployed survey. | `family-history-survey.elicit`: a complete definition, with tokens filled across steps and one step shown per repeated name |
+| <https://github.com/ElicitSoftware/Elicit> | The project that assembles the applications. | `samples/census-household-survey.elicit`: a small survey that uses every question type, operator and action, and `samples/generate-census-household-survey.py`, the script that writes it |
+
+Current work lands on each repository's `V3` branch; read that branch where it
+exists, since `main` may be a release behind it.
+
+Two cautions. Those definitions are **exports** (`ELICIT_SURVEY_EXPORT_V1`): they
+carry element keys, versions and effective dates that a draft leaves blank
+(section 4), so copy their structure, not their records. And where the code and
+this document seem to disagree, write what this document says and tell the person
+what you saw — Author validates a draft against the rules in section 5, and Author
+itself is not among these repositories.
+

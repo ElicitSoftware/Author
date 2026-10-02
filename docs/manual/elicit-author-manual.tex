@@ -118,7 +118,9 @@ There are three actions:
   \item \term{Show} — the target appears only when the rule holds. Until then the respondent
         never sees it.
   \item \term{Repeat} — the target section or question is repeated as many times as the answer
-        says, for example one \ui{Child} section per child.
+        says, for example one \ui{Child} section per child. When the answer is a selection from
+        a list, the target is repeated once for each item selected instead, for example one
+        \ui{Game} section per game attended.
   \item \term{Text} — the answer is written into the target's text wherever a
         \texttt{\{<TOKEN>|default\}} placeholder appears, so a later question can say
         ``your daughter'' rather than ``your child''.
@@ -368,6 +370,57 @@ introduction: it holds as soon as that question has been presented. Validation r
 nothing builds as an error, and inside a step that has rules, each section or question nothing
 reaches; export waits until each has its rule.
 \end{elicitcaution}
+
+\subsection{Repeating once per selected item}
+
+When the same questions are asked about each thing a respondent picked from a list — each game
+attended, each medication taken — write those questions once and repeat them. Ask the list
+question as a multi-select or a checkbox group, put the questions about one item in a section of
+their own in a later step, and draw a \ui{Repeat} rule from the list question to that section.
+
+Because the question is answered by selecting items, the rule editor says under \ui{Operator}
+that the target repeats once for each item selected, and starts a new rule on
+\ui{FIELD\_EXIST}, which is the operator this rule wants: nothing selected then repeats nothing.
+Author refuses \ui{BOOLEAN} and \ui{GREATER THAN} here, because neither is ever true for a
+selection and the section would never appear.
+
+Give the rule a \term{token} and name it in the section's own name:
+
+\begin{quote}
+\texttt{Michigan vs.\ \{<GAME>|this game\}}
+\end{quote}
+
+Each repetition is then titled with its item's display text. The token reaches every text inside
+the section, so a question can name the item too:
+
+\begin{quote}
+\texttt{Did you use the restrooms at the \{<GAME>|this\} game?}
+\end{quote}
+
+The preview shows one repetition, with the first option of the list in the token's place.
+
+Three things follow from tying each repetition to its item rather than to a count:
+
+\begin{itemize}
+  \item The repetitions appear in the order of the list, not the order the respondent selected
+        them in.
+  \item A respondent who goes back and changes the selection keeps what they answered about
+        every item that is still selected, and gets their answers back for an item they
+        unselect and select again.
+  \item Rules inside the repeated section — \emph{ask who they came with when they did not come
+        alone} — are drawn once, between the section's own questions, and apply in every
+        repetition.
+\end{itemize}
+
+\begin{elicitcaution}[The order of the list is part of the survey]
+A repetition belongs to its item by the item's position in the list. Reordering the options of a
+list that drives a Repeat rule, or inserting one in the middle, changes which repetition belongs
+to which item for respondents who start after the change is applied at a site. Respondents
+already answering keep the list as it was when they started. Add new options at the end.
+\end{elicitcaution}
+
+A Repeat rule that reads a number is unchanged: it repeats its target that many times. In both
+cases the target is a section or a question, not a step.
 
 Rules are drawn on the board as arrows from the question that is read to the element that is
 acted on, labeled with the action. Untick \ui{Show rules} at the top of the board to hide them

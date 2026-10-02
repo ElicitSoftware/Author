@@ -251,7 +251,7 @@ and all three sites, so the star schema keeps the same dimensions through the up
 the databases are cleared between runs; phase 1 refuses to start if Author already holds the survey.
 
 A whole run takes about fifteen minutes: five to initialize three databases from scratch and about
-nine for the journey itself (16 phases, three full walks of a twenty-five-question survey plus six
+nine for the journey itself (16 phases, three full walks of a twenty-six-question survey plus six
 partial ones, in three languages).
 
 Exported `.elicit` files, the hand-off documents and their filled copies land in

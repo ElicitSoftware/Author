@@ -246,6 +246,39 @@ class ExportValidationTest {
         assertTrue(errors.size() == 1 && "relationships".equals(errors.get(0).kind())
                 && errors.get(0).message().contains("points backwards"), issues.toString());
     }
+    /**
+     * UC-007 BR-014: a Repeat reading a multi-select with an operator that never holds for a
+     * selection is an error -- it is how a drafted or imported definition reaches the check the rule
+     * dialog makes (UC-019 A6) -- and the same rule on Field exists passes.
+     */
+    @Test
+    @TestTransaction
+    void aRepeatReadingAMultiSelectWithAnOperatorThatNeverHoldsIsAnError() {
+        Survey s = fixture();
+        buildStepTwo(s);
+        // The fixture rule reads FixtureQ3, a choice question. Make that question a multi-select and the
+        // rule a Repeat on Greater than: what a draft written by hand or by an AI agent could carry.
+        em.createNativeQuery("UPDATE survey.questions SET type_id = (SELECT id FROM survey.question_types WHERE name = 'MULTI_SELECT') "
+                + "WHERE survey_id = ?1 AND short_text = 'FixtureQ3'").setParameter(1, s.id).executeUpdate();
+        em.createNativeQuery("UPDATE survey.relationships SET action_id = (SELECT id FROM survey.action_types WHERE name = 'REPEAT'), "
+                        + "operator_id = (SELECT id FROM survey.operator_types WHERE name = 'GREATER THAN'), reference_value = '0' "
+                        + "WHERE survey_id = ?1 AND description = ?2")
+                .setParameter(1, s.id).setParameter(2, CHILD_COUNT_RULE).executeUpdate();
+        em.flush();
+        em.clear();
+        List<ValidationIssue> errors = validation.validate(Survey.findById(s.id)).stream().filter(ValidationIssue::isError).toList();
+        assertTrue(errors.size() == 1 && "relationships".equals(errors.get(0).kind())
+                && errors.get(0).message().contains("never true for a selection")
+                && errors.get(0).message().contains("GREATER THAN"), errors.toString());
+
+        em.createNativeQuery("UPDATE survey.relationships SET operator_id = (SELECT id FROM survey.operator_types WHERE name = 'FIELD_EXIST'), "
+                        + "reference_value = NULL WHERE survey_id = ?1 AND description = ?2")
+                .setParameter(1, s.id).setParameter(2, CHILD_COUNT_RULE).executeUpdate();
+        em.flush();
+        em.clear();
+        assertTrue(validation.validate(Survey.findById(s.id)).stream().noneMatch(ValidationIssue::isError), "Field exists holds for a selection");
+    }
+
     // ---- UC-007 BR-005: tokens are checked where they are shown -------------------------------
 
     private static final String STEP_TWO_QUESTION = "FixtureQ5";

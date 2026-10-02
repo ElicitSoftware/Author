@@ -34,8 +34,9 @@ import java.util.Optional;
  * the runtime's constraints enforced up front — a downstream path that holds together (BR-001,
  * completed from the chosen target by {@link RulePath}), a question assignment upstream (BR-002),
  * a token for Text (any action may carry one, BR-005), a token that is a name a text could write
- * between angle brackets (A2), no Repeat onto a step (A3), and a target that comes after the question
- * the rule reads from (UC-033 A1).
+ * between angle brackets (A2), no Repeat onto a step (A3), an operator that can hold when a Repeat
+ * reads a multi-select (A6), and a target that comes after the question the rule reads from
+ * (UC-033 A1).
  */
 @ApplicationScoped
 public class RuleService {
@@ -244,6 +245,12 @@ public class RuleService {
         }
         if ("REPEAT".equals(r.actionType.name) && r.target() == Relationship.Target.STEP) {
             throw new AuthoringException(Translations.get("error.rule.repeatNotStep"), "downstream");
+        }
+        // UC-019 A6 / BR-007: a Repeat reading a multi-select repeats once per selected item, and only
+        // while its own condition holds. A numeric or boolean comparison never holds for a selection.
+        if ("REPEAT".equals(r.actionType.name) && RepeatSource.perItem(upstreamType(surveyId, r.upstreamSqId))
+                && RepeatSource.neverHoldsForASelection(r.operatorType)) {
+            throw new AuthoringException(Translations.get("error.rule.repeatSelectionOperator", r.operatorType.name), "operatorType");
         }
         if (r.upstreamStepId != null && Step.count("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3", surveyId, r.upstreamStepId, StructuralElement.SENTINEL) == 0) {
             throw new AuthoringException(Translations.get("validation.rule.readsRemovedStep", theRule()), "upstreamStepId");

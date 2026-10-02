@@ -122,6 +122,50 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         assertTrue(view.overlay.edges().contains("\"action\":\"REPEAT\""), "and is drawn");
     }
 
+    /**
+     * UC-019 A6: a Repeat arrow drawn from a multi-select opens the dialog saying the target repeats
+     * once per selected item, already on the operator that holds for a selection; one drawn from a
+     * count says nothing and leaves the operator to the author.
+     */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "rules.author", roles = {"elicit_author"})
+    void aRepeatArrowFromAMultiSelectStartsOnFieldExistsAndSaysItRepeatsPerItem() {
+        Survey s = fixture();
+        em.createNativeQuery("UPDATE survey.questions SET type_id = (SELECT id FROM survey.question_types WHERE name = 'MULTI_SELECT') "
+                + "WHERE survey_id = ?1 AND short_text = 'FixtureQ3'").setParameter(1, s.id).executeUpdate();
+        em.flush();
+        em.clear();
+        SurveyDesignerView view = open(s);
+        SectionCard sectionB = view.lanes.get(0).cards.get(1);
+        view.toggleAndSelect(sectionB.node());
+        QuestionRow children = view.lanes.get(0).cards.get(1).rows.get(0);
+        QuestionRow count = view.lanes.get(0).cards.get(1).rows.get(1);
+        assertEquals("MULTI_SELECT", children.node().detail(), "the fixture's choice question, made a multi-select");
+        SectionCard sectionC = view.lanes.get(1).cards.get(0);
+        int before = relationshipQuery.edges(s.id, false).size();
+
+        ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.ConnectRequestedEvent(view.overlay, true,
+                "sq-" + children.node().assignmentId(), "ss-" + sectionC.node().assignmentId(), null, "REPEAT"));
+
+        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        assertEquals("FIELD_EXIST", dialog.operator.getValue().name, "A6 step 1: a new rule starts on Field exists");
+        assertEquals(dialog.getTranslation("relationshipDialog.operator.helper.perItem"), dialog.operator.getHelperText(),
+                "A6 step 1: the dialog says what the rule will do");
+
+        // Reading a count instead, the hint goes; the operator the author already has is kept.
+        dialog.upstream.setValue(dialog.upstream.getListDataView().getItems()
+                .filter(n -> n.assignmentId().equals(count.node().assignmentId())).findFirst().orElseThrow());
+        assertNull(dialog.operator.getHelperText(), "a count repeats 1 to N; nothing to say");
+        dialog.upstream.setValue(dialog.upstream.getListDataView().getItems()
+                .filter(n -> n.assignmentId().equals(children.node().assignmentId())).findFirst().orElseThrow());
+
+        test(dialog.save).click();
+
+        assertFalse(dialog.isOpened());
+        assertEquals(before + 1, relationshipQuery.edges(s.id, false).size(), "the per-item Repeat is saved");
+    }
+
     @Test
     @TestSecurity(user = "rules.author", roles = {"elicit_author"})
     void selectingAnArrowOpensTheRuleForEditingWithRemove() {
