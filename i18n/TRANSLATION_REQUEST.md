@@ -111,6 +111,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `surveysView.delete` | Delete | Surveys list · small button in each row, opens the delete confirmation | 15 |  |
 | `deleteSurveyDialog.title` | Delete {0}? | Delete survey dialog · dialog title | 60 | params: {0} = survey name |
 | `deleteSurveyDialog.permanent` | This permanently deletes the survey and everything in it: steps, sections, questions, choice lists, rules, reporting tags and translations, removed elements included. It cannot be undone. | Delete survey dialog · paragraph | 250 |  |
+| `deleteSurveyDialog.previewAnswers` | Preview respondents recorded for this survey in Author: {0}. They and their answers are deleted with it. | Delete survey dialog · paragraph shown only when previewing the survey recorded respondents; Author is the product name | 160 | params: {0} = number of respondents |
 | `deleteSurveyDialog.exported` | This survey has been exported, last by {0}: {1}. Author holds the master copy. Sites that applied an export keep their copy, and deleting it here does not change them. To change those sites later, import the backup into Author, edit it and export again; a survey rebuilt from scratch cannot update them. | Delete survey dialog · paragraph for a survey already exported; Author stays (product name) | 450 | params: {0} = author name, {1} = release note |
 | `deleteSurveyDialog.neverExported` | This survey has never been exported, so no site has a copy of it. | Delete survey dialog · paragraph for a survey never exported | 120 |  |
 | `deleteSurveyDialog.advice` | Download a backup first. It is the only way to get the survey back: importing it restores the survey with the same keys. It holds the survey exactly as it stands, even with validation errors, and no site can install it. | Delete survey dialog · paragraph urging a backup before deleting | 260 |  |
@@ -961,7 +962,6 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `error.survey.languagesFull` | This survey already publishes as many languages as it can hold. | Error message · Translations page | 140 |  |
 | `error.survey.languageUnsupported` | {0} is not one of the languages Elicit carries, so no site could show it. Contact ElicitSoftware to have it translated; it becomes available in the next release. | Error message · survey details and Translations page; ElicitSoftware stays | 320 | params: {0} = language tag |
 | `error.survey.exportNeedsAuthor` | An export must be attributed to a signed-in author | Error message · export dialog | 140 |  |
-| `error.survey.hasRespondents` | Survey ''{0}'' has {1} respondents in this database; Author does not delete recorded answers | Error message · delete survey dialog; Author is the product name | 220 | params: {0} = survey name, {1} = number of respondents |
 | `error.survey.titleRequired` | Title is required | Error message · survey details dialog | 60 |  |
 | `error.survey.titleTooLong` | Title must be 255 characters or fewer | Error message · survey details dialog | 90 |  |
 | `error.survey.descriptionTooLong` | Description must be 2000 characters or fewer | Error message · survey details dialog | 90 |  |
@@ -1149,6 +1149,7 @@ surveysView.editDetails=Edit details
 surveysView.delete=Delete
 deleteSurveyDialog.title=Delete {0}?
 deleteSurveyDialog.permanent=This permanently deletes the survey and everything in it: steps, sections, questions, choice lists, rules, reporting tags and translations, removed elements included. It cannot be undone.
+deleteSurveyDialog.previewAnswers=Preview respondents recorded for this survey in Author: {0}. They and their answers are deleted with it.
 deleteSurveyDialog.exported=This survey has been exported, last by {0}: {1}. Author holds the master copy. Sites that applied an export keep their copy, and deleting it here does not change them. To change those sites later, import the backup into Author, edit it and export again; a survey rebuilt from scratch cannot update them.
 deleteSurveyDialog.neverExported=This survey has never been exported, so no site has a copy of it.
 deleteSurveyDialog.advice=Download a backup first. It is the only way to get the survey back: importing it restores the survey with the same keys. It holds the survey exactly as it stands, even with validation errors, and no site can install it.
@@ -1999,7 +2000,6 @@ error.survey.languagePublished={0} is already one of this survey''s published la
 error.survey.languagesFull=This survey already publishes as many languages as it can hold.
 error.survey.languageUnsupported={0} is not one of the languages Elicit carries, so no site could show it. Contact ElicitSoftware to have it translated; it becomes available in the next release.
 error.survey.exportNeedsAuthor=An export must be attributed to a signed-in author
-error.survey.hasRespondents=Survey ''{0}'' has {1} respondents in this database; Author does not delete recorded answers
 error.survey.titleRequired=Title is required
 error.survey.titleTooLong=Title must be 255 characters or fewer
 error.survey.descriptionTooLong=Description must be 2000 characters or fewer

@@ -11,7 +11,6 @@ package com.elicitsoftware.author.survey;
  * ***LICENSE_END***
  */
 
-import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.author.definition.ElicitFormat;
 import com.elicitsoftware.author.definition.ExportResult;
 import com.elicitsoftware.author.definition.ImportResult;
@@ -34,7 +33,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** UC-047 Delete Survey. */
@@ -45,6 +43,8 @@ class SurveyDeleteTest {
     private static final List<String> OWNED = List.of(
             "translations", "metadata", "ontology", "relationships", "sections_questions", "steps_sections",
             "questions", "select_items", "select_groups", "sections", "steps", "reports", "post_survey_actions");
+
+    private static final List<String> PREVIEW = List.of("dependents", "respondent_psa", "answers", "respondents");
 
     @Inject
     SurveyService service;
@@ -107,17 +107,72 @@ class SurveyDeleteTest {
     @Test
     @TestTransaction
     @TestSecurity(user = "author.one", roles = {"elicit_author"})
-    void delete_refusesASurveyWithRespondents() {
-        Survey s = fixture("AuthorFixtureEmpty");
-        em.createNativeQuery("""
-                        INSERT INTO survey.respondents (id, survey_id, access_code)
-                        VALUES ((SELECT coalesce(max(id), 0) + 1 FROM survey.respondents), ?1, 'UC047')
-                        """)
-                .setParameter(1, s.id).executeUpdate();
+    void delete_removesWhatThePreviewRecorded() {
+        int id = fixture("AuthorFixture").id;
+        int previewed = previewRun(id, "UC047");
+        int elsewhere = previewRun(fixture("AuthorFixtureEmpty").id, "UC047-OTHER");
+        assertEquals(1, service.previewRespondents(id), "UC-047 A4: the confirmation states this count");
 
-        AuthoringException ex = assertThrows(AuthoringException.class, () -> service.delete(s.id));
-        assertTrue(ex.getMessage().contains("respondents"), "UC-047 BR-004: " + ex.getMessage());
-        assertTrue(service.find(s.id).isPresent());
+        service.delete(id);
+
+        for (String table : PREVIEW) {
+            assertEquals(0, rowsOf(table, previewed), "UC-047 BR-004: nothing left in " + table);
+        }
+        assertEquals(0, service.previewRespondents(id));
+        assertTrue(service.find(id).isEmpty());
+        assertEquals(2, rowsOf("answers", elsewhere), "another survey's preview answers are not touched");
+    }
+
+    /**
+     * A walk through the preview as the Survey app leaves it: a respondent, two answers, the
+     * dependency a rule recorded between them (where the survey has a rule) and a post-survey
+     * action record.
+     *
+     * @return the respondent's id
+     */
+    private int previewRun(int surveyId, String accessCode) {
+        int respondent = next("respondents_seq");
+        em.createNativeQuery("INSERT INTO survey.respondents (id, survey_id, access_code) VALUES (?1, ?2, ?3)")
+                .setParameter(1, respondent).setParameter(2, surveyId).setParameter(3, accessCode).executeUpdate();
+        int upstream = next("answers_seq");
+        int downstream = next("answers_seq");
+        for (int answer : List.of(upstream, downstream)) {
+            em.createNativeQuery("""
+                            INSERT INTO survey.answers (id, survey_id, respondent_id, question_id, display_key, display_text)
+                            VALUES (?1, ?2, ?3, (SELECT min(id) FROM survey.questions WHERE survey_id = ?2), ?4, 'UC-047')
+                            """)
+                    .setParameter(1, answer).setParameter(2, surveyId).setParameter(3, respondent)
+                    .setParameter(4, "UC047-" + answer).executeUpdate();
+        }
+        em.createNativeQuery("""
+                        INSERT INTO survey.dependents (id, respondent_id, upstream_id, downstream_id, relationship_id)
+                        SELECT nextval('survey.dependents_seq'), ?1, ?2, ?3, min(id)
+                          FROM survey.relationships WHERE survey_id = ?4 HAVING min(id) IS NOT NULL
+                        """)
+                .setParameter(1, respondent).setParameter(2, upstream).setParameter(3, downstream)
+                .setParameter(4, surveyId).executeUpdate();
+        int action = next("post_survey_actions_seq");
+        em.createNativeQuery("""
+                        INSERT INTO survey.post_survey_actions (id, survey_id, name, description, url, execution_order)
+                        VALUES (?1, ?2, 'UC-047', 'UC-047', 'http://localhost/uc047', 1)
+                        """)
+                .setParameter(1, action).setParameter(2, surveyId).executeUpdate();
+        em.createNativeQuery("""
+                        INSERT INTO survey.respondent_psa (id, respondent_id, post_survey_action_id, status)
+                        VALUES (nextval('survey.respondent_psa_seq'), ?1, ?2, 'PENDING')
+                        """)
+                .setParameter(1, respondent).setParameter(2, action).executeUpdate();
+        return respondent;
+    }
+
+    private int next(String sequence) {
+        return ((Number) em.createNativeQuery("SELECT nextval('survey." + sequence + "')").getSingleResult()).intValue();
+    }
+
+    private long rowsOf(String table, int respondentId) {
+        String column = table.equals("respondents") ? "id" : "respondent_id";
+        return ((Number) em.createNativeQuery("SELECT count(*) FROM survey." + table + " WHERE " + column + " = ?1")
+                .setParameter(1, respondentId).getSingleResult()).longValue();
     }
 
     @Test

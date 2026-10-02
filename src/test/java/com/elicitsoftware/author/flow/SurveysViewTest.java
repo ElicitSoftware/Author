@@ -20,6 +20,8 @@ import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,6 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @QuarkusTest
 @QuarkusTestResource(PostgresTestResource.class)
 class SurveysViewTest extends QuarkusBrowserlessTest {
+
+    @Inject
+    EntityManager em;
 
     @Test
     @TestSecurity(user = "view.author", roles = {"elicit_author"})
@@ -88,6 +93,7 @@ class SurveysViewTest extends QuarkusBrowserlessTest {
         DeleteSurveyDialog dialog = $(DeleteSurveyDialog.class).single();
 
         assertFalse(dialog.delete.isEnabled(), "UC-047 BR-002: disabled until the name is typed");
+        assertFalse(dialog.previewAnswers.isVisible(), "UC-047 A4: nothing said of a preview never taken");
         test(dialog.confirmName).setValue("AuthorFixture");
         assertFalse(dialog.delete.isEnabled(), "a different survey's name does not unlock it");
 
@@ -101,6 +107,31 @@ class SurveysViewTest extends QuarkusBrowserlessTest {
         assertFalse(dialog.isOpened());
         assertTrue(Survey.findByIdOptional(empty.id).isEmpty());
         assertFalse(view.grid.getGenericDataView().getItems().anyMatch(s -> s.id.equals(empty.id)));
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "view.author", roles = {"elicit_author"})
+    void deleteSaysHowManyPreviewRespondentsGoAndRemovesThem() {
+        SurveysView view = navigate(SurveysView.class);
+        Survey empty = Survey.find("name", "AuthorFixtureEmpty").firstResult();
+        em.createNativeQuery("""
+                        INSERT INTO survey.respondents (id, survey_id, access_code)
+                        VALUES (nextval('survey.respondents_seq'), ?1, 'UC047')
+                        """)
+                .setParameter(1, empty.id).executeUpdate();
+        view.confirmDelete(empty);
+        DeleteSurveyDialog dialog = $(DeleteSurveyDialog.class).single();
+
+        // UC-047 A4 / BR-004: stated before the name is typed, and no longer a refusal.
+        assertTrue(dialog.previewAnswers.isVisible());
+        assertTrue(dialog.previewAnswers.getText().contains("1"), dialog.previewAnswers.getText());
+
+        test(dialog.confirmName).setValue("AuthorFixtureEmpty");
+        test(dialog.delete).click();
+
+        assertFalse(dialog.isOpened(), "the delete goes through");
+        assertTrue(Survey.findByIdOptional(empty.id).isEmpty());
     }
 
     @Test

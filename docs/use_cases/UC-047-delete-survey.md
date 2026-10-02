@@ -24,7 +24,7 @@
 6. The author types the survey's name.
 7. The system enables Delete once the typed name matches the survey's name exactly.
 8. The author chooses Delete.
-9. The system deletes the survey and every record belonging to it.
+9. The system deletes the survey and every record belonging to it, including any respondents and answers that previewing it recorded.
 10. The system closes the confirmation, removes the survey from the list and reports that it was deleted.
 
 ## Alternative Flows
@@ -53,13 +53,13 @@
 1. The system keeps Delete disabled.
 2. Use case continues at step 6.
 
-### A4: Survey has respondents in Author's database
+### A4: Survey has been previewed
 
-**Trigger:** Author's database holds respondents for the survey (step 9)  
+**Trigger:** Author's database holds respondents for the survey, recorded by previewing it (step 2)  
 **Flow:**
 
-1. The system refuses the delete, says how many respondents exist and that Author does not delete recorded answers, and keeps the confirmation open.
-2. Use case ends.
+1. The system also states how many preview respondents the survey has and that they and their answers will be deleted with it.
+2. Use case continues at step 3.
 
 ### A5: Author cancels
 
@@ -81,7 +81,7 @@
 
 ### Success Postconditions
 
-- The survey and every record that belonged to it are gone from Author, current and retired alike.
+- The survey and every record that belonged to it are gone from Author, current and retired alike, together with the respondents and answers recorded by previewing it.
 - The survey key is free again, so importing the backup, or any export of the survey (UC-005), is accepted and restores it under the same survey and element keys.
 - No deployed site is changed.
 
@@ -103,9 +103,9 @@ The delete is enabled only once the author has typed the survey's name exactly. 
 
 Sites install a survey by applying an exported file, and match later updates by the survey and element keys. Deleting the survey in Author never reaches a site: its copy keeps running and keeps its answers. To change those sites later, the author imports the backup (or the last exported file) back into Author, edits it and exports again; the export is validated as usual (UC-008). A survey rebuilt from scratch has new keys and would install beside the old one rather than update it.
 
-### BR-004: Recorded answers are never deleted from Author
+### BR-004: Preview answers go with the survey
 
-Author's database holds survey definitions, not responses. A survey with respondents there is refused, because that database is acting as a site's.
+Author's database holds survey definitions. The only respondents in it are the ones the preview records when an author walks through a survey as a respondent (FR-030): test data that means nothing without the survey. Deleting the survey deletes them too — the respondents, their answers, the dependencies between those answers and any post-survey action records — and the confirmation says how many respondents go (A4). No site's answers are involved, because the delete never reaches a site (BR-003).
 
 ### BR-005: Shared reporting tags survive
 
