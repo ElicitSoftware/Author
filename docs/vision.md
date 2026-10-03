@@ -161,9 +161,9 @@ survey updates the same rows at every site instead of installing a second copy.
     (2) reassigning a question's ontology/metadata tag reclassifies historical
     answers as well as future ones. Author must warn about both at export and
     must not give them the same "safe" affordances as other edits.
-  - Technical design: `Survey/research/Kimball_type_2.md` (schema mechanics;
-    its in-database Author Tool workflow section is superseded) summarized for
-    authoring purposes in `docs/scd-contract.md`.
+  - Technical design: Survey UC-002 BR-009 and Survey's `scd` spec tests (schema
+    mechanics; the design's in-database Author Tool workflow is superseded)
+    summarized for authoring purposes in `docs/scd-contract.md`.
 - **Compliance:** authored surveys may collect PHI in clinical deployments
   (e.g., the Family Health History Survey) — design with sensitive data in mind.
 - **Accessibility:** Vaadin components should be used in a way that preserves

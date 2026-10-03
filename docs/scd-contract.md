@@ -9,14 +9,18 @@ design from scratch.
 **Sources of truth.**
 - Schema mechanics (columns, constraints, trigger, as-of resolution):
   `Survey/src/main/resources/db/migration/V001__Create_Survey_Schema.sql`
-  (+ `V013` for the trigger's final form) and `Survey/research/Kimball_type_2.md`.
+  (+ `V013` for the trigger's final form), Survey UC-002 BR-009 (every structural
+  lookup resolves a durable id to the one version row whose effective window covers
+  the respondent's snapshot anchor) and Survey's executable specs,
+  `Survey/src/test/java/com/elicitsoftware/scd/*SpecTest`.
 - What Author writes and reads: the `.elicit` definition-file contract in Admin —
   `SurveyDefinitionExportService` (class javadoc = format spec),
   `SurveyDefinitionImportService`, `SurveyDefinitionUpdateService`,
   `SurveyDefinitionFileFields`, and Admin UC-013/014/017/018.
-- `Kimball_type_2.md`'s "Workflow 1: Survey Alteration — Draft and Publish
-  Phases" and its statements that "the Author Tool" publishes in-database or owns
-  the SCD columns are **superseded** by the file pipeline below. Where that doc
+- The original Kimball Type 2 design's "Workflow 1: Survey Alteration — Draft and
+  Publish Phases", which had the Author Tool publishing in-database and owning the
+  SCD columns, is **superseded** by the file pipeline below; that research document
+  has since been removed as implemented. Where anything of it survives in a comment
   and Admin's implementation disagree about Author, Admin's implementation wins.
 
 ## Why the schema is versioned
@@ -26,7 +30,7 @@ design from scratch.
 > relationships, or removing questions that perform poorly. Today the schema
 > has no versioning concept. Any in-place update silently overwrites the
 > definition that historical respondents saw."
-> — `Survey/research/Kimball_type_2.md`
+> — the Kimball Type 2 design brief, now carried by Survey UC-002 BR-009
 
 Every structural element can be independently versioned **at a deployed
 site**, and a respondent's experience is pinned to a point-in-time snapshot
