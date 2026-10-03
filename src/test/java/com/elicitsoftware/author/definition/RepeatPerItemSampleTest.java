@@ -51,6 +51,9 @@ class RepeatPerItemSampleTest {
     @Inject
     ExportValidation validation;
 
+    @Inject
+    com.elicitsoftware.author.survey.ReportingService reporting;
+
     @Test
     @TestTransaction
     void theFootballSampleImportsValidatesAndPreviewsItsFirstGame() throws IOException {
@@ -81,5 +84,12 @@ class RepeatPerItemSampleTest {
         // UC-019 BR-008: the preview shows one instance, titled with the first game of the list.
         TokenSamples.Values title = TokenSamples.load(survey.id).forMount(repeat.downstreamStepId, repeat.downstreamSsId, null);
         assertEquals("Sep 5 - vs. Western Michigan (home)", title.values().get("GAME"));
+
+        // UC-024 BR-003: the dimensional-impact preview lists the two fixed columns the site fills
+        // for the repeated section (Survey UC-008 BR-012).
+        assertEquals(List.of("question_key", "item_key"),
+                reporting.impact(survey.id).perItemColumns().stream().map(c -> c.column()).toList());
+        assertEquals(List.of("dim_question", "dim_item"),
+                reporting.impact(survey.id).perItemColumns().stream().map(c -> c.dimTable()).toList());
     }
 }

@@ -19,6 +19,10 @@ import com.elicitsoftware.model.Dimension;
 import com.elicitsoftware.model.Metadata;
 import com.elicitsoftware.model.Metadata.ElementRef;
 import com.elicitsoftware.model.Ontology;
+import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.Relationship;
+import com.elicitsoftware.model.SectionsQuestion;
+import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Survey;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -75,11 +79,15 @@ public class ReportingService {
     /** One dimension table the site's ETL will create. */
     public record DimTable(String name, String source, boolean sharedDimension, List<String> tags, int assignments) { }
 
-    /** One {@code fact_sections} column the site's ETL will add. */
+    /** One {@code fact_sections} column the site's ETL will add; {@code tag} is null for a fixed column. */
     public record FactColumn(String column, String dimTable, String tag) { }
 
-    /** UC-024: everything the reporting schema gains from this survey, plus what would break it. */
-    public record Impact(List<DimTable> tables, List<FactColumn> columns, List<ValidationIssue> problems) {
+    /**
+     * UC-024: everything the survey's reporting schema gains from this survey, plus what would
+     * break it. {@code perItemColumns} are the fixed {@code question_key}/{@code item_key} the
+     * site fills when the survey repeats a section per selected item (Survey UC-008 BR-012).
+     */
+    public record Impact(List<DimTable> tables, List<FactColumn> columns, List<FactColumn> perItemColumns, List<ValidationIssue> problems) {
 
         public boolean hasErrors() {
             return problems.stream().anyMatch(ValidationIssue::isError);
@@ -330,6 +338,9 @@ public class ReportingService {
                     Translations.get("validation.tag.table." + d.keySuffix(), o.tag, table, limit))));
             ReportingNames.identifierDefect(column).ifPresent(d -> problems.add(ValidationIssue.error(KIND_TAG, o.id,
                     Translations.get("validation.tag.column." + d.keySuffix(), o.tag, column, limit))));
+            if (ReportingNames.reservedColumn(column)) {
+                problems.add(ValidationIssue.error(KIND_TAG, o.id, Translations.get("validation.tag.column.reserved", o.tag, column)));
+            }
             int uses = usesByTag.getOrDefault(o.id, 0);
             if (uses == 0) {
                 problems.add(ValidationIssue.warning(KIND_TAG, o.id, Translations.get("validation.tag.unused", o.tag)));
@@ -357,23 +368,35 @@ public class ReportingService {
                 }
             }
         }
-        // fact_sections is one table per site: another survey defining the same column against a
-        // different table would make the site's reporting build ambiguous.
-        for (Ontology other : Ontology.<Ontology>list("surveyId <> ?1", surveyId)) {
-            String column = ReportingNames.factColumn(other.tag);
-            List<Ontology> mine = byColumn.get(column);
-            if (mine != null) {
-                String otherTable = ReportingNames.dimTable(other);
-                for (Ontology o : mine) {
-                    if (!otherTable.equals(ReportingNames.dimTable(o))) {
-                        problems.add(ValidationIssue.warning(KIND_TAG, o.id, Translations.get("validation.tag.otherSurvey",
-                                o.tag, column, ReportingNames.dimTable(o), otherTable)));
-                    }
-                }
+        columns.sort((a, b) -> a.column().compareTo(b.column()));
+        return new Impact(tables.values().stream().map(DimTableBuilder::build).toList(), columns,
+                perItemColumns(surveyId), problems);
+    }
+
+    /**
+     * UC-024 step 2: the two fixed columns a site fills for a section repeated once per selected
+     * item (Survey UC-008 BR-012), {@code question_key} and {@code item_key}, listed when the
+     * survey has a current Repeat rule reading a multi-select into a section; otherwise empty.
+     * Every survey's fact table has them; they only carry values in that case.
+     */
+    List<FactColumn> perItemColumns(int surveyId) {
+        for (Relationship r : Relationship.<Relationship>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
+            if (r.actionType == null || !"REPEAT".equals(r.actionType.name) || r.downstreamSsId == null || r.downstreamSqId != null
+                    || r.upstreamSqId == null) {
+                continue;
+            }
+            Optional<SectionsQuestion> sq = SectionsQuestion.<SectionsQuestion>find("surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3",
+                    surveyId, r.upstreamSqId, StructuralElement.SENTINEL).firstResultOptional();
+            if (sq.isEmpty()) {
+                continue;
+            }
+            Optional<Question> q = Question.<Question>find("surveyId = ?1 and questionId = ?2 and effectiveTo = ?3",
+                    surveyId, sq.get().questionId, StructuralElement.SENTINEL).firstResultOptional();
+            if (q.isPresent() && RepeatSource.perItem(q.get().questionType)) {
+                return List.of(new FactColumn("question_key", "dim_question", null), new FactColumn("item_key", "dim_item", null));
             }
         }
-        columns.sort((a, b) -> a.column().compareTo(b.column()));
-        return new Impact(tables.values().stream().map(DimTableBuilder::build).toList(), columns, problems);
+        return List.of();
     }
 
     // ---- helpers ---------------------------------------------------------------------------------

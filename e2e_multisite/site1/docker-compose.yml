@@ -100,6 +100,7 @@ services:
       TZ: America/Detroit
       accessCode.autoRegister: true
       elicit.etl.enabled: "false"
+      elicit.etl.drop.enabled: "true"
       brand.file.system.path: /opt/brand
       quarkus.datasource.jdbc.url: jdbc:postgresql://db:5432/author?connectTimeout=30&socketTimeout=600&tcpKeepAlive=true&tcpKeepAlivesIdle=60
       quarkus.datasource.owner.jdbc.url: jdbc:postgresql://db:5432/author?connectTimeout=30&socketTimeout=600&tcpKeepAlive=true&tcpKeepAlivesIdle=60
@@ -136,6 +137,8 @@ services:
       retries: 20
       start_period: 60s
     environment:
+      # The preview Survey, which drops a survey's reporting schema before Author deletes it (UC-047).
+      author.preview.survey.url: http://author-survey:8080
       TZ: America/Detroit
       brand.file.system.path: /opt/brand
       quarkus.datasource.jdbc.url: jdbc:postgresql://db:5432/author?connectTimeout=30&socketTimeout=600&tcpKeepAlive=true&tcpKeepAlivesIdle=60

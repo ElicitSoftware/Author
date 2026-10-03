@@ -47,6 +47,9 @@ public class SurveyService {
     ReportingChangeLedger reportingChanges;
 
     @Inject
+    PreviewSurveyClient previewSurvey;
+
+    @Inject
     ContentLanguages contentLanguages;
 
     /**
@@ -226,7 +229,9 @@ public class SurveyService {
      * beforehand, which imports back under the same survey and element keys (UC-005).
      * <p>
      * Deleting the survey here never reaches a site. Sites that applied an export keep their copy;
-     * re-importing the export is what lets Author update them again (BR-003).
+     * re-importing the export is what lets Author update them again (BR-003). What it does reach,
+     * first, is the preview Survey, which drops the survey's reporting schema in this database
+     * (BR-008).
      *
      * @param id the survey
      * @throws AuthoringException when the survey is gone
@@ -236,6 +241,12 @@ public class SurveyService {
         Survey s = Survey.findById(id);
         if (s == null) {
             throw new AuthoringException(Translations.get("error.survey.gone", String.valueOf(id)));
+        }
+        // BR-008. The preview Survey's reporting schema for this survey goes first, through the
+        // preview Survey, because this row holds the schema's only name. A refusal throws and
+        // nothing below has run; a survey never built has no schema and makes no call.
+        if (s.reportSchema != null) {
+            previewSurvey.dropReportingSchema(s.surveyKey);
         }
         // BR-004. The only respondents in Author's database are the ones the preview recorded;
         // they mean nothing without the survey and go with it.

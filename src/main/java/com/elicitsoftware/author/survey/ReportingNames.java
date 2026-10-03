@@ -40,6 +40,14 @@ public final class ReportingNames {
     /** A dimension name is used verbatim (lowercased) as a table suffix, so it must already be identifier-safe. */
     public static final Pattern DIMENSION_CHARS = Pattern.compile("^[A-Za-z0-9_]+$");
 
+    /**
+     * The fixed columns of every survey's {@code fact_sections} (Survey UC-008 BR-007, BR-012):
+     * the step and section of the row, and the question and item a section repeated per selected
+     * item is about. A tag whose column would be one of them is refused by the site's reporting
+     * build, so Author refuses it first.
+     */
+    public static final java.util.Set<String> RESERVED_COLUMNS = java.util.Set.of("step_key", "section_key", "question_key", "item_key");
+
     private ReportingNames() {
     }
 
@@ -99,6 +107,11 @@ public final class ReportingNames {
             return Optional.of(IdentifierDefect.TOO_LONG);
         }
         return Optional.empty();
+    }
+
+    /** Whether a tag's column is one of the fixed columns of {@code fact_sections}. */
+    public static boolean reservedColumn(String column) {
+        return column != null && RESERVED_COLUMNS.contains(column);
     }
 
     private static String lower(String s) {

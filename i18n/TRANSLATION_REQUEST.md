@@ -205,10 +205,10 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `validation.tag.column.empty` | Tag ''{0}'' gives the report column an empty name. Rename the tag; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces an empty report column name | 240 | params: {0} = tag; dynamic |
 | `validation.tag.column.characters` | Tag ''{0}'' gives the report column the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces a report column name with characters a column name cannot have | 300 | params: {0} = tag, {1} = column name; dynamic |
 | `validation.tag.column.tooLong` | Tag ''{0}'' gives the report column the name ''{1}'', which is longer than {2} characters. Rename the tag; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces a report column name that is too long | 300 | params: {0} = tag, {1} = column name, {2} = the limit; dynamic |
+| `validation.tag.column.reserved` | Tag ''{0}'' gives the report column the name ''{1}'', which is a fixed column of every survey''s fact table (step_key, section_key, question_key, item_key). Rename the tag; the site''s reporting build refuses it. | Validation finding · Reporting: error, a tag produces a report column name reserved for a fixed column; step_key, section_key, question_key, item_key are technical names, keep them | 300 | params: {0} = tag, {1} = column name |
 | `validation.tag.unused` | Tag ''{0}'' is not used. Assign it to a section or question, or delete it. | Validation finding · Reporting: warning, a tag is on no element | 180 | params: {0} = tag |
 | `validation.tag.sameColumn` | Tags {0} produce the same report column, ''{1}''. Rename one of them. | Validation finding · Reporting: error, several tags produce one report column | 220 | params: {0} = the tags, quoted and comma separated, {1} = column name |
 | `validation.tag.tableClash` | Tag ''{0}'' has no dimension, so its reporting table is ''{1}'' — the same table dimension ''{2}'' uses. Rename the tag or give it a dimension. | Validation finding · Reporting: error, a tag without a dimension produces the table a dimension already uses | 300 | params: {0} = tag, {1} = table name, {2} = dimension name |
-| `validation.tag.otherSurvey` | Tag ''{0}'' and a tag in another survey both produce the report column ''{1}'', but for different tables (''{2}'' and ''{3}''). A site that installs both surveys could not build its reports. Rename one of the tags. | Validation finding · Reporting: warning, another survey maps the same report column to a different table | 400 | params: {0} = tag, {1} = column name, {2} = this survey table, {3} = the other survey table |
 | `validation.translation.missing.one` | {0}: 1 text is not translated yet. Respondents will see it in the survey''s own language. | Validation finding · warning: one text of a published language is not translated | 220 | params: {0} = language tag |
 | `validation.translation.missing.many` | {0}: {1} texts are not translated yet. Respondents will see them in the survey''s own language. | Validation finding · warning: several texts of a published language are not translated | 220 | params: {0} = language tag, {1} = how many |
 | `validation.translation.stale.one` | {0}: 1 translation is out of date because the original text changed. Respondents will see the original until it is translated again. | Validation finding · warning: one translation is out of date | 260 | params: {0} = language tag |
@@ -565,7 +565,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `reportingView.tags` | Tags | Reporting tags page · section heading | 15 |  |
 | `reportingView.assignments` | Assignments | Reporting tags page · section heading | 15 |  |
 | `reportingView.impact.title` | Dimensional impact | Reporting tags page · section heading | 25 |  |
-| `reportingView.impact.intro` | When the exported survey is applied and answers arrive, the site's reporting build creates these objects in the surveyreport schema. | Reporting tags page · paragraph; surveyreport is a technical schema name | 200 |  |
+| `reportingView.impact.intro` | When the exported survey is applied and answers arrive, the site's reporting build creates these objects in the survey's own reporting schema. | Reporting tags page · paragraph; each survey gets a reporting schema of its own at the site | 200 |  |
 | `reportingView.impact.none` | No tags yet: the survey adds nothing to the reporting schema. | Reporting tags page · paragraph | 80 |  |
 | `reportingView.impact.sharedDimension` | shared dimension "{0}" | Reporting tags page · fragment of a list item | 40 | params: {0} = dimension name |
 | `reportingView.impact.ownTable` | own table of tag "{0}" | Reporting tags page · fragment of a list item | 40 | params: {0} = tag name |
@@ -575,6 +575,8 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `reportingView.impact.dimensionTables` | Dimension tables | Reporting tags page · list caption | 25 |  |
 | `reportingView.impact.column` | {0} → {1} (tag "{2}") | Reporting tags page · list item | 80 | params: {0} = column name, {1} = table name, {2} = tag name |
 | `reportingView.impact.reportColumns` | Report columns | Reporting tags page · list caption | 25 |  |
+| `reportingView.impact.perItemColumns` | Fixed columns filled for a section repeated per selected item | Reporting tags page · list caption | 80 |  |
+| `reportingView.impact.perItemColumn` | {0} → {1} (the question the Repeat rule reads, and the item each instance is about) | Reporting tags page · list item | 120 | params: {0} = column name, {1} = table name |
 | `reportingView.impact.error` | Error: {0} | Reporting tags page · list item prefix | 40 | params: {0} = finding text; identical |
 | `reportingView.impact.warning` | Warning: {0} | Reporting tags page · list item prefix | 40 | params: {0} = finding text |
 | `reportingView.impact.findings` | Problems | Reporting tags page · list caption | 25 |  |
@@ -614,7 +616,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `tagAssignmentDialog.scope.question` | This question wherever it appears | Assign tag dialog · scope option | 40 |  |
 | `tagAssignmentDialog.scope.questionInSection` | This question only in section "{0}" | Assign tag dialog · scope option | 60 | params: {0} = section name |
 | `tagAssignmentDialog.impact.none` | Choose a tag to see the table and column it fills. | Assign tag dialog · preview text | 60 |  |
-| `tagAssignmentDialog.impact.text` | Values go to surveyreport.{0} · report column {1}{2} | Assign tag dialog · preview text; surveyreport is a technical schema name | 100 | params: {0} = table name, {1} = column name, {2} = constant/from-answer fragment |
+| `tagAssignmentDialog.impact.text` | Values go to {0} in the survey''s reporting schema · report column {1}{2} | Assign tag dialog · preview text; {0} is a technical table name | 100 | params: {0} = table name, {1} = column name, {2} = constant/from-answer fragment |
 | `tagAssignmentDialog.impact.constant` | · constant | Assign tag dialog · preview fragment, keep the leading separator | 15 |  |
 | `tagAssignmentDialog.impact.fromAnswer` | · from the answer | Assign tag dialog · preview fragment, keep the leading separator | 20 |  |
 | `tagAssignmentDialog.error.chooseTag` | Choose a tag | Assign tag dialog · field error | 30 |  |
@@ -641,7 +643,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `tagDialog.created` | Created tag "{0}" | Tag dialog · success notification | 40 | params: {0} = tag name |
 | `tagDialog.updated` | Updated tag "{0}" | Tag dialog · success notification | 40 | params: {0} = tag name |
 | `tagDialog.preview.none` | Choose a tag to see the table and column it produces. | Tag dialog · preview text | 60 |  |
-| `tagDialog.preview.text` | Values go to surveyreport.{0} · report column {1} | Tag dialog · preview text; surveyreport is a technical schema name | 80 | params: {0} = table name, {1} = column name |
+| `tagDialog.preview.text` | Values go to {0} in the survey''s reporting schema · report column {1} | Tag dialog · preview text; {0} is a technical table name | 80 | params: {0} = table name, {1} = column name |
 | `elementDialog.kind.step` | step | Step/section dialog · the word "step" as used inside sentences (lower case) | 15 | dynamic (referenced through ElementDialog.KIND_STEP) |
 | `elementDialog.kind.section` | section | Step/section dialog · the word "section" as used inside sentences (lower case) | 15 | dynamic (referenced through ElementDialog.KIND_SECTION) |
 | `elementDialog.title.new` | New {0} | Step/section dialog · dialog title | 30 | params: {0} = "step" or "section" |
@@ -958,6 +960,8 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `error.list.optionTwice` | Option ''{0}'' appears twice | Error message · list of options dialog, under the options | 90 | params: {0} = option text |
 | `error.list.codedValueTooLong` | Coded value must be 255 characters or fewer | Error message · list of options dialog, under the options | 90 |  |
 | `error.survey.gone` | Survey {0} no longer exists | Error message · the survey was deleted meanwhile | 80 | params: {0} = survey id |
+| `error.survey.delete.previewUnreachable` | The survey was not deleted: its reporting schema could not be dropped because the preview Survey at {0} could not be reached ({1}). Start it and try again. | Error message · Delete survey dialog; the preview Survey (a service) was down | 200 | params: {0} = address, {1} = technical reason |
+| `error.survey.delete.previewRefused` | The survey was not deleted: the preview Survey did not drop its reporting schema (answered {0}: {1}). | Error message · Delete survey dialog; the preview Survey answered but refused | 160 | params: {0} = HTTP status code, {1} = its answer |
 | `error.survey.notLanguageTag` | ''{0}'' is not a language tag. Choose one of the languages Elicit carries. | Error message · survey details and Translations page | 160 | params: {0} = what was typed |
 | `error.survey.baseLanguage` | {0} is the language this survey is written in; it needs no translation. | Error message · Translations page, publishing the survey own language | 160 | params: {0} = language tag |
 | `error.survey.languagePublished` | {0} is already one of this survey''s published languages. | Error message · Translations page | 140 | params: {0} = language tag |
@@ -1246,10 +1250,10 @@ validation.tag.table.tooLong=Tag ''{0}'' gives the reporting table the name ''{1
 validation.tag.column.empty=Tag ''{0}'' gives the report column an empty name. Rename the tag; sites could not build reports with this name.
 validation.tag.column.characters=Tag ''{0}'' gives the report column the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag; sites could not build reports with this name.
 validation.tag.column.tooLong=Tag ''{0}'' gives the report column the name ''{1}'', which is longer than {2} characters. Rename the tag; sites could not build reports with this name.
+validation.tag.column.reserved=Tag ''{0}'' gives the report column the name ''{1}'', which is a fixed column of every survey''s fact table (step_key, section_key, question_key, item_key). Rename the tag; the site''s reporting build refuses it.
 validation.tag.unused=Tag ''{0}'' is not used. Assign it to a section or question, or delete it.
 validation.tag.sameColumn=Tags {0} produce the same report column, ''{1}''. Rename one of them.
 validation.tag.tableClash=Tag ''{0}'' has no dimension, so its reporting table is ''{1}'' — the same table dimension ''{2}'' uses. Rename the tag or give it a dimension.
-validation.tag.otherSurvey=Tag ''{0}'' and a tag in another survey both produce the report column ''{1}'', but for different tables (''{2}'' and ''{3}''). A site that installs both surveys could not build its reports. Rename one of the tags.
 validation.translation.missing.one={0}: 1 text is not translated yet. Respondents will see it in the survey''s own language.
 validation.translation.missing.many={0}: {1} texts are not translated yet. Respondents will see them in the survey''s own language.
 validation.translation.stale.one={0}: 1 translation is out of date because the original text changed. Respondents will see the original until it is translated again.
@@ -1606,7 +1610,7 @@ reportingView.removedElement=removed element
 reportingView.tags=Tags
 reportingView.assignments=Assignments
 reportingView.impact.title=Dimensional impact
-reportingView.impact.intro=When the exported survey is applied and answers arrive, the site's reporting build creates these objects in the surveyreport schema.
+reportingView.impact.intro=When the exported survey is applied and answers arrive, the site's reporting build creates these objects in the survey's own reporting schema.
 reportingView.impact.none=No tags yet: the survey adds nothing to the reporting schema.
 reportingView.impact.sharedDimension=shared dimension "{0}"
 reportingView.impact.ownTable=own table of tag "{0}"
@@ -1616,6 +1620,8 @@ reportingView.impact.table={0} — {1} — tags: {2} — {3}
 reportingView.impact.dimensionTables=Dimension tables
 reportingView.impact.column={0} → {1} (tag "{2}")
 reportingView.impact.reportColumns=Report columns
+reportingView.impact.perItemColumns=Fixed columns filled for a section repeated per selected item
+reportingView.impact.perItemColumn={0} → {1} (the question the Repeat rule reads, and the item each instance is about)
 reportingView.impact.error=Error: {0}
 reportingView.impact.warning=Warning: {0}
 reportingView.impact.findings=Problems
@@ -1655,7 +1661,7 @@ tagAssignmentDialog.scope.section=This section as it appears in step "{0}"
 tagAssignmentDialog.scope.question=This question wherever it appears
 tagAssignmentDialog.scope.questionInSection=This question only in section "{0}"
 tagAssignmentDialog.impact.none=Choose a tag to see the table and column it fills.
-tagAssignmentDialog.impact.text=Values go to surveyreport.{0} · report column {1}{2}
+tagAssignmentDialog.impact.text=Values go to {0} in the survey''s reporting schema · report column {1}{2}
 tagAssignmentDialog.impact.constant=· constant
 tagAssignmentDialog.impact.fromAnswer=· from the answer
 tagAssignmentDialog.error.chooseTag=Choose a tag
@@ -1682,7 +1688,7 @@ tagDialog.error.tagRequired=Tag is required
 tagDialog.created=Created tag "{0}"
 tagDialog.updated=Updated tag "{0}"
 tagDialog.preview.none=Choose a tag to see the table and column it produces.
-tagDialog.preview.text=Values go to surveyreport.{0} · report column {1}
+tagDialog.preview.text=Values go to {0} in the survey''s reporting schema · report column {1}
 elementDialog.kind.step=step
 elementDialog.kind.section=section
 elementDialog.title.new=New {0}
@@ -1999,6 +2005,8 @@ error.list.optionTextTooLong=Option text must be 255 characters or fewer
 error.list.optionTwice=Option ''{0}'' appears twice
 error.list.codedValueTooLong=Coded value must be 255 characters or fewer
 error.survey.gone=Survey {0} no longer exists
+error.survey.delete.previewUnreachable=The survey was not deleted: its reporting schema could not be dropped because the preview Survey at {0} could not be reached ({1}). Start it and try again.
+error.survey.delete.previewRefused=The survey was not deleted: the preview Survey did not drop its reporting schema (answered {0}: {1}).
 error.survey.notLanguageTag=''{0}'' is not a language tag. Choose one of the languages Elicit carries.
 error.survey.baseLanguage={0} is the language this survey is written in; it needs no translation.
 error.survey.languagePublished={0} is already one of this survey''s published languages.

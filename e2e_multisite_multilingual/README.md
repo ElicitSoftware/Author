@@ -515,11 +515,11 @@ that is not would be.
   `Accept-Language` is pinned to `en-US`, so the link is always what decides (UC-009 step 2). The
   selector itself is asserted to be offered but is not clicked; the session-memory path (step 5) is
   not covered.
-- The reporting star (`surveyreport`) is only populated for the survey the site installed; the
-  imported respondents are complete in `survey.*` but do not appear in the master's reporting.
-- `surveyreport.dim_step.value` and `dim_section.value` are unique per site, so two different
-  surveys sharing a step or section dimension name make the Survey ETL fail. Revisions of one
-  survey are fine, since dimension rows are keyed by the durable step/section id.
+- Every survey reports in a schema of its own (`report_<slug>`, Survey UC-008); the imported
+  respondents are complete in `survey.*` and the site's build loads the ones that finished.
+- `dim_step.value` and `dim_section.value` are unique within one survey's reporting schema, so
+  two surveys may share a step or section dimension name. Revisions of one survey are fine,
+  since dimension rows are keyed by the durable step/section id.
 - All three sites must share the same `.elicit` lineage: element keys and versions are what the
   respondent import resolves.
 - The three Survey containers run with `elicit.content.translations-ttl: PT5S`. A site holds a
