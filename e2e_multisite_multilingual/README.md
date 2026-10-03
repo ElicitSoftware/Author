@@ -3,7 +3,10 @@
 Tests the theory of **one survey, translated once, read in three languages at three sites**: a
 survey is authored and translated at a master site, the one definition file it exports is applied
 everywhere, and each site serves the survey in whichever of its languages that site has adopted —
-while every respondent, whatever their language, ends up in the master's database.
+while every respondent, whatever their language, ends up in the master's database. Its last three
+phases add **a second survey at one of the sites**: Mexico applies the Family History Survey beside
+the Census survey, its respondents take both, and each survey reports in a schema of its own — so
+the one run covers multi-site, multi-lingual and multi-survey together.
 
 Three complete stacks run side by side on this machine:
 
@@ -14,15 +17,21 @@ Three complete stacks run side by side on this machine:
 | Author | http://localhost:8084 (preview 8085) | — | — |
 | Keycloak | http://localhost:8180 (admin/admin) | uses USA's | uses USA's |
 | Mailpit | http://localhost:8025 | uses USA's | uses USA's |
+| FHHS | — | http://localhost:8082 (ready once phase 17 applies its survey) | — |
+| Pedigree | — | http://localhost:8033 | — |
 | PostgreSQL | localhost:5452 | localhost:5402 | localhost:5352 |
 | Languages offered | `en` | `en`, `es-419` | `en`, `ar` |
 | Brand mount | `../../elicit-brand` — the default | `mexico/mexico_brand` | `arabia/arabia_brand` |
 | What a respondent reads | English | Latin American Spanish | Arabic, right to left |
+| Surveys | Census | Census, then the Family History Survey (phase 17) | Census |
 
-Mexico's host ports are USA's minus 50, Arabia's minus 100. Neither remote site publishes SMTP, and
-none of the three runs FHHS, Pedigree or Jaeger: FHHS serves only the Family History Survey and
-would never become ready against this one (FHHS UC-005), Pedigree is used by nothing but FHHS, and
-this suite reads its failures from screenshots and container logs rather than from traces. The
+Mexico's host ports are USA's minus 50, Arabia's minus 100 — except FHHS, which Mexico publishes
+on the host's **8082** because the Family History Survey's definition names its report and
+post-survey-action services as `http://host.docker.internal:8082/...` and an apply installs those
+addresses as they are; no other site runs FHHS, so the port is free. FHHS reports not-ready until
+its survey is applied (FHHS UC-005), which is what phase 17 checks before applying it. Nothing
+runs Jaeger: this suite reads its failures from screenshots and container logs rather than from
+traces. Neither remote site publishes SMTP. The
 remote sites share USA's **Keycloak** (the realm lists `http://localhost:8031/*` and
 `http://localhost:7981/*` as Admin redirect URIs) and its **Mailpit** — their Admin containers also
 join USA's compose network, so the service name `mailpit` resolves there. Being on two networks
@@ -159,6 +168,21 @@ here than in `../e2e_multisite`, because the chosen language lives in the browse
     (UC-012). Search then shows all nine respondents, the imported six Finished and in the right
     department, and re-exporting one from the master reproduces the remote site's answer and
     dependent lines byte for byte.
+17. **Mexico applies a second survey.** FHHS has been running at Mexico since the stack came up,
+    not-ready because the Family History Survey is not there (FHHS UC-005; the probe names the
+    import to perform). Mexico's console applies `../../FHHS/family-history-survey.elicit`; FHHS
+    goes ready by itself on its next probe, and Export Survey Definition at Mexico lists both
+    surveys with distinct reporting schemas (`report_census_household_survey`,
+    `report_family_history_survey` — Survey UC-008, Admin UC-030), while USA and Arabia still list
+    the Census survey alone.
+18. **A Mexico respondent takes the Family History Survey** with `?lang=es-419`: Spanish chrome
+    (`Siguiente`) around English questions, because that survey publishes no translation (Survey
+    UC-009 BR-010). They answer whatever the branching reveals, finish, and land on FHHS's reports.
+    Search at Mexico shows the three Census respondents and this one all Finished.
+19. **Each survey reports in its own schema**, read straight from Mexico's PostgreSQL: each
+    `fact_respondents` view counts only its own survey's respondents, the Family History
+    respondent's section facts are in `report_family_history_survey` and nowhere else, and
+    `surveyreport` holds no fact table at all (Survey UC-008 BR-007, BR-009).
 
 ## The definition the master imports
 
@@ -215,9 +239,11 @@ bundles the images ship, which is also where the two navigation captions a respo
 
 ## Prerequisites
 
-- Docker Desktop, and the `survey` and `admin` images built from the umbrella root
-  (`../../buildDockerImages.sh Survey Admin`) plus the `author` image from this repo
-  (`../buildDockerImage.sh`). Pedigree and FHHS are not needed.
+- Docker Desktop, and the `survey`, `admin`, `fhhs` and `pedigree` images built from the umbrella
+  root (`../../buildDockerImages.sh Survey Admin FHHS Pedigree`) plus the `author` image from this
+  repo (`../buildDockerImage.sh`). FHHS and Pedigree run at Mexico only, for phases 17-19.
+- `../../FHHS/family-history-survey.elicit` in the umbrella checkout: the second survey phase 17
+  applies (`-Dfhhs.definition=` names another file).
 - The umbrella checkout around this repo, for `../../elicit-brand`. The realm and the authoring
   database script are Author's own (`../keycloak`, `../db-init`).
   The definition itself lives here, not in `../../samples` (see "The definition the master imports").
@@ -446,7 +472,8 @@ and application badge from, and a `file://` page would have proved nothing about
 - `census-household-survey.elicit` — the definition phase 1 imports: the sample of the same name
   with one deliberately broken rule (see "The definition the master imports").
 - `pom.xml` — borrows the page objects of `../e2e-tests` by source (build-helper) and runs only
-  `**/multilingual/*E2ETest.java`.
+  `**/multilingual/*E2ETest.java`; the PostgreSQL driver is there for phase 19's look at the two
+  reporting schemas (`-Dmexico.jdbc.url=`, `-Dmexico.jdbc.user=`, `-Dmexico.jdbc.password=`).
 - `src/test/java/com/elicitsoftware/e2e/multilingual/` — `Site`, `MultilingualTestBase`,
   `CensusHouseholdSurvey` (where every question sits and how it is answered), `ContentTranslations`
   (the translator's side of the hand-off) and the journey.
@@ -507,6 +534,9 @@ that is not would be.
 ## Known limits
 
 - Author runs on the master only; the remote sites import definitions and export respondents.
+- The second survey is applied at Mexico only, untranslated, and its respondent is not exported to
+  the master: phases 17-19 prove that two surveys coexist at one site and report apart, not that a
+  second survey travels between sites (which is the same mechanism as the first's).
 - The consoles are driven in English everywhere. The suite asserts that each remote console *offers*
   its language, but does not drive Admin through a translated console: the Admin page objects locate
   buttons and labels by their English captions. Driving a console in Spanish would need a

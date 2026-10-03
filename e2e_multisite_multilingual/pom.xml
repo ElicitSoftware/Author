@@ -39,6 +39,13 @@
         <usa.author.baseUrl>http://localhost:8084</usa.author.baseUrl>
         <mexico.survey.baseUrl>http://localhost:8030</mexico.survey.baseUrl>
         <mexico.admin.baseUrl>http://localhost:8031</mexico.admin.baseUrl>
+        <!-- Mexico's FHHS, on the port the Family History Survey's definition names (mexico/docker-compose.yml). -->
+        <mexico.fhhs.baseUrl>http://localhost:8082</mexico.fhhs.baseUrl>
+        <!-- Mexico's PostgreSQL, for phase 19's look at the two reporting schemas. -->
+        <mexico.jdbc.url>jdbc:postgresql://localhost:5402/survey</mexico.jdbc.url>
+        <mexico.jdbc.user>survey</mexico.jdbc.user>
+        <mexico.jdbc.password>admin</mexico.jdbc.password>
+        <postgresql.version>42.7.5</postgresql.version>
         <arabia.survey.baseUrl>http://localhost:7980</arabia.survey.baseUrl>
         <arabia.admin.baseUrl>http://localhost:7981</arabia.admin.baseUrl>
         <admin.username>admin</admin.username>
@@ -48,6 +55,8 @@
         <!-- The definition the master imports (UC-005): the sample with one deliberately broken
              rule, for phase 1 to find in the editor and fix in the designer (see the file's note). -->
         <census.definition>${project.basedir}/census-household-survey.elicit</census.definition>
+        <!-- The second survey, applied at Mexico in phase 17: FHHS's own definition in the umbrella checkout. -->
+        <fhhs.definition>${project.basedir}/../../FHHS/family-history-survey.elicit</fhhs.definition>
         <!-- -De2e.headless=false to watch the browser. -->
         <e2e.headless>true</e2e.headless>
     </properties>
@@ -74,6 +83,14 @@
             <groupId>com.microsoft.playwright</groupId>
             <artifactId>playwright</artifactId>
             <version>${playwright.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Phase 19 reads the two reporting schemas at Mexico straight from PostgreSQL: nothing in
+             the consoles shows fact rows, and that each survey has a star of its own is the point. -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- The hand-off translation document is JSON (Author TranslationHandoff). -->
@@ -121,6 +138,10 @@
                         <usa.author.baseUrl>${usa.author.baseUrl}</usa.author.baseUrl>
                         <mexico.survey.baseUrl>${mexico.survey.baseUrl}</mexico.survey.baseUrl>
                         <mexico.admin.baseUrl>${mexico.admin.baseUrl}</mexico.admin.baseUrl>
+                        <mexico.fhhs.baseUrl>${mexico.fhhs.baseUrl}</mexico.fhhs.baseUrl>
+                        <mexico.jdbc.url>${mexico.jdbc.url}</mexico.jdbc.url>
+                        <mexico.jdbc.user>${mexico.jdbc.user}</mexico.jdbc.user>
+                        <mexico.jdbc.password>${mexico.jdbc.password}</mexico.jdbc.password>
                         <arabia.survey.baseUrl>${arabia.survey.baseUrl}</arabia.survey.baseUrl>
                         <arabia.admin.baseUrl>${arabia.admin.baseUrl}</arabia.admin.baseUrl>
                         <admin.username>${admin.username}</admin.username>
@@ -128,6 +149,7 @@
                         <author.username>${author.username}</author.username>
                         <author.password>${author.password}</author.password>
                         <census.definition>${census.definition}</census.definition>
+                        <fhhs.definition>${fhhs.definition}</fhhs.definition>
                         <e2e.headless>${e2e.headless}</e2e.headless>
                     </systemPropertyVariables>
                 </configuration>

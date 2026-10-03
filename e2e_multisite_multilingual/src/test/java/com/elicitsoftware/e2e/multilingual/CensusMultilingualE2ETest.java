@@ -12,6 +12,7 @@ import com.elicitsoftware.e2e.author.SurveyEditorPage;
 import com.elicitsoftware.e2e.author.SurveysPage;
 import com.elicitsoftware.e2e.author.TranslationsPage;
 import com.elicitsoftware.e2e.survey.LoginPage;
+import com.elicitsoftware.e2e.survey.ReportPage;
 import com.elicitsoftware.e2e.survey.ReviewPage;
 import com.elicitsoftware.e2e.survey.SectionPage;
 import com.microsoft.playwright.Locator;
@@ -23,9 +24,18 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -72,7 +82,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class CensusMultilingualE2ETest extends MultilingualTestBase {
 
     /** The sixteen {@code @Order}ed phases below, as a recording's captions count them. */
-    private static final int PHASES = 16;
+    private static final int PHASES = 19;
 
     private static final Pattern SURVEY_KEY_LINE = Pattern.compile("(?m)^# survey_key: (\\S+)$");
     private static final Pattern TRANSLATIONS_COUNT = Pattern.compile("(?m)^# translations: (\\d+)$");
@@ -82,6 +92,19 @@ class CensusMultilingualE2ETest extends MultilingualTestBase {
      * {@code samples/census-household-survey.elicit}, which carries one deliberate fault for phase 1
      * to find and fix (see the note at the top of the file).
      */
+    /**
+     * The second survey of the journey (phases 17-19): the Family History Survey, as FHHS ships it
+     * in the umbrella checkout. Untranslated, so a Mexico respondent reads it in English inside the
+     * Spanish chrome (Survey UC-009 content fallback).
+     */
+    private static final Path FHHS_DEFINITION = Path.of(System.getProperty("fhhs.definition",
+            "../../FHHS/family-history-survey.elicit"));
+    private static final String FHHS_NAME = "Family History Survey";
+    /** The Family History Survey's welcome heading, English at every site: it publishes no translation. */
+    private static final String FHHS_WELCOME = "Welcome to the Family Cancer History Survey!";
+    private static final String CENSUS_SCHEMA = "report_census_household_survey";
+    private static final String FHHS_SCHEMA = "report_family_history_survey";
+
     private static final Path DEFINITION = Path.of(System.getProperty("census.definition",
             "census-household-survey.elicit"));
 
@@ -682,6 +705,125 @@ class CensusMultilingualE2ETest extends MultilingualTestBase {
         });
     }
 
+    // ---- a second survey at one site (multi-survey) --------------------------------------------
+
+    /**
+     * Admin UC-018 at Mexico with a second definition, and FHHS UC-005 around it: the Family History
+     * Survey's report service has been running at Mexico since the stack came up, not-ready because
+     * its survey is not there (A1 of that use case names the import to perform). The apply installs
+     * the survey, Survey builds it a reporting schema of its own (Survey UC-008 BR-006), and FHHS
+     * notices by itself on its next readiness probe -- no restart. The Export Survey Definition
+     * list then shows both surveys with distinct schemas (Admin UC-030 step 1), while the two other
+     * sites still run the Census survey alone.
+     */
+    @Test
+    @Order(17)
+    void phase17_mexicoAppliesTheFamilyHistorySurvey() {
+        phase("17 Mexico applies FHHS",
+                "Mexico installs a second survey beside the Census: FHHS was waiting for it, and its report service wakes up by itself", () -> {
+            assertTrue(Files.exists(FHHS_DEFINITION), "no Family History Survey definition at " + FHHS_DEFINITION);
+            Readiness before = fhhsReadiness(MEXICO);
+            assertEquals("DOWN", before.status(), "FHHS at Mexico should be not-ready before the survey is applied: " + before.reason());
+            assertTrue(before.reason().contains("Family History Survey") && before.reason().contains("Apply Survey Definition"),
+                    "FHHS UC-005 step 2: the reason names the survey and the import to perform, was: " + before.reason());
+
+            applyDefinition(MEXICO, FHHS_DEFINITION, "New Survey Installed");
+
+            Readiness after = awaitFhhsReady(MEXICO, Duration.ofMinutes(2));
+            assertEquals("UP", after.status(), "FHHS UC-005 step 6: ready by itself once the survey is applied: " + after.reason());
+
+            Map<String, String> mexico = reportingSchemas(MEXICO);
+            assertEquals(Map.of(CensusHouseholdSurvey.NAME, CENSUS_SCHEMA, FHHS_NAME, FHHS_SCHEMA), mexico,
+                    "Mexico lists both surveys, each with a reporting schema of its own (Survey UC-008 BR-006)");
+            for (Site site : List.of(USA, ARABIA)) {
+                assertEquals(Map.of(CensusHouseholdSurvey.NAME, CENSUS_SCHEMA), reportingSchemas(site),
+                        site + " still runs the Census survey alone");
+            }
+        });
+    }
+
+    /**
+     * Two surveys, one site, one language setting: a new subject at Mexico is registered for the
+     * Family History Survey (Admin UC-003), signs in with {@code ?lang=es-419} as every Mexico
+     * respondent does, and reads Spanish chrome around English content -- the survey publishes no
+     * translation, so every string falls back to its base language (Survey UC-009 BR-010). They
+     * answer whatever the branching reveals, finish, and land on FHHS's reports (Survey UC-005). The
+     * Census respondents of the earlier phases are untouched by any of it.
+     */
+    @Test
+    @Order(18)
+    void phase18_mexicoRespondentsOnBothSurveys() {
+        phase("18 Mexico on both surveys",
+                "A Mexico respondent takes the Family History Survey: Spanish buttons, English questions, FHHS's reports at the end", () -> {
+            registerFor(MEXICO, FHHS_NAME, "fhh1");
+            visit(page -> {
+                Recording.beat(MEXICO, "fhh1 signs in (?lang=es-419) to the Family History Survey");
+                openSurvey(page, MEXICO, "/login/" + codes.get("fhh1") + MEXICO.langParameter());
+                new LoginPage(page).loginWithAccessCode(FHHS_NAME, codes.get("fhh1"));
+                assertTrue(page.url().contains("/section"), "fhh1 should land on a section, was " + page.url());
+                SectionPage section = new SectionPage(page, MEXICO.nextCaption(), MEXICO.reviewCaption());
+                // The chrome speaks the site's language; the content, untranslated, stays English.
+                page.locator("#section-next-button").waitFor();
+                assertEquals(MEXICO.nextCaption(), page.locator("#section-next-button").innerText().trim(),
+                        "the Next button reads Spanish at Mexico");
+                assertTrue(page.getByText(FHHS_WELCOME).count() > 0,
+                        "the Family History Survey's own text is English: it publishes no es-419 translation");
+                Recording.beat(MEXICO, "fhh1 answers whatever the branching reveals, section by section");
+                section.answerSurveyUntilReview();
+                assertTrue(page.url().contains("/review"), "expected the review page, was " + page.url());
+                new ReviewPage(page).finish();
+                assertTrue(page.url().contains("/report"), "expected the report page, was " + page.url());
+                // Survey UC-005: the reports come from FHHS at Mexico; the PDF button is the view's
+                // own, rendered once the cards are.
+                Recording.beat(MEXICO, "FHHS at Mexico renders fhh1's reports");
+                page.locator("#report-generate-pdf-button").waitFor(new Locator.WaitForOptions().setTimeout(90_000));
+                assertTrue(page.locator("h4").count() >= 1, "at least one report card with its title");
+                openSurvey(page, MEXICO, "/logout");
+            });
+            assertStatus(MEXICO, Map.of("mex1", "Finished", "mex2", "Finished", "mex3", "Finished", "fhh1", "Finished"));
+        });
+    }
+
+    /**
+     * Survey UC-008 BR-007/BR-009, read straight from Mexico's database because nothing in the
+     * consoles shows fact rows: each survey's star lives in its own schema, each
+     * {@code fact_respondents} view counts only its own survey's respondents, and the Family History
+     * respondent's section facts are in that survey's schema and nowhere else.
+     */
+    @Test
+    @Order(19)
+    void phase19_eachSurveyReportsInItsOwnSchema() {
+        phase("19 two schemas",
+                "Under the hood, each survey at Mexico reports in a schema of its own", () -> {
+            try (Connection c = DriverManager.getConnection(
+                    System.getProperty("mexico.jdbc.url", "jdbc:postgresql://localhost:5402/survey"),
+                    System.getProperty("mexico.jdbc.user", "survey"),
+                    System.getProperty("mexico.jdbc.password", "admin"));
+                 Statement st = c.createStatement()) {
+                assertEquals(2, count(st, "SELECT COUNT(*) FROM pg_namespace WHERE nspname IN ('" + CENSUS_SCHEMA + "', '" + FHHS_SCHEMA + "')"),
+                        "both reporting schemas exist");
+                assertEquals(0, count(st, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'surveyreport' AND table_name LIKE 'fact_%'"),
+                        "the common schema holds no fact table (Survey UC-008 BR-007)");
+
+                int censusRespondents = count(st, "SELECT COUNT(*) FROM survey.respondents r JOIN survey.surveys s ON s.id = r.survey_id WHERE s.name = '" + CensusHouseholdSurvey.NAME + "'");
+                int fhhsRespondents = count(st, "SELECT COUNT(*) FROM survey.respondents r JOIN survey.surveys s ON s.id = r.survey_id WHERE s.name = '" + FHHS_NAME + "'");
+                assertTrue(censusRespondents >= 3 && fhhsRespondents >= 1, "the phases registered " + censusRespondents + " Census and " + fhhsRespondents + " FHHS respondents");
+                assertEquals(censusRespondents, count(st, "SELECT COUNT(*) FROM " + CENSUS_SCHEMA + ".fact_respondents"),
+                        "the Census schema's fact_respondents view counts the Census respondents only");
+                assertEquals(fhhsRespondents, count(st, "SELECT COUNT(*) FROM " + FHHS_SCHEMA + ".fact_respondents"),
+                        "the FHHS schema's fact_respondents view counts the FHHS respondents only");
+
+                int fhhsFactRows = count(st, "SELECT COUNT(*) FROM " + FHHS_SCHEMA + ".fact_sections f JOIN survey.respondents r ON r.id = f.respondent_id JOIN survey.surveys s ON s.id = r.survey_id WHERE s.name = '" + FHHS_NAME + "'");
+                assertTrue(fhhsFactRows > 0, "the finished FHHS respondent has fact rows in the FHHS schema");
+                assertEquals(0, count(st, "SELECT COUNT(*) FROM " + CENSUS_SCHEMA + ".fact_sections f JOIN survey.respondents r ON r.id = f.respondent_id JOIN survey.surveys s ON s.id = r.survey_id WHERE s.name = '" + FHHS_NAME + "'"),
+                        "and none in the Census schema (Survey UC-008 BR-009)");
+                assertTrue(count(st, "SELECT COUNT(*) FROM " + CENSUS_SCHEMA + ".fact_sections") > 0,
+                        "the finished Census respondents have fact rows in the Census schema");
+                Recording.beat(MEXICO, fhhsFactRows + " Family History fact rows in " + FHHS_SCHEMA + ", none in " + CENSUS_SCHEMA);
+            }
+        });
+    }
+
     // ---- personas ----------------------------------------------------------------------------
 
     private static void adminLogin(Page page, Site site) {
@@ -943,6 +1085,91 @@ class CensusMultilingualE2ETest extends MultilingualTestBase {
                 fail("status on " + site + ":\n" + String.join("\n", problems));
             }
         });
+    }
+
+    /** FHHS's readiness probe, read straight off its HTTP port (FHHS UC-005 step 3). */
+    private record Readiness(String status, String reason) {
+    }
+
+    private Readiness fhhsReadiness(Site site) throws Exception {
+        assertTrue(site.hasFhhs(), site + " runs no FHHS");
+        HttpResponse<String> response = HttpClient.newHttpClient().send(
+                HttpRequest.newBuilder(URI.create(site.fhhsBaseUrl() + "/q/health/ready"))
+                        .timeout(Duration.ofSeconds(10)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        com.fasterxml.jackson.databind.JsonNode root = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response.body());
+        String reason = "";
+        for (com.fasterxml.jackson.databind.JsonNode check : root.path("checks")) {
+            if (check.path("name").asText().startsWith("Family History Survey")) {
+                reason = check.path("data").path("reason").asText("");
+            }
+        }
+        return new Readiness(root.path("status").asText(), reason);
+    }
+
+    /** FHHS UC-005 step 6: the next probe after the apply finds the survey; polled, no restart. */
+    private Readiness awaitFhhsReady(Site site, Duration patience) throws Exception {
+        long deadline = System.currentTimeMillis() + patience.toMillis();
+        Readiness last = fhhsReadiness(site);
+        while (!"UP".equals(last.status()) && System.currentTimeMillis() < deadline) {
+            Thread.sleep(5_000);
+            last = fhhsReadiness(site);
+        }
+        return last;
+    }
+
+    /**
+     * Admin UC-030 step 1: the surveys the site's Export Survey Definition page lists, with the
+     * reporting schema named beside each (survey name -> schema, or "Not built yet").
+     */
+    private Map<String, String> reportingSchemas(Site site) {
+        Map<String, String> schemas = new LinkedHashMap<>();
+        visit(page -> {
+            adminLogin(page, site);
+            assertNoBlockingDialog(page, site);
+            Recording.beat(site, "Export Survey Definition: the surveys installed here and their reporting schemas");
+            openAdmin(page, site, "/survey-export");
+            Locator cells = page.locator("#survey-export-grid vaadin-grid-cell-content:visible");
+            cells.first().waitFor();
+            page.waitForTimeout(1000);
+            // Name, Title, Survey key, Installed revision, Download, Reporting schema, Rename.
+            int columns = 7;
+            int blocks = cells.count() / columns;
+            for (int block = 1; block < blocks; block++) {
+                String name = cells.nth(block * columns).innerText().trim();
+                if (!name.isEmpty()) {
+                    schemas.put(name, cells.nth(block * columns + 5).innerText().trim());
+                }
+            }
+        });
+        return schemas;
+    }
+
+    /** Registers one subject at {@code site} for {@code surveyName} and keeps their access code under {@code label}. */
+    private void registerFor(Site site, String surveyName, String label) {
+        visit(page -> {
+            adminLogin(page, site);
+            assertNoBlockingDialog(page, site);
+            Recording.beat(site, "registering subject " + label + " for the " + surveyName + " and taking their access code");
+            openAdmin(page, site, "/register");
+            String first = "Family";
+            String last = label.toUpperCase() + runId;
+            new RegisterPage(page).registerSubject(surveyName, site.departmentName(),
+                    first, last, label + "." + runId + "@example.org");
+            openAdmin(page, site, "/");
+            SearchPage search = new SearchPage(page);
+            search.searchByFirstAndLastName(first, last);
+            assertEquals(1, search.rowCount(), "expected exactly one row for " + label + " on " + site);
+            assertEquals("Not Started", search.statusAt(0));
+            codes.put(label, search.accessCodeAt(0));
+        });
+    }
+
+    private static int count(Statement st, String sql) throws Exception {
+        try (ResultSet rs = st.executeQuery(sql)) {
+            assertTrue(rs.next(), "no row for " + sql);
+            return rs.getInt(1);
+        }
     }
 
     private void exportRespondents(Site site, String... labels) {

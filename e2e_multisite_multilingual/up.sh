@@ -89,6 +89,8 @@ for site in $SITES; do
     read -r survey_port admin_port <<<"$(ports_for "$site")"
     wait_ready "$site" "$survey_port" "$site survey"
     wait_ready "$site" "$admin_port" "$site admin"
+    # Mexico's FHHS is not waited for: it reports not-ready until the Family History Survey is
+    # applied there (FHHS UC-005), which the journey's phase 17 does and checks.
     if [ "$site" = usa ]; then
         wait_ready usa 8085 "usa author preview"
         wait_ready usa 8084 "usa author"
