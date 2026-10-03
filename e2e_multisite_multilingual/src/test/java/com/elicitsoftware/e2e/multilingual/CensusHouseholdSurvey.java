@@ -115,12 +115,14 @@ final class CensusHouseholdSurvey {
     }
 
     /**
-     * The speakers question for one language. The languages MULTI_SELECT REPEATs it once per
-     * language selected, and the instance is the language's position in its list, not a running
-     * count (Survey UC-002 BR-012): English is 1 and Spanish 2 whichever were picked.
+     * The speakers question for one language, inside the Speakers section the languages
+     * MULTI_SELECT REPEATs once per language selected (the step's third section). The section
+     * instance is the language's position in its list, not a running count (Survey UC-002
+     * BR-012): English is 1 and Spanish 2 whichever were picked -- and each instance is a fact
+     * row of its own that names its language (Survey UC-008 BR-012).
      */
     static String speakers(int languagePosition) {
-        return suffix(2, 0, 2, 0, 4, languagePosition);
+        return suffix(2, 0, 3, languagePosition, 1, 0);
     }
 
     // ---- step 3: Your Home ---------------------------------------------------------------------
@@ -246,10 +248,10 @@ final class CensusHouseholdSurvey {
      *
      * <p>Which questions are present depends on the rules: consent builds steps 2, 3, 4 and 6;
      * {@code CONTAINS 'OTHER'} reveals the other-race question; {@code EQUAL 'RENT'} reveals the
-     * Rent details section and {@code NOT_EQUAL 'OWN'} the subsidy question; the vehicle count
-     * REPEATs the Vehicle section and the household size REPEATs the person-name question, each of
-     * which then SHOWs one instance of step 5. So this is driven by what is on the page rather than
-     * by a fixed script.</p>
+     * Rent details section and {@code NOT_EQUAL 'OWN'} the subsidy question; the languages selected
+     * REPEAT the Speakers section; the vehicle count REPEATs the Vehicle section and the household
+     * size REPEATs the person-name question, each of which then SHOWs one instance of step 5. So
+     * this is driven by what is on the page rather than by a fixed script.</p>
      */
     static List<String> answerWhatIsShown(SectionPage section, Answers a, Set<String> done) {
         List<String> answered = new ArrayList<>();
@@ -282,8 +284,8 @@ final class CensusHouseholdSurvey {
             section.chooseOptionsAt(section.keyEndingWith(languages()), 0, 1);    // English, Spanish
             record(done, answered, languages());
         }
-        // The selection REPEATs the speakers question once per language, so English (position 1)
-        // and Spanish (position 2) are answered on a later pass over the same section.
+        // The selection REPEATs the Speakers section once per language, so English (position 1)
+        // and Spanish (position 2) are answered on later passes, each on its own section.
         for (int language = 1; language <= 2; language++) {
             if (shown(section, done, speakers(language))) {
                 section.fillById(section.keyEndingWith(speakers(language)), language == 1 ? "3" : "2");
