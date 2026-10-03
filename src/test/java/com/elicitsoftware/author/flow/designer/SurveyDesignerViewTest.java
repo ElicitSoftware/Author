@@ -108,7 +108,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         assertEquals("1", first.glyph.getText(), "the step glyph shows its order");
         assertNotNull(view.palette.questionChip(), "palette carries a draggable question glyph");
 
-        StructureNavigationTree tree = find(StructureNavigationTree.class, layout()).first();
+        StructureNavigationTree tree = find(StructureNavigationTree.class, layout()).single();
         assertEquals(fixture().id, tree.surveyId(), "UC-029 / user: the structure tree stays in the drawer");
         assertTrue(find(DropZone.class, view).all().size() >= 3 + 3 + 2, "insertion zones between steps and sections");
     }
@@ -143,10 +143,10 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         SurveyDesignerView view = open(s);
         StepLane second = view.lanes.get(1);
 
-        ComponentUtil.fireEvent(second.header, new DragStartEvent<>(second.header, true)); // the whole header drags; the glyph is its handle
+        ComponentUtil.fireEvent(second.header, new DragStartEvent<>(second.header, true, 0, 0, 0, 0)); // the whole header drags; the glyph is its handle
         assertTrue(view.board.getClassNames().contains("dragging"), "zones expand while a drag is in progress");
         DropZone target = zone(view, null, 0, StructureNode.Kind.STEP);
-        ComponentUtil.fireEvent(target, new DropEvent<>(target, true, "move"));
+        ComponentUtil.fireEvent(target, new DropEvent<>(target, true, "move", 0, 0, 0, 0));
 
         assertEquals(List.of("Fixture Step Two", "Fixture Step One"),
                 view.lanes.stream().map(l -> l.node().label()).toList(), "UC-016: the board reflects the new order");
@@ -168,9 +168,9 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         SectionCard sectionA = view.lanes.get(0).cards.get(0);
         StructureNode stepTwo = view.lanes.get(1).node();
 
-        ComponentUtil.fireEvent(sectionA.header, new DragStartEvent<>(sectionA.header, true));
+        ComponentUtil.fireEvent(sectionA.header, new DragStartEvent<>(sectionA.header, true, 0, 0, 0, 0));
         DropZone target = zone(view, stepTwo, 0, StructureNode.Kind.SECTION);
-        ComponentUtil.fireEvent(target, new DropEvent<>(target, true, "move"));
+        ComponentUtil.fireEvent(target, new DropEvent<>(target, true, "move", 0, 0, 0, 0));
 
         assertEquals(2, view.lanes.get(0).cards.size(), "UC-015 BR-001: the original stays");
         assertEquals(2, view.lanes.get(1).cards.size());
@@ -188,11 +188,11 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         SurveyDesignerView view = open(fixture());
         int lanesBefore = view.lanes.size();
 
-        ComponentUtil.fireEvent(view.palette.stepChip, new DragStartEvent<>(view.palette.stepChip, true));
+        ComponentUtil.fireEvent(view.palette.stepChip, new DragStartEvent<>(view.palette.stepChip, true, 0, 0, 0, 0));
         DropZone target = zone(view, null, lanesBefore, StructureNode.Kind.STEP);
-        ComponentUtil.fireEvent(target, new DropEvent<>(target, true, "copy"));
+        ComponentUtil.fireEvent(target, new DropEvent<>(target, true, "copy", 0, 0, 0, 0));
 
-        ElementDialog<?> dialog = $(ElementDialog.class).single();
+        ElementDialog<?> dialog = find(ElementDialog.class).single();
         assertTrue(dialog.isOpened(), "UC-015 A4 / UC-016: a palette drop opens the dialog first");
         assertFalse(dialog.renameWarningShown(), "no rename warning when creating");
         test(dialog.cancel).click();
@@ -206,7 +206,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         StructureNode stepOne = view.lanes.get(0).node();
 
         view.edit(stepOne);
-        ElementDialog<?> dialog = $(ElementDialog.class).single();
+        ElementDialog<?> dialog = find(ElementDialog.class).single();
         assertTrue(dialog.isOpened());
         assertFalse(dialog.renameWarningShown(), "UC-018 A2: no warning until the name changes");
         assertTrue(dialog.save.isEnabled());
@@ -474,14 +474,14 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         SectionCard sectionB = view.lanes.get(0).cards.get(1);
         assertNotNull(sectionB.menu.find(view.getTranslation("designer.menu.reportingTags")), "UC-021 step 1: reachable from the card menu");
         view.reportingTags(sectionB.node());
-        com.elicitsoftware.author.flow.reporting.ElementTagsDialog dialog = $(com.elicitsoftware.author.flow.reporting.ElementTagsDialog.class).single();
+        com.elicitsoftware.author.flow.reporting.ElementTagsDialog dialog = find(com.elicitsoftware.author.flow.reporting.ElementTagsDialog.class).single();
         assertTrue(dialog.isOpened());
         assertEquals(1, dialog.grid.getGenericDataView().getItems().count(), "Section B as mounted in Step One carries Gender = Female");
         dialog.close();
         view.toggleAndSelect(sectionB.node());
         QuestionRow q3 = view.lanes.get(0).cards.get(1).rows.get(0);
         view.reportingTags(q3.node());
-        dialog = $(com.elicitsoftware.author.flow.reporting.ElementTagsDialog.class).single();
+        dialog = find(com.elicitsoftware.author.flow.reporting.ElementTagsDialog.class).single();
         assertEquals(1, dialog.grid.getGenericDataView().getItems().count(), "FixtureQ3 is tagged in this section only");
         dialog.close();
     }
@@ -490,7 +490,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     @TestSecurity(user = "designer.author", roles = {"elicit_author"})
     void leavingTheDesignerRestoresTheApplicationNavigation() {
         open(fixture());
-        assertNotNull(find(StructureNavigationTree.class, layout()).first());
+        assertNotNull(find(StructureNavigationTree.class, layout()).single());
         navigate(SurveysView.class);
         assertNull(find(StructureNavigationTree.class, layout()).all().stream().findFirst().orElse(null),
                 "UC-006 step 7: the drawer shows the application navigation again");
@@ -535,7 +535,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
 
         assertEquals(node(s, StructureNode.Kind.QUESTION, "FixtureQ4"), view.selected(),
                 "UC-007 BR-009: the rule's target is selected under the editor");
-        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        RelationshipDialog dialog = find(RelationshipDialog.class).single();
         assertTrue(dialog.isOpened(), "UC-007 BR-009: the rule's own editor is open");
         dialog.close();
     }
@@ -607,7 +607,7 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         view.removeUnplaced(view.toolbox().sections.items.stream()
                 .filter(r -> r.node().durableId().equals(sectionC.durableId())).findFirst().orElseThrow().node());
         com.vaadin.flow.component.confirmdialog.ConfirmDialog dialog =
-                $(com.vaadin.flow.component.confirmdialog.ConfirmDialog.class).single();
+                find(com.vaadin.flow.component.confirmdialog.ConfirmDialog.class).single();
         ComponentUtil.fireEvent(dialog, new com.vaadin.flow.component.confirmdialog.ConfirmDialog.ConfirmEvent(dialog, true));
 
         assertTrue(view.toolbox().sections.items.stream().noneMatch(r -> r.node().durableId().equals(sectionC.durableId())),

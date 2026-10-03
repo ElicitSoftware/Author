@@ -84,7 +84,7 @@ class ReportingViewTest extends QuarkusBrowserlessTest {
     void newTagDialogPreviewsNamesAndRefusesAHyphenWithoutADimension() {
         ReportingView view = open();
         test(view.newTag).click();
-        TagDialog dialog = $(TagDialog.class).single();
+        TagDialog dialog = find(TagDialog.class).single();
         assertTrue(dialog.isOpened());
         test(dialog.tag).setValue("Vital Status");
         assertTrue(dialog.preview.getText().contains("dim_vital_status"), "UC-024: preview of the own table");

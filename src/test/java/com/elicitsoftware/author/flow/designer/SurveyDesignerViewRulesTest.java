@@ -80,8 +80,8 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         view.toggleAndSelect(card.node());
         QuestionRow row = view.lanes.get(0).cards.get(1).rows.get(0);
 
-        ComponentUtil.fireEvent(view.palette.repeatRuleChip, new DragStartEvent<>(view.palette.repeatRuleChip, true));
-        ComponentUtil.fireEvent(row, new DropEvent<>(row, true, "copy"));
+        ComponentUtil.fireEvent(view.palette.repeatRuleChip, new DragStartEvent<>(view.palette.repeatRuleChip, true, 0, 0, 0, 0));
+        ComponentUtil.fireEvent(row, new DropEvent<>(row, true, "copy", 0, 0, 0, 0));
 
         assertEquals("sq-" + row.node().assignmentId(), view.overlay.pendingSource(), "UC-019 step 2: the arrow hangs from the question");
         assertEquals("REPEAT", view.overlay.pendingAction());
@@ -103,7 +103,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.ConnectRequestedEvent(view.overlay, true,
                 "sq-" + count.node().assignmentId(), "ss-" + sectionC.node().assignmentId(), null, "REPEAT"));
 
-        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        RelationshipDialog dialog = find(RelationshipDialog.class).single();
         assertTrue(dialog.isOpened(), "UC-019 step 4");
         assertEquals(count.node().assignmentId(), dialog.upstream.getValue().assignmentId(), "upstream pre-filled");
         assertEquals("REPEAT", dialog.action.getValue().name, "action pre-filled from the glyph");
@@ -148,7 +148,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.ConnectRequestedEvent(view.overlay, true,
                 "sq-" + children.node().assignmentId(), "ss-" + sectionC.node().assignmentId(), null, "REPEAT"));
 
-        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        RelationshipDialog dialog = find(RelationshipDialog.class).single();
         assertEquals("FIELD_EXIST", dialog.operator.getValue().name, "A6 step 1: a new rule starts on Field exists");
         assertEquals(dialog.getTranslation("relationshipDialog.operator.helper.perItem"), dialog.operator.getHelperText(),
                 "A6 step 1: the dialog says what the rule will do");
@@ -175,7 +175,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
 
         ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.EdgeSelectedEvent(view.overlay, true, ruleId));
 
-        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        RelationshipDialog dialog = find(RelationshipDialog.class).single();
         assertTrue(dialog.isOpened(), "UC-020 step 5");
         assertTrue(dialog.remove.isVisible());
         assertEquals("EQUAL", dialog.operator.getValue().name);
@@ -203,7 +203,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
 
         ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.ConnectRequestedEvent(view.overlay, true,
                 "sq-" + welcome.node().assignmentId(), "sq-" + name.node().assignmentId(), "ss-" + sectionA.node().assignmentId(), "SHOW"));
-        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        RelationshipDialog dialog = find(RelationshipDialog.class).single();
         assertEquals(name.node().assignmentId(), dialog.target.getValue().assignmentId(), "target pre-filled in the card it was dropped in");
         test(dialog.operator).selectItem("FIELD_EXIST");
         test(dialog.save).click();
@@ -232,7 +232,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
 
         ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.ConnectRequestedEvent(view.overlay, true,
                 "sq-" + count.node().assignmentId(), "sq-" + anythingElse.node().assignmentId(), "ss-" + sectionC.node().assignmentId(), "SHOW"));
-        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        RelationshipDialog dialog = find(RelationshipDialog.class).single();
         test(dialog.operator).selectItem("GREATER THAN");
         test(dialog.referenceValue).setValue("0");
         test(dialog.save).click();
@@ -256,7 +256,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         assertNull(before.downstreamSsId, "the fixture rule is question-only");
 
         ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.EdgeSelectedEvent(view.overlay, true, edge.relationshipId()));
-        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        RelationshipDialog dialog = find(RelationshipDialog.class).single();
         test(dialog.description).setValue("Edited");
         test(dialog.save).click();
         assertFalse(dialog.isOpened());
@@ -290,7 +290,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
         ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.ConnectRequestedEvent(view.overlay, true,
                 "sq-" + welcome.node().assignmentId(), "sq-" + name.node().assignmentId(),
                 "ss-" + sectionA.node().assignmentId(), "SHOW"));
-        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        RelationshipDialog dialog = find(RelationshipDialog.class).single();
 
         ComponentUtil.fireEvent(dialog.token, new ComboBoxBase.CustomValueSetEvent<>(dialog.token, true, " <s1> "));
 
@@ -315,7 +315,7 @@ class SurveyDesignerViewRulesTest extends QuarkusBrowserlessTest {
 
         ComponentUtil.fireEvent(view.overlay, new RuleArrowsOverlay.EdgeSelectedEvent(view.overlay, true, ruleId));
 
-        RelationshipDialog dialog = $(RelationshipDialog.class).single();
+        RelationshipDialog dialog = find(RelationshipDialog.class).single();
         assertEquals(Tokens.canonical("<S1>"), dialog.token.getValue(), "saving the rule corrects the row");
         test(dialog.cancel).click();
     }
