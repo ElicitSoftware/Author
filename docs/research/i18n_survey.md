@@ -23,7 +23,7 @@ UC-021, UC-040; and the view and service layer under
 `LocaleDirectionConfig.java`, `LanguageSwitcher.java`).
 
 Sibling proposals: `docs/research/undo-redo.md`,
-`docs/research/session-discard.md`, `docs/research/rule-order-validation.md`.
+`docs/research/session-discard.md`.
 
 ## Question
 
