@@ -13,6 +13,14 @@
 #     those.
 # USA must therefore be up before this stack starts (../up.sh enforces that).
 #
+# This is also the one site that runs a second survey: FHHS and Pedigree are here, and phases 17-19
+# of the journey apply the Family History Survey beside the Census survey (multi-survey, Survey
+# UC-008: each survey reports in a schema of its own). FHHS is published on the host's 8082, not
+# on the "USA minus 50" port, because the Family History Survey's definition names its report and
+# post-survey-action services as http://host.docker.internal:8082/... and an apply installs those
+# addresses as they are; no other site runs FHHS, so the port is free. Until the survey is applied
+# FHHS reports not-ready (FHHS UC-005), which is what phase 17 checks first.
+#
 # Languages are packaged in the images; this site offers en,es-419.
 # English and Latin American Spanish.
 #
@@ -99,6 +107,39 @@ services:
         condition: service_healthy
       survey:
         condition: service_healthy
+  # The second survey's report service (FHHS UC-001..005). Reaches this site's db and survey by
+  # the plain service names: it joins only this site's network, so they are unambiguous here.
+  fhhs:
+    image: elicitsoftware/fhhs:latest
+    ports:
+      - 8082:8080
+    healthcheck:
+      test: ["CMD", "curl", "--head", "-fsS", "http://localhost:8080/q/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+    environment:
+      TZ: America/Detroit
+      pedigree.url: http://pedigree:8080/svg
+      # No SFTP server in this suite: the post-survey action still generates the report.
+      family.history.sftp.enabled: false
+      quarkus.application.name: fhhs
+      quarkus.otel.sdk.disabled: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+      survey:
+        condition: service_healthy
+      # Admin's first-boot migration creates and grants survey.post_survey_actions; FHHS's V0.0.4
+      # grants on the same table and, started at the same moment on a fresh database, failed with
+      # "tuple concurrently updated". Admin healthy means its migrations are done.
+      admin:
+        condition: service_healthy
+  pedigree:
+    image: elicitsoftware/pedigree:latest
+    ports:
+      - 8033:8080
   db:
     image: elicitsoftware/elicit_db:latest
     networks:

@@ -5,10 +5,10 @@
 # compose project name and its own data directories under ../data/usa so the test never touches the
 # developer's postgresql/PGDATA. It cannot run at the same time as Author's stack, the
 # umbrella's, or ../../e2e_multisite (same ports). Differences from Author's file:
-#   - no fhhs: it serves only the Family History Survey and this journey runs the Census Household
-#     Survey, so it would never become ready (FHHS UC-005)
-#   - no pedigree: nothing but FHHS uses it, and FHHS is not here
-#   - no sftpServer: it went with FHHS, nothing else used it
+#   - no fhhs and no pedigree here: the master runs the Census Household Survey only. The second
+#     survey of the journey, the Family History Survey, is applied at Mexico (phases 17-19), and
+#     that is where FHHS and Pedigree run -- see mexico/docker-compose.yml
+#   - no sftpServer: FHHS runs without one (its SFTP upload is switched off)
 #   - no jaeger and no OTLP exporters: this suite reads failures from screenshots and logs, and a
 #     collector per site is three containers of no use to it
 #   - no published ports for SMTP (1025): Admin reaches mailpit by service name

@@ -10,7 +10,7 @@ echo "== HTTP probes"
 services=(
     "8080:USA Survey (English only)" "8081:USA Admin" "8084:USA Author" "8085:USA Author preview"
     "8180:Keycloak (shared)" "8025:Mailpit (shared)"
-    "8030:Mexico Survey (es-419)" "8031:Mexico Admin"
+    "8030:Mexico Survey (es-419)" "8031:Mexico Admin" "8082:Mexico FHHS (ready once the Family History Survey is applied)" "8033:Mexico Pedigree"
     "7980:Arabia Survey (ar)" "7981:Arabia Admin"
 )
 for service in "${services[@]}"; do

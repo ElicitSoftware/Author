@@ -23,6 +23,7 @@ package com.elicitsoftware.e2e.multilingual;
  * @param rightToLeft   whether pages here are laid out right to left
  */
 public record Site(String name, String surveyBaseUrl, String adminBaseUrl, String authorBaseUrl,
+                   String fhhsBaseUrl,
                    String departmentName, String departmentCode, String languageTag,
                    String nextCaption, String reviewCaption, boolean rightToLeft) {
 
@@ -41,7 +42,7 @@ public record Site(String name, String surveyBaseUrl, String adminBaseUrl, Strin
                 System.getProperty("usa.survey.baseUrl", "http://localhost:8080"),
                 System.getProperty("usa.admin.baseUrl", "http://localhost:8081"),
                 System.getProperty("usa.author.baseUrl", "http://localhost:8084"),
-                "USA Clinic", "USA", null, "Next", "Review", false);
+                null, "USA Clinic", "USA", null, "Next", "Review", false);
     }
 
     /** Mexico: Latin American Spanish, offered through {@code i18n.bundled.locales}. */
@@ -49,7 +50,11 @@ public record Site(String name, String surveyBaseUrl, String adminBaseUrl, Strin
         return new Site("Mexico",
                 System.getProperty("mexico.survey.baseUrl", "http://localhost:8030"),
                 System.getProperty("mexico.admin.baseUrl", "http://localhost:8031"),
-                null, "Mexico Clinic", "MEX", "es-419", "Siguiente", "Revisar", false);
+                null,
+                // The one site with a second survey: FHHS answers on the host port the Family
+                // History Survey's definition names (see mexico/docker-compose.yml).
+                System.getProperty("mexico.fhhs.baseUrl", "http://localhost:8082"),
+                "Mexico Clinic", "MEX", "es-419", "Siguiente", "Revisar", false);
     }
 
     /** Arabia: Arabic, offered through {@code i18n.bundled.locales}, laid out right to left. */
@@ -57,11 +62,16 @@ public record Site(String name, String surveyBaseUrl, String adminBaseUrl, Strin
         return new Site("Arabia",
                 System.getProperty("arabia.survey.baseUrl", "http://localhost:7980"),
                 System.getProperty("arabia.admin.baseUrl", "http://localhost:7981"),
-                null, "Arabia Clinic", "ARB", "ar", "التالي", "مراجعة", true);
+                null, null, "Arabia Clinic", "ARB", "ar", "التالي", "مراجعة", true);
     }
 
     public boolean hasAuthor() {
         return authorBaseUrl != null;
+    }
+
+    /** Whether this site runs FHHS, the second survey's report service. */
+    public boolean hasFhhs() {
+        return fhhsBaseUrl != null;
     }
 
     /** True where the survey's own content is expected in {@link #languageTag}, not in English. */
