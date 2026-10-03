@@ -21,6 +21,7 @@ import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.model.Survey;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
@@ -51,7 +52,7 @@ public class ExportDialog extends Dialog {
         export.setText(getTranslation("exportDialog.export"));
         cancel.setText(getTranslation("common.close"));
         setHeaderTitle(getTranslation("exportDialog.title", survey.title));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
         setWidth("40em");
 
         long errors = issues.stream().filter(ValidationIssue::isError).count();

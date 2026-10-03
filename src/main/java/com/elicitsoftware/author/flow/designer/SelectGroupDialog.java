@@ -19,6 +19,7 @@ import com.elicitsoftware.model.SelectItem;
 import com.vaadin.flow.component.HasValidation;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
@@ -106,7 +107,7 @@ public class SelectGroupDialog extends Dialog {
     public SelectGroupDialog(ListService service, int surveyId, SelectGroup existing, Consumer<SelectGroup> onSaved) {
         boolean creating = existing == null;
         setHeaderTitle(creating ? getTranslation("selectGroupDialog.title.new") : getTranslation("selectGroupDialog.title.edit"));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
         setWidth("44rem");
         name.setLabel(getTranslation("selectGroupDialog.name"));
         description.setLabel(getTranslation("selectGroupDialog.description"));

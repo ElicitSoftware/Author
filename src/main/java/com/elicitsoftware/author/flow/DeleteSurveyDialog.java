@@ -18,6 +18,7 @@ import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.model.Survey;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Paragraph;
@@ -51,7 +52,7 @@ public class DeleteSurveyDialog extends Dialog {
     /** @param onDeleted called once the survey is gone */
     public DeleteSurveyDialog(SurveyService surveyService, SurveyDefinitionExporter exporter, Survey survey, Runnable onDeleted) {
         setHeaderTitle(getTranslation("deleteSurveyDialog.title", survey.name));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
         setWidth("36em");
 
         permanent.setText(getTranslation("deleteSurveyDialog.permanent"));

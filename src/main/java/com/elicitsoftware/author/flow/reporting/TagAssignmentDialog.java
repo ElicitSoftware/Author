@@ -26,6 +26,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
@@ -98,7 +99,7 @@ public class TagAssignmentDialog extends Dialog {
         cancel.setText(getTranslation("common.cancel"));
         elementLabel.getElement().setAttribute("data-i18n-content", ""); // authored element name and path
         setHeaderTitle(editing ? getTranslation("tagAssignmentDialog.title.edit") : getTranslation("tagAssignmentDialog.title.assign"));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
         setWidth("40rem");
 
         List<StructureNode> targets = nodes == null ? List.of() : nodes.stream()

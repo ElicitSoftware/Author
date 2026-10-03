@@ -14,6 +14,7 @@ package com.elicitsoftware.author.flow.designer;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 
 import java.util.List;
@@ -31,7 +32,7 @@ public class PickerDialog<T> extends Dialog {
         setHeaderTitle(title);
         ok.setText(getTranslation("common.ok"));
         cancel.setText(getTranslation("common.cancel"));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
         choice.setLabel(label);
         choice.setItems(options);
         choice.setItemLabelGenerator(labelOf::apply);

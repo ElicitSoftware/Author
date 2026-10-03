@@ -20,6 +20,7 @@ import com.elicitsoftware.model.Survey;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
@@ -54,7 +55,7 @@ public class ElementTagsDialog extends Dialog {
         close.setText(getTranslation("common.close"));
         empty.setText(getTranslation("elementTagsDialog.empty"));
         setHeaderTitle(getTranslation("elementTagsDialog.title", node.label()));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
         setWidth("56rem");
 
         grid.getElement().setAttribute("data-i18n-content", ""); // tag names and values are authored

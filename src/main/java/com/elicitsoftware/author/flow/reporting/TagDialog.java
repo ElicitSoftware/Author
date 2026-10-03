@@ -24,6 +24,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
@@ -75,7 +76,7 @@ public class TagDialog extends Dialog {
         save.setText(getTranslation("common.save"));
         cancel.setText(getTranslation("common.cancel"));
         setHeaderTitle(creating ? getTranslation("tagDialog.title.new") : getTranslation("tagDialog.title.edit"));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
         setWidth("36rem");
 
         tag.setRequiredIndicatorVisible(true);

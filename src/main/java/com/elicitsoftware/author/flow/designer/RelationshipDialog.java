@@ -25,6 +25,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
@@ -84,7 +85,7 @@ public class RelationshipDialog extends Dialog {
                               Consumer<Relationship> onSaved, Runnable onRemoved) {
         creating = existing == null;
         setHeaderTitle(creating ? getTranslation("relationshipDialog.title.new") : getTranslation("relationshipDialog.title.edit"));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
         setWidth("44rem");
         upstream.setLabel(getTranslation("relationshipDialog.upstream"));
         operator.setLabel(getTranslation("relationshipDialog.operator"));

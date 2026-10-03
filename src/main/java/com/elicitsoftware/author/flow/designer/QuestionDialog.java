@@ -26,6 +26,7 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.ComboBoxVariant;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
@@ -104,7 +105,7 @@ public class QuestionDialog extends Dialog {
         this.surveyId = surveyId;
         boolean creating = existing == null;
         setHeaderTitle(creating ? getTranslation("questionDialog.title.new") : getTranslation("questionDialog.title.edit"));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
         setWidth("48rem");
         questionType.setLabel(getTranslation("questionDialog.type"));
         text.setLabel(getTranslation("questionDialog.text"));
