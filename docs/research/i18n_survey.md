@@ -1,10 +1,10 @@
 # Showing Translated Survey Content Where the Author Edits It
 
 **Status:** research / proposal, 2026-09-25. Nothing here is implemented. This
-document depends on `Survey/docs/research/i18n_survey.md` ("Translating Survey
-Content in the Database", revised 2026-09-25) and adds nothing to the schema, to
-the `.elicit` file, or to the Survey runtime. It is a user-interface proposal for
-Author alone.
+document builds on the content-translation design that shipped as Survey UC-009
+(BR-005: content follows the respondent's language where the survey publishes it)
+and Author UC-043, and adds nothing to the schema, to the `.elicit` file, or to the
+Survey runtime. It is a user-interface proposal for Author alone.
 
 Source: the Survey proposal named above (sections 3.2, 4.1, 5.1–5.5, 10, 11.2);
 this module's `docs/requirements.md` (FR-035, FR-036, FR-038, FR-049 to FR-053,
