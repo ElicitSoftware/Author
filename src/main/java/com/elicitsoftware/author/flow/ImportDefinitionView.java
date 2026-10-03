@@ -77,7 +77,7 @@ public class ImportDefinitionView extends VerticalLayout implements HasDynamicTi
         add(new Paragraph(getTranslation("importDefinitionView.introDraft")));
         upload = new Upload(UploadHandler.inMemory((metadata, data) ->
                 getUI().ifPresent(ui -> ui.access(() -> handleUpload(data, metadata.fileName())))));
-        upload.setAcceptedFileTypes(ElicitFormat.FILE_EXTENSION);
+        upload.setAcceptedFileExtensions(ElicitFormat.FILE_EXTENSION);
         upload.setMaxFileSize(ElicitFormat.MAX_FILE_BYTES);
         upload.setMaxFiles(1);
         draftOrigin.setVisible(false); // until the injected bean says this build carries the specification

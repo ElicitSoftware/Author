@@ -39,14 +39,15 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.upload.Upload;
-import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
-import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.streams.DownloadHandler;
+import com.vaadin.flow.server.streams.DownloadResponse;
+import com.vaadin.flow.server.streams.UploadHandler;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -88,8 +89,13 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
     final Span counts = new Span();
     final Grid<Row> grid = new Grid<>();
     final Button request = new Button();
-    final MemoryBuffer uploadBuffer = new MemoryBuffer();
-    final Upload upload = new Upload(uploadBuffer);
+    /**
+     * The returned hand-off file arrives whole: the handler hands the bytes to the UI thread, where
+     * the import and the result dialog run (UC-046). Upload performs the request outside the UI
+     * lock, so the callback must go through {@code ui.access}; ImportDefinitionView does the same.
+     */
+    final Upload upload = new Upload(UploadHandler.inMemory((metadata, data) ->
+            getUI().ifPresent(ui -> ui.access(() -> importReturned(data)))));
 
     Survey survey;
     List<Row> rows = new ArrayList<>();
@@ -164,7 +170,10 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
         request.setText(getTranslation("translationsView.request"));
         request.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        upload.setAcceptedFileTypes("application/json", ".json");
+        // Extension and MIME type are separate constraints, both enforced server-side as well as
+        // in the file chooser; the hand-off file is JSON and is named *.json by the request button.
+        upload.setAcceptedFileExtensions(".json");
+        upload.setAcceptedMimeTypes("application/json");
         upload.setMaxFiles(1);
         upload.setDropAllowed(false);
         upload.setUploadButton(new Button(getTranslation("translationsView.import")));
@@ -215,7 +224,6 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
         });
         onlyOutstanding.addValueChangeListener(e -> load());
         request.addClickListener(e -> downloadRequest());
-        upload.addSucceededListener(e -> importReturned());
     }
 
     /**
@@ -387,18 +395,19 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
     private void downloadRequest() {
         String tag = language.getValue();
         byte[] bytes = handoff.export(survey, tag, onlyOutstanding.getValue());
-        StreamResource resource = new StreamResource(handoff.fileName(survey, tag),
-                () -> new ByteArrayInputStream(bytes));
-        Anchor download = new Anchor(resource, "");
+        String fileName = handoff.fileName(survey, tag);
+        Anchor download = new Anchor(DownloadHandler.fromInputStream(ev ->
+                new DownloadResponse(new ByteArrayInputStream(bytes), fileName, "application/json", bytes.length)), "");
         download.getElement().setAttribute("download", true);
         download.getStyle().set("display", "none");
         add(download);
         download.getElement().callJsFunction("click");
     }
 
-    private void importReturned() {
+    /** Package-private so tests can feed a returned file without the browser upload. */
+    void importReturned(byte[] data) {
         try {
-            TranslationHandoff.ImportResult result = handoff.importFile(survey, uploadBuffer.getInputStream());
+            TranslationHandoff.ImportResult result = handoff.importFile(survey, new ByteArrayInputStream(data));
             new TranslationImportResultDialog(result).open();
             load();
         } catch (AuthoringException e) {
