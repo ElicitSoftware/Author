@@ -73,31 +73,3 @@ not need to match the target deployment: the Admin app's
 and `initial_display_key` onto the survey id that deployment actually allocates. See
 `SurveyDefinitionFileFields#rebaseDisplayKey` and `SurveyDefinitionDisplayKeyRebaseTest`
 in the Admin repo.
-
-## `UMich2026FootballSatisfaction.elicit`
-
-A visitor-satisfaction survey for the 2026 Michigan football games, and the worked example of
-a **Repeat that reads a multi-select** (UC-019 A6). It was drafted by an AI agent from
-`UM_Football_prompt.md` and `docs/ai/AUTHORING_FROM_AI.md`, so it is a **draft**
-(`ELICIT_SURVEY_DRAFT_V1`): open it through Author's **Import definition**.
-
-| | |
-|---|---|
-| Records | 2 steps, 2 sections, 9 questions, 6 answer lists (32 items), 5 rules |
-
-Step 1 asks which games the respondent attended, as a `MULTI_SELECT` over the twelve games.
-Step 2 holds one section, named `{<GAME>|Game day}`, with the questions asked about a game:
-who they came with, the concessions, the restrooms. One `REPEAT` rule on `FIELD_EXIST` reads
-the multi-select and targets that section, carrying the token `GAME`, so a respondent gets
-one page per game attended, in schedule order, each titled with its game. The four `SHOW`
-rules inside the section are written once and apply in every repetition.
-
-The first draft of this survey did the same job with twelve steps, twelve sections, 86
-question placements and 60 rules: one step per game, each revealed by a `SHOW` rule on
-`CONTAINS`. Adding a thirteenth game then meant another step and five more rules; here it is
-one more option in the list — added at the end, because a repetition belongs to its game by
-the game's position in the list.
-
-`RepeatPerItemSampleTest` imports this file, validates it, and checks what the designer
-previews for it.
-

@@ -819,6 +819,16 @@ class CensusMultilingualE2ETest extends MultilingualTestBase {
                         "and none in the Census schema (Survey UC-008 BR-009)");
                 assertTrue(count(st, "SELECT COUNT(*) FROM " + CENSUS_SCHEMA + ".fact_sections") > 0,
                         "the finished Census respondents have fact rows in the Census schema");
+                // Survey UC-008 BR-012: the Speakers section is repeated once per language selected,
+                // and every one of its rows names its language; nothing else in the survey does.
+                int languageRows = count(st, "SELECT COUNT(*) FROM " + CENSUS_SCHEMA + ".fact_sections WHERE item_key <> -1");
+                assertTrue(languageRows > 0, "the per-language Speakers rows name their item");
+                assertEquals(0, count(st, "SELECT COUNT(*) FROM " + CENSUS_SCHEMA + ".fact_sections f JOIN " + CENSUS_SCHEMA
+                                + ".dim_item i ON i.id = f.item_key WHERE f.item_key <> -1 AND i.value NOT IN ('english', 'spanish')"),
+                        "every named item is one of the two languages the respondents select");
+                assertEquals(languageRows, count(st, "SELECT COUNT(*) FROM " + CENSUS_SCHEMA + ".fact_sections f JOIN " + CENSUS_SCHEMA
+                                + ".dim_question q ON q.id = f.question_key WHERE q.value = 'Languages'"),
+                        "and each names the languages question it was built from");
                 Recording.beat(MEXICO, fhhsFactRows + " Family History fact rows in " + FHHS_SCHEMA + ", none in " + CENSUS_SCHEMA);
             }
         });
