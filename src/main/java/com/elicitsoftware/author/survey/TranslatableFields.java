@@ -41,7 +41,8 @@ public final class TranslatableFields {
             "questions", Set.of("text", "short_text", "tool_tip", "placeholder", "validation_text"),
             "select_items", Set.of("display_text"),
             "relationships", Set.of("default_upstream_value"),
-            "reports", Set.of("name", "description"));
+            "reports", Set.of("name", "description"),
+            "report_items", Set.of("label"));
 
     private TranslatableFields() {
     }
