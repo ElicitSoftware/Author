@@ -1,11 +1,18 @@
-# Builds Author and runs its tests on every pull request into a long-lived branch and every
-# push to one. This is the gate that enforces the build stays green before code merges — the
-# release workflow (maven.yml) skips tests entirely and only runs at tag-push time, so without
-# this workflow nothing ever builds Author in CI.
+# Builds Author and runs its tests on every pull request into main and every push to it. This
+# is the gate the ruleset on main requires (its job name is the required status check; rename
+# both together). The release workflow (maven.yml) skips tests entirely and only runs at
+# tag-push time, so without this workflow nothing ever builds Author in CI.
 #
-# main is the long-lived line and is gated. Until 2026-10-01 a second line, i18n, ran many commits
-# ahead of it and was gated too; while it was ungated, PRs merged into it were never compiled,
-# let alone tested. It has since been merged into main and deleted.
+# Author is developed inside a checkout of the umbrella repository (ElicitSoftware/Elicit) at
+# Elicit/Author, and some tests reach up into it: RepeatPerItemSampleTest imports the golden
+# census sample from ../samples (UC-019 A6), and SchemaMirrorFreshnessTest compares the
+# schema mirror with ../Survey when that sibling is present. The job reproduces that layout:
+# it clones the umbrella at V3 -- the integration branch, where the sample lives -- and checks
+# Author out inside it, then runs Maven from there. Survey is not cloned, so the mirror check
+# skips here as it is written to; it runs on a developer's machine.
+#
+# main is the long-lived line and is gated. Until 2026-10-01 a second line, i18n, ran many
+# commits ahead of it and was gated too; it has since been merged into main and deleted.
 
 name: CI
 
@@ -21,10 +28,19 @@ jobs:
   test:
     name: Build and Test with Maven
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
-      - name: Check out repo
+      - name: Clone the umbrella at V3
+        run: |
+          git clone --quiet --depth 1 --branch V3 https://github.com/ElicitSoftware/Elicit.git Elicit
+          echo "umbrella: $(git -C Elicit log -1 --format='%h %s')"
+          test -f Elicit/samples/census-household-survey.elicit
+
+      - name: Check out Author inside it
         uses: actions/checkout@v7
+        with:
+          path: Elicit/Author
 
       - name: Setup Java 25
         uses: actions/setup-java@v5
@@ -33,6 +49,8 @@ jobs:
           distribution: 'temurin'
           architecture: x64
           cache: 'maven'
+          cache-dependency-path: Elicit/Author/pom.xml
 
       - name: Build and run tests
+        working-directory: Elicit/Author
         run: mvn -B clean verify
