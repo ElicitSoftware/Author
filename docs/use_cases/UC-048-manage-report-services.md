@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Secondary Actors:** Admin App (Apply Survey Definition)  
 **Goal:** List the reports a survey offers its respondents — the built-in respondent report every new survey starts with, and any custom report service a site runs — with a name, a description, an address and an order, so that the exported definition carries exactly the reports the author wants and a site installs them without editing a row by hand.  
-**Status:** Draft  
+**Status:** Implemented  
 **Requirements:** [FR-068, C-015, C-017](../requirements.md)
 
 ## Preconditions

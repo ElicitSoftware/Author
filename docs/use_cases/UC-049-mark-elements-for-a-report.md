@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Secondary Actors:** Admin App (Apply Survey Definition)  
 **Goal:** Say which questions, question placements or sections the respondent report echoes back and which ones the administrator report monitors, in what order and under what label, so that a site's default reports show what the author chose and nothing else.  
-**Status:** Draft  
+**Status:** Implemented  
 **Requirements:** [FR-069, C-015, C-017](../requirements.md)
 
 ## Preconditions
