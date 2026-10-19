@@ -71,15 +71,17 @@ Roles referenced below:
 | FR-041 | Validate Rule Direction           | As a survey author, I want a rule whose downstream target comes before its upstream question — by step, section and question order — to be refused when I draw it, drawn in red with the reason when a reorder makes it backwards, and reported as an error that blocks export, so that I never ship a rule the respondent can never see fire. | High     | Implemented |
 | FR-064 | Require a Building Rule Beyond the First Step | As a survey author, I want every question outside the survey's first step to be reached by a Show or Repeat rule — on its step, its section as mounted in that step, or the question itself — and an element nothing reaches reported as an error that blocks export, so that a respondent's first sign-in builds only the first step and every later element is built just in time, when an answer calls for it, instead of the whole survey being created and saved before the first page appears — and a respondent who abandons in the first step or two leaves no rows behind for questions they never saw. The usual rule is Field exists → Show from a question the respondent has already passed. | High     | Implemented |
 | FR-067 | Repeat Per Selected Item | As a survey author, I want a Repeat rule that reads a multi-select or checkbox-group question to repeat its downstream section or question once for each item the respondent selects, with the rule's token filled by that item's text — and I want the rule dialog to say that is what the rule will do, the previews to show it, and a rule whose operator can never hold for a selection refused when I save it and reported at export — so that I can ask the same questions about each thing a respondent chose (each game attended, say) with one section and one rule instead of one section and one rule per item. | Medium   | Implemented |
+| FR-068 | Manage Report Services | As a survey author, I want each survey to list the reports its respondents see — the built-in respondent report every new survey starts with, and any custom report service a site runs — each with a name, a description, an address and an order that I can edit, drag and remove, so that the exported definition carries exactly the reports I want and a site installs them without editing a row by hand. A survey whose list is empty ends on its post-survey URL with no report page. | High     | Open   |
+| FR-069 | Mark Elements for a Report | As a survey author, I want to mark a question, a question placement or a section for the respondent report or the administrator report, with an optional label and an order I can drag, from the element's menu on the board and from the survey's Reports page, so that a site's default reports echo back and monitor what I chose and nothing else. HTML and password questions cannot be marked. | High     | Open   |
 
 ### Ontology & Metadata
 
 | ID     | Title                               | User Story                                                                                                                                                                                                        | Priority | Status |
 |--------|-------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|--------|
-| FR-023 | Assign Ontology Tag to Question     | As a survey author, I want to tag a question with an ontology entry so that its answers are captured in the corresponding dimensional reporting table.                                                            | High     | Implemented |
-| FR-024 | Reassign Ontology Tag               | As a survey author, I want to change a question's ontology tag and see an explicit warning (at edit and at export) that the change reclassifies historical answers at deployed sites as well as future ones.        | High     | Implemented |
-| FR-025 | Create Ontology & Dimension Entries | As a survey author, I want to define new ontology tags and their target dimension so that questions I'm authoring can be linked to the reporting structure they need.                                              | Medium   | Implemented |
-| FR-026 | Preview Dimensional Impact          | As a survey author, I want to preview which dimension table an ontology tag maps to (existing or newly created) so that I understand the reporting consequence of a metadata assignment before exporting.           | Low      | Implemented |
+| FR-023 | Assign Analysis Tag to Question     | As a survey author, I want to tag a question with an analysis tag so that its answers are captured in the corresponding column of the survey's analysis star schema at a site.                                      | High     | Implemented |
+| FR-024 | Reassign Analysis Tag               | As a survey author, I want to change a question's analysis tag and see an explicit warning (at edit and at export) that the change reclassifies historical answers at deployed sites as well as future ones.        | High     | Implemented |
+| FR-025 | Create Analysis Tags & Dimensions   | As a survey author, I want to define new analysis tags and their target dimension so that questions I'm authoring can be linked to the analysis structure they need.                                               | Medium   | Implemented |
+| FR-026 | Preview Dimensional Impact          | As a survey author, I want to preview which dimension table and column an analysis tag maps to (existing or newly created) so that I understand the consequence of a tag assignment for the site's analysis schema before exporting. | Low      | Implemented |
 
 ### Requirements Collection & First-Draft Generation
 
@@ -207,9 +209,9 @@ answers to generate a first-draft structure for a *different*, new survey.
 ## Open Items for Review
 
 - **Type 1 element keys.** Survey `V015` added `report_key`, `post_survey_action_key`,
-  `dimension_key`, `ontology_key` and `metadata_key`. Author maps and exports the last three (the
-  reporting-tag tables); `reports` and `post_survey_actions` are still exported with zero records
-  until they are modeled.
+  `dimension_key`, `ontology_key` and `metadata_key`, and `V023` added `report_item_key`. Author
+  maps and exports `reports` (FR-068), `report_items` (FR-069) and the three analysis-tag tables;
+  `post_survey_actions` is still exported with zero records until it is modeled.
 - **Ontology namespace.** `ontology.name` is a namespace the reporting ETL never reads;
   `(name, tag)` is unique across a database. Author writes the survey's name at tag creation and
   never rewrites it, so a later survey rename leaves earlier tags under the old namespace.

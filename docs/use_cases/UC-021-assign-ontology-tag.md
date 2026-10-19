@@ -1,11 +1,11 @@
-# Use Case: Assign Ontology Tag
+# Use Case: Assign Analysis Tag
 
 ## Overview
 
 **Use Case ID:** UC-021  
-**Use Case Name:** Assign Ontology Tag  
+**Use Case Name:** Assign Analysis Tag  
 **Primary Actor:** Survey Author  
-**Goal:** Attach a reporting tag to a question or to a section as mounted in a step, choosing whether the respondent's answer or a fixed value is reported, so that the site's dimensional reporting captures the element.  
+**Goal:** Attach an analysis tag to a question or to a section as mounted in a step, choosing whether the respondent's answer or a fixed value fills its column, so that the site's analysis star schema captures the element.  
 **Status:** Implemented  
 **Requirements:** [FR-023, C-017](../requirements.md)
 
@@ -16,8 +16,8 @@
 
 ## Main Success Scenario
 
-1. The author chooses Reporting tags… on a question row or section card in the designer (or Assign tag… on the survey's Reporting page).
-2. The system opens the assignment dialog showing the element, the scopes it offers (BR-002), the survey's tags, and the reported-value choice.
+1. The author chooses Analysis tags… on a question row or section card in the designer (or Assign tag… on the survey's Analysis page).
+2. The system opens the assignment dialog showing the element, the scopes it offers (BR-002), the survey's tags, and the value choice.
 3. The author picks the scope, picks a tag (or creates one in place, UC-023) and chooses "Use the respondent's answer" or enters a fixed value.
 4. The system shows the table and column the tag fills (UC-024) and the author saves.
 5. The system validates that exactly one element is named (BR-001) and that the element does not already carry the tag (A1), stores the assignment with a new element key, and refreshes the element's tag list.
@@ -35,7 +35,7 @@
 
 ### A2: No tag exists yet
 
-**Trigger:** The survey has no reporting tags (step 3)  
+**Trigger:** The survey has no analysis tags (step 3)  
 **Flow:**
 
 1. The author chooses New tag… and completes UC-023.
@@ -81,7 +81,7 @@ A question offers two scopes: wherever it appears (`question_id`) and only in th
 
 ### BR-003: Value
 
-A null value reports the respondent's answer (lower-cased and trimmed by the site's ETL). A fixed value is reported whenever the element is answered, which is how a section about the respondent's mother reports `Gender = Female`.
+A null value fills the column with the respondent's answer (lower-cased and trimmed by the site's ETL). A fixed value fills it whenever the element is answered, which is how a section about the respondent's mother records `Gender = Female`.
 
 ### BR-004: Durable references
 

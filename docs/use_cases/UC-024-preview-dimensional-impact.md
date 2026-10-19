@@ -5,7 +5,7 @@
 **Use Case ID:** UC-024  
 **Use Case Name:** Preview Dimensional Impact  
 **Primary Actor:** Survey Author  
-**Goal:** See, before exporting, which dimension tables and report columns the survey's tags will create at a site, and anything that would make that build fail.  
+**Goal:** See, before exporting, which dimension tables and columns the survey's analysis tags will create at a site, and anything that would make that build fail.  
 **Status:** Implemented  
 **Requirements:** [FR-026](../requirements.md)
 
@@ -16,19 +16,19 @@
 
 ## Main Success Scenario
 
-1. The author opens the survey's Reporting page.
+1. The author opens the survey's Analysis page.
 2. The system derives, from the survey's tags and assignments, the dimension tables (shared per dimension or one per dimension-less tag) with the tags and assignment counts behind each, and the `fact_sections` columns with the table each one joins (BR-001). When the survey has a Repeat rule reading a multi-select question into a section, it also lists the two fixed columns the site fills for such a section, `question_key` and `item_key`, with the dimensions `dim_question` and `dim_item` behind them (BR-003).
-3. The system lists findings: errors for names the site's reporting build would reject, for a tag claiming a fixed column's name, or for two tags producing the same column; warnings for tags with no assignments, assignments on removed elements, and an element carrying the same tag twice.
+3. The system lists findings: errors for names the site's analysis build would reject, for a tag claiming a fixed column's name, or for two tags producing the same column; warnings for tags with no assignments, assignments on removed elements, and an element carrying the same tag twice.
 4. The author reads the preview; the same derivation runs inside every tag and assignment dialog as a one-line preview.
 
 ## Alternative Flows
 
 ### A1: No tags
 
-**Trigger:** The survey has no reporting tags (step 2)  
+**Trigger:** The survey has no analysis tags (step 2)  
 **Flow:**
 
-1. The system states that the survey adds nothing to the reporting schema.
+1. The system states that the survey adds nothing to the site's analysis schema.
 2. Use case ends.
 
 ### A2: Errors present

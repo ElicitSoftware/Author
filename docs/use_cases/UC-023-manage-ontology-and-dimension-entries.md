@@ -1,11 +1,11 @@
-# Use Case: Manage Ontology and Dimension Entries
+# Use Case: Manage Analysis Tags and Dimensions
 
 ## Overview
 
 **Use Case ID:** UC-023  
-**Use Case Name:** Manage Ontology and Dimension Entries  
+**Use Case Name:** Manage Analysis Tags and Dimensions  
 **Primary Actor:** Survey Author  
-**Goal:** Create, edit and remove a survey's reporting tags, choosing for each an existing dimension, a new dimension or none, so that questions can be linked to the reporting structure they need.  
+**Goal:** Create, edit and remove a survey's analysis tags, choosing for each an existing dimension, a new dimension or none, so that questions can be linked to the analysis structure they need.  
 **Status:** Implemented  
 **Requirements:** [FR-025, C-017](../requirements.md)
 
@@ -16,10 +16,10 @@
 
 ## Main Success Scenario
 
-1. The author opens the survey's Reporting page (Reporting… on the survey overview) and chooses New tag… (or New tag… inside the assignment dialog, UC-021 A2).
+1. The author opens the survey's Analysis page (Analysis… on the survey overview) and chooses New tag… (or New tag… inside the assignment dialog, UC-021 A2).
 2. The system opens the tag dialog with the platform's dimensions to choose from.
 3. The author enters the tag and either picks a dimension, types a new dimension name, or leaves the dimension empty.
-4. The system previews the dimension table and report column the tag produces (UC-024) and validates the names (BR-002, BR-003).
+4. The system previews the dimension table and column the tag produces (UC-024) and validates the names (BR-002, BR-003).
 5. The author saves; the system creates the dimension if it is new (BR-001), stores the tag under the survey's namespace (BR-004) with a new element key, and lists it.
 
 ## Alternative Flows
@@ -40,7 +40,7 @@
 1. Remove is disabled and explains that the assignments must be removed first (UC-022 A2).
 2. Use case ends.
 
-### A3: Name the site's reporting build would reject
+### A3: Name the site's analysis build would reject
 
 **Trigger:** The tag or dimension would produce a table or column name outside `a-z`, `0-9`, `_` or longer than 63 characters — for example a hyphenated tag with no dimension (step 4)  
 **Flow:**
@@ -75,7 +75,7 @@
 
 ### BR-002: Tag names
 
-Letters, digits, spaces and hyphens, starting with a letter or digit. The report column is `<lower(replace(replace(tag,' ','_'),'-',''))>_key`.
+Letters, digits, spaces and hyphens, starting with a letter or digit. The column is `<lower(replace(replace(tag,' ','_'),'-',''))>_key`.
 
 ### BR-003: Dimension names
 

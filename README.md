@@ -123,10 +123,13 @@ Milestone 2 adds the **designer** (`survey/{id}/design`): a flow-chart board whe
 sections are collapsible cards and questions are rows, each with a glyph that is its drag handle —
 drag from the palette to create, within a container to reorder, into another container to copy;
 every drag has a menu equivalent. A guide page (`guide`, "How surveys work") explains the model.
-Rules are drawn as arrows between elements, and the survey's **Reporting** page
-(`survey/{id}/reporting`) manages the reporting tags, dimensions and assignments that drive the
-site's dimensional reporting schema, with a preview of the tables and columns they produce; the
-same tags are reachable from a question's or section's menu on the board. The printable
+Rules are drawn as arrows between elements, and the survey's **Analysis** page
+(`survey/{id}/analysis`) manages the analysis tags, dimensions and assignments that drive the
+site's star schema, with a preview of the tables and columns they produce; the same tags are
+reachable from a question's or section's menu on the board. The **Reports** page
+(`survey/{id}/reports`) lists the report services a survey offers its respondents — every new
+survey starts with the built-in respondent report — and the report marks that say which questions
+the respondent and administrator reports show. The printable
 [author's manual](docs/manual/README.md) ships inside the image alongside that guide. A survey can
 also start from an AI draft: [`docs/ai/AUTHORING_FROM_AI.md`](docs/ai/AUTHORING_FROM_AI.md)
 explains the survey model and the `.elicit` record format to an AI agent, and Author offers that
