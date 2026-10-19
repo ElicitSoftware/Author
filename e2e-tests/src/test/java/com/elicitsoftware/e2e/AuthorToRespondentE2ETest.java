@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,8 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The full authoring-to-respondent story across all three apps: an author designs a brand-new
  * survey in Author and exports it as a {@code .elicit} file; an administrator applies that file
  * in Admin and registers a respondent against the new survey; the respondent enters Survey with
- * the generated access code, answers, finishes and downloads the report; and Admin shows them
- * as Finished.
+ * the generated access code, answers and finishes; and Admin shows them as Finished.
  *
  * <p>The survey is the smallest one that can be exported and completed: one step, one section,
  * one required-free TEXT question, no reports, no rules. Every run creates a survey with a
@@ -149,10 +149,12 @@ class AuthorToRespondentE2ETest extends E2ETestBase {
         new ReviewPage(page).finish();
         assertTrue(page.url().contains("/report"), "expected to be routed to the report page");
 
-        // 12. Survey UC-005: the PDF still generates (empty report list) for a new tab.
-        PdfDownload pdf = openPdfPopup(() -> new ReportPage(page).generatePdf());
-        assertEquals("application/pdf", pdf.contentType(), "unexpected response from " + pdf.url());
-        assertTrue(pdf.size() > 0, "expected a non-empty PDF from " + pdf.url());
+        // 12. Survey UC-005 BR-014: the survey lists no reports and has no post-survey URL, so the
+        // report page is a completion notice only -- no report cards and no Generate PDF. (The PDF
+        // path is covered by RespondentJourneyE2ETest through the Family History Survey.)
+        ReportPage reportPage = new ReportPage(page);
+        assertThat(reportPage.completionNotice()).isVisible();
+        assertThat(reportPage.generatePdfButton()).hasCount(0);
 
         // 13. Survey UC-006: log out.
         openSurvey("/logout");
