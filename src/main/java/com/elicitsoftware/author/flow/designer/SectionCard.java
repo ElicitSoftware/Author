@@ -38,6 +38,7 @@ public class SectionCard extends Div {
     final Span questionCount = new Span();
     final Span mountBadge = new Span();
     final Span tagBadge = new Span();
+    final Span reportBadge = new Span();
     final Icon toggle;
     final NodeMenu menu;
     final List<QuestionRow> rows;
@@ -82,6 +83,7 @@ public class SectionCard extends Div {
         mountBadge.setTitle(getTranslation("sectionCard.mounted.title", mountedInSteps));
         mountBadge.setVisible(mountedInSteps > 1);
         TagBadge.fill(tagBadge, view.tagsOf(node));
+        ReportBadge.fill(reportBadge, view.marksOf(node));
 
         menu = new NodeMenu(getTranslation("sectionCard.menu.aria", node.label()));
         menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node), !node.retired());
@@ -89,6 +91,7 @@ public class SectionCard extends Div {
         menu.item(getTranslation("sectionCard.menu.copyToStep"), () -> view.copyTo(node), !node.retired());
         menu.item(getTranslation("sectionCard.menu.alsoMountInStep"), () -> view.mountIn(node), !node.retired());
         menu.item(getTranslation("designer.menu.reportingTags"), () -> view.reportingTags(node), !node.retired());
+        menu.item(getTranslation("designer.menu.reportMarks"), () -> view.reportMarks(node), !node.retired());
         menu.item(getTranslation("designer.menu.moveUp"), () -> view.move(node, -1), !node.retired() && indexInLane > 0);
         menu.item(getTranslation("designer.menu.moveDown"), () -> view.move(node, 1), !node.retired() && indexInLane < laneSize - 1);
         menu.item(getTranslation("designer.menu.openDetails"), () -> view.openDetails(node));
@@ -101,7 +104,7 @@ public class SectionCard extends Div {
         header.getElement().setAttribute("aria-label", node.retired()
                 ? getTranslation("sectionCard.aria.removed", node.label(), questionCount.getText())
                 : getTranslation("sectionCard.aria", node.label(), questionCount.getText()));
-        header.add(toggle, glyph, name, questionCount, mountBadge, tagBadge, menu);
+        header.add(toggle, glyph, name, questionCount, mountBadge, tagBadge, reportBadge, menu);
         // Single click toggles and selects; double click edits (UC-018 step 1). Told apart on the
         // client, as QuestionRow does: a debounced single vs. an immediate double, so the board
         // rebuild after a single click never detaches the header mid-gesture and eats the double.

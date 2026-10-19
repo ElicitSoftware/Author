@@ -59,6 +59,9 @@ public class SurveyDefinitionImporter {
     @Inject
     EntityManager em;
 
+    @Inject
+    com.elicitsoftware.author.survey.ReportService reports;
+
     @Transactional
     public ImportResult importFile(InputStream inputStream) {
         Map<String, Integer> counts = new LinkedHashMap<>();
@@ -81,6 +84,7 @@ public class SurveyDefinitionImporter {
         OffsetDateTime fileRevision = null;
         boolean versionValidated = false;
         boolean draftFormat = false;
+        boolean reportsHeaderSeen = false;
         int lineNumber = 0;
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
@@ -99,6 +103,10 @@ public class SurveyDefinitionImporter {
                         // marker, so Admin cannot install it at a site without a round trip here.
                         versionValidated = true;
                         draftFormat = true;
+                    }
+                    if (line.startsWith("# reports:")) {
+                        // A backup (UC-047) counts its tables; a draft (UC-042) need not.
+                        reportsHeaderSeen = true;
                     }
                     try {
                         OffsetDateTime parsed = ElicitFormat.parseRevisionHeader(line);
@@ -156,6 +164,7 @@ public class SurveyDefinitionImporter {
                         case "dimensions" -> dimensionIdMap.put(parseLongOrNull(fields[0]), insertOrReuseDimension(fields));
                         case "ontology" -> ontologyIdMap.put(parseLongOrNull(fields[0]), insertOrReuseOntology(fields, surveyId, dimensionIdMap));
                         case "metadata" -> insertMetadata(fields, surveyId, stepsSectionIdMap, questionIdMap, sectionsQuestionIdMap, ontologyIdMap);
+                        case "report_items" -> insertReportItem(fields, surveyId, stepsSectionIdMap, questionIdMap, sectionsQuestionIdMap);
                         case "translations" -> insertTranslation(fields, surveyId);
                         default -> throw new DefinitionException(Translations.get("error.import.unknownRecord", table));
                     }
@@ -177,6 +186,13 @@ public class SurveyDefinitionImporter {
             throw new DefinitionException(Translations.get("error.import.noSurveysRecord"));
         }
         em.flush();
+        if (draftFormat && !reportsHeaderSeen && counts.getOrDefault("reports", 0) == 0) {
+            // UC-048 BR-001: a draft is told to omit the reports table, so it starts like a survey
+            // made from the blank form. A definition file, or a backup, is the whole list and
+            // seeds nothing.
+            reports.seedBuiltIn(surveyId.intValue());
+            counts.put("reports", 1);
+        }
         return new ImportResult(surveyId.intValue(), surveyKey, surveyName, fileRevision, counts, skipped, draftFormat);
     }
 
@@ -554,6 +570,30 @@ public class SurveyDefinitionImporter {
         q.setParameter(6, resolveNullable(parseLongOrNull(f[4]), dimensionIdMap, "dimension (ontology)"));
         q.executeUpdate();
         return newId;
+    }
+
+    /**
+     * UC-049, UC-005 BR-005: {@code id|report_item_key|report_type|steps_sections_id|question_id|
+     * sections_question_id|label|display_order}, the element columns remapped like metadata's.
+     */
+    private void insertReportItem(String[] f, Long surveyId, Map<Long, Long> stepsSectionIdMap, Map<Long, Long> questionIdMap,
+                                  Map<Long, Long> sectionsQuestionIdMap) {
+        requireFields("report_items", f);
+        Query q = em.createNativeQuery("""
+                INSERT INTO survey.report_items
+                    (id, survey_id, report_item_key, report_type, steps_sections_id, question_id, sections_question_id, label, display_order)
+                VALUES (nextval('survey.report_items_seq'), ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                """);
+        q.setParameter(1, surveyId);
+        q.setParameter(2, parseKeyOrMint(f[1], "element_key"));
+        q.setParameter(3, nullIfEmpty(f[2]));
+        q.setParameter(4, resolveNullable(parseLongOrNull(f[3]), stepsSectionIdMap, "steps_section (report_items)"));
+        q.setParameter(5, resolveNullable(parseLongOrNull(f[4]), questionIdMap, "question (report_items)"));
+        q.setParameter(6, resolveNullable(parseLongOrNull(f[5]), sectionsQuestionIdMap, "sections_question (report_items)"));
+        q.setParameter(7, nullIfEmpty(f[6]));
+        Integer order = parseIntOrNull(f[7]);
+        q.setParameter(8, order == null ? 0 : order);
+        q.executeUpdate();
     }
 
     private void insertMetadata(String[] f, Long surveyId, Map<Long, Long> stepsSectionIdMap, Map<Long, Long> questionIdMap,

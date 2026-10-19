@@ -204,7 +204,7 @@ public class ReportingService {
     // ---- assignments (UC-021, UC-022) --------------------------------------------------------
 
     public List<Assignment> assignments(int surveyId) {
-        Labels labels = labels(surveyId);
+        Locator labels = labels(surveyId);
         List<Assignment> out = new ArrayList<>();
         for (Metadata m : Metadata.<Metadata>list("surveyId", Sort.by("id"), surveyId)) {
             out.add(labels.resolve(m));
@@ -231,7 +231,7 @@ public class ReportingService {
             throw new AuthoringException(Translations.get("error.tag.scopeRequired"), "scope");
         }
         Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException(Translations.get("error.tag.required"), "tag"));
-        Labels labels = labels(surveyId);
+        Locator labels = labels(surveyId);
         if (!labels.exists(ref, durableId)) {
             throw new AuthoringException(Translations.get("error.tag.elementGone"), "scope");
         }
@@ -424,13 +424,21 @@ public class ReportingService {
         }
     }
 
-    /** Element labels resolved from the structure tree, retired rows included so nothing dangles silently. */
-    private final class Labels {
+    /** One element resolved by durable id: its label, where it sits, and whether it is gone or retired. */
+    public record Located(String label, String where, boolean dangling, StructureNode node) {
+    }
+
+    /**
+     * Element labels resolved from the structure tree, retired rows included so nothing dangles
+     * silently. Built once per render and shared by tag assignments (UC-021) and report marks
+     * (UC-049), which name elements the same way.
+     */
+    public final class Locator {
         final Map<Integer, StructureNode> questionsByDurable = new LinkedHashMap<>();
         final Map<Integer, StructureNode> questionsByAssignment = new HashMap<>();
         final Map<Integer, StructureNode> sectionsByAssignment = new HashMap<>();
 
-        Labels(int surveyId) {
+        Locator(int surveyId) {
             for (StructureNode n : structureQuery.tree(surveyId, true).all()) {
                 switch (n.kind()) {
                     case QUESTION -> {
@@ -444,7 +452,7 @@ public class ReportingService {
             }
         }
 
-        boolean exists(ElementRef ref, int durableId) {
+        public boolean exists(ElementRef ref, int durableId) {
             return switch (ref) {
                 case QUESTION -> questionsByDurable.containsKey(durableId);
                 case SECTIONS_QUESTION -> questionsByAssignment.containsKey(durableId);
@@ -452,26 +460,39 @@ public class ReportingService {
             };
         }
 
+        /** The element behind one scope and durable id; dangling when gone or retired. */
+        public Located locate(ElementRef ref, Integer durableId) {
+            if (ref == null || durableId == null) {
+                return new Located("", "", true, null);
+            }
+            StructureNode node = switch (ref) {
+                case QUESTION -> questionsByDurable.get(durableId);
+                case SECTIONS_QUESTION -> questionsByAssignment.get(durableId);
+                case STEPS_SECTIONS -> sectionsByAssignment.get(durableId);
+            };
+            if (node == null) {
+                return new Located("", "", true, null);
+            }
+            String where = ref == ElementRef.QUESTION ? Translations.get("reporting.where.everywhere") : path(node.parent());
+            return new Located(node.label(), where, node.retired(), node);
+        }
+
         Assignment resolve(Metadata m) {
             ElementRef ref = m.elementRef();
             if (ref == null) {
                 return new Assignment(m, null, "", "", true, null);
             }
-            StructureNode node = switch (ref) {
-                case QUESTION -> questionsByDurable.get(m.questionId);
-                case SECTIONS_QUESTION -> questionsByAssignment.get(m.sectionsQuestionId);
-                case STEPS_SECTIONS -> sectionsByAssignment.get(m.stepsSectionsId);
-            };
-            if (node == null) {
-                return new Assignment(m, ref, "", "", true, null);
-            }
-            String where = ref == ElementRef.QUESTION ? Translations.get("reporting.where.everywhere") : path(node.parent());
-            return new Assignment(m, ref, node.label(), where, node.retired(), node);
+            Located l = locate(ref, m.elementId());
+            return new Assignment(m, ref, l.label(), l.where(), l.dangling(), l.node());
         }
     }
 
-    private Labels labels(int surveyId) {
-        return new Labels(surveyId);
+    public Locator locator(int surveyId) {
+        return new Locator(surveyId);
+    }
+
+    private Locator labels(int surveyId) {
+        return new Locator(surveyId);
     }
 
     public static String path(StructureNode node) {

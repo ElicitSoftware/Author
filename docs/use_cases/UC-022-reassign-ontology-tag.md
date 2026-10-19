@@ -1,9 +1,9 @@
-# Use Case: Reassign Ontology Tag
+# Use Case: Reassign Analysis Tag
 
 ## Overview
 
 **Use Case ID:** UC-022  
-**Use Case Name:** Reassign Ontology Tag  
+**Use Case Name:** Reassign Analysis Tag  
 **Primary Actor:** Survey Author  
 **Goal:** Change or remove an existing tag assignment while being told, before saving and again at export, that the change reclassifies answers already recorded at deployed sites.  
 **Status:** Implemented  
@@ -16,7 +16,7 @@
 
 ## Main Success Scenario
 
-1. The author chooses Edit… on an assignment (element tag list in the designer, or the Reporting page).
+1. The author chooses Edit… on an assignment (element tag list in the designer, or the Analysis page).
 2. The system opens the assignment dialog with the element fixed, the current tag and the current value.
 3. The author changes the tag or the value.
 4. The system shows a warning that the change is retroactive; Save stays disabled until the author acknowledges it.

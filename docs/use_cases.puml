@@ -42,11 +42,15 @@ rectangle "Elicit Author" {
     usecase "UC-020\nVisualize Relationship Graph" as UC020
     usecase "UC-033\nValidate Rule Direction" as UC033
 
-    ' Ontology & Metadata (FR-023..FR-026)
-    usecase "UC-021\nAssign Ontology Tag to Question" as UC021
-    usecase "UC-022\nReassign Ontology Tag" as UC022
-    usecase "UC-023\nManage Ontology and Dimension Entries" as UC023
+    ' Analysis tags (FR-023..FR-026)
+    usecase "UC-021\nAssign Analysis Tag to Question" as UC021
+    usecase "UC-022\nReassign Analysis Tag" as UC022
+    usecase "UC-023\nManage Analysis Tags and Dimensions" as UC023
     usecase "UC-024\nPreview Dimensional Impact" as UC024
+
+    ' Reports (FR-068..FR-069)
+    usecase "UC-048\nManage Report Services" as UC048
+    usecase "UC-049\nMark Elements for a Report" as UC049
 
     ' Requirements Collection & First-Draft Generation (FR-027..FR-029)
     usecase "UC-025\nAuthor the Requirements-Collection Meta-Survey" as UC025
@@ -119,6 +123,8 @@ author --> UC021
 author --> UC022
 author --> UC023
 author --> UC024
+author --> UC048
+author --> UC049
 
 ' Requirements Collection & First-Draft Generation
 author --> UC025
@@ -187,6 +193,10 @@ UC043 ..> UC008 : <<extend>> translations travel in the definition file
 UC043 ..> UC007 : <<extend>> stale and missing counts are export warnings
 UC009 ..> UC043 : <<extend>> retiring an element retires its translations
 UC005 ..> UC047 : <<extend>> re-importing the backup restores it
+UC048 ..> UC003 : <<extend>> a new survey starts with the built-in report
+UC048 ..> UC008 : <<extend>> report services travel in the definition file
+UC049 ..> UC008 : <<extend>> report marks travel in the definition file
+UC049 ..> UC043 : <<extend>> a mark's label is translatable
 
 ' Not yet specified: UC-017 (FR-017), UC-025 (FR-027), UC-026 (FR-028), UC-027 (FR-029) and
 ' UC-028 (FR-030) are declared here as planned scope. Their requirements are Open and they have no

@@ -46,10 +46,10 @@
 
 ### A3: Tables Author does not model
 
-**Trigger:** The survey has no reporting tags, or the format carries tables Author does not yet model (reports, post-survey actions) (step 5)  
+**Trigger:** The format carries a table Author does not yet model (post-survey actions) (step 5)  
 **Flow:**
 
-1. The system writes those tables with a record count of zero; dimensions, ontology and metadata records are written whenever the survey carries reporting tags (UC-021, UC-023).
+1. The system writes that table with a record count of zero; dimensions, ontology and metadata records are written whenever the survey carries analysis tags (UC-021, UC-023), and `reports` and `report_items` records whenever it lists report services (UC-048) or report marks (UC-049).
 2. Use case continues at step 6.
 
 ### A4: File cannot be produced
@@ -93,3 +93,7 @@ The file is written exactly as Admin's exporter would write it, so Admin's insta
 ### BR-005: Local identifiers are not identity
 
 Local numeric identifiers in the file are used only to link records within the file; sites allocate their own. Only the survey key, element keys and revision have meaning across deployments.
+
+### BR-006: Report services and report marks travel whole
+
+Every `reports` row of the survey is written, in display order, and every `report_items` row, ordered by report, then display order, then id, with their keys verbatim, so that a site's apply installs the author's list and deletes what the author removed (UC-048 BR-006, UC-049 BR-005). A mark on a removed element is still written, with an export warning naming it (UC-049 A3).

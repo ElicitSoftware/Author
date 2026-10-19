@@ -75,7 +75,7 @@ definition (UC-005) first. The fixture is the structure the manual describes:
 - lists `Yes / No` and `Sex at birth`
 - a Show rule `Has children = Yes → Child count`, and a Repeat rule
   `Child count > 0 → section Child`
-- a reporting tag `children` on dimension `family`, assigned to `Has children`
+- an analysis tag `children` on dimension `family`, assigned to `Has children`
 
 Change the fixture and the figures change with it; the element keys are derived
 from a fixed namespace, so re-importing it into a fresh Author database always

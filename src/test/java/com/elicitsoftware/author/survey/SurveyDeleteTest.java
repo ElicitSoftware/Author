@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SurveyDeleteTest {
 
     private static final List<String> OWNED = List.of(
-            "translations", "metadata", "ontology", "relationships", "sections_questions", "steps_sections",
+            "translations", "report_items", "metadata", "ontology", "relationships", "sections_questions", "steps_sections",
             "questions", "select_items", "select_groups", "sections", "steps", "reports", "post_survey_actions");
 
     private static final List<String> PREVIEW = List.of("dependents", "respondent_psa", "answers", "respondents");

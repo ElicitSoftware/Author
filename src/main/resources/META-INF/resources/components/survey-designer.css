@@ -701,6 +701,21 @@ elicit-rule-arrows {
     color: var(--brand-primary, var(--lumo-primary-text-color));
 }
 
+.designer-report-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    max-width: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--brand-text-secondary, var(--lumo-secondary-text-color));
+}
+
+.designer-report-badge-icon {
+    width: 0.9em;
+    height: 0.9em;
+}
+
 .designer-tag-badge-icon {
     width: 0.9em;
     height: 0.9em;

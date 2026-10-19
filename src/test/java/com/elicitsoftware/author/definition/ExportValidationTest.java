@@ -171,7 +171,7 @@ class ExportValidationTest {
         em.clear();
         List<ValidationIssue> issues = validation.validate(Survey.findById(s.id));
         assertTrue(issues.stream().anyMatch(i -> i.isError() && "ontology".equals(i.kind())
-                && i.message().contains("could not build reports")), "UC-024 BR-002: " + issues);
+                && i.message().contains("could not build their analysis schema")), "UC-024 BR-002: " + issues);
     }
 
     @Test

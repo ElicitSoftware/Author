@@ -97,6 +97,9 @@ public class SurveyDefinitionExporter {
         tables.put("dimensions", rows("SELECT DISTINCT d.id, d.dimension_key, d.name FROM survey.dimensions d INNER JOIN survey.ontology o ON o.dimension = d.id WHERE o.survey_id = :sid ORDER BY d.id", surveyId));
         tables.put("ontology", rows("SELECT id, ontology_key, name, tag, dimension FROM survey.ontology WHERE survey_id = :sid ORDER BY id", surveyId));
         tables.put("metadata", rows("SELECT id, metadata_key, steps_sections_id, question_id, sections_question_id, ontology_id, value FROM survey.metadata WHERE survey_id = :sid ORDER BY id", surveyId));
+        // UC-008 BR-006: every mark, by report then order, as Admin writes them (UC-049 BR-005).
+        tables.put("report_items", rows("SELECT id, report_item_key, report_type, steps_sections_id, question_id, sections_question_id, label, display_order "
+                + "FROM survey.report_items WHERE survey_id = :sid ORDER BY report_type, display_order, id", surveyId));
         // Last, because it references every other table's element keys. source_text is not
         // selected: it is the authoring-only snapshot behind the out-of-date diff (UC-043).
         tables.put("translations", rows("SELECT " + ElicitFormat.TRANSLATION_FIELDS + ", " + T2_TAIL

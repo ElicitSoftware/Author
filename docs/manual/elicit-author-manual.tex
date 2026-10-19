@@ -250,7 +250,7 @@ will see it.
 \screenshot{05-designer-board}{The designer. Controls, Lists, Sections, Questions and the
 structure tree on the left; the board in the middle; the respondent preview on the right.}
 
-Work top-down: steps, then sections, then questions, then the lists, rules and reporting tags
+Work top-down: steps, then sections, then questions, then the lists, rules and analysis tags
 that give them meaning.
 
 \subsection{Adding a step}
@@ -258,8 +258,8 @@ that give them meaning.
 Use \ui{Add step} at the top of the board, or drag the \ui{STEP} glyph from \ui{Controls} onto
 the board. Both open the same editor.
 
-\screenshot{06-new-step}{A new step. \ui{Dimension name} is what the reporting schema calls this
-step; it defaults to the name, and changing it later is a reporting change rather than a rename.}
+\screenshot{06-new-step}{A new step. \ui{Dimension name} is what the analysis schema calls this
+step; it defaults to the name, and changing it later is an analysis change rather than a rename.}
 
 \begin{elicitnote}[Everything a drag can do, a menu can do too]
 Every element on the board carries a \ui{$\vdots$} menu with the same actions the drag gestures
@@ -346,7 +346,7 @@ Anything conditional is a rule. Start one from the upstream question — the one
 read — using \ui{Add rule…} in its menu, or by dragging a rule glyph from \ui{Controls} onto the
 question and then dragging the arrowhead onto the target.
 
-\screenshot{13-question-menu}{A question's menu. Rules and reporting tags both start here.}
+\screenshot{13-question-menu}{A question's menu. Rules, analysis tags and report marks all start here.}
 
 The editor is the rule sentence, in the order the runtime evaluates it.
 
@@ -429,30 +429,56 @@ acted on, labeled with the action. Untick \ui{Show rules} at the top of the boar
 while you work on structure.
 
 %% ------------------------------------------------------------------ 9
-\section{Tagging for reporting}
-\markboth{Tagging for reporting}{}
+\section{Tagging for analysis}
+\markboth{Tagging for analysis}{}
 
-A \term{reporting tag} names a column of the report a site builds from the answers. Tag a
-question and its answers fill that column; tag a section as it appears in a step with a fixed
-value, and every respondent who reaches it is classified by that value. Tags that share a
-\term{dimension} share one table of values.
+An \term{analysis tag} names a column of the star schema a site builds from the answers for
+analysis. Tag a question and its answers fill that column; tag a section as it appears in a step
+with a fixed value, and every respondent who reaches it is classified by that value. Tags that
+share a \term{dimension} share one table of values. Tags are not reports: what a respondent or an
+administrator reads is decided on the \ui{Reports…} page (next section).
 
-Open the survey's \ui{Reporting…} page to see every tag, every assignment, and the schema they
+Open the survey's \ui{Analysis…} page to see every tag, every assignment, and the schema they
 will produce.
 
-\screenshot{16-reporting}{The reporting page: the tags, where they are assigned, and the
-dimension tables and report columns the site's reporting build will create.}
+\screenshot{16-reporting}{The analysis page: the tags, where they are assigned, and the
+dimension tables and columns the site's analysis build will create.}
 
-Define a tag with \ui{New tag…} and attach it with \ui{Assign tag…}, or use \ui{Reporting tags…}
+Define a tag with \ui{New tag…} and attach it with \ui{Assign tag…}, or use \ui{Analysis tags…}
 in a question's or section's own menu.
 
-\screenshot{17-assign-tag}{Assigning a tag. A question can report the respondent's answer; a
+\screenshot{17-assign-tag}{Assigning a tag. A question can record the respondent's answer; a
 section in a step can classify everyone who reaches it by a fixed value.}
 
 \begin{elicitcaution}[Tag changes are retroactive]
 Changing or removing an assigned tag relabels answers that deployed sites have \emph{already}
-recorded, once the survey is exported and applied. Historical reports change with it. Treat a
+recorded, once the survey is exported and applied. Historical data changes with it. Treat a
 tag change as a decision about past data, not only about future data.
+\end{elicitcaution}
+
+\section{Reports}
+\markboth{Reports}{}
+
+A survey can show its respondents one or more \term{reports} after they finish, and every new
+survey starts with the built-in \term{respondent report}, which echoes back the answers the
+author chose. The \ui{Reports…} page lists the survey's report services in the order a
+respondent sees them: the built-in report is badged, and a service a site runs for this survey
+is added with \ui{Add report service…}, giving its name, a description and its address. Drag a
+row to reorder, \ui{Edit…} it, or \ui{Remove} it; a survey whose list is empty ends on its
+post-survey address with no report page.
+
+What the respondent report shows, and what the administrator report monitors, are the survey's
+\term{report marks}. Mark a question, a question as placed in one section, or a whole section
+with \ui{Report marks…} in its menu on the board, or with \ui{Mark element…} on the
+\ui{Reports…} page, choosing the report and, if the element's own text is not what the report
+should say, a label. The \ui{Respondent} and \ui{Administrator} tabs list each report's marks
+in order; drag to reorder, \ui{Edit label…} to change the label, \ui{Unmark} to remove.
+Questions that show HTML or take a password cannot be marked.
+
+\begin{elicitcaution}[The respondent report is as private as the access code]
+A respondent reaches their report again by signing in with their access code. Marking a
+sensitive question for the respondent report therefore shows its answer to anyone holding
+that code.
 \end{elicitcaution}
 
 %% ------------------------------------------------------------------ 10
@@ -487,7 +513,7 @@ exported, or start from one of the sample definitions.
 A survey you no longer need, or one you are about to replace from a file, can be deleted from the
 \ui{Surveys} list: choose \ui{Delete} on its row. Unlike removing an element, which retires it,
 this deletes the survey and everything in it --- steps, sections, questions, choice lists, rules,
-reporting tags and translations, removed elements included. Nothing in Author can bring it back.
+analysis tags, reports, report marks and translations, removed elements included. Nothing in Author can bring it back.
 
 The confirmation therefore asks for three things:
 

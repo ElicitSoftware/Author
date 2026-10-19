@@ -41,7 +41,7 @@ class EntityMappingSmokeTest {
 
     @ParameterizedTest
     @ValueSource(classes = {Survey.class, QuestionType.class, OperatorType.class, ActionType.class,
-            Dimension.class, Ontology.class, Metadata.class,
+            Dimension.class, Ontology.class, Metadata.class, Report.class, ReportItem.class,
             Step.class, Section.class, Question.class, SelectGroup.class, SelectItem.class,
             StepsSections.class, SectionsQuestion.class, Relationship.class})
     void everyEntityQueriesAgainstTheSchema(Class<?> entity) {

@@ -69,7 +69,7 @@ public final class ElicitFormat {
     public static final List<String> TABLES = List.of(
             "surveys", "select_groups", "select_items", "steps", "sections", "steps_sections",
             "questions", "sections_questions", "relationships", "reports", "post_survey_actions",
-            "dimensions", "ontology", "metadata", "translations");
+            "dimensions", "ontology", "metadata", "report_items", "translations");
 
     /** Tables whose rows carry the Type 2 tail {@code version|effective_from|effective_to|published_by|published_comment}. */
     public static final List<String> VERSIONED_TABLES = List.of(
@@ -96,6 +96,7 @@ public final class ElicitFormat {
             Map.entry("dimensions", 3),
             Map.entry("ontology", 5),
             Map.entry("metadata", 7),
+            Map.entry("report_items", 8),
             Map.entry("translations", 13));
 
     /** Zero-based index of {@code effective_to} within each versioned record. */

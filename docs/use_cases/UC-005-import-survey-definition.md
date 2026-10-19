@@ -19,7 +19,7 @@
 1. The author opens Import definition and selects a `.elicit` file of at most 5 MB.
 2. The system reads the file header and confirms the format marker, the survey key and the record counts.
 3. The system checks that no survey with the same survey key exists in Author.
-4. The system creates the survey and every structural element from the file in dependency order, allocating fresh local identifiers, keeping every survey key and element key exactly as in the file, and rewriting the leading survey component of every display key to the new local survey.
+4. The system creates the survey and every structural element from the file in dependency order, allocating fresh local identifiers, keeping every survey key and element key exactly as in the file, and rewriting the leading survey component of every display key to the new local survey. Report services (UC-048) and report marks (UC-049) are created from the file's `reports` and `report_items` records, the marks' element references remapped like analysis-tag assignments; a file without `report_items` records imports with no marks, and a definition import never seeds the built-in report (UC-048 BR-001).
 5. The system skips records marked as retired in the file and reports how many were skipped.
 6. The system stores the file's revision and record counts with the result and shows a summary per table.
 7. The author chooses Open to continue in the editor (UC-006), with the goal achieved: the survey is now a working copy in Author.
@@ -106,4 +106,4 @@ An import either completes for the whole file or leaves Author unchanged.
 
 ### BR-005: Format parity with Admin
 
-The reader accepts exactly what Admin's importer accepts; escaping, field layouts and header lines follow Admin's definition of the format.
+The reader accepts exactly what Admin's importer accepts; escaping, field layouts and header lines follow Admin's definition of the format. `report_items` records carry eight fields (`id`, `report_item_key`, `report_type`, `steps_sections_id`, `question_id`, `sections_question_id`, `label`, `display_order`) and sit after `metadata` and before `translations`, as Admin writes them.

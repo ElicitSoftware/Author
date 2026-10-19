@@ -157,7 +157,7 @@ against records already read:
 `surveys` → `select_groups` → `select_items` → `steps` → `sections` →
 `steps_sections` → `questions` → `sections_questions` → `relationships` →
 `reports` → `post_survey_actions` → `dimensions` → `ontology` → `metadata` →
-`translations`
+`report_items` → `translations`
 
 The `surveys` record must come first, and there must be **exactly one** of them —
 one survey per file.
@@ -201,10 +201,11 @@ Always write `0` for `version` and leave the other four empty: `0||||`
 | `dimensions` | 3 | `id \| dimension_key \| name` |
 | `ontology` | 5 | `id \| ontology_key \| name \| tag \| dimension` |
 | `metadata` | 7 | `id \| metadata_key \| steps_sections_id \| question_id \| sections_question_id \| ontology_id \| value` |
+| `report_items` | 8 | `id \| report_item_key \| report_type \| steps_sections_id \| question_id \| sections_question_id \| label \| display_order` |
 | `translations` | 13 | `translation_id \| translation_key \| element_type \| element_key \| field \| language \| value \| source_hash \| ` + tail |
 
-**Omit the last five tables.** `reports`, `post_survey_actions`, `dimensions`,
-`ontology` and `metadata` are the reporting and integration layer. A person
+**Omit the last six tables.** `reports`, `post_survey_actions`, `dimensions`,
+`ontology`, `metadata` and `report_items` are the reporting, analysis and integration layer. A person
 configures those in Author, where the consequences are visible. They are listed
 here only so you recognize them in an exported file.
 

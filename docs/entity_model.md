@@ -40,6 +40,8 @@ erDiagram
     SURVEY ||--o{ SECTIONS_QUESTION : "defines"
     SURVEY ||--o{ METADATA : "defines"
     SURVEY ||--o{ TRANSLATION : "defines"
+    SURVEY ||--o{ REPORT : "defines"
+    SURVEY ||--o{ REPORT_ITEM : "defines"
     QUESTION_TYPE ||--o{ QUESTION : "classifies"
     SELECT_GROUP ||--o{ SELECT_ITEM : "contains"
     SELECT_GROUP ||--o{ QUESTION : "constrains"
@@ -59,6 +61,9 @@ erDiagram
     QUESTION ||--o{ METADATA : "tagged via"
     SECTIONS_QUESTION ||--o{ METADATA : "tagged via"
     STEPS_SECTION ||--o{ METADATA : "tagged via"
+    QUESTION ||--o{ REPORT_ITEM : "marked via"
+    SECTIONS_QUESTION ||--o{ REPORT_ITEM : "marked via"
+    STEPS_SECTION ||--o{ REPORT_ITEM : "marked via"
 ```
 
 ### SURVEY
@@ -354,6 +359,38 @@ A link between one structural element (a step/section assignment, a question, or
 
 **Constraints:** `(steps_sections_id, question_id, sections_question_id, ontology_id, value)` is unique. Exactly one of `steps_sections_id`, `question_id`, `sections_question_id` must be set — the schema's check constraint does not enforce this (NULL arithmetic), so `ReportingService` does. Reassigning a question's ontology tag is a stakeholder-approved retroactive exception — it reclassifies historical answers as well as future ones.
 
+### REPORT
+
+One report service a survey offers its respondents (UC-048): the built-in respondent report every new survey is seeded with, or a custom service such as FHHS's. Type 1 (C-015): no versions, removal is a delete, and a site deletes the row whose key the next export no longer lists. The built-in row is distinguished only by its address, the built-in service's path.
+
+| Attribute      | Description                                                                                   | Data Type | Length/Precision | Validation Rules                                   |
+|----------------|-----------------------------------------------------------------------------------------------|-----------|-------------------|----------------------------------------------------|
+| id             | Unique identifier                                                                             | Integer   | 10                | Primary Key, Sequence                              |
+| report_key     | Element key, minted once (Survey `V015`)                                                      | UUID      | 36                | Not Null, Unique, Immutable (C-017)                |
+| survey_id      | Survey this report belongs to                                                                 | Integer   | 10                | Not Null, Foreign Key (surveys.id)                 |
+| name           | Heads the report's card; translatable (UC-043)                                                | String    | 255               | Not Null, Unique per survey                        |
+| description    | Shown with the card; translatable                                                             | String    | 255               | Not Null                                           |
+| url            | A path under the site's Survey module, or an absolute http(s) URL of an external service      | String    | 255               | Not Null (UC-048 BR-004)                           |
+| display_order  | Position on the respondent's report page, 1..n                                                | Integer   | 10                | Not Null                                           |
+
+### REPORT_ITEM
+
+A report mark (UC-049): one structural element, named by durable id exactly as METADATA names it, marked for the respondent report or the administrator report, with an order within that report and an optional label that replaces the element's text. Type 1 like REPORT. Survey `V023` creates the table and enforces that exactly one element column is set; Survey never writes it (Survey UC-013).
+
+| Attribute             | Description                                                                              | Data Type | Length/Precision | Validation Rules                                            |
+|-----------------------|------------------------------------------------------------------------------------------|-----------|-------------------|-------------------------------------------------------------|
+| id                    | Unique identifier                                                                        | Integer   | 10                | Primary Key, Sequence                                       |
+| report_item_key       | Element key, minted once (Survey `V023`)                                                 | UUID      | 36                | Not Null, Unique, Immutable (C-017)                         |
+| survey_id             | Survey this mark belongs to                                                              | Integer   | 10                | Not Null, Foreign Key (surveys.id)                          |
+| report_type           | `RESPONDENT` or `ADMINISTRATOR`                                                          | String    | 13                | Not Null, Check constraint                                  |
+| steps_sections_id     | Durable key of the marked step/section assignment, if this mark names one               | Integer   | 10                | Optional; exactly one of the three (check constraint)       |
+| question_id           | Durable key of the marked question, if this mark names one                               | Integer   | 10                | Optional                                                    |
+| sections_question_id  | Durable key of the marked section/question assignment, if this mark names one            | Integer   | 10                | Optional                                                    |
+| label                 | Replaces the element's text on the report; translatable (`report_items.label`)           | String    | 255               | Optional                                                    |
+| display_order         | Position within its report, 1..n                                                         | Integer   | 10                | Not Null                                                    |
+
+**Constraints:** at most one mark per `(survey_id, report_type, element)`, enforced by Author (UC-049 A1); an HTML or PASSWORD question is never marked (UC-049 BR-003).
+
 ### TRANSLATION
 
 One field of one element in one language: the ninth Type 2 table and the first that is not structural (durable key: `translation_id`). It attaches to the element it translates by that element's `*_key` UUID and the name of the base column, not by any id, so it survives versioning at a site and import into another instance. Author holds one version-0 row per translation, retires by closing `effective_to`, and never renders a translation anywhere but the Translations page (UC-043).
@@ -362,7 +399,7 @@ One field of one element in one language: the ninth Type 2 table and the first t
 |-------------------|----------------------------------------------------------------------------------------------|-----------|-------------------|-----------------------------------------------------|
 | id                | Surrogate primary key of this specific version row                                            | Integer   | 10                | Primary Key, Sequence                               |
 | survey_id         | Survey this translation belongs to                                                            | Integer   | 10                | Not Null, Foreign Key (surveys.id)                  |
-| element_type      | Table the translated element lives in: `surveys`, `steps`, `sections`, `questions`, `select_items`, `relationships`, `reports` | String | 32 | Not Null, Check constraint |
+| element_type      | Table the translated element lives in: `surveys`, `steps`, `sections`, `questions`, `select_items`, `relationships`, `reports`, `report_items` | String | 32 | Not Null, Check constraint |
 | element_key       | Element key of the translated element; never a surrogate or durable id                        | UUID      | 36                | Not Null                                            |
 | field             | Base column this row translates, from the translatable-field whitelist (C-015)                | String    | 32                | Not Null                                            |
 | language          | BCP-47 tag, as the mounted chrome bundles write it (`es-419`, `ar`)                           | String    | 35                | Not Null                                            |
@@ -383,6 +420,6 @@ One field of one element in one language: the ninth Type 2 table and the first t
 
 `respondents`, `answers`, and `dependents` (respondent session and response data) and `respondent_psa` exist in the same `survey` schema but are out of Author's scope per `docs/vision.md` — Author neither creates nor edits them. In Author's local preview stack the Survey app may create them; Author's removal semantics (retire, never delete) keep them valid.
 
-`reports` and `post_survey_actions` are part of the `.elicit` format (`report_key`, `post_survey_action_key`) and will be modeled once Survey `V015` adds their element keys; until then Author exports them with zero records.
+`post_survey_actions` is part of the `.elicit` format (`post_survey_action_key`, Survey `V015`) and is not modeled yet; Author exports it with zero records. `reports` is modeled as REPORT (UC-048).
 
 `survey.survey_log` (Admin-owned; one row per apply attempt with `survey_key`, `action`, `outcome`, `performed_by`, `file_name`, `revision`) is the per-site audit trail of applied definitions. It does not exist in Author's database.

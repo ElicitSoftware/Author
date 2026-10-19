@@ -110,6 +110,9 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
     ReportingService reporting;
 
     @Inject
+    com.elicitsoftware.author.survey.ReportMarkService reportMarks;
+
+    @Inject
     ListService listService;
 
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -137,6 +140,8 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
     DesignerToolbox toolbox;
     /** Reporting-tag labels per board node ("ss-"/"sq-" + assignment id), rebuilt with the board (UC-021). */
     final Map<String, List<String>> tagLabels = new java.util.HashMap<>();
+    /** Report-mark labels per board node, rebuilt with the board (UC-049). */
+    final Map<String, List<String>> markLabels = new java.util.HashMap<>();
 
     public SurveyDesignerView() {
         addClassName("designer");
@@ -294,6 +299,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         board.removeAll();
         lanes.clear();
         collectTagLabels();
+        collectMarkLabels();
         List<StructureNode> roots = tree.roots();
         for (int i = 0; i < roots.size(); i++) {
             board.add(new DropZone(new DropSpot(null, i, StructureNode.Kind.STEP), this::onDrop));
@@ -818,6 +824,49 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
                 }
             }
         }
+    }
+
+    /** The reports a row or card is marked for, as a badge (UC-049). */
+    public List<String> marksOf(StructureNode node) {
+        return markLabels.getOrDefault(badgeKey(node), List.of());
+    }
+
+    /** One query per render: a question-wide mark lands on every placement of the question. */
+    private void collectMarkLabels() {
+        markLabels.clear();
+        if (survey == null || tree == null) {
+            return;
+        }
+        List<StructureNode> all = tree.all();
+        for (com.elicitsoftware.author.survey.ReportMarkService.Mark mark : reportMarks.marks(survey.id)) {
+            com.elicitsoftware.model.ReportItem i = mark.item();
+            if (i.elementRef() == null) {
+                continue;
+            }
+            String label = i.reportType == com.elicitsoftware.model.ReportItem.ReportType.RESPONDENT
+                    ? getTranslation("reportsView.tab.respondent") : getTranslation("reportsView.tab.administrator");
+            for (StructureNode n : all) {
+                boolean hit = switch (i.elementRef()) {
+                    case QUESTION -> n.kind() == StructureNode.Kind.QUESTION && Objects.equals(n.durableId(), i.questionId);
+                    case SECTIONS_QUESTION -> n.kind() == StructureNode.Kind.QUESTION && Objects.equals(n.assignmentId(), i.sectionsQuestionId);
+                    case STEPS_SECTIONS -> n.kind() == StructureNode.Kind.SECTION && Objects.equals(n.assignmentId(), i.stepsSectionsId);
+                };
+                if (hit) {
+                    List<String> labels = markLabels.computeIfAbsent(badgeKey(n), k -> new ArrayList<>());
+                    if (!labels.contains(label)) {
+                        labels.add(label);
+                    }
+                }
+            }
+        }
+    }
+
+    /** UC-049 step 1: the report marks a question or section carries, editable in place. */
+    public void reportMarks(StructureNode node) {
+        if (node.kind() == StructureNode.Kind.STEP) {
+            return;
+        }
+        new com.elicitsoftware.author.flow.reports.ElementMarksDialog(reportMarks, survey, node, this::load).open();
     }
 
     /** UC-021 step 1: the reporting tags a question or section carries, editable in place. */

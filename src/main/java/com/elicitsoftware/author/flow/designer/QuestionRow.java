@@ -34,6 +34,7 @@ public class QuestionRow extends Div {
     final NodeMenu menu;
 
     final Span tagBadge = new Span();
+    final Span reportBadge = new Span();
 
     public QuestionRow(SurveyDesignerView view, StructureNode node, int indexInSection, int sectionSize) {
         this.node = node;
@@ -69,6 +70,7 @@ public class QuestionRow extends Div {
         type.addClassName("structure-kind");
         type.getElement().setAttribute("data-i18n-content", "");
         TagBadge.fill(tagBadge, view.tagsOf(node));
+        ReportBadge.fill(reportBadge, view.marksOf(node));
 
         menu = new NodeMenu(getTranslation("questionRow.menu.aria", node.label()));
         menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node), !node.retired());
@@ -77,6 +79,7 @@ public class QuestionRow extends Div {
         menu.item(getTranslation("designer.menu.moveDown"), () -> view.move(node, 1), !node.retired() && indexInSection < sectionSize - 1);
         menu.item(getTranslation("questionRow.menu.addRule"), () -> view.addRule(node), !node.retired());
         menu.item(getTranslation("designer.menu.reportingTags"), () -> view.reportingTags(node), !node.retired());
+        menu.item(getTranslation("designer.menu.reportMarks"), () -> view.reportMarks(node), !node.retired());
         menu.item(getTranslation("designer.menu.openDetails"), () -> view.openDetails(node));
         menu.item(getTranslation("questionRow.menu.removeFromSection"), () -> view.removeAssignment(node), !node.retired());
 
@@ -98,7 +101,7 @@ public class QuestionRow extends Div {
             }
         }));
 
-        add(glyph, label, type, tagBadge, menu);
+        add(glyph, label, type, tagBadge, reportBadge, menu);
         // Single click selects; double click opens the edit screen. The distinction is made on the
         // client (a debounced single vs. an immediate double) and delivered as two custom events, so
         // the single-click rebuild never detaches the row mid-gesture and breaks the double click.

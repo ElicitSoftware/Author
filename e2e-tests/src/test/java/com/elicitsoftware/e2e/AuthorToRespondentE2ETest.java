@@ -5,6 +5,7 @@ import com.elicitsoftware.e2e.admin.RegisterPage;
 import com.elicitsoftware.e2e.admin.SearchPage;
 import com.elicitsoftware.e2e.admin.SurveyApplyPage;
 import com.elicitsoftware.e2e.author.DesignerPage;
+import com.elicitsoftware.e2e.author.ReportsPage;
 import com.elicitsoftware.e2e.author.SurveyEditorPage;
 import com.elicitsoftware.e2e.author.SurveysPage;
 import com.elicitsoftware.e2e.survey.LoginPage;
@@ -94,6 +95,19 @@ class AuthorToRespondentE2ETest extends E2ETestBase {
         editor.setInitialDisplayKey(SurveyEditorPage.firstSectionDisplayKey(authorSurveyId));
         assertTrue(editor.isReadyToExport(), "expected no validation findings but got:\n" + editor.validationText());
 
+        // 4b. Author UC-049 / UC-048: mark the question for the respondent report, then remove the
+        //     built-in respondent report every new survey starts with. The mark travels in the
+        //     file (report_items) and Admin installs it; with no report service listed, Survey
+        //     shows this survey no report page at all (Survey UC-005 BR-014, asserted in step 12).
+        openAuthor("/survey/" + authorSurveyId + "/reports");
+        ReportsPage reportsPage = new ReportsPage(page);
+        reportsPage.waitUntilLoaded();
+        assertTrue(reportsPage.listsTheBuiltInReport(), "UC-048 BR-001: a new survey starts with the built-in report");
+        reportsPage.markForRespondentReport("What is your favorite color?", "Favorite color");
+        assertEquals(1, reportsPage.markCount(), "UC-049 step 4: the mark is listed on the Respondent tab");
+        reportsPage.removeBuiltInReport();
+        assertFalse(reportsPage.listsTheBuiltInReport(), "UC-048 A3: the built-in report goes like any other");
+
         // 5. Author UC-008: export the definition and keep the downloaded .elicit file.
         Path downloadDir = Files.createTempDirectory("elicit-e2e-export");
         Path elicitFile = editor.export("E2E initial publication", downloadDir);
@@ -102,6 +116,9 @@ class AuthorToRespondentE2ETest extends E2ETestBase {
         assertTrue(definition.startsWith("# ELICIT_SURVEY_EXPORT_V1"), "unexpected export header");
         assertTrue(definition.contains("# survey_name: " + surveyName), "export should carry the survey name");
         assertTrue(definition.contains("# questions: 1"), "export should carry the single question");
+        assertTrue(definition.contains("# reports: 0"), "UC-048 BR-006: the removed built-in report is gone from the file");
+        assertTrue(definition.contains("# report_items: 1"), "UC-008 BR-006: the mark travels in the file");
+        assertTrue(definition.contains("|RESPONDENT|") && definition.contains("|Favorite color|"), "the mark's report and label");
         Matcher keyMatcher = SURVEY_KEY_LINE.matcher(definition);
         assertTrue(keyMatcher.find(), "export should carry the survey key");
         String surveyKey = keyMatcher.group(1);
@@ -121,6 +138,7 @@ class AuthorToRespondentE2ETest extends E2ETestBase {
         String applyResult = new SurveyApplyPage(page).apply(elicitFile);
         assertTrue(applyResult.contains("New Survey Installed"), "unexpected apply outcome:\n" + applyResult);
         assertTrue(applyResult.contains(surveyKey), "apply dialog should echo the survey key:\n" + applyResult);
+        assertTrue(applyResult.contains("report_items"), "Admin UC-014 BR-112: the mark was installed with the survey:\n" + applyResult);
 
         // 8. Admin UC-003: register a respondent on the newly installed survey.
         String firstName = "E2E";
@@ -149,9 +167,9 @@ class AuthorToRespondentE2ETest extends E2ETestBase {
         new ReviewPage(page).finish();
         assertTrue(page.url().contains("/report"), "expected to be routed to the report page");
 
-        // 12. Survey UC-005 BR-014: the survey lists no reports and has no post-survey URL, so the
-        // report page is a completion notice only -- no report cards and no Generate PDF. (The PDF
-        // path is covered by RespondentJourneyE2ETest through the Family History Survey.)
+        // 12. Survey UC-005 BR-014: the built-in report was removed in step 4b and nothing else is
+        // listed, so the report page is a completion notice only -- no report cards and no Generate
+        // PDF. (The PDF path is covered by RespondentJourneyE2ETest through the Family History Survey.)
         ReportPage reportPage = new ReportPage(page);
         assertThat(reportPage.completionNotice()).isVisible();
         assertThat(reportPage.generatePdfButton()).hasCount(0);

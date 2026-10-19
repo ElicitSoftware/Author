@@ -162,7 +162,7 @@ class ReportingServiceTest {
         assertEquals("unknown", m.value);
         List<ValidationIssue> issues = validation.validate(s);
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && "metadata".equals(i.kind())
-                && i.message().contains("reported under the new tag")), "UC-022 BR-002: warned at export: " + issues);
+                && i.message().contains("recorded under the new tag")), "UC-022 BR-002: warned at export: " + issues);
         surveys.stampExport(s.id, "release");
         assertTrue(ledger.since(s.id).isEmpty(), "UC-008 step 4 clears the record");
     }

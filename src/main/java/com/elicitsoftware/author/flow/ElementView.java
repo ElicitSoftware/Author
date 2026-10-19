@@ -70,6 +70,9 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver, 
     @Inject
     ReportingService reporting;
 
+    @Inject
+    com.elicitsoftware.author.survey.ReportMarkService reportMarks;
+
     final H2 heading = new H2();
     final Span kindBadge = new Span();
     final UnorderedList facts = new UnorderedList();
@@ -190,6 +193,18 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver, 
                         .append(")");
             }
             fact(getTranslation("elementView.fact.reportingTags"), tags.isEmpty() ? null : tags.toString());
+            // UC-049: the reports this element is marked for, with the label each shows.
+            StringBuilder marks = new StringBuilder();
+            for (com.elicitsoftware.author.survey.ReportMarkService.Mark m : reportMarks.marksFor(survey.id, kind, durableId)) {
+                if (!marks.isEmpty()) {
+                    marks.append("; ");
+                }
+                marks.append(com.elicitsoftware.author.survey.ReportMarkService.reportLabel(m.item().reportType))
+                        .append(" (").append(m.scopeLabel().toLowerCase(Locale.ROOT))
+                        .append(m.item().label == null ? "" : ", " + getTranslation("elementView.fact.markLabel", m.item().label))
+                        .append(")");
+            }
+            fact(getTranslation("elementView.fact.reportMarks"), marks.isEmpty() ? null : marks.toString());
         }
         fact(getTranslation("elementView.fact.elementKey"), element.getElementKey());
         fact(getTranslation("elementView.fact.durableId"), element.getDurableId());
