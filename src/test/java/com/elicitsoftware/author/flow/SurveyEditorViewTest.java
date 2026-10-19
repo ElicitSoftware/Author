@@ -163,6 +163,15 @@ class SurveyEditorViewTest extends QuarkusBrowserlessTest {
         assertEquals(view.survey.id, reporting.survey.id, "UC-023 step 1: the survey's Reporting page");
     }
 
+    @Test
+    @TestSecurity(user = "editor.author", roles = {"elicit_author"})
+    void reportsButtonOpensTheReportsPage() {
+        SurveyEditorView view = open("AuthorFixture");
+        test(view.reports).click();
+        com.elicitsoftware.author.flow.reports.ReportsView reports = $(com.elicitsoftware.author.flow.reports.ReportsView.class).single();
+        assertEquals(view.survey.id, reports.survey.id, "UC-048 step 1: the survey's Reports page");
+    }
+
     /** UC-007 steps 5-6 / FR-061: a finding is a link to its element and says where that element sits. */
     @Test
     @TestTransaction

@@ -1130,6 +1130,82 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `error.mark.gone` | The mark no longer exists | Error message · reports page | 60 |  |
 | `error.mark.labelTooLong` | Label must be 255 characters or fewer | Error message · report marks dialog | 60 |  |
 | `validation.mark.removedElement` | {0}: ''{1}'' is marked but has been removed. Unmark it or restore the element. | Validation finding · export warning | 200 | params: {0} = report name, {1} = element name |
+| `surveyEditorView.reports` | Reports… | Survey overview · toolbar button, opens the reports page (keep the ellipsis) | 15 |  |
+| `designer.menu.reportMarks` | Report marks… | Designer node menus · menu item opening the report-marks dialog | 25 |  |
+| `reportBadge.title` | Report marks: {0} | Designer board, report-mark badge · tooltip and accessible name | 60 | params: {0} = the report names |
+| `elementView.fact.reportMarks` | Report marks | Element detail page · fact label | 25 |  |
+| `elementView.fact.markLabel` | shown as "{0}" | Element detail page · part of the report-marks fact | 40 | params: {0} = the mark's label |
+| `reportsView.pageTitle` | Reports | Reports page · browser tab title | 25 |  |
+| `reportsView.heading` | Reports — {0} | Reports page · heading | 60 | params: {0} = survey title |
+| `reportsView.surveyOverview` | Survey overview | Reports page · back button | 25 |  |
+| `reportsView.openInDesigner` | Open in designer | Reports page · button | 25 |  |
+| `reportsView.intro` | What respondents see after they finish, and what the administrator report monitors. Report services are called in the order listed, and every new survey starts with the built-in respondent report. Report marks say which questions and sections each report shows. | Reports page · explanatory paragraph | 400 |  |
+| `reportsView.dragHint` | Drag a row to change the order. | Reports page · hint under the heading | 60 |  |
+| `reportsView.services` | Report services | Reports page · section heading | 25 |  |
+| `reportsView.addService` | Add report service… | Reports page · button, opens a dialog | 30 |  |
+| `reportsView.markElement` | Mark element… | Reports page · button, opens a dialog | 25 |  |
+| `reportsView.servicesGrid.order` | Order | Reports page · services grid header | 10 |  |
+| `reportsView.servicesGrid.name` | Name | Reports page · services grid header | 15 |  |
+| `reportsView.servicesGrid.description` | Description | Reports page · services grid header | 15 |  |
+| `reportsView.servicesGrid.url` | Address | Reports page · services grid header; the URL or path of the service | 15 |  |
+| `reportsView.builtIn` | Built-in | Reports page · badge on the respondent report row | 15 |  |
+| `reportsView.builtIn.title` | The respondent report built into Survey; it needs no service of your own | Reports page · tooltip on the built-in badge | 100 |  |
+| `reportsView.services.empty` | No report services. Respondents of this survey go straight to the post-survey address when they finish. | Reports page · paragraph shown when the survey lists no report | 160 |  |
+| `reportsView.edit` | Edit… | Reports page · small grid button, opens a dialog | 10 |  |
+| `reportsView.removeService.header` | Remove report service | Remove report confirmation · dialog header | 30 |  |
+| `reportsView.removeService.text` | Remove the report "{0}"? Sites applying the next export stop offering it. | Remove report confirmation · dialog text | 120 | params: {0} = report name |
+| `reportsView.removeService.builtInText` | Remove the built-in respondent report "{0}"? Respondents of this survey will see no report. Its Respondent marks stay, but reach no report until a report service lists them. | Remove report confirmation · dialog text for the built-in respondent report | 240 | params: {0} = report name |
+| `reportsView.removedService` | Removed report "{0}" | Reports page · success notification | 40 | params: {0} = report name |
+| `reportsView.marks` | Report marks | Reports page · section heading | 25 |  |
+| `reportsView.tab.respondent` | Respondent | Reports page · tab, also the badge text on the board | 20 |  |
+| `reportsView.tab.administrator` | Administrator | Reports page · tab, also the badge text on the board | 20 |  |
+| `reportsView.marksGrid.order` | Order | Reports page · marks grid header | 10 |  |
+| `reportsView.marksGrid.element` | Element | Reports page · marks grid header | 15 |  |
+| `reportsView.marksGrid.where` | Where | Reports page · marks grid header | 15 |  |
+| `reportsView.marksGrid.appliesTo` | Applies to | Reports page · marks grid header | 15 |  |
+| `reportsView.marksGrid.label` | Shown as | Reports page · marks grid header; the text the report shows for the element | 15 |  |
+| `reportsView.marks.empty` | Nothing is marked for this report yet. Use Mark element…, or Report marks… in an element's menu on the board. | Reports page · paragraph shown when the report has no marks | 160 |  |
+| `reportsView.editLabel` | Edit label… | Reports page · small grid button, opens a dialog | 15 |  |
+| `reportsView.unmark` | Unmark | Reports page · small grid button and confirm button | 10 |  |
+| `reportsView.unmark.header` | Unmark element | Unmark confirmation · dialog header | 25 |  |
+| `reportsView.unmark.text` | Take "{0}" off the {1}? | Unmark confirmation · dialog text | 80 | params: {0} = element name, {1} = report name |
+| `reportsView.unmarked` | Unmarked "{0}" | Reports page · success notification | 40 | params: {0} = element name |
+| `reportsView.removedElement` | removed element | Reports page · badge on a mark whose element was removed | 20 |  |
+| `reportServiceDialog.title.add` | Add report service | Report service dialog · dialog header | 30 |  |
+| `reportServiceDialog.title.edit` | Edit report service | Report service dialog · dialog header | 30 |  |
+| `reportServiceDialog.name` | Name | Report service dialog · field label | 15 |  |
+| `reportServiceDialog.description` | Description | Report service dialog · field label | 15 |  |
+| `reportServiceDialog.url` | Address | Report service dialog · field label; the URL or path | 15 |  |
+| `reportServiceDialog.url.helper` | A path such as /api/reports/respondent-summary for a report built into Survey, or the full http(s) address of a service the site runs | Report service dialog · helper text under the address field | 200 |  |
+| `reportServiceDialog.help.name` | Heads the report's card; translatable on the Translations page. | Report service dialog · help popover | 100 |  |
+| `reportServiceDialog.help.url` | A path is resolved by each site against its own Survey; a full address is used as written. | Report service dialog · help popover | 120 |  |
+| `reportServiceDialog.added` | Added report "{0}" | Report service dialog · success notification | 40 | params: {0} = report name |
+| `reportServiceDialog.updated` | Updated report "{0}" | Report service dialog · success notification | 40 | params: {0} = report name |
+| `reportMarkDialog.title.mark` | Mark for a report | Report mark dialog · dialog header | 30 |  |
+| `reportMarkDialog.title.label` | Edit label | Report mark dialog · dialog header when only the label is edited | 25 |  |
+| `reportMarkDialog.element` | Element | Report mark dialog · field label | 15 |  |
+| `reportMarkDialog.element.section` | Section {0} — {1} | Report mark dialog · the element line | 60 | params: {0} = section name, {1} = path |
+| `reportMarkDialog.element.question` | Question {0} — {1} | Report mark dialog · the element line | 60 | params: {0} = question name, {1} = path |
+| `reportMarkDialog.appliesTo` | Applies to | Report mark dialog · radio group label | 20 |  |
+| `reportMarkDialog.scope.question` | Wherever the question appears | Report mark dialog · radio option | 40 |  |
+| `reportMarkDialog.scope.questionInSection` | Only in section {0} | Report mark dialog · radio option | 40 | params: {0} = section name |
+| `reportMarkDialog.scope.section` | The section as mounted in step {0} | Report mark dialog · radio option | 40 | params: {0} = step name |
+| `reportMarkDialog.report` | Report | Report mark dialog · radio group label | 15 |  |
+| `reportMarkDialog.label` | Label | Report mark dialog · field label | 15 |  |
+| `reportMarkDialog.label.helper` | Optional. Replaces the element's own text on the report; translatable on the Translations page. | Report mark dialog · helper text | 120 |  |
+| `reportMarkDialog.disclosure` | The respondent report is reachable again with the access code, so a marked answer is exactly as private as that code. | Report mark dialog · note shown when the respondent report is chosen | 160 |  |
+| `reportMarkDialog.error.chooseElement` | Choose an element | Report mark dialog · field error | 30 |  |
+| `reportMarkDialog.error.chooseScope` | Choose what the mark applies to | Report mark dialog · field error | 40 |  |
+| `reportMarkDialog.error.chooseReport` | Choose a report | Report mark dialog · field error | 30 |  |
+| `reportMarkDialog.marked` | Marked "{0}" for the {1} | Report mark dialog · success notification | 60 | params: {0} = element name, {1} = report name |
+| `reportMarkDialog.relabeled` | Updated the label | Report mark dialog · success notification | 30 |  |
+| `reportMarkDialog.notMarkable` | A {0} question has no value to show on a report, so it cannot be marked. | Element marks dialog · paragraph for an HTML or PASSWORD question | 100 | params: {0} = question type (HTML, PASSWORD) |
+| `elementMarksDialog.title` | Report marks — {0} | Element marks dialog · dialog header | 40 | params: {0} = element name |
+| `elementMarksDialog.addMark` | Add mark… | Element marks dialog · button, opens a dialog | 15 |  |
+| `elementMarksDialog.empty` | Not on any report yet. | Element marks dialog · paragraph when the element carries no mark | 40 |  |
+| `elementMarksDialog.grid.report` | Report | Element marks dialog · grid header | 15 |  |
+| `elementMarksDialog.grid.appliesTo` | Applies to | Element marks dialog · grid header | 15 |  |
+| `elementMarksDialog.grid.label` | Shown as | Element marks dialog · grid header | 15 |  |
 
 ## English source file
 
@@ -2194,4 +2270,80 @@ error.mark.alreadyMarked=This element is already on the {0}
 error.mark.gone=The mark no longer exists
 error.mark.labelTooLong=Label must be 255 characters or fewer
 validation.mark.removedElement={0}: ''{1}'' is marked but has been removed. Unmark it or restore the element.
+surveyEditorView.reports=Reports…
+designer.menu.reportMarks=Report marks…
+reportBadge.title=Report marks: {0}
+elementView.fact.reportMarks=Report marks
+elementView.fact.markLabel=shown as "{0}"
+reportsView.pageTitle=Reports
+reportsView.heading=Reports — {0}
+reportsView.surveyOverview=Survey overview
+reportsView.openInDesigner=Open in designer
+reportsView.intro=What respondents see after they finish, and what the administrator report monitors. Report services are called in the order listed, and every new survey starts with the built-in respondent report. Report marks say which questions and sections each report shows.
+reportsView.dragHint=Drag a row to change the order.
+reportsView.services=Report services
+reportsView.addService=Add report service…
+reportsView.markElement=Mark element…
+reportsView.servicesGrid.order=Order
+reportsView.servicesGrid.name=Name
+reportsView.servicesGrid.description=Description
+reportsView.servicesGrid.url=Address
+reportsView.builtIn=Built-in
+reportsView.builtIn.title=The respondent report built into Survey; it needs no service of your own
+reportsView.services.empty=No report services. Respondents of this survey go straight to the post-survey address when they finish.
+reportsView.edit=Edit…
+reportsView.removeService.header=Remove report service
+reportsView.removeService.text=Remove the report "{0}"? Sites applying the next export stop offering it.
+reportsView.removeService.builtInText=Remove the built-in respondent report "{0}"? Respondents of this survey will see no report. Its Respondent marks stay, but reach no report until a report service lists them.
+reportsView.removedService=Removed report "{0}"
+reportsView.marks=Report marks
+reportsView.tab.respondent=Respondent
+reportsView.tab.administrator=Administrator
+reportsView.marksGrid.order=Order
+reportsView.marksGrid.element=Element
+reportsView.marksGrid.where=Where
+reportsView.marksGrid.appliesTo=Applies to
+reportsView.marksGrid.label=Shown as
+reportsView.marks.empty=Nothing is marked for this report yet. Use Mark element…, or Report marks… in an element's menu on the board.
+reportsView.editLabel=Edit label…
+reportsView.unmark=Unmark
+reportsView.unmark.header=Unmark element
+reportsView.unmark.text=Take "{0}" off the {1}?
+reportsView.unmarked=Unmarked "{0}"
+reportsView.removedElement=removed element
+reportServiceDialog.title.add=Add report service
+reportServiceDialog.title.edit=Edit report service
+reportServiceDialog.name=Name
+reportServiceDialog.description=Description
+reportServiceDialog.url=Address
+reportServiceDialog.url.helper=A path such as /api/reports/respondent-summary for a report built into Survey, or the full http(s) address of a service the site runs
+reportServiceDialog.help.name=Heads the report's card; translatable on the Translations page.
+reportServiceDialog.help.url=A path is resolved by each site against its own Survey; a full address is used as written.
+reportServiceDialog.added=Added report "{0}"
+reportServiceDialog.updated=Updated report "{0}"
+reportMarkDialog.title.mark=Mark for a report
+reportMarkDialog.title.label=Edit label
+reportMarkDialog.element=Element
+reportMarkDialog.element.section=Section {0} — {1}
+reportMarkDialog.element.question=Question {0} — {1}
+reportMarkDialog.appliesTo=Applies to
+reportMarkDialog.scope.question=Wherever the question appears
+reportMarkDialog.scope.questionInSection=Only in section {0}
+reportMarkDialog.scope.section=The section as mounted in step {0}
+reportMarkDialog.report=Report
+reportMarkDialog.label=Label
+reportMarkDialog.label.helper=Optional. Replaces the element's own text on the report; translatable on the Translations page.
+reportMarkDialog.disclosure=The respondent report is reachable again with the access code, so a marked answer is exactly as private as that code.
+reportMarkDialog.error.chooseElement=Choose an element
+reportMarkDialog.error.chooseScope=Choose what the mark applies to
+reportMarkDialog.error.chooseReport=Choose a report
+reportMarkDialog.marked=Marked "{0}" for the {1}
+reportMarkDialog.relabeled=Updated the label
+reportMarkDialog.notMarkable=A {0} question has no value to show on a report, so it cannot be marked.
+elementMarksDialog.title=Report marks — {0}
+elementMarksDialog.addMark=Add mark…
+elementMarksDialog.empty=Not on any report yet.
+elementMarksDialog.grid.report=Report
+elementMarksDialog.grid.appliesTo=Applies to
+elementMarksDialog.grid.label=Shown as
 ```

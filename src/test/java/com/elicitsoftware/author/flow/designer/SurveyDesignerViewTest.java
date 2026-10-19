@@ -469,6 +469,29 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
 
     @Test
     @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void markedRowsAndCardsShowTheirReportBadge() {
+        SurveyDesignerView view = open(fixture());
+        StepLane lane = view.lanes.get(0);
+        SectionCard sectionA = lane.cards.get(0);
+        SectionCard sectionB = lane.cards.get(1);
+        assertFalse(sectionA.reportBadge.isVisible(), "UC-049: an unmarked section carries no badge");
+        assertTrue(sectionB.reportBadge.isVisible(), "Section B in Step One is on the administrator report");
+        assertEquals(view.getTranslation("reportsView.tab.administrator"), ReportBadge.text(sectionB.reportBadge));
+        view.toggleAndSelect(sectionB.node());
+        SectionCard openB = view.lanes.get(0).cards.get(1);
+        assertFalse(openB.rows.get(0).reportBadge.isVisible(), "FixtureQ3 is not marked");
+        assertEquals(view.getTranslation("reportsView.tab.respondent"), ReportBadge.text(openB.rows.get(1).reportBadge),
+                "UC-049 BR-002: a question-wide mark shows on its placement");
+        assertNotNull(openB.rows.get(1).menu.find(view.getTranslation("designer.menu.reportMarks")), "UC-049 step 1: reachable from the row menu");
+        view.reportMarks(openB.rows.get(1).node);
+        com.elicitsoftware.author.flow.reports.ElementMarksDialog dialog = $(com.elicitsoftware.author.flow.reports.ElementMarksDialog.class).single();
+        assertTrue(dialog.isOpened());
+        assertEquals(1, dialog.grid.getGenericDataView().getItems().count(), "FixtureQ4 wherever it appears, on the respondent report");
+        dialog.close();
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
     void reportingTagsMenuOpensTheElementsTagList() {
         SurveyDesignerView view = open(fixture());
         SectionCard sectionB = view.lanes.get(0).cards.get(1);
