@@ -62,6 +62,9 @@ class ReportsViewTest extends QuarkusBrowserlessTest {
         assertTrue(view.services.isVisible());
         assertFalse(view.servicesEmpty.isVisible());
 
+        assertTrue(view.preview.isVisible(), "UC-048 A5: the test profile sets author.preview.survey.url");
+        assertTrue(view.preview.getHref().startsWith("http"), view.preview.getHref());
+        assertEquals("_blank", view.preview.getTarget().orElse(""));
         assertEquals(ReportType.RESPONDENT, view.shownReport, "the Respondent tab opens first");
         List<Mark> respondent = marks(view);
         assertEquals(1, respondent.size());

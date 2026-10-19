@@ -53,6 +53,15 @@
 2. The author confirms; the row is deleted like any other.
 3. Use case ends.
 
+### A5: Seeing the report
+
+**Trigger:** The author wants to see what the respondent report shows (step 2)  
+**Flow:**
+
+1. The page shows Preview in Survey…, a link to the preview Survey Author runs beside it (`author.preview.survey.url`), and says that finishing the survey there as a preview respondent shows the respondent report with the marks as they stand (Survey UC-014).
+2. The author opens the link in a new tab and finishes the survey there.
+3. Use case continues at step 3.
+
 ### A4: Author cancels
 
 **Trigger:** The author closes a dialog without saving (step 3 or 6)  
