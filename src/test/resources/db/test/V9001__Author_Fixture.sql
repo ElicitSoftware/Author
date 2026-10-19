@@ -144,6 +144,17 @@ BEGIN
   INSERT INTO survey.metadata(id, survey_id, steps_sections_id, question_id, sections_question_id, ontology_id, value)
   VALUES (NEXTVAL('survey.metadata_seq'), v_survey_id, v_ss2_dur, NULL, NULL, v_ont_gender, 'Female');
 
+  -- UC-048: the built-in respondent report, as a new survey is seeded with it.
+  INSERT INTO survey.reports(id, survey_id, name, description, url, display_order)
+  VALUES (NEXTVAL('survey.reports_seq'), v_survey_id, 'Summary of your answers',
+          'The answers you gave, as you finished the survey.', '/api/reports/respondent-summary', 1);
+  -- UC-049: FixtureQ4 wherever it appears on the respondent report, labeled; Section B in Step
+  -- One on the administrator report.
+  INSERT INTO survey.report_items(id, survey_id, report_type, steps_sections_id, question_id, sections_question_id, label, display_order)
+  VALUES (NEXTVAL('survey.report_items_seq'), v_survey_id, 'RESPONDENT', NULL, v_q4_dur, NULL, 'Your age', 1);
+  INSERT INTO survey.report_items(id, survey_id, report_type, steps_sections_id, question_id, sections_question_id, label, display_order)
+  VALUES (NEXTVAL('survey.report_items_seq'), v_survey_id, 'ADMINISTRATOR', v_ss2_dur, NULL, NULL, NULL, 1);
+
   -- Empty survey for create / delete / import tests.
   INSERT INTO survey.surveys(id, name, display_order, title, description, survey_key)
   VALUES (NEXTVAL('survey.surveys_seq'), 'AuthorFixtureEmpty', 902,

@@ -1111,6 +1111,25 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `elementView.notFound` | No {0} {1} in survey {2} | Element page · error page when the element does not exist | 120 | params: {0} = element kind as in the address (step, section, question), {1} = its id, {2} = survey id |
 | `previewFields.sampleOption` | Option {0} | Question dialog · sample option in the preview of a choice question that has no list yet | 30 | params: {0} = a letter |
 | `system.build.unknown` | unknown | System overview · version or build time when the build did not record it | 30 |  |
+| `report.type.respondent` | Respondent report | Report marks · name of the default report respondents see | 30 |  |
+| `report.type.administrator` | Administrator report | Report marks · name of the default report administrators see | 30 |  |
+| `error.report.gone` | The report no longer exists | Error message · reports page | 60 |  |
+| `error.report.nameRequired` | Name is required | Error message · report service dialog | 40 |  |
+| `error.report.nameTooLong` | Name must be 255 characters or fewer | Error message · report service dialog | 60 |  |
+| `error.report.nameTaken` | This survey already has a report named ''{0}'' | Error message · report service dialog | 80 | params: {0} = report name |
+| `error.report.descriptionRequired` | Description is required | Error message · report service dialog | 40 |  |
+| `error.report.descriptionTooLong` | Description must be 255 characters or fewer | Error message · report service dialog | 60 |  |
+| `error.report.urlRequired` | Address is required | Error message · report service dialog | 40 |  |
+| `error.report.urlTooLong` | Address must be 255 characters or fewer | Error message · report service dialog | 60 |  |
+| `error.report.urlInvalid` | Enter a path starting with / for a report built into Survey, or a full http(s) address of an external service | Error message · report service dialog | 160 |  |
+| `error.mark.scopeRequired` | Choose what the mark applies to | Error message · report marks dialog | 60 |  |
+| `error.mark.reportRequired` | Choose a report | Error message · report marks dialog | 40 |  |
+| `error.mark.elementGone` | The element no longer exists in this survey | Error message · report marks dialog | 100 |  |
+| `error.mark.notMarkable` | A {0} question has no value to show on a report | Error message · report marks dialog | 100 | params: {0} = question type (HTML, PASSWORD) |
+| `error.mark.alreadyMarked` | This element is already on the {0} | Error message · report marks dialog | 100 | params: {0} = report name |
+| `error.mark.gone` | The mark no longer exists | Error message · reports page | 60 |  |
+| `error.mark.labelTooLong` | Label must be 255 characters or fewer | Error message · report marks dialog | 60 |  |
+| `validation.mark.removedElement` | {0}: ''{1}'' is marked but has been removed. Unmark it or restore the element. | Validation finding · export warning | 200 | params: {0} = report name, {1} = element name |
 
 ## English source file
 
@@ -2156,4 +2175,23 @@ ruleArrows.when=when
 elementView.notFound=No {0} {1} in survey {2}
 previewFields.sampleOption=Option {0}
 system.build.unknown=unknown
+report.type.respondent=Respondent report
+report.type.administrator=Administrator report
+error.report.gone=The report no longer exists
+error.report.nameRequired=Name is required
+error.report.nameTooLong=Name must be 255 characters or fewer
+error.report.nameTaken=This survey already has a report named ''{0}''
+error.report.descriptionRequired=Description is required
+error.report.descriptionTooLong=Description must be 255 characters or fewer
+error.report.urlRequired=Address is required
+error.report.urlTooLong=Address must be 255 characters or fewer
+error.report.urlInvalid=Enter a path starting with / for a report built into Survey, or a full http(s) address of an external service
+error.mark.scopeRequired=Choose what the mark applies to
+error.mark.reportRequired=Choose a report
+error.mark.elementGone=The element no longer exists in this survey
+error.mark.notMarkable=A {0} question has no value to show on a report
+error.mark.alreadyMarked=This element is already on the {0}
+error.mark.gone=The mark no longer exists
+error.mark.labelTooLong=Label must be 255 characters or fewer
+validation.mark.removedElement={0}: ''{1}'' is marked but has been removed. Unmark it or restore the element.
 ```

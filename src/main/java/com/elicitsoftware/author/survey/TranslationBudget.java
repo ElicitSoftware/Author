@@ -44,7 +44,8 @@ public final class TranslationBudget {
             Map.entry("select_items.display_text", 255),
             Map.entry("relationships.default_upstream_value", 255),
             Map.entry("reports.name", 255),
-            Map.entry("reports.description", 255));
+            Map.entry("reports.description", 255),
+            Map.entry("report_items.label", 255));
 
     private TranslationBudget() {
     }

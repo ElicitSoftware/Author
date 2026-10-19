@@ -38,6 +38,9 @@ public class SurveyService {
     EntityManager em;
 
     @Inject
+    ReportService reports;
+
+    @Inject
     CurrentUser currentUser;
 
     @Inject
@@ -91,6 +94,8 @@ public class SurveyService {
         } catch (RuntimeException e) {
             throw ConstraintViolationTranslator.translate(e);
         }
+        // UC-048 BR-001: every new survey starts with the built-in respondent report.
+        reports.seedBuiltIn(s.id);
         return s;
     }
 
@@ -198,11 +203,11 @@ public class SurveyService {
     /**
      * Child tables in delete order: each table goes before the tables it references. Relationships
      * reference assignments and steps; assignments reference questions, sections and steps;
-     * questions and items reference select groups. Metadata and translations carry durable ids
-     * with no constraint, so they can go first.
+     * questions and items reference select groups. Metadata, report marks and translations carry
+     * durable ids with no constraint, so they can go first.
      */
     private static final List<String> SURVEY_CHILD_TABLES = List.of(
-            "translations", "metadata", "ontology",
+            "translations", "report_items", "metadata", "ontology",
             "relationships", "sections_questions", "steps_sections", "questions",
             "select_items", "select_groups", "sections", "steps",
             "reports", "post_survey_actions");

@@ -14,6 +14,8 @@ package com.elicitsoftware.author.survey;
 import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.AuthoringException;
 import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.Report;
+import com.elicitsoftware.model.ReportItem;
 import com.elicitsoftware.model.Section;
 import com.elicitsoftware.model.SelectGroup;
 import com.elicitsoftware.model.SelectItem;
@@ -149,8 +151,15 @@ public class TranslationService {
             add(rows, current, "select_items", item.selectItemKey, "display_text",
                     "List " + groupName(surveyId, item.selectGroupId), item.displayText);
         }
-        // reports are in the whitelist and travel in the file, but Author models no report entity
-        // yet (docs/entity_model.md, "Excluded from This Model"), so there is nothing to list here.
+        // UC-048 BR-003 and UC-049 BR-006: report names and descriptions, and mark labels.
+        for (Report report : Report.<Report>list("surveyId", io.quarkus.panache.common.Sort.by("displayOrder").and("id"), surveyId)) {
+            String where = "Report " + report.name;
+            add(rows, current, "reports", report.reportKey, "name", where, report.name);
+            add(rows, current, "reports", report.reportKey, "description", where, report.description);
+        }
+        for (ReportItem item : ReportItem.<ReportItem>list("surveyId", io.quarkus.panache.common.Sort.by("reportType").and("displayOrder").and("id"), surveyId)) {
+            add(rows, current, "report_items", item.reportItemKey, "label", "Report mark", item.label);
+        }
         return rows;
     }
 
@@ -376,8 +385,10 @@ public class TranslationService {
             case "select_items" -> SelectItem.<SelectItem>find("surveyId = ?1 and selectItemKey = ?2 and effectiveTo = ?3",
                             surveyId, key, StructuralElement.SENTINEL).firstResultOptional()
                     .map(i -> i.displayText).orElse(null);
-            // "reports" is deliberately absent: Author has no report entity to read a base text
-            // from, so a report translation cannot be written here (only carried through the file).
+            case "reports" -> Report.<Report>find("surveyId = ?1 and reportKey = ?2", surveyId, key).firstResultOptional()
+                    .map(r -> "name".equals(field) ? r.name : "description".equals(field) ? r.description : null).orElse(null);
+            case "report_items" -> ReportItem.<ReportItem>find("surveyId = ?1 and reportItemKey = ?2", surveyId, key).firstResultOptional()
+                    .map(i -> "label".equals(field) ? i.label : null).orElse(null);
             default -> null;
         };
     }

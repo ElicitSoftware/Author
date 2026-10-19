@@ -67,6 +67,9 @@ public class ExportValidation {
     ReportingService reporting;
 
     @Inject
+    com.elicitsoftware.author.survey.ReportMarkService reportMarks;
+
+    @Inject
     ReportingChangeLedger reportingChanges;
 
     @Inject
@@ -218,6 +221,8 @@ public class ExportValidation {
         reportingChanges.since(sid).forEach(c -> issues.add(ValidationIssue.warning(c.kind(), c.durableId(), c.message())));
         // UC-024 BR-002: a name the site's ETL would reject blocks the export; the rest are warnings.
         issues.addAll(reporting.impact(sid).problems());
+        // UC-049 A3: a mark on a removed element is a warning.
+        issues.addAll(reportMarks.problems(sid));
         duplicateOrders(issues, "steps", "validation.order.steps", steps.values().stream().map(s -> Map.entry(s.stepId, "step:" + s.displayOrder)).toList());
         duplicateOrders(issues, "steps_sections", "validation.order.sections", stepsSections.values().stream()
                 .map(ss -> Map.entry(ss.stepsSectionsId, ss.stepId + ":" + ss.sectionDisplayOrder)).toList());
