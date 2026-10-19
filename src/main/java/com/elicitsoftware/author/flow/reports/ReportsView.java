@@ -29,6 +29,7 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.dnd.GridDropLocation;
 import com.vaadin.flow.component.grid.dnd.GridDropMode;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
@@ -49,6 +50,7 @@ import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,6 +77,11 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver, 
     @Inject
     SurveyStructureQuery structureQuery;
 
+    /** UC-048 A5: where the respondent report can be seen for a preview respondent. */
+    @Inject
+    @ConfigProperty(name = "author.preview.survey.url")
+    java.util.Optional<String> previewSurveyUrl;
+
     final H2 heading = new H2();
     final Button overview = new Button(VaadinIcon.ARROW_LEFT.create());
     final Button openDesigner = new Button(VaadinIcon.SITEMAP.create());
@@ -87,6 +94,8 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver, 
     final Tab administratorTab = new Tab();
     final Grid<Mark> marksGrid = new Grid<>(Mark.class, false);
     final Paragraph marksEmpty = new Paragraph();
+    final Anchor preview = new Anchor();
+    final Paragraph previewHint = new Paragraph();
 
     public Survey survey;
     ReportType shownReport = ReportType.RESPONDENT;
@@ -102,6 +111,11 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver, 
         administratorTab.setLabel(getTranslation("reportsView.tab.administrator"));
         servicesEmpty.setText(getTranslation("reportsView.services.empty"));
         marksEmpty.setText(getTranslation("reportsView.marks.empty"));
+        preview.setText(getTranslation("reportsView.preview"));
+        preview.setTarget("_blank");
+        preview.addClassName(LumoUtility.FontWeight.SEMIBOLD);
+        previewHint.setText(getTranslation("reportsView.preview.hint"));
+        previewHint.addClassName(LumoUtility.TextColor.SECONDARY);
         heading.getElement().setAttribute("data-i18n-content", "");
         overview.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         overview.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(SurveyEditorView.class,
@@ -192,7 +206,7 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver, 
         HorizontalLayout toolbar = new HorizontalLayout(overview, openDesigner, addService, markElement);
         add(heading, intro, dragHint, toolbar,
                 new H3(getTranslation("reportsView.services")), services, servicesEmpty,
-                new H3(getTranslation("reportsView.marks")), tabs, marksGrid, marksEmpty);
+                new H3(getTranslation("reportsView.marks")), tabs, marksGrid, marksEmpty, preview, previewHint);
     }
 
     @Override
@@ -215,6 +229,13 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver, 
     void load() {
         survey = surveyService.find(survey.id).orElseThrow();
         heading.setText(getTranslation("reportsView.heading", survey.title == null || survey.title.isBlank() ? survey.name : survey.title));
+        // UC-048 A5: the preview Survey renders the built-in report for a preview respondent.
+        String previewUrl = previewSurveyUrl == null ? null : previewSurveyUrl.filter(u -> !u.isBlank()).orElse(null);
+        preview.setVisible(previewUrl != null);
+        previewHint.setVisible(previewUrl != null);
+        if (previewUrl != null) {
+            preview.setHref(previewUrl);
+        }
         List<Report> rows = reports.reports(survey.id);
         services.setItems(rows);
         services.setVisible(!rows.isEmpty());

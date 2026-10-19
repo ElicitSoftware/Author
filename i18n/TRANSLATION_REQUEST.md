@@ -1206,6 +1206,8 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `elementMarksDialog.grid.report` | Report | Element marks dialog · grid header | 15 |  |
 | `elementMarksDialog.grid.appliesTo` | Applies to | Element marks dialog · grid header | 15 |  |
 | `elementMarksDialog.grid.label` | Shown as | Element marks dialog · grid header | 15 |  |
+| `reportsView.preview` | Preview in Survey… | Reports page · link to the preview Survey, opens a new tab (keep the ellipsis) | 25 |  |
+| `reportsView.preview.hint` | Opens the preview Survey. Finish the survey there as a preview respondent to see the respondent report with the marks as they stand. | Reports page · line under the preview link | 160 |  |
 
 ## English source file
 
@@ -2346,4 +2348,6 @@ elementMarksDialog.empty=Not on any report yet.
 elementMarksDialog.grid.report=Report
 elementMarksDialog.grid.appliesTo=Applies to
 elementMarksDialog.grid.label=Shown as
+reportsView.preview=Preview in Survey…
+reportsView.preview.hint=Opens the preview Survey. Finish the survey there as a preview respondent to see the respondent report with the marks as they stand.
 ```
