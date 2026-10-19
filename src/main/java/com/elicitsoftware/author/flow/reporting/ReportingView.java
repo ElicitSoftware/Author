@@ -59,11 +59,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The survey's reporting tags (UC-023), their assignments (UC-021, UC-022) and the dimensional
+ * The survey's analysis tags (UC-023), their assignments (UC-021, UC-022) and the dimensional
  * impact preview (UC-024): the tables and columns the site's ETL derives from them, and anything
  * that would make that build fail.
  */
-@Route(value = "survey/:" + SurveyEditorView.SURVEY_ID + "(\\d+)/reporting", layout = MainLayout.class)
+@Route(value = "survey/:" + SurveyEditorView.SURVEY_ID + "(\\d+)/analysis", layout = MainLayout.class)
 @RolesAllowed(AuthorRoles.AUTHOR)
 public class ReportingView extends VerticalLayout implements BeforeEnterObserver, HasDynamicTitle {
 

@@ -242,7 +242,7 @@ async function main() {
   const designUrl = page.url();
   await shot('05-designer-board');
 
-  const reportingUrl = surveyUrl.replace(/\/$/, '') + '/reporting';
+  const reportingUrl = surveyUrl.replace(/\/$/, '') + '/analysis';
   const onBoard = async () => {
     await goto(designUrl);
     await openOnBoard('Step 1: About you', 'Section You');
@@ -313,7 +313,7 @@ async function main() {
     await shot('12-section-opened');
   });
 
-  // 13 — a question's ⋮ menu, where rules and reporting tags start.
+  // 13 — a question's ⋮ menu, where rules, analysis tags and report marks start.
   await attempt('13-question-menu', async () => {
     await onBoard();
     await page.locator('vaadin-menu-bar-item[aria-label="Actions for question Has children"]:visible').first().click();
@@ -344,7 +344,7 @@ async function main() {
     await shot('15-question-bank');
   });
 
-  // 16 — the reporting page: tags, assignments and the schema they produce (UC-021, UC-024).
+  // 16 — the analysis page: tags, assignments and the schema they produce (UC-021, UC-024).
   await attempt('16-reporting', async () => {
     await goto(reportingUrl);
     await shot('16-reporting');

@@ -110,7 +110,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `surveysView.editDetails` | Edit details | Surveys list · row button opening the metadata dialog | 15 |  |
 | `surveysView.delete` | Delete | Surveys list · small button in each row, opens the delete confirmation | 15 |  |
 | `deleteSurveyDialog.title` | Delete {0}? | Delete survey dialog · dialog title | 60 | params: {0} = survey name |
-| `deleteSurveyDialog.permanent` | This permanently deletes the survey and everything in it: steps, sections, questions, choice lists, rules, reporting tags and translations, removed elements included. It cannot be undone. | Delete survey dialog · paragraph | 250 |  |
+| `deleteSurveyDialog.permanent` | This permanently deletes the survey and everything in it: steps, sections, questions, choice lists, rules, analysis tags, reports, report marks and translations, removed elements included. It cannot be undone. | Delete survey dialog · paragraph | 250 |  |
 | `deleteSurveyDialog.previewAnswers` | Preview respondents recorded for this survey in Author: {0}. They and their answers are deleted with it. | Delete survey dialog · paragraph shown only when previewing the survey recorded respondents; Author is the product name | 160 | params: {0} = number of respondents |
 | `deleteSurveyDialog.exported` | This survey has been exported, last by {0}: {1}. Author holds the master copy. Sites that applied an export keep their copy, and deleting it here does not change them. To change those sites later, import the backup into Author, edit it and export again; a survey rebuilt from scratch cannot update them. | Delete survey dialog · paragraph for a survey already exported; Author stays (product name) | 450 | params: {0} = author name, {1} = release note |
 | `deleteSurveyDialog.neverExported` | This survey has never been exported, so no site has a copy of it. | Delete survey dialog · paragraph for a survey never exported | 120 |  |
@@ -123,7 +123,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `surveyEditorView.editDetails` | Edit details | Survey overview · toolbar button | 15 |  |
 | `surveyEditorView.export` | Export… | Survey overview · toolbar button, opens the export dialog (keep the ellipsis) | 15 |  |
 | `surveyEditorView.design` | Design… | Survey overview · toolbar button, opens the designer (keep the ellipsis) | 15 |  |
-| `surveyEditorView.reporting` | Reporting… | Survey overview · toolbar button, opens reporting tags (keep the ellipsis) | 15 |  |
+| `surveyEditorView.reporting` | Analysis… | Survey overview · toolbar button, opens the analysis tags page (keep the ellipsis) | 15 |  |
 | `surveyEditorView.summary` | {0} — key {1} | Survey overview · paragraph under the heading | 80 | params: {0} = survey name, {1} = survey key |
 | `surveyEditorView.neverExported` | Never exported. | Survey overview · attribution sentence | 30 |  |
 | `surveyEditorView.lastEditedBy` | Last edited by {0}. | Survey overview · attribution sentence | 40 | params: {0} = user name |
@@ -190,25 +190,25 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `validation.rule.tokenInvalid` | {0} has the token "{1}", which is not a valid name. Use only letters, digits and underscores. | Validation finding · error: the rule token holds a character a token name cannot have | 220 | params: {0} = the rule, {1} = the token as stored |
 | `validation.rule.tokenLeadingDigit` | {0} has the token {1}. It works, but a token name should start with a letter. Rename it. | Validation finding · warning: the rule token does not start with a letter | 200 | params: {0} = the rule, {1} = the token as stored |
 | `validation.rule.tokenCase` | {0} has the token {1}. It works, but write {2} so the token list does not show both. | Validation finding · warning: the rule token is not in upper case | 200 | params: {0} = the rule, {1} = the token as stored, {2} = the token in upper case |
-| `validation.rename.step` | Step ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in past reports too. | Validation finding · warning that an edit also changes what sites already using the survey report: a step was renamed | 260 | params: {0} = old name, {1} = new name |
-| `validation.rename.section` | Section ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in past reports too. | Validation finding · warning that an edit also changes what sites already using the survey report: a section was renamed | 260 | params: {0} = old name, {1} = new name |
-| `validation.tag.redefined` | Tag {0} was changed to {1}. Answers already collected at sites using this survey will be reported under the new tag. | Validation finding · warning that an edit also changes what sites already using the survey report: a tag in use was renamed or moved to another dimension | 280 | params: {0} = the tag before, quoted with its table, {1} = the tag after |
-| `validation.tag.reassigned` | {0}: tag {1} was changed to {2}. Answers already collected at sites using this survey will be reported under the new tag. | Validation finding · warning that an edit also changes what sites already using the survey report: an element was given another tag or value | 300 | params: {0} = element name, {1} = the tag and value before, quoted, {2} = the tag and value after |
-| `validation.tag.unassigned` | {0}: tag {1} was removed. Answers already collected at sites using this survey will no longer be reported under it. | Validation finding · warning that an edit also changes what sites already using the survey report: a tag was taken off an element | 300 | params: {0} = element name, {1} = the tag and value, quoted |
-| `validation.tag.assignmentBroken` | Tag ''{0}'' is assigned, but not to one section or question. Remove the assignment and add it again. | Validation finding · Reporting: error, a tag assignment does not point at exactly one element | 240 | params: {0} = tag |
-| `validation.tag.assignedToRemoved.section` | Tag ''{0}'' is assigned to a section that has been removed{1}. Remove the assignment. | Validation finding · Reporting: warning, a tag is assigned to a section that no longer exists | 220 | params: {0} = tag, {1} = empty, or a space and the section name in brackets |
-| `validation.tag.assignedToRemoved.question` | Tag ''{0}'' is assigned to a question that has been removed{1}. Remove the assignment. | Validation finding · Reporting: warning, a tag is assigned to a question that no longer exists | 220 | params: {0} = tag, {1} = empty, or a space and the question name in brackets |
-| `validation.tag.assignedTwice` | Tag ''{0}'' is assigned to {1} {2} times with different values. Keep one. | Validation finding · Reporting: warning, one tag is on one element more than once with different values | 220 | params: {0} = tag, {1} = element name, {2} = how many times |
-| `validation.tag.table.empty` | Tag ''{0}'' gives the reporting table an empty name. Rename the tag or its dimension; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces an empty reporting table name | 280 | params: {0} = tag; dynamic |
-| `validation.tag.table.characters` | Tag ''{0}'' gives the reporting table the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag or its dimension; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces a reporting table name with characters a table name cannot have | 340 | params: {0} = tag, {1} = table name; dynamic |
-| `validation.tag.table.tooLong` | Tag ''{0}'' gives the reporting table the name ''{1}'', which is longer than {2} characters. Rename the tag or its dimension; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces a reporting table name that is too long | 340 | params: {0} = tag, {1} = table name, {2} = the limit; dynamic |
-| `validation.tag.column.empty` | Tag ''{0}'' gives the report column an empty name. Rename the tag; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces an empty report column name | 240 | params: {0} = tag; dynamic |
-| `validation.tag.column.characters` | Tag ''{0}'' gives the report column the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces a report column name with characters a column name cannot have | 300 | params: {0} = tag, {1} = column name; dynamic |
-| `validation.tag.column.tooLong` | Tag ''{0}'' gives the report column the name ''{1}'', which is longer than {2} characters. Rename the tag; sites could not build reports with this name. | Validation finding · Reporting: error, a tag produces a report column name that is too long | 300 | params: {0} = tag, {1} = column name, {2} = the limit; dynamic |
-| `validation.tag.column.reserved` | Tag ''{0}'' gives the report column the name ''{1}'', which is a fixed column of every survey''s fact table (step_key, section_key, question_key, item_key). Rename the tag; the site''s reporting build refuses it. | Validation finding · Reporting: error, a tag produces a report column name reserved for a fixed column; step_key, section_key, question_key, item_key are technical names, keep them | 300 | params: {0} = tag, {1} = column name |
-| `validation.tag.unused` | Tag ''{0}'' is not used. Assign it to a section or question, or delete it. | Validation finding · Reporting: warning, a tag is on no element | 180 | params: {0} = tag |
-| `validation.tag.sameColumn` | Tags {0} produce the same report column, ''{1}''. Rename one of them. | Validation finding · Reporting: error, several tags produce one report column | 220 | params: {0} = the tags, quoted and comma separated, {1} = column name |
-| `validation.tag.tableClash` | Tag ''{0}'' has no dimension, so its reporting table is ''{1}'' — the same table dimension ''{2}'' uses. Rename the tag or give it a dimension. | Validation finding · Reporting: error, a tag without a dimension produces the table a dimension already uses | 300 | params: {0} = tag, {1} = table name, {2} = dimension name |
+| `validation.rename.step` | Step ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in data already recorded too. | Validation finding · warning that an edit also changes what sites already using the survey report: a step was renamed | 260 | params: {0} = old name, {1} = new name |
+| `validation.rename.section` | Section ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in data already recorded too. | Validation finding · warning that an edit also changes what sites already using the survey report: a section was renamed | 260 | params: {0} = old name, {1} = new name |
+| `validation.tag.redefined` | Tag {0} was changed to {1}. Answers already collected at sites using this survey will be recorded under the new tag. | Validation finding · warning that an edit also changes what sites already using the survey report: a tag in use was renamed or moved to another dimension | 280 | params: {0} = the tag before, quoted with its table, {1} = the tag after |
+| `validation.tag.reassigned` | {0}: tag {1} was changed to {2}. Answers already collected at sites using this survey will be recorded under the new tag. | Validation finding · warning that an edit also changes what sites already using the survey report: an element was given another tag or value | 300 | params: {0} = element name, {1} = the tag and value before, quoted, {2} = the tag and value after |
+| `validation.tag.unassigned` | {0}: tag {1} was removed. Answers already collected at sites using this survey will no longer be recorded under it. | Validation finding · warning that an edit also changes what sites already using the survey report: a tag was taken off an element | 300 | params: {0} = element name, {1} = the tag and value, quoted |
+| `validation.tag.assignmentBroken` | Tag ''{0}'' is assigned, but not to one section or question. Remove the assignment and add it again. | Validation finding · Analysis tags: error, a tag assignment does not point at exactly one element | 240 | params: {0} = tag |
+| `validation.tag.assignedToRemoved.section` | Tag ''{0}'' is assigned to a section that has been removed{1}. Remove the assignment. | Validation finding · Analysis tags: warning, a tag is assigned to a section that no longer exists | 220 | params: {0} = tag, {1} = empty, or a space and the section name in brackets |
+| `validation.tag.assignedToRemoved.question` | Tag ''{0}'' is assigned to a question that has been removed{1}. Remove the assignment. | Validation finding · Analysis tags: warning, a tag is assigned to a question that no longer exists | 220 | params: {0} = tag, {1} = empty, or a space and the question name in brackets |
+| `validation.tag.assignedTwice` | Tag ''{0}'' is assigned to {1} {2} times with different values. Keep one. | Validation finding · Analysis tags: warning, one tag is on one element more than once with different values | 220 | params: {0} = tag, {1} = element name, {2} = how many times |
+| `validation.tag.table.empty` | Tag ''{0}'' gives the dimension table an empty name. Rename the tag or its dimension; sites could not build their analysis schema with this name. | Validation finding · Analysis tags: error, a tag produces an empty dimension table name | 280 | params: {0} = tag; dynamic |
+| `validation.tag.table.characters` | Tag ''{0}'' gives the dimension table the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag or its dimension; sites could not build their analysis schema with this name. | Validation finding · Analysis tags: error, a tag produces a dimension table name with characters a table name cannot have | 340 | params: {0} = tag, {1} = table name; dynamic |
+| `validation.tag.table.tooLong` | Tag ''{0}'' gives the dimension table the name ''{1}'', which is longer than {2} characters. Rename the tag or its dimension; sites could not build their analysis schema with this name. | Validation finding · Analysis tags: error, a tag produces a dimension table name that is too long | 340 | params: {0} = tag, {1} = table name, {2} = the limit; dynamic |
+| `validation.tag.column.empty` | Tag ''{0}'' gives the column an empty name. Rename the tag; sites could not build their analysis schema with this name. | Validation finding · Analysis tags: error, a tag produces an empty column name | 240 | params: {0} = tag; dynamic |
+| `validation.tag.column.characters` | Tag ''{0}'' gives the column the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag; sites could not build their analysis schema with this name. | Validation finding · Analysis tags: error, a tag produces a column name with characters a column name cannot have | 300 | params: {0} = tag, {1} = column name; dynamic |
+| `validation.tag.column.tooLong` | Tag ''{0}'' gives the column the name ''{1}'', which is longer than {2} characters. Rename the tag; sites could not build their analysis schema with this name. | Validation finding · Analysis tags: error, a tag produces a column name that is too long | 300 | params: {0} = tag, {1} = column name, {2} = the limit; dynamic |
+| `validation.tag.column.reserved` | Tag ''{0}'' gives the column the name ''{1}'', which is a fixed column of every survey''s fact table (step_key, section_key, question_key, item_key). Rename the tag; the site''s analysis build refuses it. | Validation finding · Analysis tags: error, a tag produces a column name reserved for a fixed column; step_key, section_key, question_key, item_key are technical names, keep them | 300 | params: {0} = tag, {1} = column name |
+| `validation.tag.unused` | Tag ''{0}'' is not used. Assign it to a section or question, or delete it. | Validation finding · Analysis tags: warning, a tag is on no element | 180 | params: {0} = tag |
+| `validation.tag.sameColumn` | Tags {0} produce the same column, ''{1}''. Rename one of them. | Validation finding · Analysis tags: error, several tags produce one column | 220 | params: {0} = the tags, quoted and comma separated, {1} = column name |
+| `validation.tag.tableClash` | Tag ''{0}'' has no dimension, so its reporting table is ''{1}'' — the same table dimension ''{2}'' uses. Rename the tag or give it a dimension. | Validation finding · Analysis tags: error, a tag without a dimension produces the table a dimension already uses | 300 | params: {0} = tag, {1} = table name, {2} = dimension name |
 | `validation.translation.missing.one` | {0}: 1 text is not translated yet. Respondents will see it in the survey''s own language. | Validation finding · warning: one text of a published language is not translated | 220 | params: {0} = language tag |
 | `validation.translation.missing.many` | {0}: {1} texts are not translated yet. Respondents will see them in the survey''s own language. | Validation finding · warning: several texts of a published language are not translated | 220 | params: {0} = language tag, {1} = how many |
 | `validation.translation.stale.one` | {0}: 1 translation is out of date because the original text changed. Respondents will see the original until it is translated again. | Validation finding · warning: one translation is out of date | 260 | params: {0} = language tag |
@@ -234,7 +234,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `exportDialog.issue.warning` | Warning: {0} | Export dialog · validation list item | 100 | params: {0} = finding text |
 | `exportDialog.errorsBlock` | Fix {0} error(s) before you can export. | Export dialog · paragraph | 80 | params: {0} = number of errors |
 | `exportDialog.warningsDoNotBlock` | You can export with warnings. | Export dialog · paragraph | 50 |  |
-| `exportDialog.retroactiveReminder` | Reminder: renaming a step or section, or changing a question's tag, also relabels past reports and answers at sites already using this survey. | Export dialog · secondary paragraph | 200 |  |
+| `exportDialog.retroactiveReminder` | Reminder: renaming a step or section, or changing a question's tag, also relabels answers already recorded at sites already using this survey. | Export dialog · secondary paragraph | 200 |  |
 | `exportDialog.download` | Download {0} | Export dialog · download link | 40 | params: {0} = file name |
 | `exportDialog.revisionSummary` | Revision {0}: {1} | Export dialog · paragraph after export | 80 | params: {0} = revision number, {1} = list of table names with counts |
 | `importDefinitionView.pageTitle` | Import definition | Import page · browser tab title | 25 |  |
@@ -307,7 +307,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `guideView.designer.h` | The designer draws all of this | Guide page · section heading | 40 |  |
 | `guideView.designer.p1` | On the board, lanes are steps, cards are sections, rows are questions and arrows are rules. A card starts closed; one click opens it and selects it, a double click on a lane, card or row opens its editor, and the ⋮ menu on each element lists everything you can do to it. A breadcrumb at the top of the page shows where you are (survey, step, section, question), and the structure tree at the bottom of the drawer follows your selection. Every element carries its glyph, and the glyph is its handle: drag a glyph from the Controls panel to create an element, drag it within its container to reorder, or drag it into another container to show the same element there as well (a section in another step, a question in another section); Copy to step… in a card's menu makes a separate section instead. Drag a rule glyph onto a question to start a rule, then drag the arrowhead onto the target. Everything a drag can do, the element's menu can do too. | Guide page · long paragraph; menu item names (Copy to step…) should match the designer | 900 |  |
 | `guideView.designing.h` | Designing a survey | Guide page · section heading | 40 |  |
-| `guideView.designing.p1` | Open a survey from the Surveys list and choose Design…. The drawer on the left is your toolbox; the board on the right is the survey. Work top-down: steps, then sections, then questions, then the lists, rules and reporting tags that give them meaning. | Guide page · paragraph; Design… must match the toolbar button | 300 |  |
+| `guideView.designing.p1` | Open a survey from the Surveys list and choose Design…. The drawer on the left is your toolbox; the board on the right is the survey. Work top-down: steps, then sections, then questions, then the lists, rules and analysis tags that give them meaning. | Guide page · paragraph; Design… must match the toolbar button | 300 |  |
 | `guideView.designing.search.term` | Search | Guide page · bold panel name starting a bullet | 15 |  |
 | `guideView.designing.search.desc` | — each of the Lists, Sections and Questions panels has its own search box that narrows that panel as you type: lists by name, description and option text, sections by name and description, questions by name, text and type. Handy once a survey has dozens of each. | Guide page · rest of the bullet (keep the leading dash) | 300 |  |
 | `guideView.designing.controls.term` | Controls | Guide page · bold panel name starting a bullet | 15 |  |
@@ -318,13 +318,13 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `guideView.designing.sections.desc` | — every section in the survey, once, with the number of steps it is mounted in. Drag one into a lane, or use Mount in step…, to show the same section in another step; it stays one section, so a change to its name or questions reaches every step. | Guide page · rest of the bullet (keep the leading dash) | 300 |  |
 | `guideView.designing.questions.term` | Questions | Guide page · bold panel name starting a bullet | 15 |  |
 | `guideView.designing.questions.desc` | — every question in the survey, once, with the number of sections it appears in. Drag one into a card, or use Add to section…, to ask the same question again elsewhere; it stays one question, so a change to its text reaches every section it is in. | Guide page · rest of the bullet (keep the leading dash) | 300 |  |
-| `guideView.designing.reportingTags.term` | Reporting tags | Guide page · bold panel name starting a bullet | 20 |  |
-| `guideView.designing.reportingTags.desc` | — the ⋮ menu of a question or section offers Reporting tags…; the survey's Reporting… page lists them all with the tables and columns they produce. Tagged elements show a tag badge on the board, one entry per tag. | Guide page · rest of the bullet (keep the leading dash) | 300 |  |
+| `guideView.designing.reportingTags.term` | Analysis tags | Guide page · bold panel name starting a bullet | 20 |  |
+| `guideView.designing.reportingTags.desc` | — the ⋮ menu of a question or section offers Analysis tags…; the survey's Analysis… page lists them all with the tables and columns they produce. Tagged elements show a tag badge on the board, one entry per tag. | Guide page · rest of the bullet (keep the leading dash) | 300 |  |
 | `guideView.designing.structure.term` | Survey structure | Guide page · bold panel name starting a bullet | 20 |  |
 | `guideView.designing.structure.desc` | — the tree at the bottom of the drawer; click an element to select it on the board. Show removed reveals retired elements so they can be restored. | Guide page · rest of the bullet (keep the leading dash) | 200 |  |
-| `guideView.designing.p2` | When the structure is in place, add rules for anything conditional, tag what the report needs, check the validation panel on the survey overview, and Export… the .elicit file for the Admin app to install. | Guide page · paragraph; Export… must match the toolbar button | 250 |  |
-| `guideView.reportingTags.h` | Reporting tags | Guide page · section heading | 40 |  |
-| `guideView.reportingTags.p1` | A reporting tag names a column of the report a site builds from the answers. Tag a question and its answers fill that column; tag a section as it appears in a step with a fixed value, and every respondent who reaches it is classified by that value. Tags that share a dimension share one table of values. Open a survey's Reporting page, or the 'Reporting tags…' item on a question or section, to manage them. Changing or removing an assigned tag is retroactive: answers already recorded at deployed sites are reclassified. | Guide page · paragraph | 500 |  |
+| `guideView.designing.p2` | When the structure is in place, add rules for anything conditional, tag what the site's analysis schema needs, mark what the reports show, check the validation panel on the survey overview, and Export… the .elicit file for the Admin app to install. | Guide page · paragraph; Export… must match the toolbar button | 250 |  |
+| `guideView.reportingTags.h` | Analysis tags | Guide page · section heading | 40 |  |
+| `guideView.reportingTags.p1` | An analysis tag names a column of the star schema a site builds from the answers for analysis. Tag a question and its answers fill that column; tag a section as it appears in a step with a fixed value, and every respondent who reaches it is classified by that value. Tags that share a dimension share one table of values. Open a survey's Analysis page, or the 'Analysis tags…' item on a question or section, to manage them. Changing or removing an assigned tag is retroactive: answers already recorded at deployed sites are reclassified. Tags are not reports: what a respondent or an administrator reads is decided by the report marks on the survey's Reports page. | Guide page · paragraph | 500 |  |
 | `guideView.identity.h` | Identity and exporting | Guide page · section heading | 40 |  |
 | `guideView.identity.p1` | Every element gets a key the moment it is created and keeps it for life. Removing an element retires it rather than deleting it, so answers already recorded at a site keep their meaning. When the survey is ready you export a .elicit file; the Admin app installs it at a site the first time and updates it in place after that, matching elements by key. | Guide page · paragraph | 400 |  |
 | `guideView.identity.p2` | Deleting a whole survey, from the Surveys list, is the one thing that does remove rows, and it cannot be undone. Download the backup it offers first: importing that file brings the survey back with every key. Sites that applied an export are not touched; to change them later, import the backup, edit and export again. | Guide page · paragraph on deleting a whole survey | 420 |  |
@@ -340,7 +340,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `designer.menu.moveUp` | Move up | Designer node menus · menu item | 20 |  |
 | `designer.menu.moveDown` | Move down | Designer node menus · menu item | 20 |  |
 | `designer.menu.openDetails` | Open details | Designer node menus · menu item opening the element details page | 25 |  |
-| `designer.menu.reportingTags` | Reporting tags… | Designer node menus · menu item opening the reporting-tags dialog | 25 |  |
+| `designer.menu.reportingTags` | Analysis tags… | Designer node menus · menu item opening the analysis-tags dialog | 25 |  |
 | `designerPalette.aria` | Palette: drag a glyph onto the board to add an element | Designer palette · accessible name of the palette | 80 |  |
 | `designerPalette.questionType` | Question type for new questions | Designer palette · accessible name of the question-type picker | 50 |  |
 | `designerPalette.step` | Step | Designer palette · row caption next to the step glyph | 15 |  |
@@ -437,7 +437,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `stepLane.header.aria` | Step {0}: {1}, {2} | Designer board, step lane · accessible name of the lane header | 70 | params: {0} = step number, {1} = step name, {2} = the section count text |
 | `stepLane.header.aria.removed` | Step {0}: {1}, {2}, removed | Designer board, step lane · accessible name of a removed lane header | 80 | params: {0} = step number, {1} = step name, {2} = the section count text |
 | `stepLane.empty` | No sections yet — drop a section glyph here or use Add section. | Designer board, step lane · empty-state text inside an empty lane | 90 | mentions the menu item stepLane.menu.addSection |
-| `tagBadge.title` | Reporting tags: {0} | Designer board, reporting-tag badge · tooltip and accessible name | 60 | params: {0} = the tag names |
+| `tagBadge.title` | Analysis tags: {0} | Designer board, analysis-tag badge · tooltip and accessible name | 60 | params: {0} = the tag names |
 | `surveyDesignerView.pageTitle` | Designer | Designer · browser tab title | 20 |  |
 | `surveyDesignerView.showRemoved` | Show removed | Designer toolbar · checkbox label | 20 |  |
 | `surveyDesignerView.showRules` | Show rules | Designer toolbar · checkbox label | 20 |  |
@@ -524,8 +524,8 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `elementView.fact.placeholder` | Placeholder | Element detail page · fact label | 25 |  |
 | `elementView.fact.defaultValue` | Default value | Element detail page · fact label | 25 |  |
 | `elementView.fact.variant` | Variant | Element detail page · fact label | 25 |  |
-| `elementView.fact.tagValue` | value "{0}" | Element detail page · part of the reporting-tags fact | 30 | params: {0} = fixed value |
-| `elementView.fact.reportingTags` | Reporting tags | Element detail page · fact label | 25 |  |
+| `elementView.fact.tagValue` | value "{0}" | Element detail page · part of the analysis-tags fact | 30 | params: {0} = fixed value |
+| `elementView.fact.reportingTags` | Analysis tags | Element detail page · fact label | 25 |  |
 | `elementView.fact.elementKey` | Element key | Element detail page · fact label | 25 |  |
 | `elementView.fact.durableId` | Durable id | Element detail page · fact label | 25 |  |
 | `elementView.fact.removedAt` | Removed at | Element detail page · fact label (date) | 25 |  |
@@ -539,102 +539,102 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `elementView.restore.explanation` | The element reopens in its former position, keeping its element key. | Restore confirmation · paragraph | 120 |  |
 | `elementView.restore.dependents` | Restored together with it: | Restore confirmation · paragraph before the list of dependents | 40 |  |
 | `elementView.restored` | Restored | Element detail page · success notification | 20 |  |
-| `reportingView.pageTitle` | Reporting tags | Reporting tags page · browser tab title | 25 |  |
-| `reportingView.heading` | Reporting tags — {0} | Reporting tags page · heading | 60 | params: {0} = survey title |
-| `reportingView.surveyOverview` | Survey overview | Reporting tags page · back button | 25 |  |
-| `reportingView.openInDesigner` | Open in designer | Reporting tags page · button | 25 |  |
-| `reportingView.newTag` | New tag… | Reporting tags page · button, opens a dialog | 20 |  |
-| `reportingView.assignTag` | Assign tag… | Reporting tags page · button, opens a dialog | 20 |  |
-| `reportingView.intro` | A reporting tag names a column of the site's report. Assign it to a question and the answers fill that column; assign it to a section with a fixed value and every respondent who reaches the section is classified by it. Tags on the same dimension share one table of values. | Reporting tags page · explanatory paragraph | 400 |  |
-| `reportingView.retro` | Changing or removing an assigned tag is retroactive: answers already recorded at deployed sites are reclassified when the survey is exported and applied. | Reporting tags page · explanatory paragraph | 200 |  |
-| `reportingView.grid.tag` | Tag | Reporting tags page · tags grid header | 15 |  |
-| `reportingView.grid.dimension` | Dimension | Reporting tags page · tags grid header | 15 |  |
-| `reportingView.grid.ownTable` | (own table) | Reporting tags page · tags grid cell when the tag has no dimension | 15 |  |
-| `reportingView.grid.table` | Table | Reporting tags page · tags grid header | 15 |  |
-| `reportingView.grid.reportColumn` | Report column | Reporting tags page · tags grid header | 20 |  |
-| `reportingView.grid.assignments` | Assignments | Reporting tags page · tags grid header | 15 |  |
-| `reportingView.edit` | Edit… | Reporting tags page · small grid button, opens a dialog | 10 |  |
-| `reportingView.removeTag.tooltip` | Remove this tag | Reporting tags page · tooltip on the remove button | 30 |  |
-| `reportingView.removeTag.blocked` | Remove its assignments first | Reporting tags page · tooltip on the disabled remove button | 40 |  |
-| `reportingView.assignmentsGrid.element` | Element | Reporting tags page · assignments grid header | 15 |  |
-| `reportingView.assignmentsGrid.where` | Where | Reporting tags page · assignments grid header | 15 |  |
-| `reportingView.assignmentsGrid.appliesTo` | Applies to | Reporting tags page · assignments grid header | 15 |  |
-| `reportingView.assignmentsGrid.tag` | Tag | Reporting tags page · assignments grid header | 15 |  |
-| `reportingView.assignmentsGrid.value` | Value | Reporting tags page · assignments grid header | 15 |  |
-| `reportingView.removedElement` | removed element | Reporting tags page · badge on an assignment whose element was removed | 20 |  |
-| `reportingView.tags` | Tags | Reporting tags page · section heading | 15 |  |
-| `reportingView.assignments` | Assignments | Reporting tags page · section heading | 15 |  |
-| `reportingView.impact.title` | Dimensional impact | Reporting tags page · section heading | 25 |  |
-| `reportingView.impact.intro` | When the exported survey is applied and answers arrive, the site's reporting build creates these objects in the survey's own reporting schema. | Reporting tags page · paragraph; each survey gets a reporting schema of its own at the site | 200 |  |
-| `reportingView.impact.none` | No tags yet: the survey adds nothing to the reporting schema. | Reporting tags page · paragraph | 80 |  |
-| `reportingView.impact.sharedDimension` | shared dimension "{0}" | Reporting tags page · fragment of a list item | 40 | params: {0} = dimension name |
-| `reportingView.impact.ownTable` | own table of tag "{0}" | Reporting tags page · fragment of a list item | 40 | params: {0} = tag name |
-| `reportingView.impact.assignmentOne` | {0} assignment | Reporting tags page · count fragment, singular | 20 | params: {0} = 1 |
-| `reportingView.impact.assignmentMany` | {0} assignments | Reporting tags page · count fragment, plural | 20 | params: {0} = count |
-| `reportingView.impact.table` | {0} — {1} — tags: {2} — {3} | Reporting tags page · list item | 120 | params: {0} = table name, {1} = shared/own fragment, {2} = tag list, {3} = count fragment |
-| `reportingView.impact.dimensionTables` | Dimension tables | Reporting tags page · list caption | 25 |  |
-| `reportingView.impact.column` | {0} → {1} (tag "{2}") | Reporting tags page · list item | 80 | params: {0} = column name, {1} = table name, {2} = tag name |
-| `reportingView.impact.reportColumns` | Report columns | Reporting tags page · list caption | 25 |  |
-| `reportingView.impact.perItemColumns` | Fixed columns filled for a section repeated per selected item | Reporting tags page · list caption | 80 |  |
-| `reportingView.impact.perItemColumn` | {0} → {1} (the question the Repeat rule reads, and the item each instance is about) | Reporting tags page · list item | 120 | params: {0} = column name, {1} = table name |
-| `reportingView.impact.error` | Error: {0} | Reporting tags page · list item prefix | 40 | params: {0} = finding text; identical |
-| `reportingView.impact.warning` | Warning: {0} | Reporting tags page · list item prefix | 40 | params: {0} = finding text |
-| `reportingView.impact.findings` | Problems | Reporting tags page · list caption | 25 |  |
+| `reportingView.pageTitle` | Analysis tags | Analysis tags page · browser tab title | 25 |  |
+| `reportingView.heading` | Analysis tags — {0} | Analysis tags page · heading | 60 | params: {0} = survey title |
+| `reportingView.surveyOverview` | Survey overview | Analysis tags page · back button | 25 |  |
+| `reportingView.openInDesigner` | Open in designer | Analysis tags page · button | 25 |  |
+| `reportingView.newTag` | New tag… | Analysis tags page · button, opens a dialog | 20 |  |
+| `reportingView.assignTag` | Assign tag… | Analysis tags page · button, opens a dialog | 20 |  |
+| `reportingView.intro` | An analysis tag names a column of the survey's analysis schema at a site. Assign it to a question and the answers fill that column; assign it to a section with a fixed value and every respondent who reaches the section is classified by it. Tags on the same dimension share one table of values. | Analysis tags page · explanatory paragraph | 400 |  |
+| `reportingView.retro` | Changing or removing an assigned tag is retroactive: answers already recorded at deployed sites are reclassified when the survey is exported and applied. | Analysis tags page · explanatory paragraph | 200 |  |
+| `reportingView.grid.tag` | Tag | Analysis tags page · tags grid header | 15 |  |
+| `reportingView.grid.dimension` | Dimension | Analysis tags page · tags grid header | 15 |  |
+| `reportingView.grid.ownTable` | (own table) | Analysis tags page · tags grid cell when the tag has no dimension | 15 |  |
+| `reportingView.grid.table` | Table | Analysis tags page · tags grid header | 15 |  |
+| `reportingView.grid.reportColumn` | Column | Analysis tags page · tags grid header | 20 |  |
+| `reportingView.grid.assignments` | Assignments | Analysis tags page · tags grid header | 15 |  |
+| `reportingView.edit` | Edit… | Analysis tags page · small grid button, opens a dialog | 10 |  |
+| `reportingView.removeTag.tooltip` | Remove this tag | Analysis tags page · tooltip on the remove button | 30 |  |
+| `reportingView.removeTag.blocked` | Remove its assignments first | Analysis tags page · tooltip on the disabled remove button | 40 |  |
+| `reportingView.assignmentsGrid.element` | Element | Analysis tags page · assignments grid header | 15 |  |
+| `reportingView.assignmentsGrid.where` | Where | Analysis tags page · assignments grid header | 15 |  |
+| `reportingView.assignmentsGrid.appliesTo` | Applies to | Analysis tags page · assignments grid header | 15 |  |
+| `reportingView.assignmentsGrid.tag` | Tag | Analysis tags page · assignments grid header | 15 |  |
+| `reportingView.assignmentsGrid.value` | Value | Analysis tags page · assignments grid header | 15 |  |
+| `reportingView.removedElement` | removed element | Analysis tags page · badge on an assignment whose element was removed | 20 |  |
+| `reportingView.tags` | Tags | Analysis tags page · section heading | 15 |  |
+| `reportingView.assignments` | Assignments | Analysis tags page · section heading | 15 |  |
+| `reportingView.impact.title` | Dimensional impact | Analysis tags page · section heading | 25 |  |
+| `reportingView.impact.intro` | When the exported survey is applied and answers arrive, the site's reporting build creates these objects in the survey's own reporting schema. | Analysis tags page · paragraph; each survey gets a reporting schema of its own at the site | 200 |  |
+| `reportingView.impact.none` | No tags yet: the survey adds nothing to the reporting schema. | Analysis tags page · paragraph | 80 |  |
+| `reportingView.impact.sharedDimension` | shared dimension "{0}" | Analysis tags page · fragment of a list item | 40 | params: {0} = dimension name |
+| `reportingView.impact.ownTable` | own table of tag "{0}" | Analysis tags page · fragment of a list item | 40 | params: {0} = tag name |
+| `reportingView.impact.assignmentOne` | {0} assignment | Analysis tags page · count fragment, singular | 20 | params: {0} = 1 |
+| `reportingView.impact.assignmentMany` | {0} assignments | Analysis tags page · count fragment, plural | 20 | params: {0} = count |
+| `reportingView.impact.table` | {0} — {1} — tags: {2} — {3} | Analysis tags page · list item | 120 | params: {0} = table name, {1} = shared/own fragment, {2} = tag list, {3} = count fragment |
+| `reportingView.impact.dimensionTables` | Dimension tables | Analysis tags page · list caption | 25 |  |
+| `reportingView.impact.column` | {0} → {1} (tag "{2}") | Analysis tags page · list item | 80 | params: {0} = column name, {1} = table name, {2} = tag name |
+| `reportingView.impact.reportColumns` | Columns | Analysis tags page · list caption | 25 |  |
+| `reportingView.impact.perItemColumns` | Fixed columns filled for a section repeated per selected item | Analysis tags page · list caption | 80 |  |
+| `reportingView.impact.perItemColumn` | {0} → {1} (the question the Repeat rule reads, and the item each instance is about) | Analysis tags page · list item | 120 | params: {0} = column name, {1} = table name |
+| `reportingView.impact.error` | Error: {0} | Analysis tags page · list item prefix | 40 | params: {0} = finding text; identical |
+| `reportingView.impact.warning` | Warning: {0} | Analysis tags page · list item prefix | 40 | params: {0} = finding text |
+| `reportingView.impact.findings` | Problems | Analysis tags page · list caption | 25 |  |
 | `reportingView.removeTag.header` | Remove tag | Remove tag confirmation · dialog header | 25 |  |
 | `reportingView.removeTag.text` | Remove the tag "{0}"? It has no assignments. | Remove tag confirmation · dialog text | 80 | params: {0} = tag name |
-| `reportingView.removedTag` | Removed tag "{0}" | Reporting tags page · success notification | 40 | params: {0} = tag name |
-| `reportingView.removeAssignment.header` | Remove reporting tag | Remove assignment confirmation · dialog header | 30 |  |
+| `reportingView.removedTag` | Removed tag "{0}" | Analysis tags page · success notification | 40 | params: {0} = tag name |
+| `reportingView.removeAssignment.header` | Remove analysis tag | Remove assignment confirmation · dialog header | 30 |  |
 | `reportingView.removeAssignment.text` | Remove tag "{0}" from {1}? Answers already recorded at deployed sites stop being classified by it once the survey is exported and applied. | Remove assignment confirmation · dialog text | 200 | params: {0} = tag name, {1} = element description |
-| `elementTagsDialog.title` | Reporting tags — {0} | Element tags dialog (designer) · dialog header | 60 | params: {0} = element name |
+| `elementTagsDialog.title` | Analysis tags — {0} | Element tags dialog (designer) · dialog header | 60 | params: {0} = element name |
 | `elementTagsDialog.addTag` | Add tag… | Element tags dialog · button, opens a dialog | 15 |  |
-| `elementTagsDialog.empty` | No reporting tags yet. Without a tag, answers to this element are not reported. | Element tags dialog · paragraph when no tag is assigned | 120 |  |
+| `elementTagsDialog.empty` | No analysis tags yet. Without a tag, answers to this element are not recorded in the site's analysis schema. | Element tags dialog · paragraph when no tag is assigned | 120 |  |
 | `elementTagsDialog.grid.tag` | Tag | Element tags dialog · grid header | 15 |  |
 | `elementTagsDialog.grid.appliesTo` | Applies to | Element tags dialog · grid header | 15 |  |
 | `elementTagsDialog.grid.value` | Value | Element tags dialog · grid header | 15 |  |
-| `elementTagsDialog.grid.reportColumn` | Report column | Element tags dialog · grid header | 20 |  |
+| `elementTagsDialog.grid.reportColumn` | Column | Element tags dialog · grid header | 20 |  |
 | `elementTagsDialog.edit` | Edit… | Element tags dialog · small grid button, opens a dialog | 10 |  |
-| `elementTagsDialog.removeAssignment.header` | Remove reporting tag | Remove assignment confirmation · dialog header | 30 |  |
+| `elementTagsDialog.removeAssignment.header` | Remove analysis tag | Remove assignment confirmation · dialog header | 30 |  |
 | `elementTagsDialog.removeAssignment.text` | Remove tag "{0}" from {1}? Answers already recorded at deployed sites stop being classified by it once the survey is exported and applied. | Remove assignment confirmation · dialog text | 200 | params: {0} = tag name, {1} = element name |
 | `elementTagsDialog.removedTag` | Removed tag "{0}" | Element tags dialog · success notification | 40 | params: {0} = tag name |
-| `tagAssignmentDialog.title.assign` | Assign reporting tag | Assign tag dialog · dialog header | 30 |  |
-| `tagAssignmentDialog.title.edit` | Edit reporting tag | Assign tag dialog · dialog header when editing | 30 |  |
+| `tagAssignmentDialog.title.assign` | Assign analysis tag | Assign tag dialog · dialog header | 30 |  |
+| `tagAssignmentDialog.title.edit` | Edit analysis tag | Assign tag dialog · dialog header when editing | 30 |  |
 | `tagAssignmentDialog.element` | Element | Assign tag dialog · element picker label | 15 |  |
 | `tagAssignmentDialog.element.section` | Section {0} — {1} | Assign tag dialog · element picker item | 80 | params: {0} = section name, {1} = path in the survey |
 | `tagAssignmentDialog.element.question` | Question {0} — {1} | Assign tag dialog · element picker item | 80 | params: {0} = question name, {1} = path in the survey |
 | `tagAssignmentDialog.appliesTo` | Applies to | Assign tag dialog · scope radio group label | 15 |  |
 | `tagAssignmentDialog.tag` | Tag | Assign tag dialog · tag picker label | 15 |  |
 | `tagAssignmentDialog.newTag` | New tag… | Assign tag dialog · small button, opens a dialog | 15 |  |
-| `tagAssignmentDialog.reportedValue` | Reported value | Assign tag dialog · radio group label | 20 |  |
+| `tagAssignmentDialog.reportedValue` | Recorded value | Assign tag dialog · radio group label | 20 |  |
 | `tagAssignmentDialog.useAnswer` | Use the respondent's answer | Assign tag dialog · radio option | 40 |  |
 | `tagAssignmentDialog.fixedValue` | Fixed value | Assign tag dialog · radio option and text field label | 20 |  |
 | `tagAssignmentDialog.value.helper` | Stored lowercased and trimmed whenever the element is answered | Assign tag dialog · helper text under the fixed value field | 80 |  |
 | `tagAssignmentDialog.acknowledge` | I understand that answers already recorded at deployed sites are reclassified | Assign tag dialog · checkbox label | 100 |  |
-| `tagAssignmentDialog.help.tag` | The reporting tag. Its column in the report is filled from this element. | Assign tag dialog · help tooltip | 100 |  |
-| `tagAssignmentDialog.help.value` | A constant reported instead of the answer, e.g. "Female" on the section about the respondent's mother. | Assign tag dialog · help tooltip | 120 |  |
+| `tagAssignmentDialog.help.tag` | The analysis tag. Its column in the analysis schema is filled from this element. | Assign tag dialog · help tooltip | 100 |  |
+| `tagAssignmentDialog.help.value` | A constant recorded instead of the answer, e.g. "Female" on the section about the respondent's mother. | Assign tag dialog · help tooltip | 120 |  |
 | `tagAssignmentDialog.warning` | This assignment is exported already. Changing its tag or value is retroactive: answers already recorded at deployed sites are reclassified, not only answers recorded from now on. | Assign tag dialog · warning shown when editing an exported assignment | 200 |  |
 | `tagAssignmentDialog.scope.section` | This section as it appears in step "{0}" | Assign tag dialog · scope option | 60 | params: {0} = step name |
 | `tagAssignmentDialog.scope.question` | This question wherever it appears | Assign tag dialog · scope option | 40 |  |
 | `tagAssignmentDialog.scope.questionInSection` | This question only in section "{0}" | Assign tag dialog · scope option | 60 | params: {0} = section name |
 | `tagAssignmentDialog.impact.none` | Choose a tag to see the table and column it fills. | Assign tag dialog · preview text | 60 |  |
-| `tagAssignmentDialog.impact.text` | Values go to {0} in the survey''s reporting schema · report column {1}{2} | Assign tag dialog · preview text; {0} is a technical table name | 100 | params: {0} = table name, {1} = column name, {2} = constant/from-answer fragment |
+| `tagAssignmentDialog.impact.text` | Values go to {0} in the survey''s reporting schema · column {1}{2} | Assign tag dialog · preview text; {0} is a technical table name | 100 | params: {0} = table name, {1} = column name, {2} = constant/from-answer fragment |
 | `tagAssignmentDialog.impact.constant` | · constant | Assign tag dialog · preview fragment, keep the leading separator | 15 |  |
 | `tagAssignmentDialog.impact.fromAnswer` | · from the answer | Assign tag dialog · preview fragment, keep the leading separator | 20 |  |
 | `tagAssignmentDialog.error.chooseTag` | Choose a tag | Assign tag dialog · field error | 30 |  |
-| `tagAssignmentDialog.error.fixedValue` | Enter the fixed value or report the answer instead | Assign tag dialog · field error | 60 |  |
+| `tagAssignmentDialog.error.fixedValue` | Enter the fixed value or record the answer instead | Assign tag dialog · field error | 60 |  |
 | `tagAssignmentDialog.error.chooseElement` | Choose an element | Assign tag dialog · field error | 30 |  |
 | `tagAssignmentDialog.error.chooseScope` | Choose what the tag applies to | Assign tag dialog · field error | 40 |  |
 | `tagAssignmentDialog.updated` | Updated tag "{0}" | Assign tag dialog · success notification | 40 | params: {0} = tag name |
 | `tagAssignmentDialog.assigned` | Assigned tag "{0}" | Assign tag dialog · success notification | 40 | params: {0} = tag name |
-| `tagDialog.title.new` | New reporting tag | Tag dialog · dialog header | 30 |  |
-| `tagDialog.title.edit` | Edit reporting tag | Tag dialog · dialog header when editing | 30 |  |
+| `tagDialog.title.new` | New analysis tag | Tag dialog · dialog header | 30 |  |
+| `tagDialog.title.edit` | Edit analysis tag | Tag dialog · dialog header when editing | 30 |  |
 | `tagDialog.tag` | Tag | Tag dialog · text field label | 15 |  |
-| `tagDialog.tag.helper` | Letters, digits, spaces and hyphens. Becomes a column of the report. | Tag dialog · helper text | 80 |  |
+| `tagDialog.tag.helper` | Letters, digits, spaces and hyphens. Becomes a column of the analysis schema. | Tag dialog · helper text | 80 |  |
 | `tagDialog.dimension` | Dimension | Tag dialog · combo box label | 15 |  |
 | `tagDialog.dimension.placeholder` | None: the tag gets its own table | Tag dialog · combo box placeholder | 40 |  |
 | `tagDialog.dimension.helper` | Type a new name to create a dimension. Letters, digits and underscores. | Tag dialog · helper text | 80 |  |
 | `tagDialog.namespace` | Namespace | Tag dialog · read-only field label | 15 |  |
 | `tagDialog.namespace.helper` | Groups this survey's tags; a site keeps one row per namespace and tag | Tag dialog · helper text | 80 |  |
-| `tagDialog.help.tag` | The tag's name. Answers of the tagged elements are reported under a column named after it. | Tag dialog · help tooltip | 100 |  |
+| `tagDialog.help.tag` | The tag's name. Answers of the tagged elements are recorded under a column named after it. | Tag dialog · help tooltip | 100 |  |
 | `tagDialog.help.dimension` | A shared category such as "age" or "cancer". Tags on the same dimension share one table of values; leave it empty to give this tag a table of its own. | Tag dialog · help tooltip | 160 |  |
 | `tagDialog.acknowledge` | I understand that answers already recorded at deployed sites are reclassified | Tag dialog · checkbox label | 100 |  |
 | `tagDialog.warning` | This tag is assigned. Changing its name or dimension is retroactive: answers already recorded at deployed sites are reclassified, not only answers recorded from now on. | Tag dialog · warning shown when editing an assigned tag | 200 |  |
@@ -643,7 +643,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `tagDialog.created` | Created tag "{0}" | Tag dialog · success notification | 40 | params: {0} = tag name |
 | `tagDialog.updated` | Updated tag "{0}" | Tag dialog · success notification | 40 | params: {0} = tag name |
 | `tagDialog.preview.none` | Choose a tag to see the table and column it produces. | Tag dialog · preview text | 60 |  |
-| `tagDialog.preview.text` | Values go to {0} in the survey''s reporting schema · report column {1} | Tag dialog · preview text; {0} is a technical table name | 80 | params: {0} = table name, {1} = column name |
+| `tagDialog.preview.text` | Values go to {0} in the survey''s reporting schema · column {1} | Tag dialog · preview text; {0} is a technical table name | 80 | params: {0} = table name, {1} = column name |
 | `elementDialog.kind.step` | step | Step/section dialog · the word "step" as used inside sentences (lower case) | 15 | dynamic (referenced through ElementDialog.KIND_STEP) |
 | `elementDialog.kind.section` | section | Step/section dialog · the word "section" as used inside sentences (lower case) | 15 | dynamic (referenced through ElementDialog.KIND_SECTION) |
 | `elementDialog.title.new` | New {0} | Step/section dialog · dialog title | 30 | params: {0} = "step" or "section" |
@@ -651,13 +651,13 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `elementDialog.name` | Name | Step/section dialog · field label | 20 |  |
 | `elementDialog.dimensionName` | Dimension name | Step/section dialog · field label | 25 |  |
 | `elementDialog.description` | Description | Step/section dialog · field label | 20 |  |
-| `elementDialog.acknowledge` | I understand that the new name relabels reports already produced at deployed sites | Step/section dialog · checkbox shown when renaming | 120 |  |
-| `elementDialog.dimensionName.helper` | Reporting dimension; defaults to the name. Changing it is a reporting change, not a rename. | Step/section dialog · field helper text | 120 |  |
-| `elementDialog.help.name` | The {0}''s name. Shown to respondents and used as the report label; renaming it is retroactive. | Step/section dialog · field tooltip | 140 | params: {0} = "step" or "section" |
-| `elementDialog.help.dimensionName` | The name this {0} reports under. Defaults to the name; change it to relabel reports without renaming. | Step/section dialog · field tooltip | 140 | params: {0} = "step" or "section" |
+| `elementDialog.acknowledge` | I understand that the new name relabels data already recorded at deployed sites | Step/section dialog · checkbox shown when renaming | 120 |  |
+| `elementDialog.dimensionName.helper` | Analysis dimension; defaults to the name. Changing it is an analysis change, not a rename. | Step/section dialog · field helper text | 120 |  |
+| `elementDialog.help.name` | The {0}''s name. Shown to respondents and used as its label in the analysis schema; renaming it is retroactive. | Step/section dialog · field tooltip | 140 | params: {0} = "step" or "section" |
+| `elementDialog.help.dimensionName` | The name this {0} is recorded under in the analysis schema. Defaults to the name; change it to relabel recorded data without renaming. | Step/section dialog · field tooltip | 140 | params: {0} = "step" or "section" |
 | `elementDialog.help.description` | An optional note for authors. It is not shown to respondents. | Step/section dialog · field tooltip | 80 |  |
 | `elementDialog.error.nameRequired` | Name is required | Step/section dialog · field error | 30 |  |
-| `elementDialog.renameWarning` | Renaming is retroactive: reports already produced at deployed sites will show the new name, not only reports produced from now on. | Step/section dialog · warning shown when the name changes | 200 |  |
+| `elementDialog.renameWarning` | Renaming is retroactive: data already recorded at deployed sites will show the new name, not only data recorded from now on. | Step/section dialog · warning shown when the name changes | 200 |  |
 | `elementDialog.placed` | The {0} is placed where you dropped it; you can move it afterwards. | Step/section dialog · note when creating | 100 | params: {0} = "step" or "section" |
 | `elementDialog.saved.created` | Created {0} ''{1}'' | Step/section dialog · notification | 60 | params: {0} = "step" or "section", {1} = the element name |
 | `elementDialog.saved.updated` | Updated {0} ''{1}'' | Step/section dialog · notification | 60 | params: {0} = "step" or "section", {1} = the element name |
@@ -746,7 +746,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `selectGroupDialog.description` | Description | Options-list dialog · field label | 20 |  |
 | `selectGroupDialog.dataType` | Data type | Options-list dialog · field label | 20 |  |
 | `selectGroupDialog.addOption` | Add option | Options-list dialog · button | 20 |  |
-| `selectGroupDialog.dataType.helper` | Informational; 'Text' unless the site's reporting expects otherwise | Options-list dialog · field helper text; 'Text' is a stored value, keep it | 100 |  |
+| `selectGroupDialog.dataType.helper` | Informational; 'Text' unless the site's analysis expects otherwise | Options-list dialog · field helper text; 'Text' is a stored value, keep it | 100 |  |
 | `selectGroupDialog.help.name` | The list's name, shown when picking options for a question. Unique within the survey. | Options-list dialog · field tooltip | 120 |  |
 | `selectGroupDialog.help.description` | An optional note for authors. | Options-list dialog · field tooltip | 60 |  |
 | `selectGroupDialog.help.dataType` | A label carried with the list; the Survey runtime does not interpret it. | Options-list dialog · field tooltip | 100 |  |
@@ -1030,27 +1030,27 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `error.list.inUse` | This list is still used by {0} question(s); change or remove them first | Error message · designer, removing a list of options | 180 | params: {0} = number of questions |
 | `error.survey.notFound` | Survey not found | Error message · internal guard | 60 |  |
 | `error.survey.exportedKeepsRemoved` | This survey has been exported; removed elements are kept so sites can retire them | Error message · purging removed elements of an exported survey | 200 |  |
-| `reporting.scope.invalid` | invalid | Reporting tags page · Applies-to column, an assignment that points at nothing | 30 |  |
-| `reporting.scope.sectionInStep` | Section in step | Reporting tags page · Applies-to column and tag dialogs | 40 |  |
-| `reporting.scope.questionEverywhere` | Question everywhere | Reporting tags page · Applies-to column and tag dialogs | 40 |  |
-| `reporting.scope.questionInSection` | Question in section | Reporting tags page · Applies-to column and tag dialogs | 40 |  |
-| `reporting.value.theAnswer` | (the answer) | Reporting tags page · Value column when the respondent answer is reported | 30 |  |
-| `reporting.where.everywhere` | wherever it appears | Reporting tags page · Where column for a tag on a question in every place it is used | 40 |  |
-| `error.tag.gone` | The tag no longer exists | Error message · Reporting tags page | 60 |  |
+| `reporting.scope.invalid` | invalid | Analysis tags page · Applies-to column, an assignment that points at nothing | 30 |  |
+| `reporting.scope.sectionInStep` | Section in step | Analysis tags page · Applies-to column and tag dialogs | 40 |  |
+| `reporting.scope.questionEverywhere` | Question everywhere | Analysis tags page · Applies-to column and tag dialogs | 40 |  |
+| `reporting.scope.questionInSection` | Question in section | Analysis tags page · Applies-to column and tag dialogs | 40 |  |
+| `reporting.value.theAnswer` | (the answer) | Analysis tags page · Value column when the respondent answer is reported | 30 |  |
+| `reporting.where.everywhere` | wherever it appears | Analysis tags page · Where column for a tag on a question in every place it is used | 40 |  |
+| `error.tag.gone` | The tag no longer exists | Error message · Analysis tags page | 60 |  |
 | `error.tag.inUse.one` | Tag ''{0}'' is assigned to 1 element; remove those assignments first | Error message · removing a tag that is assigned once | 160 | params: {0} = tag |
 | `error.tag.inUse.many` | Tag ''{0}'' is assigned to {1} elements; remove those assignments first | Error message · removing a tag that is assigned | 160 | params: {0} = tag, {1} = how many elements |
 | `error.tag.scopeRequired` | Choose what the tag applies to | Error message · tag assignment dialog | 80 |  |
 | `error.tag.required` | Choose a tag | Error message · tag assignment dialog | 40 |  |
 | `error.tag.elementGone` | The element no longer exists in this survey | Error message · tag assignment dialog | 100 |  |
 | `error.tag.alreadyAssigned` | This element already carries the tag ''{0}'' | Error message · tag assignment dialog | 120 | params: {0} = tag |
-| `error.tag.assignmentGone` | The assignment no longer exists | Error message · Reporting tags page | 80 |  |
+| `error.tag.assignmentGone` | The assignment no longer exists | Error message · Analysis tags page | 80 |  |
 | `error.tag.nameRequired` | Tag is required | Error message · tag dialog | 40 |  |
 | `error.tag.tooLong` | Tag must be 255 characters or fewer | Error message · tag dialog | 90 |  |
 | `error.tag.characters` | Tag may contain only letters, digits, spaces and hyphens, and must start with a letter or digit | Error message · tag dialog | 220 |  |
 | `error.tag.hyphenNoDimension` | A tag without a dimension names its own table, and a hyphen is not allowed in a table name; choose a dimension or remove the hyphen | Error message · tag dialog | 300 |  |
-| `error.tag.column.empty` | The report column is empty | Error message · tag dialog | 80 |  |
-| `error.tag.column.characters` | The report column ''{0}'' contains characters other than a-z, 0-9 and _ | Error message · tag dialog | 200 | params: {0} = column name; dynamic |
-| `error.tag.column.tooLong` | The report column ''{0}'' is longer than {1} characters | Error message · tag dialog | 200 | params: {0} = column name, {1} = the limit; dynamic |
+| `error.tag.column.empty` | The column name is empty | Error message · tag dialog | 80 |  |
+| `error.tag.column.characters` | The column ''{0}'' contains characters other than a-z, 0-9 and _ | Error message · tag dialog | 200 | params: {0} = column name; dynamic |
+| `error.tag.column.tooLong` | The column ''{0}'' is longer than {1} characters | Error message · tag dialog | 200 | params: {0} = column name, {1} = the limit; dynamic |
 | `error.tag.table.empty` | The dimension table is empty | Error message · tag dialog | 80 |  |
 | `error.tag.table.characters` | The dimension table ''{0}'' contains characters other than a-z, 0-9 and _ | Error message · tag dialog | 200 | params: {0} = table name; dynamic |
 | `error.tag.table.tooLong` | The dimension table ''{0}'' is longer than {1} characters | Error message · tag dialog | 200 | params: {0} = table name, {1} = the limit; dynamic |
@@ -1174,7 +1174,7 @@ surveysView.open=Open
 surveysView.editDetails=Edit details
 surveysView.delete=Delete
 deleteSurveyDialog.title=Delete {0}?
-deleteSurveyDialog.permanent=This permanently deletes the survey and everything in it: steps, sections, questions, choice lists, rules, reporting tags and translations, removed elements included. It cannot be undone.
+deleteSurveyDialog.permanent=This permanently deletes the survey and everything in it: steps, sections, questions, choice lists, rules, analysis tags, reports, report marks and translations, removed elements included. It cannot be undone.
 deleteSurveyDialog.previewAnswers=Preview respondents recorded for this survey in Author: {0}. They and their answers are deleted with it.
 deleteSurveyDialog.exported=This survey has been exported, last by {0}: {1}. Author holds the master copy. Sites that applied an export keep their copy, and deleting it here does not change them. To change those sites later, import the backup into Author, edit it and export again; a survey rebuilt from scratch cannot update them.
 deleteSurveyDialog.neverExported=This survey has never been exported, so no site has a copy of it.
@@ -1187,7 +1187,7 @@ surveyEditorView.pageTitle=Survey
 surveyEditorView.editDetails=Edit details
 surveyEditorView.export=Export…
 surveyEditorView.design=Design…
-surveyEditorView.reporting=Reporting…
+surveyEditorView.reporting=Analysis…
 surveyEditorView.summary={0} — key {1}
 surveyEditorView.neverExported=Never exported.
 surveyEditorView.lastEditedBy=Last edited by {0}.
@@ -1254,24 +1254,24 @@ validation.rule.tokenBracketed={0} has the token {1}. Write it without angle bra
 validation.rule.tokenInvalid={0} has the token "{1}", which is not a valid name. Use only letters, digits and underscores.
 validation.rule.tokenLeadingDigit={0} has the token {1}. It works, but a token name should start with a letter. Rename it.
 validation.rule.tokenCase={0} has the token {1}. It works, but write {2} so the token list does not show both.
-validation.rename.step=Step ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in past reports too.
-validation.rename.section=Section ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in past reports too.
-validation.tag.redefined=Tag {0} was changed to {1}. Answers already collected at sites using this survey will be reported under the new tag.
-validation.tag.reassigned={0}: tag {1} was changed to {2}. Answers already collected at sites using this survey will be reported under the new tag.
-validation.tag.unassigned={0}: tag {1} was removed. Answers already collected at sites using this survey will no longer be reported under it.
+validation.rename.step=Step ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in data already recorded too.
+validation.rename.section=Section ''{0}'' was renamed to ''{1}''. Sites already using this survey will show the new name in data already recorded too.
+validation.tag.redefined=Tag {0} was changed to {1}. Answers already collected at sites using this survey will be recorded under the new tag.
+validation.tag.reassigned={0}: tag {1} was changed to {2}. Answers already collected at sites using this survey will be recorded under the new tag.
+validation.tag.unassigned={0}: tag {1} was removed. Answers already collected at sites using this survey will no longer be recorded under it.
 validation.tag.assignmentBroken=Tag ''{0}'' is assigned, but not to one section or question. Remove the assignment and add it again.
 validation.tag.assignedToRemoved.section=Tag ''{0}'' is assigned to a section that has been removed{1}. Remove the assignment.
 validation.tag.assignedToRemoved.question=Tag ''{0}'' is assigned to a question that has been removed{1}. Remove the assignment.
 validation.tag.assignedTwice=Tag ''{0}'' is assigned to {1} {2} times with different values. Keep one.
-validation.tag.table.empty=Tag ''{0}'' gives the reporting table an empty name. Rename the tag or its dimension; sites could not build reports with this name.
-validation.tag.table.characters=Tag ''{0}'' gives the reporting table the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag or its dimension; sites could not build reports with this name.
-validation.tag.table.tooLong=Tag ''{0}'' gives the reporting table the name ''{1}'', which is longer than {2} characters. Rename the tag or its dimension; sites could not build reports with this name.
-validation.tag.column.empty=Tag ''{0}'' gives the report column an empty name. Rename the tag; sites could not build reports with this name.
-validation.tag.column.characters=Tag ''{0}'' gives the report column the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag; sites could not build reports with this name.
-validation.tag.column.tooLong=Tag ''{0}'' gives the report column the name ''{1}'', which is longer than {2} characters. Rename the tag; sites could not build reports with this name.
-validation.tag.column.reserved=Tag ''{0}'' gives the report column the name ''{1}'', which is a fixed column of every survey''s fact table (step_key, section_key, question_key, item_key). Rename the tag; the site''s reporting build refuses it.
+validation.tag.table.empty=Tag ''{0}'' gives the dimension table an empty name. Rename the tag or its dimension; sites could not build their analysis schema with this name.
+validation.tag.table.characters=Tag ''{0}'' gives the dimension table the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag or its dimension; sites could not build their analysis schema with this name.
+validation.tag.table.tooLong=Tag ''{0}'' gives the dimension table the name ''{1}'', which is longer than {2} characters. Rename the tag or its dimension; sites could not build their analysis schema with this name.
+validation.tag.column.empty=Tag ''{0}'' gives the column an empty name. Rename the tag; sites could not build their analysis schema with this name.
+validation.tag.column.characters=Tag ''{0}'' gives the column the name ''{1}'', which may only use a–z, 0–9 and _. Rename the tag; sites could not build their analysis schema with this name.
+validation.tag.column.tooLong=Tag ''{0}'' gives the column the name ''{1}'', which is longer than {2} characters. Rename the tag; sites could not build their analysis schema with this name.
+validation.tag.column.reserved=Tag ''{0}'' gives the column the name ''{1}'', which is a fixed column of every survey''s fact table (step_key, section_key, question_key, item_key). Rename the tag; the site''s analysis build refuses it.
 validation.tag.unused=Tag ''{0}'' is not used. Assign it to a section or question, or delete it.
-validation.tag.sameColumn=Tags {0} produce the same report column, ''{1}''. Rename one of them.
+validation.tag.sameColumn=Tags {0} produce the same column, ''{1}''. Rename one of them.
 validation.tag.tableClash=Tag ''{0}'' has no dimension, so its reporting table is ''{1}'' — the same table dimension ''{2}'' uses. Rename the tag or give it a dimension.
 validation.translation.missing.one={0}: 1 text is not translated yet. Respondents will see it in the survey''s own language.
 validation.translation.missing.many={0}: {1} texts are not translated yet. Respondents will see them in the survey''s own language.
@@ -1298,7 +1298,7 @@ exportDialog.issue.error=Error: {0}
 exportDialog.issue.warning=Warning: {0}
 exportDialog.errorsBlock=Fix {0} error(s) before you can export.
 exportDialog.warningsDoNotBlock=You can export with warnings.
-exportDialog.retroactiveReminder=Reminder: renaming a step or section, or changing a question's tag, also relabels past reports and answers at sites already using this survey.
+exportDialog.retroactiveReminder=Reminder: renaming a step or section, or changing a question's tag, also relabels answers already recorded at sites already using this survey.
 exportDialog.download=Download {0}
 exportDialog.revisionSummary=Revision {0}: {1}
 importDefinitionView.pageTitle=Import definition
@@ -1371,7 +1371,7 @@ guideView.rules.p3=Operators are Boolean, Greater than, Equal, Not equal, Field 
 guideView.designer.h=The designer draws all of this
 guideView.designer.p1=On the board, lanes are steps, cards are sections, rows are questions and arrows are rules. A card starts closed; one click opens it and selects it, a double click on a lane, card or row opens its editor, and the ⋮ menu on each element lists everything you can do to it. A breadcrumb at the top of the page shows where you are (survey, step, section, question), and the structure tree at the bottom of the drawer follows your selection. Every element carries its glyph, and the glyph is its handle: drag a glyph from the Controls panel to create an element, drag it within its container to reorder, or drag it into another container to show the same element there as well (a section in another step, a question in another section); Copy to step… in a card's menu makes a separate section instead. Drag a rule glyph onto a question to start a rule, then drag the arrowhead onto the target. Everything a drag can do, the element's menu can do too.
 guideView.designing.h=Designing a survey
-guideView.designing.p1=Open a survey from the Surveys list and choose Design…. The drawer on the left is your toolbox; the board on the right is the survey. Work top-down: steps, then sections, then questions, then the lists, rules and reporting tags that give them meaning.
+guideView.designing.p1=Open a survey from the Surveys list and choose Design…. The drawer on the left is your toolbox; the board on the right is the survey. Work top-down: steps, then sections, then questions, then the lists, rules and analysis tags that give them meaning.
 guideView.designing.search.term=Search
 guideView.designing.search.desc=— each of the Lists, Sections and Questions panels has its own search box that narrows that panel as you type: lists by name, description and option text, sections by name and description, questions by name, text and type. Handy once a survey has dozens of each.
 guideView.designing.controls.term=Controls
@@ -1382,13 +1382,13 @@ guideView.designing.sections.term=Sections
 guideView.designing.sections.desc=— every section in the survey, once, with the number of steps it is mounted in. Drag one into a lane, or use Mount in step…, to show the same section in another step; it stays one section, so a change to its name or questions reaches every step.
 guideView.designing.questions.term=Questions
 guideView.designing.questions.desc=— every question in the survey, once, with the number of sections it appears in. Drag one into a card, or use Add to section…, to ask the same question again elsewhere; it stays one question, so a change to its text reaches every section it is in.
-guideView.designing.reportingTags.term=Reporting tags
-guideView.designing.reportingTags.desc=— the ⋮ menu of a question or section offers Reporting tags…; the survey's Reporting… page lists them all with the tables and columns they produce. Tagged elements show a tag badge on the board, one entry per tag.
+guideView.designing.reportingTags.term=Analysis tags
+guideView.designing.reportingTags.desc=— the ⋮ menu of a question or section offers Analysis tags…; the survey's Analysis… page lists them all with the tables and columns they produce. Tagged elements show a tag badge on the board, one entry per tag.
 guideView.designing.structure.term=Survey structure
 guideView.designing.structure.desc=— the tree at the bottom of the drawer; click an element to select it on the board. Show removed reveals retired elements so they can be restored.
-guideView.designing.p2=When the structure is in place, add rules for anything conditional, tag what the report needs, check the validation panel on the survey overview, and Export… the .elicit file for the Admin app to install.
-guideView.reportingTags.h=Reporting tags
-guideView.reportingTags.p1=A reporting tag names a column of the report a site builds from the answers. Tag a question and its answers fill that column; tag a section as it appears in a step with a fixed value, and every respondent who reaches it is classified by that value. Tags that share a dimension share one table of values. Open a survey's Reporting page, or the 'Reporting tags…' item on a question or section, to manage them. Changing or removing an assigned tag is retroactive: answers already recorded at deployed sites are reclassified.
+guideView.designing.p2=When the structure is in place, add rules for anything conditional, tag what the site's analysis schema needs, mark what the reports show, check the validation panel on the survey overview, and Export… the .elicit file for the Admin app to install.
+guideView.reportingTags.h=Analysis tags
+guideView.reportingTags.p1=An analysis tag names a column of the star schema a site builds from the answers for analysis. Tag a question and its answers fill that column; tag a section as it appears in a step with a fixed value, and every respondent who reaches it is classified by that value. Tags that share a dimension share one table of values. Open a survey's Analysis page, or the 'Analysis tags…' item on a question or section, to manage them. Changing or removing an assigned tag is retroactive: answers already recorded at deployed sites are reclassified. Tags are not reports: what a respondent or an administrator reads is decided by the report marks on the survey's Reports page.
 guideView.identity.h=Identity and exporting
 guideView.identity.p1=Every element gets a key the moment it is created and keeps it for life. Removing an element retires it rather than deleting it, so answers already recorded at a site keep their meaning. When the survey is ready you export a .elicit file; the Admin app installs it at a site the first time and updates it in place after that, matching elements by key.
 guideView.identity.p2=Deleting a whole survey, from the Surveys list, is the one thing that does remove rows, and it cannot be undone. Download the backup it offers first: importing that file brings the survey back with every key. Sites that applied an export are not touched; to change them later, import the backup, edit and export again.
@@ -1404,7 +1404,7 @@ designer.menu.edit=Edit…
 designer.menu.moveUp=Move up
 designer.menu.moveDown=Move down
 designer.menu.openDetails=Open details
-designer.menu.reportingTags=Reporting tags…
+designer.menu.reportingTags=Analysis tags…
 designerPalette.aria=Palette: drag a glyph onto the board to add an element
 designerPalette.questionType=Question type for new questions
 designerPalette.step=Step
@@ -1501,7 +1501,7 @@ stepLane.menu.removeStep=Remove step
 stepLane.header.aria=Step {0}: {1}, {2}
 stepLane.header.aria.removed=Step {0}: {1}, {2}, removed
 stepLane.empty=No sections yet — drop a section glyph here or use Add section.
-tagBadge.title=Reporting tags: {0}
+tagBadge.title=Analysis tags: {0}
 surveyDesignerView.pageTitle=Designer
 surveyDesignerView.showRemoved=Show removed
 surveyDesignerView.showRules=Show rules
@@ -1589,7 +1589,7 @@ elementView.fact.placeholder=Placeholder
 elementView.fact.defaultValue=Default value
 elementView.fact.variant=Variant
 elementView.fact.tagValue=value "{0}"
-elementView.fact.reportingTags=Reporting tags
+elementView.fact.reportingTags=Analysis tags
 elementView.fact.elementKey=Element key
 elementView.fact.durableId=Durable id
 elementView.fact.removedAt=Removed at
@@ -1603,19 +1603,19 @@ elementView.restore.header=Restore {0}?
 elementView.restore.explanation=The element reopens in its former position, keeping its element key.
 elementView.restore.dependents=Restored together with it:
 elementView.restored=Restored
-reportingView.pageTitle=Reporting tags
-reportingView.heading=Reporting tags — {0}
+reportingView.pageTitle=Analysis tags
+reportingView.heading=Analysis tags — {0}
 reportingView.surveyOverview=Survey overview
 reportingView.openInDesigner=Open in designer
 reportingView.newTag=New tag…
 reportingView.assignTag=Assign tag…
-reportingView.intro=A reporting tag names a column of the site's report. Assign it to a question and the answers fill that column; assign it to a section with a fixed value and every respondent who reaches the section is classified by it. Tags on the same dimension share one table of values.
+reportingView.intro=An analysis tag names a column of the survey's analysis schema at a site. Assign it to a question and the answers fill that column; assign it to a section with a fixed value and every respondent who reaches the section is classified by it. Tags on the same dimension share one table of values.
 reportingView.retro=Changing or removing an assigned tag is retroactive: answers already recorded at deployed sites are reclassified when the survey is exported and applied.
 reportingView.grid.tag=Tag
 reportingView.grid.dimension=Dimension
 reportingView.grid.ownTable=(own table)
 reportingView.grid.table=Table
-reportingView.grid.reportColumn=Report column
+reportingView.grid.reportColumn=Column
 reportingView.grid.assignments=Assignments
 reportingView.edit=Edit…
 reportingView.removeTag.tooltip=Remove this tag
@@ -1638,7 +1638,7 @@ reportingView.impact.assignmentMany={0} assignments
 reportingView.impact.table={0} — {1} — tags: {2} — {3}
 reportingView.impact.dimensionTables=Dimension tables
 reportingView.impact.column={0} → {1} (tag "{2}")
-reportingView.impact.reportColumns=Report columns
+reportingView.impact.reportColumns=Columns
 reportingView.impact.perItemColumns=Fixed columns filled for a section repeated per selected item
 reportingView.impact.perItemColumn={0} → {1} (the question the Repeat rule reads, and the item each instance is about)
 reportingView.impact.error=Error: {0}
@@ -1647,58 +1647,58 @@ reportingView.impact.findings=Problems
 reportingView.removeTag.header=Remove tag
 reportingView.removeTag.text=Remove the tag "{0}"? It has no assignments.
 reportingView.removedTag=Removed tag "{0}"
-reportingView.removeAssignment.header=Remove reporting tag
+reportingView.removeAssignment.header=Remove analysis tag
 reportingView.removeAssignment.text=Remove tag "{0}" from {1}? Answers already recorded at deployed sites stop being classified by it once the survey is exported and applied.
-elementTagsDialog.title=Reporting tags — {0}
+elementTagsDialog.title=Analysis tags — {0}
 elementTagsDialog.addTag=Add tag…
-elementTagsDialog.empty=No reporting tags yet. Without a tag, answers to this element are not reported.
+elementTagsDialog.empty=No analysis tags yet. Without a tag, answers to this element are not recorded in the site's analysis schema.
 elementTagsDialog.grid.tag=Tag
 elementTagsDialog.grid.appliesTo=Applies to
 elementTagsDialog.grid.value=Value
-elementTagsDialog.grid.reportColumn=Report column
+elementTagsDialog.grid.reportColumn=Column
 elementTagsDialog.edit=Edit…
-elementTagsDialog.removeAssignment.header=Remove reporting tag
+elementTagsDialog.removeAssignment.header=Remove analysis tag
 elementTagsDialog.removeAssignment.text=Remove tag "{0}" from {1}? Answers already recorded at deployed sites stop being classified by it once the survey is exported and applied.
 elementTagsDialog.removedTag=Removed tag "{0}"
-tagAssignmentDialog.title.assign=Assign reporting tag
-tagAssignmentDialog.title.edit=Edit reporting tag
+tagAssignmentDialog.title.assign=Assign analysis tag
+tagAssignmentDialog.title.edit=Edit analysis tag
 tagAssignmentDialog.element=Element
 tagAssignmentDialog.element.section=Section {0} — {1}
 tagAssignmentDialog.element.question=Question {0} — {1}
 tagAssignmentDialog.appliesTo=Applies to
 tagAssignmentDialog.tag=Tag
 tagAssignmentDialog.newTag=New tag…
-tagAssignmentDialog.reportedValue=Reported value
+tagAssignmentDialog.reportedValue=Recorded value
 tagAssignmentDialog.useAnswer=Use the respondent's answer
 tagAssignmentDialog.fixedValue=Fixed value
 tagAssignmentDialog.value.helper=Stored lowercased and trimmed whenever the element is answered
 tagAssignmentDialog.acknowledge=I understand that answers already recorded at deployed sites are reclassified
-tagAssignmentDialog.help.tag=The reporting tag. Its column in the report is filled from this element.
-tagAssignmentDialog.help.value=A constant reported instead of the answer, e.g. "Female" on the section about the respondent's mother.
+tagAssignmentDialog.help.tag=The analysis tag. Its column in the analysis schema is filled from this element.
+tagAssignmentDialog.help.value=A constant recorded instead of the answer, e.g. "Female" on the section about the respondent's mother.
 tagAssignmentDialog.warning=This assignment is exported already. Changing its tag or value is retroactive: answers already recorded at deployed sites are reclassified, not only answers recorded from now on.
 tagAssignmentDialog.scope.section=This section as it appears in step "{0}"
 tagAssignmentDialog.scope.question=This question wherever it appears
 tagAssignmentDialog.scope.questionInSection=This question only in section "{0}"
 tagAssignmentDialog.impact.none=Choose a tag to see the table and column it fills.
-tagAssignmentDialog.impact.text=Values go to {0} in the survey''s reporting schema · report column {1}{2}
+tagAssignmentDialog.impact.text=Values go to {0} in the survey''s reporting schema · column {1}{2}
 tagAssignmentDialog.impact.constant=· constant
 tagAssignmentDialog.impact.fromAnswer=· from the answer
 tagAssignmentDialog.error.chooseTag=Choose a tag
-tagAssignmentDialog.error.fixedValue=Enter the fixed value or report the answer instead
+tagAssignmentDialog.error.fixedValue=Enter the fixed value or record the answer instead
 tagAssignmentDialog.error.chooseElement=Choose an element
 tagAssignmentDialog.error.chooseScope=Choose what the tag applies to
 tagAssignmentDialog.updated=Updated tag "{0}"
 tagAssignmentDialog.assigned=Assigned tag "{0}"
-tagDialog.title.new=New reporting tag
-tagDialog.title.edit=Edit reporting tag
+tagDialog.title.new=New analysis tag
+tagDialog.title.edit=Edit analysis tag
 tagDialog.tag=Tag
-tagDialog.tag.helper=Letters, digits, spaces and hyphens. Becomes a column of the report.
+tagDialog.tag.helper=Letters, digits, spaces and hyphens. Becomes a column of the analysis schema.
 tagDialog.dimension=Dimension
 tagDialog.dimension.placeholder=None: the tag gets its own table
 tagDialog.dimension.helper=Type a new name to create a dimension. Letters, digits and underscores.
 tagDialog.namespace=Namespace
 tagDialog.namespace.helper=Groups this survey's tags; a site keeps one row per namespace and tag
-tagDialog.help.tag=The tag's name. Answers of the tagged elements are reported under a column named after it.
+tagDialog.help.tag=The tag's name. Answers of the tagged elements are recorded under a column named after it.
 tagDialog.help.dimension=A shared category such as "age" or "cancer". Tags on the same dimension share one table of values; leave it empty to give this tag a table of its own.
 tagDialog.acknowledge=I understand that answers already recorded at deployed sites are reclassified
 tagDialog.warning=This tag is assigned. Changing its name or dimension is retroactive: answers already recorded at deployed sites are reclassified, not only answers recorded from now on.
@@ -1707,7 +1707,7 @@ tagDialog.error.tagRequired=Tag is required
 tagDialog.created=Created tag "{0}"
 tagDialog.updated=Updated tag "{0}"
 tagDialog.preview.none=Choose a tag to see the table and column it produces.
-tagDialog.preview.text=Values go to {0} in the survey''s reporting schema · report column {1}
+tagDialog.preview.text=Values go to {0} in the survey''s reporting schema · column {1}
 elementDialog.kind.step=step
 elementDialog.kind.section=section
 elementDialog.title.new=New {0}
@@ -1715,13 +1715,13 @@ elementDialog.title.edit=Edit {0}
 elementDialog.name=Name
 elementDialog.dimensionName=Dimension name
 elementDialog.description=Description
-elementDialog.acknowledge=I understand that the new name relabels reports already produced at deployed sites
-elementDialog.dimensionName.helper=Reporting dimension; defaults to the name. Changing it is a reporting change, not a rename.
-elementDialog.help.name=The {0}''s name. Shown to respondents and used as the report label; renaming it is retroactive.
-elementDialog.help.dimensionName=The name this {0} reports under. Defaults to the name; change it to relabel reports without renaming.
+elementDialog.acknowledge=I understand that the new name relabels data already recorded at deployed sites
+elementDialog.dimensionName.helper=Analysis dimension; defaults to the name. Changing it is an analysis change, not a rename.
+elementDialog.help.name=The {0}''s name. Shown to respondents and used as its label in the analysis schema; renaming it is retroactive.
+elementDialog.help.dimensionName=The name this {0} is recorded under in the analysis schema. Defaults to the name; change it to relabel recorded data without renaming.
 elementDialog.help.description=An optional note for authors. It is not shown to respondents.
 elementDialog.error.nameRequired=Name is required
-elementDialog.renameWarning=Renaming is retroactive: reports already produced at deployed sites will show the new name, not only reports produced from now on.
+elementDialog.renameWarning=Renaming is retroactive: data already recorded at deployed sites will show the new name, not only data recorded from now on.
 elementDialog.placed=The {0} is placed where you dropped it; you can move it afterwards.
 elementDialog.saved.created=Created {0} ''{1}''
 elementDialog.saved.updated=Updated {0} ''{1}''
@@ -1810,7 +1810,7 @@ selectGroupDialog.name=Name
 selectGroupDialog.description=Description
 selectGroupDialog.dataType=Data type
 selectGroupDialog.addOption=Add option
-selectGroupDialog.dataType.helper=Informational; 'Text' unless the site's reporting expects otherwise
+selectGroupDialog.dataType.helper=Informational; 'Text' unless the site's analysis expects otherwise
 selectGroupDialog.help.name=The list's name, shown when picking options for a question. Unique within the survey.
 selectGroupDialog.help.description=An optional note for authors.
 selectGroupDialog.help.dataType=A label carried with the list; the Survey runtime does not interpret it.
@@ -2112,9 +2112,9 @@ error.tag.nameRequired=Tag is required
 error.tag.tooLong=Tag must be 255 characters or fewer
 error.tag.characters=Tag may contain only letters, digits, spaces and hyphens, and must start with a letter or digit
 error.tag.hyphenNoDimension=A tag without a dimension names its own table, and a hyphen is not allowed in a table name; choose a dimension or remove the hyphen
-error.tag.column.empty=The report column is empty
-error.tag.column.characters=The report column ''{0}'' contains characters other than a-z, 0-9 and _
-error.tag.column.tooLong=The report column ''{0}'' is longer than {1} characters
+error.tag.column.empty=The column name is empty
+error.tag.column.characters=The column ''{0}'' contains characters other than a-z, 0-9 and _
+error.tag.column.tooLong=The column ''{0}'' is longer than {1} characters
 error.tag.table.empty=The dimension table is empty
 error.tag.table.characters=The dimension table ''{0}'' contains characters other than a-z, 0-9 and _
 error.tag.table.tooLong=The dimension table ''{0}'' is longer than {1} characters
