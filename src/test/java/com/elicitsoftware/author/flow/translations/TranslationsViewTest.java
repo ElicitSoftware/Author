@@ -13,7 +13,12 @@ package com.elicitsoftware.author.flow.translations;
 
 import com.elicitsoftware.author.flow.SurveyEditorView;
 import com.elicitsoftware.author.survey.SurveyService;
+import com.elicitsoftware.author.survey.TranslationHandoff;
+import com.elicitsoftware.author.survey.TranslationService.Status;
 import com.elicitsoftware.model.Survey;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
 import io.quarkus.test.TestTransaction;
@@ -42,6 +47,11 @@ class TranslationsViewTest extends QuarkusBrowserlessTest {
 
     @Inject
     SurveyService surveys;
+
+    @Inject
+    TranslationHandoff handoff;
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private Survey survey(String contentLanguages) {
         Survey bean = new Survey();
@@ -122,6 +132,31 @@ class TranslationsViewTest extends QuarkusBrowserlessTest {
         assertTrue(view.grid.getGenericDataView().getItems().count() > 0);
         assertEquals(view.getTranslation("translationsView.language.option", "es-419", "Spanish (Latin America)"),
                 suggestionFor(view, "es-419"), "the label drops the 'not published yet' note");
+    }
+
+    /**
+     * UC-046 through the page: the bytes the upload handler collects go straight to the import,
+     * the outcome dialog opens and the grid reloads. The handler itself is Vaadin's in-memory one
+     * and is not simulated here; what the view does with the file is.
+     */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "translations.author", roles = {"elicit_author"})
+    void aReturnedFileIsImportedFromItsBytesAndTheGridReloaded() throws Exception {
+        Survey s = survey("es-419");
+        TranslationsView view = open(s);
+        assertTrue(view.rows.stream().allMatch(r -> r.status() == Status.MISSING), "nothing translated yet");
+
+        ObjectNode file = (ObjectNode) MAPPER.readTree(handoff.export(s, "es-419", false));
+        for (JsonNode item : file.path("items")) {
+            ((ObjectNode) item).put("translation", "ES: " + item.path("source").asText());
+        }
+
+        view.importReturned(MAPPER.writeValueAsBytes(file));
+
+        assertTrue(find(TranslationImportResultDialog.class).single().isOpened(), "the outcome is reported");
+        assertTrue(view.rows.stream().allMatch(r -> r.status() == Status.TRANSLATED),
+                "the grid reloaded with the imported translations");
     }
 
     @Test

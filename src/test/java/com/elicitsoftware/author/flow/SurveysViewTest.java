@@ -51,7 +51,7 @@ class SurveysViewTest extends QuarkusBrowserlessTest {
     void newSurveyDialogValidatesAndCreates() {
         SurveysView view = navigate(SurveysView.class);
         test(view.newSurvey).click();
-        SurveyMetadataDialog dialog = $(SurveyMetadataDialog.class).single();
+        SurveyMetadataDialog dialog = find(SurveyMetadataDialog.class).single();
 
         // Empty submit: binder blocks, dialog stays open.
         test(dialog.save).click();
@@ -74,7 +74,7 @@ class SurveysViewTest extends QuarkusBrowserlessTest {
     void duplicateNameIsShownOnTheNameField() {
         SurveysView view = navigate(SurveysView.class);
         test(view.newSurvey).click();
-        SurveyMetadataDialog dialog = $(SurveyMetadataDialog.class).single();
+        SurveyMetadataDialog dialog = find(SurveyMetadataDialog.class).single();
         test(dialog.name).setValue("AuthorFixture");
         test(dialog.title).setValue("dup");
         test(dialog.save).click();
@@ -90,7 +90,7 @@ class SurveysViewTest extends QuarkusBrowserlessTest {
         SurveysView view = navigate(SurveysView.class);
         Survey empty = Survey.find("name", "AuthorFixtureEmpty").firstResult();
         view.confirmDelete(empty);
-        DeleteSurveyDialog dialog = $(DeleteSurveyDialog.class).single();
+        DeleteSurveyDialog dialog = find(DeleteSurveyDialog.class).single();
 
         assertFalse(dialog.delete.isEnabled(), "UC-047 BR-002: disabled until the name is typed");
         assertFalse(dialog.previewAnswers.isVisible(), "UC-047 A4: nothing said of a preview never taken");
@@ -121,7 +121,7 @@ class SurveysViewTest extends QuarkusBrowserlessTest {
                         """)
                 .setParameter(1, empty.id).executeUpdate();
         view.confirmDelete(empty);
-        DeleteSurveyDialog dialog = $(DeleteSurveyDialog.class).single();
+        DeleteSurveyDialog dialog = find(DeleteSurveyDialog.class).single();
 
         // UC-047 A4 / BR-004: stated before the name is typed, and no longer a refusal.
         assertTrue(dialog.previewAnswers.isVisible());

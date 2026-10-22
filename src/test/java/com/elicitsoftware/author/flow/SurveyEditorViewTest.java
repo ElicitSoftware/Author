@@ -134,7 +134,7 @@ class SurveyEditorViewTest extends QuarkusBrowserlessTest {
         try {
             SurveyEditorView view = open("AuthorFixture");
             test(view.exportButton).click();
-            ExportDialog dialog = $(ExportDialog.class).single();
+            ExportDialog dialog = find(ExportDialog.class).single();
             assertTrue(dialog.isOpened());
             assertTrue(dialog.export.isEnabled(), "no errors on the fixture, export allowed");
 
@@ -159,7 +159,7 @@ class SurveyEditorViewTest extends QuarkusBrowserlessTest {
     void reportingButtonOpensTheReportingPage() {
         SurveyEditorView view = open("AuthorFixture");
         test(view.reporting).click();
-        com.elicitsoftware.author.flow.reporting.ReportingView reporting = $(com.elicitsoftware.author.flow.reporting.ReportingView.class).single();
+        com.elicitsoftware.author.flow.reporting.ReportingView reporting = find(com.elicitsoftware.author.flow.reporting.ReportingView.class).single();
         assertEquals(view.survey.id, reporting.survey.id, "UC-023 step 1: the survey's Reporting page");
     }
 

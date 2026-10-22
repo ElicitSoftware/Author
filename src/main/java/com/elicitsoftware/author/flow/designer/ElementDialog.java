@@ -18,6 +18,7 @@ import com.vaadin.flow.component.HasValidation;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
@@ -70,7 +71,7 @@ public class ElementDialog<T> extends Dialog {
         this.originalName = originalName;
         String what = getTranslation(kindKey);
         setHeaderTitle(creating ? getTranslation("elementDialog.title.new", what) : getTranslation("elementDialog.title.edit", what));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
         name.setLabel(getTranslation("elementDialog.name"));
         dimensionName.setLabel(getTranslation("elementDialog.dimensionName"));
         description.setLabel(getTranslation("elementDialog.description"));

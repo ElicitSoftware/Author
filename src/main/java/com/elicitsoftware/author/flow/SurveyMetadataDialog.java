@@ -17,6 +17,7 @@ import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.model.Survey;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.notification.Notification;
@@ -58,7 +59,7 @@ public class SurveyMetadataDialog extends Dialog {
     public SurveyMetadataDialog(SurveyService service, Survey existing, Consumer<Survey> onSaved) {
         boolean creating = existing == null;
         setHeaderTitle(getTranslation(creating ? "surveyMetadataDialog.newSurvey" : "surveyMetadataDialog.editSurvey"));
-        setModal(true);
+        setModality(ModalityMode.STRICT);
 
         name.setRequiredIndicatorVisible(true);
         name.setMaxLength(255);

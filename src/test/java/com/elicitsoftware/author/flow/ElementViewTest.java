@@ -71,7 +71,7 @@ class ElementViewTest extends QuarkusBrowserlessTest {
 
         ElementView view = navigate(ElementView.class, address);
         test(view.remove).click();
-        ConfirmDialog removeDialog = $(ConfirmDialog.class).single();
+        ConfirmDialog removeDialog = find(ConfirmDialog.class).single();
         assertTrue(removeDialog.isOpened());
         ComponentUtil.fireEvent(removeDialog, new ConfirmDialog.ConfirmEvent(removeDialog, true));
         removeDialog.close(); // a real click closes it client-side; the fired event alone does not
@@ -87,14 +87,14 @@ class ElementViewTest extends QuarkusBrowserlessTest {
         // Remove again, then go through the Restore button: it must confirm first (UC-010 step 3).
         view = navigate(ElementView.class, address);
         test(view.remove).click();
-        ConfirmDialog again = $(ConfirmDialog.class).single();
+        ConfirmDialog again = find(ConfirmDialog.class).single();
         ComponentUtil.fireEvent(again, new ConfirmDialog.ConfirmEvent(again, true));
         again.close(); // a real click closes it client-side; the fired event alone does not
         view.removalNotice.close();
         view = navigate(ElementView.class, address);
         assertTrue(view.restore.isVisible());
         test(view.restore).click();
-        ConfirmDialog restoreDialog = $(ConfirmDialog.class).single();
+        ConfirmDialog restoreDialog = find(ConfirmDialog.class).single();
         assertTrue(restoreDialog.isOpened());
         assertEquals(view.getTranslation("elementView.restore.header", "Question 'FixtureQ5'"),
                 restoreDialog.getElement().getProperty("header"));
