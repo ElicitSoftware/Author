@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.elicitsoftware.model.QuestionType;
 
 class TokensTest {
 
@@ -171,5 +172,33 @@ class TokensTest {
         assertFalse(Tokens.nameable("<>"));
         assertFalse(Tokens.nameable(""));
         assertFalse(Tokens.nameable(null));
+    }
+
+    private static QuestionType questionType(String name, String dataType) {
+        QuestionType t = new QuestionType();
+        t.name = name;
+        t.dataType = dataType;
+        return t;
+    }
+
+    @Test
+    void answerBeatsConstant_dateAndFreeTextAnswers() {
+        assertTrue(Tokens.answerBeatsConstant(questionType("DATE_PICKER", "Date"), 3), "a date, list or not");
+        assertTrue(Tokens.answerBeatsConstant(questionType("TEXTFIELD", "Text"), null));
+        assertTrue(Tokens.answerBeatsConstant(questionType("TEXTFIELD", "TEXT"), null));
+        assertFalse(Tokens.answerBeatsConstant(questionType("COMBOBOX", "Text"), 3), "a list answer is a coded value");
+        assertFalse(Tokens.answerBeatsConstant(questionType("INTEGER", "Integer"), null));
+        assertFalse(Tokens.answerBeatsConstant(questionType("HTML", null), null), "display-only collects nothing");
+        assertFalse(Tokens.answerBeatsConstant(null, null));
+    }
+
+    @Test
+    void placeholderUses_matchesTheBareTokenIgnoringCase() {
+        Tokens.Placeholder ph = new Tokens.Placeholder("your <CHILD>'s age", "their age");
+        assertTrue(ph.uses("CHILD"));
+        assertTrue(ph.uses("<child>"));
+        assertFalse(ph.uses("OTHER"));
+        assertFalse(ph.uses(" "));
+        assertFalse(ph.uses(null));
     }
 }

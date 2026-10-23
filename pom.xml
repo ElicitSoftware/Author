@@ -465,9 +465,14 @@
                         <param>com.elicitsoftware.*</param>
                     </targetClasses>
                     <targetTests>
+                        <param>com.elicitsoftware.SchemaMirrorFreshnessTest</param>
+                        <param>com.elicitsoftware.author.ConstraintViolationTranslatorTest</param>
+                        <param>com.elicitsoftware.author.definition.DefinitionValueTypesTest</param>
                         <param>com.elicitsoftware.author.definition.ElicitFormatTest</param>
+                        <param>com.elicitsoftware.author.diagnostics.CheckResultTest</param>
                         <param>com.elicitsoftware.author.flow.AppConfigTest</param>
                         <param>com.elicitsoftware.author.flow.BrandResourceHandlerTest</param>
+                        <param>com.elicitsoftware.author.flow.designer.PaletteItemTest</param>
                         <param>com.elicitsoftware.author.flow.designer.PreviewFieldsTest</param>
                         <param>com.elicitsoftware.author.flow.designer.QuestionDialogBoundsTest</param>
                         <param>com.elicitsoftware.author.flow.designer.RelationshipDialogPathTest</param>
@@ -477,14 +482,20 @@
                         <param>com.elicitsoftware.author.i18n.TokenSyntaxInBundlesTest</param>
                         <param>com.elicitsoftware.author.i18n.TranslationBundleConsistencyTest</param>
                         <param>com.elicitsoftware.author.i18n.TranslationRequestGeneratorTest</param>
+                        <param>com.elicitsoftware.author.survey.ContentHashTest</param>
                         <param>com.elicitsoftware.author.survey.ContentLanguagesTest</param>
+                        <param>com.elicitsoftware.author.survey.DesignerAddressTest</param>
                         <param>com.elicitsoftware.author.survey.LanguageTagsTest</param>
+                        <param>com.elicitsoftware.author.survey.RepeatSourceTest</param>
                         <param>com.elicitsoftware.author.survey.ReportingNamesTest</param>
                         <param>com.elicitsoftware.author.survey.RuleOrderingTest</param>
+                        <param>com.elicitsoftware.author.survey.RulePathTest</param>
+                        <param>com.elicitsoftware.author.survey.StructureNodeTest</param>
                         <param>com.elicitsoftware.author.survey.TokenSamplesTest</param>
                         <param>com.elicitsoftware.author.survey.TokensTest</param>
+                        <param>com.elicitsoftware.author.survey.TranslatableFieldsTest</param>
+                        <param>com.elicitsoftware.author.survey.TranslationBudgetTest</param>
                         <param>com.elicitsoftware.author.util.BrandUtilTest</param>
-                        <param>com.elicitsoftware.SchemaMirrorFreshnessTest</param>
                     </targetTests>
                     <jvmArgs>
                         <jvmArg>-Djava.util.logging.manager=org.jboss.logmanager.LogManager</jvmArg>
