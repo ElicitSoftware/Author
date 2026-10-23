@@ -420,6 +420,17 @@ mvn test -Dtest=com.elicit.survey.service.*
 mvn verify -Pintegration-tests
 ```
 
+Mutation testing with Pitest is on demand only, over the plain unit tests (about a minute,
+no Docker; report at `target/pit-reports/index.html`):
+
+```bash
+./mvnw test-compile pitest:mutationCoverage
+```
+
+Booted `@QuarkusTest` and `QuarkusBrowserlessTest` classes are left out because they load
+classes through `QuarkusClassLoader` and never see Pitest's mutants. The plugin's
+`targetTests` in `pom.xml` lists the plain tests by name, so add a new one there.
+
 ## Pull Request Process
 
 ### Before Submitting
