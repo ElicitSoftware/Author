@@ -108,7 +108,10 @@ class AuthorToRespondentE2ETest extends E2ETestBase {
         reportsPage.removeBuiltInReport();
         assertFalse(reportsPage.listsTheBuiltInReport(), "UC-048 A3: the built-in report goes like any other");
 
-        // 5. Author UC-008: export the definition and keep the downloaded .elicit file.
+        // 5. Author UC-008: back on the editor (the Reports page is its own route), export the
+        //    definition and keep the downloaded .elicit file.
+        openAuthor("/survey/" + authorSurveyId);
+        editor.waitUntilReadyToExport();
         Path downloadDir = Files.createTempDirectory("elicit-e2e-export");
         Path elicitFile = editor.export("E2E initial publication", downloadDir);
         assertTrue(elicitFile.getFileName().toString().endsWith(".elicit"), elicitFile.toString());
