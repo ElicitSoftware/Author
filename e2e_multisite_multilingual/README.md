@@ -22,6 +22,7 @@ Three complete stacks run side by side on this machine:
 | PostgreSQL | localhost:5452 | localhost:5402 | localhost:5352 |
 | Languages offered | `en` | `en`, `es-419` | `en`, `ar` |
 | Brand mount | `../../elicit-brand` — the default | `mexico/mexico_brand` | `arabia/arabia_brand` |
+| Translations mount | `../../elicit-i18n` — the curated set | the same | the same |
 | What a respondent reads | English | Latin American Spanish | Arabic, right to left |
 | Surveys | Census | Census, then the Family History Survey (phase 17) | Census |
 
@@ -96,17 +97,19 @@ suite exercises both halves separately:
    (UC-044) and translates the content (UC-043, UC-045, UC-046); both the set and every translation
    travel inside the one `.elicit` file. There is no per-site export — one revision is one file
    (UC-044 BR-003).
-2. **The site must offer the language for its own screens.** The applications carry every language
-   the release supports, and a site names the ones it offers in `i18n.bundled.locales`. A site
-   serves a survey
+2. **The site must offer the language for its own screens.** The images carry English only; every
+   other language is a `translations_<tag>.properties` file read from the translations mount at
+   `<i18n.file.system.path>/<app>/`, and a site names the ones it offers of those in
+   `i18n.offered.locales` (English is always offered). A site serves a survey
    language only where the site *also* offers that language for the chrome (Survey UC-009 BR-009),
    so no respondent ever reads translated questions between English buttons.
 
-There is nothing to lay out. The applications' own texts are packaged in the images, so each site
-just names the ones it offers in `i18n.bundled.locales` — `en` for the master, `en,es-419` for
-Mexico, `en,ar` for Arabia. That is still the "application texts" half of distribution: the
-definition file carries the survey's content translations, the images carry the applications' own
-texts, and they arrive by different routes.
+There is nothing to lay out. All three sites mount the umbrella's curated `../../elicit-i18n` as it
+is — Spanish and Arabic for Survey, Admin and Author — and each just names the ones it offers in
+`i18n.offered.locales` — `en` for the master, `en,es-419` for Mexico, `en,ar` for Arabia. That is
+still the "application texts" half of distribution: the definition file carries the survey's
+content translations, the translations mount carries the applications' own texts, and they arrive
+by different routes.
 
 The master offers **English only** on purpose. It therefore hides the language
 selector (an English-only deployment) and serves the survey's questions in English even though the
@@ -234,8 +237,8 @@ one question staying distinguishable from each other — so a bad translation is
 rather than as a rejection in the middle of one.
 
 The application chrome is **not** fixture data: Mexico and Arabia use the real `es-419` and `ar`
-bundles the images ship, which is also where the two navigation captions a respondent's
-`SectionPage` needs come from.
+bundles of the curated `../../elicit-i18n` set every site mounts, which is also where the two
+navigation captions a respondent's `SectionPage` needs come from.
 
 ## Prerequisites
 
@@ -266,7 +269,7 @@ or step by step:
 
 ```bash
 ./reset.sh all       # wipe data/ (PGDATA of each site, USA's Mailpit and Keycloak H2 copy)
-./up.sh              # lay out the i18n mounts, then USA, Mexico, Arabia in that order
+./up.sh              # USA, Mexico, Arabia in that order
 ./status.sh          # HTTP probe of every URL above
 mvn -DskipTests=false test               # the journey (add -De2e.headless=false to watch)
 ./down.sh            # stop all three
@@ -528,8 +531,9 @@ One more defect is **not** fixed and does not block anything: Survey's shipped
 `META-INF/i18n/i18n-config.json` has had a license header prepended to it by the build, so it is not
 valid JSON. Every start where the translations mount has no `i18n-config.json` of its own logs
 `Malformed i18n-config.json; using built-in direction defaults` and the shipped direction overrides
-are ignored. Arabic is in the built-in right-to-left list, so this journey is unaffected; a language
-that is not would be.
+are ignored. The curated `../../elicit-i18n` mounted here carries its own `i18n-config.json`, and
+Arabic is in the built-in right-to-left list besides, so this journey is unaffected; a site that
+mounts a set without one, for a language that is not, would be.
 
 ## Known limits
 

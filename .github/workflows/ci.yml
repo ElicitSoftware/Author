@@ -5,9 +5,12 @@
 #
 # Author is developed inside a checkout of the umbrella repository (ElicitSoftware/Elicit) at
 # Elicit/Author, and some tests reach up into it: RepeatPerItemSampleTest imports the golden
-# census sample from ../samples (UC-019 A6), and SchemaMirrorFreshnessTest compares the
-# schema mirror with ../Survey when that sibling is present. The job reproduces that layout:
-# it clones the umbrella at V3 -- the integration branch, where the sample lives -- and checks
+# census sample from ../samples (UC-019 A6), the language tests read the curated translations
+# from ../elicit-i18n (the image carries English only; the dev and test profiles read the same
+# directory), and SchemaMirrorFreshnessTest compares the schema mirror with ../Survey when that
+# sibling is present. The job reproduces that layout: it clones the umbrella -- preferring a
+# branch with the same name as this one, so a cross-repo translation change can be tested
+# before merge, otherwise V3, the integration branch, where the sample lives -- and checks
 # Author out inside it, then runs Maven from there. Survey is not cloned, so the mirror check
 # skips here as it is written to; it runs on a developer's machine.
 #
@@ -31,11 +34,19 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Clone the umbrella at V3
+      - name: Clone the umbrella (same-named branch, else V3)
         run: |
-          git clone --quiet --depth 1 --branch V3 https://github.com/ElicitSoftware/Elicit.git Elicit
-          echo "umbrella: $(git -C Elicit log -1 --format='%h %s')"
+          UMBRELLA=https://github.com/ElicitSoftware/Elicit.git
+          # Author's main pairs with the umbrella's V3, not its main: the umbrella's main is the
+          # released line and has neither the sample nor elicit-i18n.
+          BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [ "$BRANCH" = main ] || ! git ls-remote --exit-code --heads "$UMBRELLA" "$BRANCH" >/dev/null 2>&1; then
+            BRANCH=V3
+          fi
+          git clone --quiet --depth 1 --branch "$BRANCH" "$UMBRELLA" Elicit
+          echo "umbrella: $BRANCH $(git -C Elicit log -1 --format='%h %s')"
           test -f Elicit/samples/census-household-survey.elicit
+          test -d Elicit/elicit-i18n/author
 
       - name: Check out Author inside it
         uses: actions/checkout@v7

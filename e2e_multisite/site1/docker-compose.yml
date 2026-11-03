@@ -24,6 +24,9 @@ services:
       # INFO so a test run's rule evaluation and save errors show in `docker compose logs survey`.
       LOG_LEVEL: INFO
       brand.file.system.path: /opt/brand
+      # The image carries English only; the other languages are read from <this path>/<app>/.
+      # Narrow what is offered with i18n.offered.locales (e.g. en,es-419).
+      i18n.file.system.path: /opt/i18n
       quarkus.application.name: survey
       quarkus.otel.enabled: true
       quarkus.otel.exporter.otlp.endpoint: http://jaeger:4317
@@ -43,6 +46,7 @@ services:
       start_period: 60s
     volumes:
       - ../../../elicit-brand/:/opt/brand:ro
+      - ../../../elicit-i18n/:/opt/i18n:ro
     depends_on:
       db:
         condition: service_healthy
@@ -67,6 +71,9 @@ services:
       quarkus.mailer.port: 1025
       quarkus.mailer.tls: false
       brand.file.system.path: /opt/brand
+      # The image carries English only; the other languages are read from <this path>/<app>/.
+      # Narrow what is offered with i18n.offered.locales (e.g. en,es-419).
+      i18n.file.system.path: /opt/i18n
       ELICIT_DB_PASSWORD: SAOWNERPW
       ELICIT_OWNER_DB_PASSWORD: SURVEYPW
       OIDC_CLIENT_SECRET: secret
@@ -83,6 +90,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: service.name=admin,service.version=1.0,deployment.environment=site1
     volumes:
       - ../../../elicit-brand/:/opt/brand:ro
+      - ../../../elicit-i18n/:/opt/i18n:ro
     depends_on:
       db:
         condition: service_healthy
@@ -102,6 +110,9 @@ services:
       elicit.etl.enabled: "false"
       elicit.etl.drop.enabled: "true"
       brand.file.system.path: /opt/brand
+      # The image carries English only; the other languages are read from <this path>/<app>/.
+      # Narrow what is offered with i18n.offered.locales (e.g. en,es-419).
+      i18n.file.system.path: /opt/i18n
       quarkus.datasource.jdbc.url: jdbc:postgresql://db:5432/author?connectTimeout=30&socketTimeout=600&tcpKeepAlive=true&tcpKeepAlivesIdle=60
       quarkus.datasource.owner.jdbc.url: jdbc:postgresql://db:5432/author?connectTimeout=30&socketTimeout=600&tcpKeepAlive=true&tcpKeepAlivesIdle=60
       quarkus.application.name: author-survey
@@ -123,6 +134,7 @@ services:
       start_period: 60s
     volumes:
       - ../../../elicit-brand/:/opt/brand:ro
+      - ../../../elicit-i18n/:/opt/i18n:ro
     depends_on:
       db:
         condition: service_healthy
@@ -141,6 +153,9 @@ services:
       author.preview.survey.url: http://author-survey:8080
       TZ: America/Detroit
       brand.file.system.path: /opt/brand
+      # The image carries English only; the other languages are read from <this path>/<app>/.
+      # Narrow what is offered with i18n.offered.locales (e.g. en,es-419).
+      i18n.file.system.path: /opt/i18n
       quarkus.datasource.jdbc.url: jdbc:postgresql://db:5432/author?connectTimeout=30&socketTimeout=600&tcpKeepAlive=true&tcpKeepAlivesIdle=60
       ELICIT_DB_PASSWORD: SURVEYPW
       OIDC_CLIENT_SECRET: secret
@@ -159,6 +174,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: service.name=author,service.version=3.0.0,deployment.environment=site1
     volumes:
       - ../../../elicit-brand/:/opt/brand:ro
+      - ../../../elicit-i18n/:/opt/i18n:ro
     depends_on:
       db:
         condition: service_healthy

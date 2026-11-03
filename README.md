@@ -49,9 +49,11 @@ for local development and testing, though any OIDC-compliant server works in pro
 - **An Elicit umbrella checkout around this one.** Author is a private repository and is no
   longer cloned by the umbrella's `cloneAllProjects.sh`, but it is still expected to sit at
   `Elicit/Author/`. Shared assets are not duplicated here: the compose file mounts
-  `../elicit-brand` and `../sftp_ssh`, and the end-to-end suites install
-  `../../FHHS/family-history-survey.elicit`. The Survey, Admin, FHHS and Pedigree images come
-  from the umbrella's `buildDockerImages.sh`; the Author image from `./buildDockerImage.sh`.
+  `../elicit-brand`, `../sftp_ssh` and `../elicit-i18n` (the curated translations; the image
+  carries English only and the dev and test profiles read the same directory), and the
+  end-to-end suites install `../../FHHS/family-history-survey.elicit`. The Survey, Admin, FHHS
+  and Pedigree images come from the umbrella's `buildDockerImages.sh`; the Author image from
+  `./buildDockerImage.sh`.
 
 ### End-to-end tests
 

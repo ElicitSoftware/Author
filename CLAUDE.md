@@ -51,7 +51,7 @@ one place — the umbrella — rather than duplicated here:
 
 | Lives in the umbrella | Lives here |
 | --- | --- |
-| `../elicit-brand`, `../sftp_ssh`, `../../FHHS/family-history-survey.elicit` | `docker-compose.yml`, `keycloak/`, `db-init/` |
+| `../elicit-brand`, `../elicit-i18n` (the curated translations; `author/` is this tool's), `../sftp_ssh`, `../../FHHS/family-history-survey.elicit` | `docker-compose.yml`, `keycloak/`, `db-init/`, `i18n/TRANSLATION_REQUEST.md` |
 
 `keycloak/elicit-realm.json` is Author's own copy and deliberately diverges from
 the umbrella's: the umbrella's no longer carries the `elicit-author` client, its
