@@ -12,7 +12,7 @@
 ## Preconditions
 
 - The author is authenticated (UC-001) and holds the `elicit_author` role; users without that role do not see the Languages page.
-- The tool reads its translations from the deployment's translations directory (UC-040), which is writable by the tool.
+- The tool reads its translations from the deployment's translations directory (UC-040), which is writable by the tool. Deployments mount that directory read-only (C-025): until one can be mounted writable, this use case stays planned.
 - The tool ships English only; every other language is a file in that directory.
 
 ## Main Success Scenario
@@ -116,7 +116,7 @@ The proposed direction comes from the language; the author may override it, and 
 
 ### BR-008: The tool manages only its own languages
 
-The tool writes only into its own `author` sub-directory of the translations directory; the survey application's and the console's languages are managed from the admin console (Admin UC-021).
+The tool writes only into its own `author` sub-directory of the translations directory; the survey application's and the console's languages are managed from the admin console (Admin UC-027).
 
 ### BR-009: Every change is attributed
 
