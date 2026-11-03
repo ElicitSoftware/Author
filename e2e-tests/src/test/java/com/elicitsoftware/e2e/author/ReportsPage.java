@@ -9,6 +9,9 @@ import com.microsoft.playwright.Page;
  */
 public class ReportsPage extends AuthorPageObject {
 
+    /** Columns between the name cell and the actions cell: description, address, actions. */
+    private static final int SERVICE_COLUMNS_AFTER_NAME = 3;
+
     public ReportsPage(Page page) {
         super(page);
     }
@@ -17,23 +20,46 @@ public class ReportsPage extends AuthorPageObject {
         page.locator("h3:has-text(\"Report services\")").first().waitFor();
     }
 
-    /** True while a row carries the "Built-in" badge (UC-048 BR-002). */
+    /**
+     * True while a row carries the "Built-in" badge (UC-048 BR-002). Only visible cells count:
+     * the grid keeps the cell contents of removed rows in the light DOM, hidden.
+     */
     public boolean listsTheBuiltInReport() {
-        return servicesGrid().locator("span.designer-badge").filter(new Locator.FilterOptions().setHasText("Built-in")).count() > 0;
+        return servicesGrid().locator("vaadin-grid-cell-content:visible span.designer-badge")
+                .filter(new Locator.FilterOptions().setHasText("Built-in")).count() > 0;
     }
 
     /**
      * Removes the built-in respondent report (UC-048 A3): Remove on its row, then the confirm
      * dialog, then the empty-list paragraph.
+     * <p>
+     * The badge and the buttons are in different cells of the row, so the row is found the way
+     * the other page objects read a grid: the flat, row-major {@code vaadin-grid-cell-content}
+     * list. The services grid has five columns (order, name, description, address, actions), so
+     * the actions cell is three cells after the name cell that carries the badge.
      */
     public void removeBuiltInReport() {
-        Locator row = serviceRows().filter(new Locator.FilterOptions().setHasText("Built-in")).first();
-        row.waitFor();
-        buttonByText(row, "Remove").click();
-        Locator confirm = page.locator("vaadin-confirm-dialog[opened]").last();
-        confirm.waitFor();
-        page.locator("vaadin-confirm-dialog-overlay[opened] vaadin-button")
-                .filter(new Locator.FilterOptions().setHasText("Remove")).first().click();
+        Locator badge = servicesGrid().locator("vaadin-grid-cell-content:visible")
+                .filter(new Locator.FilterOptions().setHas(page.locator("span.designer-badge")))
+                .filter(new Locator.FilterOptions().setHasText("Built-in")).first();
+        badge.waitFor();
+        Locator cells = servicesGrid().locator("vaadin-grid-cell-content:visible");
+        int nameCell = -1;
+        for (int i = 0; i < cells.count(); i++) {
+            if (cells.nth(i).locator("span.designer-badge").count() > 0) {
+                nameCell = i;
+                break;
+            }
+        }
+        if (nameCell < 0) {
+            throw new IllegalStateException("UC-048 BR-002: no row carries the Built-in badge");
+        }
+        buttonByText(cells.nth(nameCell + SERVICE_COLUMNS_AFTER_NAME), "Remove").click();
+        // The dialog host stays hidden and its overlay only displays it; the buttons are the host's
+        // slotted children (slot="confirm-button"), which render through the overlay and are what
+        // Playwright can click.
+        page.locator("vaadin-confirm-dialog-overlay[opened]").last().waitFor();
+        page.locator("vaadin-confirm-dialog[opened] vaadin-button[slot=confirm-button]").last().click();
         page.getByText("No report services.").first().waitFor();
     }
 
@@ -67,10 +93,5 @@ public class ReportsPage extends AuthorPageObject {
 
     private Locator servicesGrid() {
         return page.locator("h3:has-text(\"Report services\") ~ vaadin-grid").first();
-    }
-
-    /** One locator per body row: the cells holding the row's Remove button. */
-    private Locator serviceRows() {
-        return servicesGrid().locator("vaadin-grid-cell-content").filter(new Locator.FilterOptions().setHasText("Remove"));
     }
 }

@@ -24,6 +24,10 @@ services:
       # INFO so a test run's rule evaluation and save errors show in `docker compose logs survey`.
       LOG_LEVEL: INFO
       brand.file.system.path: /opt/brand
+      # Survey's connection is survey_user and its migrating connection elicit_owner; both
+      # passwords are SURVEYPW in the database image's role script.
+      ELICIT_DB_PASSWORD: SURVEYPW
+      ELICIT_OWNER_DB_PASSWORD: SURVEYPW
       # The image carries English only; the other languages are read from <this path>/<app>/.
       # Narrow what is offered with i18n.offered.locales (e.g. en,es-419).
       i18n.file.system.path: /opt/i18n
@@ -110,6 +114,10 @@ services:
       elicit.etl.enabled: "false"
       elicit.etl.drop.enabled: "true"
       brand.file.system.path: /opt/brand
+      # The preview connects as survey_user and migrates as elicit_owner, like Survey; the
+      # roles are cluster-wide, so the author database takes the same passwords.
+      ELICIT_DB_PASSWORD: SURVEYPW
+      ELICIT_OWNER_DB_PASSWORD: SURVEYPW
       # The image carries English only; the other languages are read from <this path>/<app>/.
       # Narrow what is offered with i18n.offered.locales (e.g. en,es-419).
       i18n.file.system.path: /opt/i18n

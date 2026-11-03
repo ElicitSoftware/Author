@@ -182,6 +182,14 @@ public class SurveyEditorPage extends AuthorPageObject {
         return page.getByText("Ready to export. No problems found.").count() > 0;
     }
 
+    /**
+     * Waits for the validation panel's clean verdict. {@link #isReadyToExport()} does not wait, so
+     * after opening the editor by URL the panel may not have rendered yet; this does.
+     */
+    public void waitUntilReadyToExport() {
+        page.getByText("Ready to export. No problems found.").first().waitFor();
+    }
+
     /** The validation panel's text, for a readable assertion message. */
     public String validationText() {
         return page.locator("h3:has-text(\"Validation\")").locator("..").innerText();
