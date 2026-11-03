@@ -31,11 +31,28 @@
 # It cannot run at the same time as the umbrella's stack or either multi-site suite: they all
 # publish the same host ports. The compose project name below keeps the containers distinct, and
 # mailpit and jaeger deliberately take no fixed container_name for the same reason.
+# Image tag (release). Every Elicit application image -- survey, admin, fhhs, pedigree,
+# author and the author-survey preview -- is
+# pulled at the one tag in ELICIT_TAG, so a site runs a matched set and never mixes releases.
+# It defaults to `latest`, which is what the local builds (the umbrella's
+# buildDockerImages.sh and ./buildDockerImage.sh here) are tagged with.
+# To run a published release, set the tag to its version, either for one command
+#
+#   ELICIT_TAG=3.0.0-beta.1 docker compose up -d
+#
+# or once, in a `.env` file beside this one (ignored by git):
+#
+#   ELICIT_TAG=3.0.0-beta.1
+#
+# A pre-release (3.0.0-beta.1, 3.0.0-rc.1) is published under its exact version only; `latest`
+# and `3.0` move only when a final version ships, so a beta is reachable only by naming it.
+# The database image, elicitsoftware/elicit_db, is versioned on its own and is not covered.
+
 name: elicit-author
 
 services:
   survey:
-    image: elicitsoftware/survey:latest
+    image: elicitsoftware/survey:${ELICIT_TAG:-latest}
     ports:
       - 8080:8080
     environment:
@@ -73,7 +90,7 @@ services:
       db:
         condition: service_healthy
   fhhs:
-    image: elicitsoftware/fhhs:latest
+    image: elicitsoftware/fhhs:${ELICIT_TAG:-latest}
     #open this port for local testing. It is not needed for inter container communication.
     ports:
       - 8082:8080
@@ -147,7 +164,7 @@ services:
   # the healthcheck must probe the container-internal 8080 like every other service here, not the
   # published one.
   # premm5:
-  #   image: elicitsoftware/premm5:latest
+  #   image: elicitsoftware/premm5:${ELICIT_TAG:-latest}
   #   #open this port for local testing. It is not needed for inter container communication.
   #   ports:
   #     - 8086:8080
@@ -178,12 +195,12 @@ services:
   #   volumes:
   #     - ./PREMM5/PREMM5.license:/license/PREMM5.license:ro
   pedigree:
-    image: elicitsoftware/pedigree:latest
+    image: elicitsoftware/pedigree:${ELICIT_TAG:-latest}
     #open this port for local testing. It is not needed for inter container communication.
     ports:
       - 8083:8080
   admin:
-    image: elicitsoftware/admin:latest
+    image: elicitsoftware/admin:${ELICIT_TAG:-latest}
     ports:
       - 8081:8080
     healthcheck:
@@ -254,7 +271,7 @@ services:
 # run the init script once (see the comment at the top of that file) or reset PGDATA.
 # -----------------------------------------------------------------------------
   author-survey:
-    image: elicitsoftware/survey:latest
+    image: elicitsoftware/survey:${ELICIT_TAG:-latest}
     ports:
       - 8085:8080
     environment:
@@ -298,7 +315,7 @@ services:
       db:
         condition: service_healthy
   author:
-    image: elicitsoftware/author:latest
+    image: elicitsoftware/author:${ELICIT_TAG:-latest}
     ports:
       - 8084:8080
     healthcheck:
@@ -350,6 +367,7 @@ services:
 # They are not needed for production or will be replaced by non containerized applications.
 ## Postgres Database
   db:
+    # Not on ELICIT_TAG: the database image has its own release cadence (see the header).
     image: elicitsoftware/elicit_db:latest
     # Setup the directories to persist data between starts.
     # if you need to reset your database you can delete the PGDATA directory and restart the containers
