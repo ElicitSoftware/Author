@@ -1,6 +1,5 @@
 
-Lists of 15 third-party dependencies.
-     (Apache License Version 2.0) Vaadin Platform (vaadin-dev) (com.vaadin:vaadin-dev:25.3.0 - https://vaadin.com)
+Lists of 14 third-party dependencies.
      (Apache License Version 2.0) Vaadin Quarkus Extension (com.vaadin:vaadin-quarkus-extension:25.3.0 - https://vaadin.com/vaadin-quarkus-extension-parent/vaadin-quarkus-extension)
      (The Apache Software License, Version 2.0) Quarkus - ArC - Runtime (io.quarkus:quarkus-arc:3.40.1 - https://github.com/quarkusio/quarkus)
      (The Apache Software License, Version 2.0) Quarkus - Container Image - Docker (io.quarkus:quarkus-container-image-docker:3.40.1 - https://github.com/quarkusio/quarkus)
