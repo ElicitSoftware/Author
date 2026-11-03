@@ -37,8 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * it walks the author into a survey that cannot be exported. Judged by {@link Tokens}, the same
  * helpers the exporter uses, so the strings answer to the rule the product enforces.</p>
  *
- * <p>Every bundle is checked, not only the English one: the translated copies under {@code i18n/}
- * carry the same fragments verbatim (the translator context says to keep them literal), and a
+ * <p>Every bundle is checked, not only the English one: the curated translations in the umbrella's
+ * {@code elicit-i18n/author/} carry the same fragments verbatim (the translator context says to keep them literal), and a
  * language fixed in one place and missed in another is exactly what this catches.</p>
  */
 class TokenSyntaxInBundlesTest {
@@ -77,8 +77,8 @@ class TokenSyntaxInBundlesTest {
     }
 
     /**
-     * The English bundle and its translator-context sidecar, plus every translated copy under
-     * {@code i18n/} that is present. Absent copies are skipped rather than failed --
+     * The English bundle and its translator-context sidecar, plus every curated translation in
+     * {@code ../elicit-i18n/author/} that is present. Absent copies are skipped rather than failed --
      * {@code TranslationBundleConsistencyTest} is what insists they exist.
      */
     private static List<Path> bundleFiles(Path root) throws IOException {

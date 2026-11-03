@@ -7,9 +7,10 @@
 #   ./up.sh mexico       Mexico only (USA must already be up)
 #   ./up.sh arabia       Arabia only (USA must already be up)
 #
-# Waits until each site's Survey and Admin answer their readiness probes. Languages are packaged
-# in the images; each site's compose file names the ones it offers in i18n.bundled.locales, so
-# there is nothing to lay out first. A first start initializes the
+# Waits until each site's Survey and Admin answer their readiness probes. The images carry English
+# only; every site mounts the umbrella's curated ../../../elicit-i18n as it is and its compose file
+# names the languages it offers of it in i18n.offered.locales, so there is nothing to lay out
+# first. A first start initializes the
 # database in one pass (Survey creates the schema; nothing seeds a survey or a department -- the
 # journey authors, applies and creates its own), which takes a minute or two per site.
 

@@ -24,13 +24,14 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * UC-040 BR-003/BR-004/BR-008: direction, language and font-scale attributes follow the locale, a
  * {@code ?lang=} query parameter selects a language before the view is built, and the language
- * switcher in the header offers the shipped locales.
+ * switcher in the header offers the mounted locales.
  */
 @QuarkusTest
 @QuarkusTestResource(PostgresTestResource.class)
@@ -51,7 +52,7 @@ class LocaleLayoutTest extends QuarkusBrowserlessTest {
         assertEquals("ar", ui.getElement().getAttribute("lang"));
         assertEquals("1.15", ui.getElement().getAttribute(LocaleLayout.FONT_SCALE_ATTRIBUTE),
                 "the classpath manifest enlarges Arabic; see src/main/resources/META-INF/i18n/i18n-config.json"
-                        + " -- nothing is mounted, so this is the image's own built-in scale");
+                        + " -- the curated mount's i18n-config.json (../elicit-i18n) declares the same 1.15");
     }
 
     @Test
@@ -98,7 +99,7 @@ class LocaleLayoutTest extends QuarkusBrowserlessTest {
 
     @Test
     @TestSecurity(user = "locale.author", roles = {"elicit_author"})
-    void switcher_listsShippedLocales_andTracksCurrent() {
+    void switcher_listsMountedLocales_andTracksCurrent() {
         navigate(SurveysView.class);
         LanguageSwitcher switcher = find(LanguageSwitcher.class).single();
 
@@ -113,7 +114,7 @@ class LocaleLayoutTest extends QuarkusBrowserlessTest {
     @Test
     void switcher_isHidden_whenOnlyEnglishIsAvailable() {
         ElicitI18NProvider englishOnly = new ElicitI18NProvider();
-        englishOnly.bundledLocales = "en";
+        englishOnly.offeredLocales = Optional.of("en");
         englishOnly.pseudoLocaleEnabled = false;
 
         LanguageSwitcher switcher = new LanguageSwitcher(selection, englishOnly);

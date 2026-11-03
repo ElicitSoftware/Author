@@ -1,59 +1,62 @@
 # Author interface translations
 
-The files here are the **Author tool's own interface strings** — navigation, buttons, menus, grid
-headers, dialog labels, notifications and the built-in guide (UC-040). They are not survey content:
+The Author image carries **English only**. Every other language of the tool's own interface
+strings (navigation, buttons, menus, grid headers, dialog labels, notifications and the built-in
+guide; UC-040) is supplied by the deployment from a mounted directory. They are not survey content:
 the words an author writes into a survey are translated on the Translations page, stored in
 `survey.translations`, and travel inside the `.elicit` export (UC-043..UC-046).
 
-| File | What it is |
+| Where | What it is |
 | --- | --- |
-| `TRANSLATION_REQUEST.md` | Generated hand-off document: every English string with its context, length budget and flags, ready to give to a translator or an AI agent for one new language. |
-| `translations_es_419.properties` | Latin American Spanish. |
-| `translations_ar.properties` | Arabic (right to left). |
+| `src/main/resources/vaadin-i18n/translations.properties` | English, authored here in Vaadin's standard location so the Copilot internationalization panel keeps editing it in place. It is the fallback for every key in every language. |
+| `i18n/TRANSLATION_REQUEST.md` | Generated hand-off document: every English string with its context, length budget and flags, ready to give to a translator or an AI agent for one new language. |
+| umbrella `elicit-i18n/author/translations_<tag>.properties` | The curated translations: Latin American Spanish (`es_419`) and Arabic (`ar`). |
 
-## These are what the application ships
+## How a site gets a language
 
-They are packaged onto the classpath at `vaadin-i18n/` by a `<resource>` block in `pom.xml`, next
-to the English bundle, so a released image renders the translation it was built and tested with.
-There is no mounted directory and no local override: a deployment can neither add a language nor
-patch one, and the version of a translation travels with the version of the code.
+The tool reads `translations_<tag>.properties` from `<i18n.file.system.path>/author/`
+(`/i18n/author/` by default). In docker compose, the umbrella's `elicit-i18n/` is mounted read-only
+there; the dev and test profiles read the same directory at `../elicit-i18n`, which is why this
+repository sits inside an umbrella checkout. Each file there:
 
-This directory used to hold readable copies of files that were loaded from elsewhere. That is no
-longer true — these are the files the build packages.
+- adds its language to the selector;
+- overlays English key by key, so it may hold only the keys it changes, and a missing key falls back
+  to English.
 
-English is the exception, and it lives elsewhere on purpose: it is **authored** at
-`src/main/resources/vaadin-i18n/translations.properties`, Vaadin's standard location, so the
-Copilot internationalization panel keeps editing it in place. Everything here is **received** from
-a translator, which is why it sits apart from `src/`.
+With nothing mounted the tool offers English only and shows no language selector.
 
-The packaging include is `translations_*.properties`, not `translations*.properties`, so a stray
-English copy in this directory could never shadow the authored one.
-
-## What a site controls
-
-One setting, `i18n.bundled.locales`. It both declares what the image carries — classpath resources
-cannot be listed, so nothing can discover which bundles are in the jar — and lets a site offer
-fewer than it carries:
+To offer fewer languages than are mounted, list them:
 
 ```properties
-i18n.bundled.locales=en,es-419   # this site offers English and Spanish; Arabic stays unreachable
+i18n.offered.locales=en,es-419   # Spanish offered; a mounted Arabic file is ignored
 ```
 
-Per-language typography is `META-INF/i18n/i18n-config.json` on the classpath, overridable per tag
-by `i18n.direction.<tag>` and `i18n.font-scale.<tag>`.
+A language left out is not offered, and `?lang=` for it is refused.
+
+Per-language typography is layered:
+
+1. `META-INF/i18n/i18n-config.json` on the classpath.
+2. `i18n-config.json` at the mount root.
+3. The `i18n.direction.<tag>` and `i18n.font-scale.<tag>` properties.
+
+Each layer overrides the one before.
 
 Not to be confused with `author.content.languages`, which is a different list for a different job:
-the languages a **survey's content** may be published in (UC-044 BR-004). The two are kept equal by
-the umbrella's build gate, because a survey published in a language the applications lack would
-reach no respondent.
+the languages a **survey's content** may be published in (UC-044 BR-004). It is held equal to the
+curated set by `checkLanguages.sh`, because a survey published in a language the applications lack
+would reach no respondent.
 
 ## Adding a language
 
-Languages are curated and arrive in a release. Hand `TRANSLATION_REQUEST.md` to a translator or an
-AI agent, put the returned `translations_<tag>.properties` here, add the tag to
-`i18n.bundled.locales` **and** to `author.content.languages`, and run the i18n tests.
-`TranslationBundleConsistencyTest` fails if the new file does not carry exactly the English key set
-with matching placeholders.
+Hand `TRANSLATION_REQUEST.md` to a translator or an AI agent. Put the returned
+`translations_<tag>.properties` in the umbrella's `elicit-i18n/author/`, add the tag to
+`author.content.languages`, and run the i18n tests. `TranslationBundleConsistencyTest` reads
+`../elicit-i18n` and fails if a curated file does not carry exactly the English key set with
+matching placeholders.
 
 All three applications must gain the language together — Survey, Admin and Author — or an author
-could publish survey content in a language a respondent's Survey cannot render.
+could publish survey content in a language a respondent's Survey cannot render. This repository's
+`checkLanguages.sh` is the authoritative three-way check (`elicit-i18n/survey/`, `admin/` and
+`author/` against `author.content.languages`), and `buildDockerImage.sh` runs it before building.
+The umbrella's copy holds the three mount directories to one set but only warns about Author: a
+private repository must never be able to fail the public build.

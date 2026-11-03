@@ -27,4 +27,4 @@ for service in "${services[@]}"; do
 done
 echo
 echo "PostgreSQL: USA localhost:5452, Mexico localhost:5402, Arabia localhost:5352 (user survey / admin)"
-echo "Languages offered: USA en, Mexico es-419, Arabia ar (i18n.bundled.locales per site)"
+echo "Languages offered: USA en, Mexico es-419, Arabia ar (i18n.offered.locales per site)"

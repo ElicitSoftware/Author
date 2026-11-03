@@ -81,7 +81,7 @@ The definition file carries every language the survey publishes. There is no per
 
 A content language must be one of the languages the applications themselves are translated into, named by `author.content.languages` and curated by ElicitSoftware. The reason is BR-002: a language the chrome does not have is never served, so content published in one would reach no respondent at any site. Offering the author a free choice invites work that is accepted, exported, distributed and then silently never shown.
 
-A language Elicit does not carry is refused wherever it is chosen or typed, with the route to getting one: ElicitSoftware translates it, and it becomes available in the next release. An author cannot get ahead of a release, which is the cost of never producing unshowable work.
+A language outside that set is refused wherever it is chosen or typed, with the route to getting one: ElicitSoftware translates the applications into it and adds it to the curated translations (the umbrella's `elicit-i18n/`), which sites mount. An author cannot get ahead of the curated set, which is the cost of never producing unshowable work.
 
 One exception, and it is about removal rather than authoring: a survey that already publishes a language Elicit does not carry — from an imported definition, or from before the set was curated — keeps showing it, marked, so that an author can see what the survey publishes and take it back out. Saving such a survey is allowed; adding such a language is not.
 

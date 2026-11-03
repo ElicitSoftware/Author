@@ -24,21 +24,22 @@ import java.util.Set;
 /**
  * The languages a survey's content may be published in (UC-044 BR-004).
  * <p>
- * Elicit's application text is translated by ElicitSoftware, curated, and shipped inside the
- * applications; a deployment cannot add a language or patch one. A survey may therefore only
- * publish content in a language the applications can also render, because a language the chrome
- * does not have is never served: {@code ContentTranslator} in Survey skips it, silently and by
- * design, so content published in it would reach no respondent anywhere.
+ * Elicit's application text is translated by ElicitSoftware and curated as one set, the
+ * umbrella's {@code elicit-i18n/}, which a deployment mounts beside the applications. A survey may
+ * only publish content in a language the applications can also render, because a language the
+ * chrome does not have is never served: {@code ContentTranslator} in Survey skips it, silently and
+ * by design, so content published in it would reach no respondent anywhere.
  * <p>
  * This list is a decision made at release time, not a fact of the filesystem, so it is stated
  * rather than discovered. It is deliberately not taken from the chrome provider's
- * {@code getProvidedLocales()}: that reports what <em>this</em> Author's own interface offers,
- * which is narrowed by a deployment's {@code i18n.bundled.locales} and says nothing about what
- * Survey renders. An institution running Author in English would otherwise find it refusing to
- * publish Arabic content that every one of its sites serves.
+ * {@code getProvidedLocales()}: that reports what <em>this</em> Author's own interface offers --
+ * English plus whatever this deployment happens to have mounted, narrowed by
+ * {@code i18n.offered.locales} -- and says nothing about what Survey renders. An institution
+ * running Author in English would otherwise find it refusing to publish Arabic content that every
+ * one of its sites serves.
  * <p>
- * Because the property is stated by hand it can drift from the bundles actually shipped. The
- * umbrella's build gate is what holds them together; nothing here can detect the drift.
+ * Because the property is stated by hand it can drift from the curated set. {@code checkLanguages.sh},
+ * in the umbrella and in Author's build, is what holds them together; nothing here can detect the drift.
  */
 @ApplicationScoped
 public class ContentLanguages {
