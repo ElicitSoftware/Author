@@ -46,6 +46,10 @@ services:
       accessCode.autoRegister: true
       LOG_LEVEL: INFO
       brand.file.system.path: /opt/brand
+      # Survey's connection is survey_user and its migrating connection elicit_owner; both
+      # passwords are SURVEYPW in the database image's role script.
+      ELICIT_DB_PASSWORD: SURVEYPW
+      ELICIT_OWNER_DB_PASSWORD: SURVEYPW
       # The image carries English only; the other languages are read from <this path>/<app>/,
       # the curated set every site here mounts. Of those, this site offers only these
       # (English is always offered).
@@ -133,6 +137,9 @@ services:
     environment:
       TZ: America/Detroit
       pedigree.url: http://pedigree:8080/svg
+      # FHHS connects as survey_user and migrates as elicit_owner, like Survey.
+      ELICIT_DB_PASSWORD: SURVEYPW
+      ELICIT_OWNER_DB_PASSWORD: SURVEYPW
       # No SFTP server in this suite: the post-survey action still generates the report.
       family.history.sftp.enabled: false
       quarkus.application.name: fhhs
