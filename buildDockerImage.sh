@@ -20,13 +20,23 @@ fi
 
 echo "build Author"
 
-# The author's manual (UC-039) is typeset before the package step so the PDF is on the
-# classpath when Quarkus builds the image, and is stamped with the version and build date
-# this image carries (UC-039 BR-003, NFR-016). SKIP_MANUAL=1 builds without it; the
-# application then simply does not offer the link (UC-039 A1).
-VERSION="$(sed -n '1,20p' pom.xml | grep -m1 -o '<version>[^<]*</version>' | sed 's/<[^>]*>//g')"
-BUILD_DATE="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-./docs/manual/build-manual.sh "${VERSION}" "${BUILD_DATE}"
+# The author's manual (UC-039) ships inside the image (BR-004), stamped with the version
+# and build date of the build that typeset it (BR-003, NFR-016). Typesetting means a TeX Live
+# container and the slowest minute of a development build, so this script reuses the PDF a
+# previous run left at src/main/resources/manual/ and typesets only when there is none; a
+# reused manual then carries that earlier build's stamp, which an unpublished image can live
+# with. BUILD_MANUAL=1 typesets a fresh one; SKIP_MANUAL=1 builds without one, and the
+# application then simply does not offer the link (UC-039 A1). Published images never take
+# the shortcut: the release workflow (.github/workflows/maven.yml) typesets the manual for
+# every tagged build, pre-release or final.
+MANUAL_PDF="src/main/resources/manual/elicit-author-manual.pdf"
+if [ "${BUILD_MANUAL:-0}" != 1 ] && [ "${SKIP_MANUAL:-0}" != 1 ] && [ -s "${MANUAL_PDF}" ]; then
+    echo "[manual] reusing ${MANUAL_PDF} from $(date -r "${MANUAL_PDF}" '+%Y-%m-%d %H:%M'); BUILD_MANUAL=1 typesets a fresh one"
+else
+    VERSION="$(sed -n '1,20p' pom.xml | grep -m1 -o '<version>[^<]*</version>' | sed 's/<[^>]*>//g')"
+    BUILD_DATE="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+    ./docs/manual/build-manual.sh "${VERSION}" "${BUILD_DATE}"
+fi
 
 # Vaadin reuses the cached production bundle (src/main/bundles/prod.bundle, gitignored) whenever
 # the set of frontend modules is unchanged -- even when a new route needs its own lazy chunk.
