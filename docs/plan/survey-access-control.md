@@ -149,6 +149,99 @@ Author's System views.
 - `keycloak/elicit-realm.json`: add the `elicit_author_admin` client role, map it to `admin`,
   and add an `authoradmin` user holding only that role to exercise manage-only.
 
+### 5. The preview Survey
+
+The preview (`author-survey`, port 8085) is a Survey instance over the authoring database with
+`accessCode.autoRegister=true`: its login page lists every survey in a picker and any typed code
+enters any of them. Hiding a survey in Author while the preview shows it is not the separation
+asked for. Survey has no sign-in and cannot know who an author is, so the preview is made an
+**issued** thing: Author decides who may preview what, and the preview only renders what Author
+hands it. It rests on Survey's survey-per-host change
+(`Survey/docs/plans/survey-per-host.md`, FR-036 / UC-015 there): a host offers one survey, a
+code for another survey is refused on it, and once any survey is mapped a host with no mapping
+offers none.
+
+- **Every survey gets a preview host.** `SurveyService.create`, `SurveyDefinitionImporter` and
+  `SurveyService.delete` call Survey's `POST`/`DELETE /api/surveys/{key}/host` through
+  `PreviewSurveyClient`, at `author.preview.survey.url`, in the same place they grant the creator
+  or remove grants. The host is `<slug>.<author.preview.host-suffix>`; a new property
+  `author.preview.host-suffix` (e.g. `preview.survey.app.med.umich.edu`) names the suffix, and
+  the bare preview host then shows "no surveys". A failed call is reported like the schema drop
+  in UC-047 BR-008: the survey operation succeeds, the preview is noted as not configured.
+- **Author mints the preview respondent.** A new guarded method, `SurveyService.preview(survey)`
+  (FR-030, until now Open), inserts a `survey.respondents` row for that survey with a random
+  access code, as Admin's own `AccessCodeService` does, and returns
+  `https://<host>/#/login/<code>`. The designer's "Preview as respondent" button and the Reports
+  page link (UC-048 A5, today a link to the preview root) open it in a new tab. Being guarded, it
+  is only reachable for a survey the author is granted, so a minted code is the only door and an
+  author holds codes only for their own surveys.
+- **The preview runs with `accessCode.autoRegister=false`** in `docker-compose.yml`,
+  `docker-compose-full.yml` and the two e2e compose files; `author.preview.survey.url` keeps the
+  internal address for the three calls (host set, host clear, schema drop), and the browser-facing
+  link is built from the host suffix, so the property no longer has to be browser-reachable.
+- **What still shows**: a visitor who guesses another survey's preview host sees its login page
+  and title, and nothing more. That is the same class of leak as the name-collision item below;
+  deriving the slug from the survey key rather than the name closes it, at the cost of
+  unreadable hosts. Preview answers already live in the authoring database and go with the
+  survey on delete.
+- **Site requirements**: a wildcard DNS record and certificate for `*.<suffix>`, and the proxy
+  routing that wildcard to the preview instance with `X-Forwarded-Host`. Where a wildcard is not
+  available, the fallback is a Survey change (a `/login/<code>` link that resolves the survey
+  from the code and hides the picker) and is not part of this plan.
+
+Artifacts: FR-030 moves from Open to the design above and gains the host and minted-code rules;
+a new UC-054 "Preview a Survey as a Respondent" (actor: survey author; preconditions: granted;
+business rules: minted code, one host per survey, auto-registration off); UC-047 adds the host
+clear beside the schema drop; UC-048 A5 points at the minted link; C-028 is narrowed to the name
+leak. Tests: `SurveyAccessTest` gains "user B cannot mint a preview for A's survey";
+`PreviewSurveyClientTest` covers host set, clear and an unreachable preview; the
+`AuthorToRespondentE2ETest` journey enters the preview through the minted link instead of a typed
+code.
+
+### 6. Any OIDC provider, Keycloak as the worked example
+
+Keycloak is the bundled evaluation provider, not a requirement (C-008). A site may bring
+Microsoft Entra ID or any other OIDC provider, and the identity model above is chosen so that it
+does not care which. What differs by provider is configuration, and the plan commits to naming
+it in the configuration reference and the manual chapter:
+
+- **Where roles are in the token.** Nothing sets `quarkus.oidc.roles.role-claim-path`, so
+  Quarkus reads Keycloak's `realm_access` and `resource_access` claims and the generic `groups`
+  claim. Entra emits app roles in a `roles` claim and fills `groups` with object IDs, omitting it
+  above 200 groups. A site that manages Elicit's roles in such a provider sets
+  `quarkus.oidc.roles.role-claim-path` (to `roles` on Entra) on Author and on Admin; the role
+  names (`elicit_author`, `elicit_author_admin`, `elicit_admin`) are then app-role values. The
+  `keycloak/elicit-realm.json` step in section 4 is the bundled example only.
+- **DATABASE mode is the expected route on a non-Keycloak provider**, not a corner case. Without
+  the claim path every such user arrives roleless and reaches the `author.user_roles` lookup, and
+  `ELICIT_AUTHOR_BOOTSTRAP_ADMIN` is then the first-run path rather than a fallback. The manual
+  chapter leads with it for that audience, with the claim-path setting beside it for sites that
+  prefer provider-managed roles. The mechanism is Admin's unchanged: a provider role always
+  wins, and the table is consulted only when the provider supplies none.
+- **One username across Admin and Author.** Both key the local user on the principal name,
+  which Quarkus takes from `upn`, then `preferred_username`, then `sub`. That is right: Entra's
+  `sub` is pairwise per app registration, so it would name the same person differently in the
+  two apps, while `preferred_username` is the same in both. A site pins the same
+  `quarkus.oidc.token.principal-claim` on Admin and Author, and the manual says so.
+- **Username matching is exact in Admin** (`u.username = :username` in
+  `UserRoleDatabaseLookup`, and the registrar's upsert follows it). Entra does not guarantee
+  that a UPN's casing in the token matches what an author administrator pre-registers. Author
+  does not diverge from Admin on its own: either both compare case-insensitively (an Admin
+  change, tracked there) or both document exact matching. Until that is decided Author matches
+  exactly, and pre-registration keeps the casing the provider sends.
+- **Silent refresh.** `quarkus.oidc.token.refresh-expired=true` exists for Keycloak's
+  five-minute ID tokens and needs a refresh token. Entra issues one only when `offline_access`
+  is requested, so `quarkus.oidc.authentication.scopes=offline_access` is a documented site
+  setting; without it an Entra session ends at token expiry, the mid-edit failure the setting
+  was added to prevent.
+- **Redirect registration.** Author's callback is the fixed path `/callback`, so a provider
+  needs the exact URIs `https://<author host>/callback` and, for sign-out, the post-logout URI
+  `https://<author host>/`. Wildcards such as `http://localhost:8084/*` are a Keycloak
+  convenience; Entra accepts none and has no "web origins".
+- **Optional claims.** Names and email come from `given_name`, `family_name` and `email`, which
+  an Entra tenant must enable as optional claims; the nullable columns in section 1 already
+  tolerate their absence.
+
 ### Defaults chosen
 
 - **First author admin in DATABASE mode:** a property,
@@ -200,7 +293,9 @@ management" group.
 
 Also: `docs/entity_model.md` (reword the "does not propose a new schema" header; add an
 "Author-owned schema" section and diagram nodes), `docs/vision.md` (target users; the C-005
-passage), the manual's "Signing in" section plus a new chapter, `README.md`, `CLAUDE.md`,
+passage), the manual's "Signing in" section plus a new chapter written for any provider (section
+6: DATABASE mode first, then the claim path, the principal claim, `offline_access` and the exact
+redirect URIs, with Keycloak and Entra as the two worked examples), `README.md`, `CLAUDE.md`,
 `AGENTS.md`.
 
 ## Tests
@@ -238,6 +333,10 @@ accumulate before they are enforced, so `main` stays usable.
    branch for the new messages.
 4. **Manual and end-to-end:** the manual chapter and screenshots; confirm
    `AuthorToRespondentE2ETest` still passes as `author`.
+5. **Issued preview** (FR-030, UC-054, C-028): after Survey's survey-per-host change has shipped
+   in the image the preview runs. Host suffix property, host calls on create/import/delete,
+   `SurveyService.preview`, the two buttons, auto-registration off in the compose files, the
+   e2e journey through the minted link. A small umbrella branch for the button strings.
 
 ## Verification
 
@@ -262,15 +361,24 @@ accumulate before they are enforced, so `main` stays usable.
 
 ## Limitations and open points
 
-- **The preview Survey (port 8085) is outside this control.** It renders any survey in the
-  authoring database to anyone with an access code, with no sign-in. "Hidden" holds inside
-  Author only; C-028 records it, and the preview should be restricted at the network.
+- **The preview Survey (port 8085) is outside this control until PR 5.** Through PRs 1-4 it
+  renders any survey in the authoring database to anyone with an access code, with no sign-in,
+  so "hidden" holds inside Author only; C-028 records it and the preview should be restricted at
+  the network meanwhile. Section 5 closes it once Survey's survey-per-host change is available,
+  leaving only the title of a survey whose preview host is guessed.
 - **Name collisions leak existence:** survey names are unique, so creating a survey with a
   hidden survey's name still reports "name in use". Accepted and documented.
 - **Existing development databases:** their surveys have no grants and are reachable only
   through the Access screen until an author admin assigns them.
-- **Renamed users:** matching is on the principal name, as in Admin; renaming a Keycloak user
-  detaches their grants.
+- **Renamed users:** matching is on the principal name, as in Admin; renaming a user in the
+  provider detaches their grants. Matching is also case-sensitive until Admin and Author decide
+  otherwise together (section 6).
+- **Admin's own per-survey limit** is a separate gap: `survey.user_surveys` exists since Admin's
+  first migration and is mapped on `User.surveys`, but nothing reads or writes it. The design
+  here (grants keyed on the survey, creator granted on apply, hidden rather than read-only,
+  enforced in services, managed by the role that already manages users) is its template, with
+  the existing foreign key on `survey_id` kept because Admin shares Survey's database. That is
+  an Admin issue and plan.
 - **To confirm in step 1:** that Quarkus intercepts self-invocation on these beans (the gate
   test asserts it), and that the signed-in identity is available inside the upload callbacks
   in `ImportDefinitionView` and `TranslationsView`.
