@@ -359,6 +359,20 @@ accumulate before they are enforced, so `main` stays usable.
      confirm a roleless Keycloak user gets roles from `author.user_roles`.
 - The realm change only loads into a fresh Keycloak, so `keycloak/db` has to be cleared first.
 
+## Target deployment check (2026-11-06, not being implemented now)
+
+Reviewed against the intended site: `author.survey.med.umich.edu` behind Microsoft Entra ID,
+authors limited to the surveys they are authorized for, sibling hosts for Admin and for each
+survey, and no data shared between surveys. The full table is in Survey's plan
+(`Survey/docs/plans/survey-per-host.md`, "Target deployment"). For Author the verdict is **yes**
+once PRs 1-3 land with the section 6 settings, with three leaks accepted and on record: unique
+survey names report "name in use" for a hidden survey; reporting tags and dimensions stay a
+shared vocabulary across authors (section 3); and a guessed preview host shows that survey's
+title (section 5). Previews live on their own wildcard, not on the production survey hosts. The
+gaps that review found are elsewhere: Admin has no per-survey limit (below), one database role
+reads every survey's report schema (Survey), and a French-only survey needs a French chrome
+bundle, French as its base language and French in `author.content.languages`.
+
 ## Limitations and open points
 
 - **The preview Survey (port 8085) is outside this control until PR 5.** Through PRs 1-4 it
