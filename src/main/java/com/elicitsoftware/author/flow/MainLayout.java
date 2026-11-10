@@ -215,7 +215,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     /** Designer drawer: the tools palette above the structure tree, scrolling together as one surface. */
     private void installDesignerDrawer(com.elicitsoftware.author.flow.designer.DesignerToolbox palette) {
         com.vaadin.flow.component.orderedlayout.VerticalLayout drawer =
-                new com.vaadin.flow.component.orderedlayout.VerticalLayout(palette, structureTree);
+                new com.vaadin.flow.component.orderedlayout.VerticalLayout(backToSurveys(), palette, structureTree);
         drawer.setPadding(false);
         drawer.setSpacing(false);
         drawer.setWidthFull();
@@ -296,11 +296,29 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
             installDesignerDrawer(designer.toolbox());
         } else if (designer == null && (treeRebuilt || drawerPalette != null)) {
             drawerPalette = null;
-            setDrawerContent(structureTree);
+            com.vaadin.flow.component.orderedlayout.VerticalLayout drawer =
+                    new com.vaadin.flow.component.orderedlayout.VerticalLayout(backToSurveys(), structureTree);
+            drawer.setPadding(false);
+            drawer.setSpacing(false);
+            drawer.setWidthFull();
+            drawer.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.STRETCH);
+            setDrawerContent(drawer);
         }
         // On the designer, the tree selects on the board instead of leaving for the details page.
         structureTree.setSelectionHandler(designer == null ? null : designer::selectFromTree);
         structureTree.highlight(kind, durableId);
+    }
+
+    /**
+     * The way out of a survey (UC-006 step 7): the structure tree replaces the application
+     * navigation, so the survey drawer leads with a link back to the Surveys list.
+     */
+    private SideNav backToSurveys() {
+        SideNav nav = new SideNav();
+        nav.addClassName("back-to-surveys");
+        nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.surveys"), SurveysView.class,
+                VaadinIcon.ARROW_LEFT.create()));
+        return nav;
     }
 
     public void refreshStructureTree() {

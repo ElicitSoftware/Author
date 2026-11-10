@@ -17,12 +17,12 @@
 ## Main Success Scenario
 
 1. The author opens a survey from the Surveys list.
-2. The system replaces the application navigation drawer with the survey's structure tree: steps in display order, each step's sections in order, each section's questions in order.
+2. The system replaces the application navigation drawer with the survey's structure tree: steps in display order, each step's sections in order, each section's questions in order. Above the tree the drawer keeps a link back to the Surveys list.
 3. The system shows the survey summary in the main area, with the validation panel (UC-007) and the Export action (UC-008).
 4. The author expands a step and selects a question.
 5. The system highlights the selected element in the tree and shows its details in the main area, including its type, order and a short form of its element key.
 6. The author navigates to other elements, or uses the browser's back and forward, and the highlighted tree row always matches the element shown. On the designer, selection is mirrored both ways: selecting a box on the board selects the matching tree row and scrolls the tree to it, and selecting a tree row selects that element on the board.
-7. The author leaves the survey, and the system restores the application navigation drawer.
+7. The author leaves the survey by that link (or the title in the header), and the system restores the application navigation drawer.
 
 ## Alternative Flows
 

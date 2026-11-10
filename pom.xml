@@ -281,18 +281,37 @@
                     <include>AUTHORING_FROM_AI.md</include>
                 </includes>
             </resource>
-            <!-- The third-party notice, generated at the project root so the committed copy is
-                 the reviewed one, ships in the jar: this is the only root-level resource, now that
-                 license.addOutputDirectoryAsResourceDir no longer sweeps in every .txt (Elicit#70). -->
-            <resource>
-                <directory>${project.basedir}</directory>
-                <filtering>false</filtering>
-                <includes>
-                    <include>Notice.txt</include>
-                </includes>
-            </resource>
         </resources>
         <plugins>
+            <!-- The third-party notice, generated at the project root so the committed copy is
+                 the reviewed one, ships in the jar (Elicit#70). It is copied by an execution, not
+                 declared as a <resource>: dev mode's hot reload watches every resource directory
+                 and ignores <includes>, so a resource rooted at ${project.basedir} copied the
+                 whole tree, target/ included, into target/classes on every pass. -->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-notice</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>Notice.txt</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
