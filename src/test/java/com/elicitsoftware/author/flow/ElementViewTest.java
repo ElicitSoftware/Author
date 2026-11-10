@@ -18,6 +18,7 @@ import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.sidenav.SideNavItem;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -111,6 +112,9 @@ class ElementViewTest extends QuarkusBrowserlessTest {
         navigate(SurveyEditorView.class, Map.of(SurveyEditorView.SURVEY_ID, String.valueOf(s.id)));
         MainLayout layout = (MainLayout) UI.getCurrent().getChildren().filter(MainLayout.class::isInstance).findFirst().orElseThrow();
         assertNotNull(layout.structureTree());
+        assertTrue(find(SideNavItem.class).all().stream()
+                        .anyMatch(i -> "".equals(i.getPath()) && layout.getTranslation("mainLayout.nav.surveys").equals(i.getLabel())),
+                "UC-006 step 2: the survey drawer links back to the Surveys list");
         navigate(SurveysView.class);
         assertTrue(layout.structureTree() == null, "UC-006 step 7: drawer back to the application navigation");
     }
