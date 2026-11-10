@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /** UC-024 BR-001: the names Author previews are the names Survey's ETL derives. */
 class ReportingNamesTest {
@@ -71,5 +72,43 @@ class ReportingNamesTest {
         assertTrue(!ReportingNames.TAG_CHARS.matcher(" Age").matches(), "must start with a letter or digit");
         assertTrue(ReportingNames.DIMENSION_CHARS.matcher("multiple_cancers").matches());
         assertTrue(!ReportingNames.DIMENSION_CHARS.matcher("multiple cancers").matches(), "UC-023 BR-003: no spaces in a dimension");
+    }
+
+    @Test
+    void dimTable_dimensionNameWinsOverTheTag() {
+        Ontology tagged = new Ontology();
+        tagged.tag = "Smoker";
+        assertEquals(ReportingNames.dimTableForTag("Smoker"), ReportingNames.dimTable(tagged), "UC-023: no dimension");
+
+        tagged.dimension = new Dimension();
+        assertEquals(ReportingNames.dimTableForTag("Smoker"), ReportingNames.dimTable(tagged), "a dimension with no name");
+
+        tagged.dimension.name = "Race";
+        assertEquals("dim_race", ReportingNames.dimTable(tagged));
+
+        assertEquals("dim_race", ReportingNames.dimTable("Smoker", "Race"));
+        assertEquals(ReportingNames.dimTableForTag("Smoker"), ReportingNames.dimTable("Smoker", null));
+        assertEquals(ReportingNames.dimTableForTag("Smoker"), ReportingNames.dimTable("Smoker", " "));
+    }
+
+    @Test
+    void reservedColumn_theFourKeyColumns() {
+        assertTrue(ReportingNames.reservedColumn("step_key"));
+        assertTrue(ReportingNames.reservedColumn("item_key"));
+        assertFalse(ReportingNames.reservedColumn("smoker"));
+        assertFalse(ReportingNames.reservedColumn(null));
+    }
+
+    @Test
+    void identifierDefect_postgresLimitIsSixtyThreeCharacters() {
+        assertEquals(java.util.Optional.empty(), ReportingNames.identifierDefect("a".repeat(63)));
+        assertEquals(java.util.Optional.of(ReportingNames.IdentifierDefect.TOO_LONG), ReportingNames.identifierDefect("a".repeat(64)));
+    }
+
+    @Test
+    void identifierDefect_keySuffixes() {
+        assertEquals("empty", ReportingNames.IdentifierDefect.EMPTY.keySuffix());
+        assertEquals("characters", ReportingNames.IdentifierDefect.CHARACTERS.keySuffix());
+        assertEquals("tooLong", ReportingNames.IdentifierDefect.TOO_LONG.keySuffix());
     }
 }

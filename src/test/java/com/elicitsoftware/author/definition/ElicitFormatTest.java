@@ -21,6 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.elicitsoftware.author.i18n.Translations;
+import java.math.BigDecimal;
+import java.util.Map;
 
 /** UC-005 / UC-008: the file grammar shared with Admin. */
 class ElicitFormatTest {
@@ -88,5 +91,80 @@ class ElicitFormatTest {
     void safeFileName() {
         assertEquals("Elicit_Designer", SurveyDefinitionExporter.safeName(" Elicit Designer! "));
         assertEquals("survey", SurveyDefinitionExporter.safeName("///"));
+    }
+
+    @Test
+    void rebaseDisplayKey_aLeadingSeparatorIsStillAStructuredKey() {
+        assertEquals("0007-01", ElicitFormat.rebaseDisplayKey("-01", 7));
+    }
+
+    @Test
+    void parseNumbers_trimAndReturnNullForBlankOrMalformed() {
+        assertEquals(42, ElicitFormat.parseIntOrNull(" 42 "));
+        assertNull(ElicitFormat.parseIntOrNull(null));
+        assertNull(ElicitFormat.parseIntOrNull(""));
+        assertNull(ElicitFormat.parseIntOrNull("4.2"));
+
+        assertEquals(9_000_000_000L, ElicitFormat.parseLongOrNull(" 9000000000 "));
+        assertNull(ElicitFormat.parseLongOrNull(null));
+        assertNull(ElicitFormat.parseLongOrNull(""));
+        assertNull(ElicitFormat.parseLongOrNull("nine"));
+
+        assertEquals(new BigDecimal("1.50"), ElicitFormat.parseDecimalOrNull(" 1.50 "));
+        assertNull(ElicitFormat.parseDecimalOrNull(null));
+        assertNull(ElicitFormat.parseDecimalOrNull(""));
+        assertNull(ElicitFormat.parseDecimalOrNull("1,5"));
+    }
+
+    @Test
+    void parseBooleanOrFalse_acceptsTrueAndPostgresT() {
+        assertTrue(ElicitFormat.parseBooleanOrFalse("true"));
+        assertTrue(ElicitFormat.parseBooleanOrFalse("TRUE"));
+        assertTrue(ElicitFormat.parseBooleanOrFalse("t"));
+        assertTrue(ElicitFormat.parseBooleanOrFalse("T"));
+        assertFalse(ElicitFormat.parseBooleanOrFalse("f"));
+        assertFalse(ElicitFormat.parseBooleanOrFalse("yes"));
+        assertFalse(ElicitFormat.parseBooleanOrFalse(""));
+        assertFalse(ElicitFormat.parseBooleanOrFalse(null));
+    }
+
+    private static String[] stepsRecord(String effectiveTo) {
+        String[] fields = new String[9];
+        java.util.Arrays.fill(fields, "x");
+        fields[8] = effectiveTo;
+        return fields;
+    }
+
+    @Test
+    void isRetired_readsTheEffectiveToField() {
+        assertTrue(ElicitFormat.isRetired("steps", stepsRecord("2026-01-01 00:00:00+00")));
+        assertFalse(ElicitFormat.isRetired("steps", stepsRecord(ElicitFormat.SENTINEL_LITERAL)));
+        assertFalse(ElicitFormat.isRetired("steps", stepsRecord("")), "no effective_to is current");
+        assertFalse(ElicitFormat.isRetired("steps", stepsRecord("9999-12-31")), "an unparsable sentinel is current");
+        assertTrue(ElicitFormat.isRetired("steps", stepsRecord("2026-01-01")), "an unparsable past date is retired");
+    }
+
+    @Test
+    void isRetired_falseWhenTheTableIsUnversionedOrTheRecordIsShort() {
+        assertFalse(ElicitFormat.isRetired("surveys", stepsRecord("2026-01-01 00:00:00+00")));
+        String[] shortRecord = new String[8];
+        java.util.Arrays.fill(shortRecord, "2026-01-01 00:00:00+00");
+        assertFalse(ElicitFormat.isRetired("steps", shortRecord), "steps' effective_to is field 8");
+    }
+
+    @Test
+    void resolveIds_mapOldIdsToNew() {
+        Map<Long, Long> ids = Map.of(10L, 110L);
+        assertEquals(110L, ElicitFormat.resolveRequired(10L, ids, "step"));
+        assertEquals(110L, ElicitFormat.resolveNullable(10L, ids, "step"));
+        assertNull(ElicitFormat.resolveNullable(null, ids, "step"));
+
+        IllegalStateException noSource = assertThrows(IllegalStateException.class,
+                () -> ElicitFormat.resolveRequired(null, ids, "step"));
+        assertEquals(Translations.get("error.import.noSourceId", "step"), noSource.getMessage());
+
+        IllegalStateException noMapping = assertThrows(IllegalStateException.class,
+                () -> ElicitFormat.resolveNullable(11L, ids, "step"));
+        assertEquals(Translations.get("error.import.noIdMapping", "step", "11"), noMapping.getMessage());
     }
 }
