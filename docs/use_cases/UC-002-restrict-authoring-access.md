@@ -67,7 +67,7 @@
 
 ### BR-001: Single authoring role
 
-`elicit_author` is the only role that grants authoring access. It is granted explicitly per user; `elicit_admin` on any client does not imply it.
+`elicit_author` is the only role that grants authoring access. It is granted explicitly per user; neither `elicit_author_admin` nor `elicit_admin` on any client implies it.
 
 ### BR-002: Deny by default
 

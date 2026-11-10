@@ -35,7 +35,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
  * {@code elicit.debug.reveal-tokens=true}. Mirrors the Admin console's page.
  */
 @Route(value = "oidc", layout = MainLayout.class)
-@RolesAllowed(AuthorRoles.ADMIN)
+@RolesAllowed(AuthorRoles.AUTHOR_ADMIN)
 public class OidcDiagnosticsView extends VerticalLayout implements HasDynamicTitle {
 
     static final String INFO_ID = "oidc-info";
@@ -71,8 +71,8 @@ public class OidcDiagnosticsView extends VerticalLayout implements HasDynamicTit
         sb.append(getTranslation("oidcDiagnosticsView.roleSource", String.valueOf(roleSource))).append('\n');
         sb.append(getTranslation("oidcDiagnosticsView.hasRole", AuthorRoles.AUTHOR,
                 String.valueOf(identity.hasRole(AuthorRoles.AUTHOR)))).append('\n');
-        sb.append(getTranslation("oidcDiagnosticsView.hasRole", AuthorRoles.ADMIN,
-                String.valueOf(identity.hasRole(AuthorRoles.ADMIN)))).append("\n\n");
+        sb.append(getTranslation("oidcDiagnosticsView.hasRole", AuthorRoles.AUTHOR_ADMIN,
+                String.valueOf(identity.hasRole(AuthorRoles.AUTHOR_ADMIN)))).append("\n\n");
 
         try {
             if (idTokenInstance.isResolvable()) {

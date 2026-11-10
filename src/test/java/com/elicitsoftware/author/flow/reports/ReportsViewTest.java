@@ -154,7 +154,7 @@ class ReportsViewTest extends QuarkusBrowserlessTest {
     }
 
     @Test
-    @TestSecurity(user = "reports.admin", roles = {"elicit_admin"})
+    @TestSecurity(user = "reports.admin", roles = {"elicit_author_admin"})
     void adminRoleAloneCannotOpenTheReportsPage() {
         assertThrows(RuntimeException.class, this::open, "UC-002 BR-001");
     }

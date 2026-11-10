@@ -31,8 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * flow A1 — an authenticated user without an Elicit role is sent to the
  * "unauthorized" view. This test builds the view in the browserless Vaadin
  * environment and asserts, from the user's perspective, that they see the
- * "Access Restricted" heading, guidance to request the {@code elicit_user} /
- * {@code elicit_admin} role, and a Logout button.</p>
+ * "Access Restricted" heading, guidance to request the {@code elicit_author}
+ * role, and a Logout button.</p>
  *
  * <p>The view is instantiated and attached to the test {@link UI} rather than
  * reached via {@code navigate(...)}: under {@code @QuarkusTest} the Vaadin route

@@ -169,7 +169,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
             }
             nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.importDefinition"), ImportDefinitionView.class, VaadinIcon.UPLOAD.create()));
         }
-        if (identity != null && identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.ADMIN)) {
+        if (identity != null && identity.hasRole(com.elicitsoftware.author.security.AuthorRoles.AUTHOR_ADMIN)) {
             nav.addItem(createSystemSection());
         }
         nav.addItem(new SideNavItem(getTranslation("mainLayout.nav.logout"), LogoutView.class, VaadinIcon.LOCK.create()));
@@ -178,7 +178,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
 
     /**
      * The System section: setup and diagnostics for the administrator or operator wiring up a
-     * deployment (UC-034 to UC-038). Gated on {@code elicit_admin}, which grants no authoring.
+     * deployment (UC-034 to UC-038). Gated on {@code elicit_author_admin}, which grants no authoring.
      */
     private SideNavItem createSystemSection() {
         SideNavItem systemSection = new SideNavItem(getTranslation("mainLayout.nav.system"));

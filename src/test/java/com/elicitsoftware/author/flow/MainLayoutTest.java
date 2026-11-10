@@ -59,15 +59,15 @@ class MainLayoutTest extends QuarkusBrowserlessTest {
     }
 
     @Test
-    @TestSecurity(user = "mainlayout.admin", roles = {"elicit_admin"})
+    @TestSecurity(user = "mainlayout.admin", roles = {"elicit_author_admin"})
     void adminRoleAloneDoesNotGrantAuthoring() {
         MainLayout layout = attachLayout();
-        assertFalse(hasNavItem(layout, layout.getTranslation("mainLayout.nav.surveys")), "elicit_admin must not imply elicit_author (UC-002 BR-001)");
+        assertFalse(hasNavItem(layout, layout.getTranslation("mainLayout.nav.surveys")), "elicit_author_admin must not imply elicit_author (UC-002 BR-001)");
         assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.logout")));
-        // UC-034..UC-038: elicit_admin sees the System section and its five entries.
-        assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.system")), "elicit_admin should see the System section");
+        // UC-034..UC-038: elicit_author_admin sees the System section and its five entries.
+        assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav.system")), "elicit_author_admin should see the System section");
         for (String entry : List.of("systemOverview", "systemDatabase", "systemBranding", "systemConnections", "systemOidc")) {
-            assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav." + entry)), "elicit_admin should see System > " + entry);
+            assertTrue(hasNavItem(layout, layout.getTranslation("mainLayout.nav." + entry)), "elicit_author_admin should see System > " + entry);
         }
     }
 
@@ -118,7 +118,7 @@ class MainLayoutTest extends QuarkusBrowserlessTest {
 
     /** UC-039 A4: the manual is authoring documentation, so it is not offered without the role. */
     @Test
-    @TestSecurity(user = "mainlayout.admin", roles = {"elicit_admin"})
+    @TestSecurity(user = "mainlayout.admin", roles = {"elicit_author_admin"})
     void adminRoleAloneIsNotOfferedTheManual() {
         MainLayout layout = attachLayout();
         assertEquals(0, find(Anchor.class, layout).withClassName("header-manual-link").all().size());

@@ -10,8 +10,9 @@ Today anyone holding `elicit_author` can open, edit, export and delete every sur
 authoring database. There is no user table, no owner column and no check narrower than the
 role (FR-033, UC-002 BR-001). The goal is to limit which users can alter which surveys, using
 the same identity model as Admin (OIDC principal matched to a local user row, with an optional
-local-table role fallback), plus a new `elicit_author_admin` role and screens to manage the
-user/survey relationships.
+local-table role fallback), plus screens to manage the user/survey relationships, gated on
+`elicit_author_admin`. That is Author's existing administrator role, renamed from `elicit_admin`
+so it is not confused with Admin's role of that name; it gates the System section too.
 
 Decisions already made:
 
@@ -20,7 +21,8 @@ Decisions already made:
    `survey` schema".
 2. **Ungranted surveys are hidden**: absent from the list, URLs answer "not found". No
    read-only mode.
-3. **`elicit_author_admin` is manage-only.** It opens the access screens and nothing else. To
+3. **`elicit_author_admin` is manage-only.** It opens the access screens and the System
+   section, and nothing else. To
    edit a survey an author admin also needs `elicit_author` and a grant, which they may give
    themselves.
 4. **No backfill.** A new deployment has no surveys; whoever creates or imports one is given a
@@ -36,7 +38,7 @@ creates the schema itself):
 | Table | Columns | Notes |
 | --- | --- | --- |
 | `author.users` | `id`, `username` (unique), `first_name`, `last_name`, `email`, `active`, `created_at`, `last_seen_at` | `username` = OIDC principal name, as in Admin. Names nullable (some identity providers send none). |
-| `author.user_roles` | `user_id`, `role_name` | PK on both; CHECK `role_name IN ('elicit_author','elicit_author_admin','elicit_admin')`. Used only in DATABASE mode. |
+| `author.user_roles` | `user_id`, `role_name` | PK on both; CHECK `role_name IN ('elicit_author','elicit_author_admin')`. Used only in DATABASE mode. |
 | `author.user_surveys` | `user_id`, `survey_key uuid`, `granted_by`, `granted_at` | PK `(user_id, survey_key)`; index on `survey_key`. |
 
 - **Grants key on `survey_key`, with no foreign key to `survey.surveys`.** The key is the
@@ -79,9 +81,9 @@ the `quarkus.datasource.owner.*` and `quarkus.flyway.owner.*` lines):
   (pointed at `author.user_roles`), and reshape
   `security/RoleSecurityIdentityAugmentor.java` to Admin's logic: a role from OIDC always
   wins; only a roleless identity in DATABASE mode gets roles from the local table.
-- **`security/AuthorRoles.java`:** add `AUTHOR_ADMIN = "elicit_author_admin"`; `ALL` becomes
-  the three roles.
-- **`security/CurrentUser.java`:** add `isAuthorAdmin()`, `isSystemAdmin()`, `roleSource()`,
+- **`security/AuthorRoles.java`:** `AUTHOR_ADMIN = "elicit_author_admin"` exists already (the
+  renamed `ADMIN`); `ALL` becomes the two roles.
+- **`security/CurrentUser.java`:** add `isAuthorAdmin()`, `roleSource()`,
   `displayName()`, `userId()`.
 - **Inactive users:** grants ignored in both modes; no local roles given.
 
@@ -144,10 +146,10 @@ Author's System views.
 
 - `flow/MainLayout.java`: a new "Access" nav section beside the System section.
 - Landing: `/` becomes role-aware, so an author admin without `elicit_author` lands on
-  `access/surveys` and an `elicit_admin`-only user on `system` (today both land on the
-  access-restricted page).
-- `keycloak/elicit-realm.json`: add the `elicit_author_admin` client role, map it to `admin`,
-  and add an `authoradmin` user holding only that role to exercise manage-only.
+  `access/surveys` (today it lands on the access-restricted page).
+- `keycloak/elicit-realm.json`: the `elicit_author_admin` client role exists and is mapped to
+  `admin` already (renamed from `elicit_admin`); add an
+  `authoradmin` user holding only that role to exercise manage-only.
 
 ### 5. The preview Survey
 
@@ -210,7 +212,7 @@ it in the configuration reference and the manual chapter:
   claim. Entra emits app roles in a `roles` claim and fills `groups` with object IDs, omitting it
   above 200 groups. A site that manages Elicit's roles in such a provider sets
   `quarkus.oidc.roles.role-claim-path` (to `roles` on Entra) on Author and on Admin; the role
-  names (`elicit_author`, `elicit_author_admin`, `elicit_admin`) are then app-role values. The
+  names (`elicit_author`, `elicit_author_admin`) are then app-role values. The
   `keycloak/elicit-realm.json` step in section 4 is the bundled example only.
 - **DATABASE mode is the expected route on a non-Keycloak provider**, not a corner case. Without
   the claim path every such user arrives roleless and reaches the `author.user_roles` lookup, and
@@ -247,8 +249,6 @@ it in the configuration reference and the manual chapter:
 - **First author admin in DATABASE mode:** a property,
   `elicit.author.bootstrap-admin=${ELICIT_AUTHOR_BOOTSTRAP_ADMIN:}`, applied at startup when no
   active user holds the role. Admin instead ships a seeded `admin` account.
-- **Assigning `elicit_admin` locally:** offered in the role picker only when the acting user
-  holds `elicit_admin`.
 - **Last author admin:** cannot be deactivated or demoted in DATABASE mode.
 - **Only author admins grant access.** A granted author cannot share a survey with others.
 - **Column name `active`** on `author.users`, for parity with Admin (the terminology rule

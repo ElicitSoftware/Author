@@ -94,9 +94,9 @@ class DisplayedStringsSweepTest extends QuarkusBrowserlessTest {
         assertTrue(problems.isEmpty(), report(problems));
     }
 
-    /** UC-034..UC-038: the System pages are gated on elicit_admin, so they are swept as that role. */
+    /** UC-034..UC-038: the System pages are gated on elicit_author_admin, so they are swept as that role. */
     @Test
-    @TestSecurity(user = "sweep.admin", roles = {"elicit_admin"})
+    @TestSecurity(user = "sweep.admin", roles = {"elicit_author_admin"})
     void systemRoutes_haveNoUntranslatedText() {
         UI.getCurrent().setLocale(ElicitI18NProvider.PSEUDO_LOCALE);
         List<String> problems = new ArrayList<>();

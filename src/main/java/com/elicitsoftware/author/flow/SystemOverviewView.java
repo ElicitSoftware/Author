@@ -40,7 +40,7 @@ import java.util.List;
  * setting is present. Read-only; every summary is re-established when the screen opens.
  */
 @Route(value = "system", layout = MainLayout.class)
-@RolesAllowed(AuthorRoles.ADMIN)
+@RolesAllowed(AuthorRoles.AUTHOR_ADMIN)
 public class SystemOverviewView extends VerticalLayout implements HasDynamicTitle {
 
     static final String BUILD_GRID_ID = "system-build-grid";

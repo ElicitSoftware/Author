@@ -38,7 +38,8 @@ and expresses removals as retirements (`effective_to` closed). See
   `author` database in this repo's `docker-compose.yml`), never a deployed
   site's database. Connects as `survey_user`.
 - OIDC / Keycloak authorization (matches Admin's setup); client
-  `elicit-author`, role `elicit_author` (not implied by `elicit_admin`).
+  `elicit-author`, role `elicit_author` (not implied by `elicit_author_admin`
+  or Admin's `elicit_admin`).
   Dev port **8084**.
 - Docker for deployment
 
