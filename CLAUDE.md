@@ -52,17 +52,28 @@ one place — the umbrella — rather than duplicated here:
 
 | Lives in the umbrella | Lives here |
 | --- | --- |
-| `../elicit-brand`, `../elicit-i18n` (the curated translations; `author/` is this tool's), `../sftp_ssh`, `../../FHHS/family-history-survey.elicit` | `docker-compose.yml`, `keycloak/`, `db-init/`, `i18n/TRANSLATION_REQUEST.md` |
+| `../elicit-brand`, `../elicit-i18n` (the curated translations; `author/` is this tool's), `../sftp_ssh`, `../../FHHS/family-history-survey.elicit` | `docker-compose.yml`, `docker-compose-full.yml`, `keycloak/`, `db-init/`, `i18n/TRANSLATION_REQUEST.md` |
 
 `keycloak/elicit-realm.json` is Author's own copy and deliberately diverges from
 the umbrella's: the umbrella's no longer carries the `elicit-author` client, its
 roles or the `author` user, and this one does. A realm change that matters to
 both has to be made twice.
 
-`docker-compose.yml` here runs the **whole platform** — Survey, Admin, FHHS and
-Pedigree alongside `author` and `author-survey` — because the end-to-end suites
-drive the site applications too. It cannot run at the same time as the
-umbrella's stack or either multi-site suite; they share host ports.
+There are two compose files, one stack at two sizes:
+
+- `docker-compose.yml` runs **Author's own stack** — `author`, `author-survey`
+  (the preview on 8085), `db` and `keycloak` — because Author never calls
+  Survey, Admin, FHHS or Pedigree. For dev mode, start everything but Author
+  itself (`docker compose up -d db keycloak author-survey`) and run Author on
+  8084.
+- `docker-compose-full.yml` runs the **whole platform** — Survey, Admin, FHHS,
+  Pedigree, Mailpit and Jaeger alongside `author` and `author-survey` — because
+  the end-to-end suites drive the site applications too:
+  `docker compose -f docker-compose-full.yml up -d`.
+
+The two share the compose project name, the host ports and
+`./postgresql/PGDATA`, so only one runs at a time. Neither can run at the same
+time as the umbrella's stack or either multi-site suite; they share host ports.
 
 ## End-to-end suites
 
@@ -82,7 +93,9 @@ siblings.
 
 They are opt-in (`skipTests` defaults to true) and need Docker images built
 first: Survey/Admin/FHHS/Pedigree from the umbrella's `buildDockerImages.sh`,
-Author from `./buildDockerImage.sh`.
+Author from `./buildDockerImage.sh`. `e2e-tests/` runs against
+`docker-compose-full.yml`, not `docker-compose.yml`, which lacks the site
+applications.
 
 ## MCP Servers and Skills
 
