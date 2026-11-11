@@ -28,6 +28,7 @@ Closes #
 - [ ] A change to the `.elicit` format is mirrored in Survey's importer and in the umbrella's golden sample (`samples/census-household-survey.elicit`, via its generator), and the sample test still passes
 - [ ] `scripts/sync-survey-schema.sh` run when Survey's migrations changed, so the schema mirror is fresh
 - [ ] A new rule, control or token form was added to the golden census survey
-- [ ] New user-facing text has its key in `translations.properties` and in the umbrella's `elicit-i18n/author/translations_es_419.properties` and `translations_ar.properties` (a branch of the same name there), a context note, and `i18n/TRANSLATION_REQUEST.md` regenerated
+- [ ] New user-facing text has its key in `translations.properties` and in the umbrella's `elicit-i18n/<app>/translations_es_419.properties` and `translations_ar.properties` (a branch of the same name there), a context note, and `i18n/TRANSLATION_REQUEST.md` regenerated
+- [ ] A change to the stack, the realm, the `author` database script or an end-to-end suite made in the umbrella, on a branch of the same name
 - [ ] Cross-module change: the tracking issue in `ElicitSoftware/Elicit` and the sibling PRs are linked above
 - [ ] No AI co-author trailer in any commit message

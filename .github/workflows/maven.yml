@@ -20,9 +20,9 @@ jobs:
     name: Build with Maven
     runs-on: ubuntu-latest
     # Naming any permission drops every one not named, including the default contents: read,
-    # and this repository is private: without it the job's token cannot even check it out
-    # (#88). Nothing here reports checks or comments on a pull request, and the image push
-    # uses the Docker Hub secrets, so read is all the token needs.
+    # which the job's token needs to check the repository out (#88, while it was private). Nothing
+    # here reports checks or comments on a pull request, and the image push uses the Docker Hub
+    # secrets, so read is all the token needs.
     permissions:
       contents: read
 

@@ -92,7 +92,7 @@
 
 The document must be usable by an agent with no access to Elicit's source, database or running services. Anything it needs — the model, the layouts, the id tables, the rules, a worked example — is in the document.
 
-It also says where the public source is: the Survey runtime and the Admin application that installs a definition, the deployed Family History Survey, and the sample definitions, each by repository address and by the files worth reading first. An agent that can browse reads how a rule is evaluated or a record is parsed instead of inferring it; the first draft that used a Repeat per selected item was written by an agent that had the code beside it. The links are further reading, never a dependency: nothing the document requires of a draft is stated only behind a link, and an agent that cannot follow them loses nothing it needs. Author itself is private and is not linked.
+It also says where the public source is: the Survey runtime, the Admin application that installs a definition, Author itself, the deployed Family History Survey, and the sample definitions, each by repository address and by the files worth reading first. An agent that can browse reads how a rule is evaluated or a record is parsed instead of inferring it; the first draft that used a Repeat per selected item was written by an agent that had the code beside it. The links are further reading, never a dependency: nothing the document requires of a draft is stated only behind a link, and an agent that cannot follow them loses nothing it needs.
 
 ### BR-002: The specification cannot drift
 
