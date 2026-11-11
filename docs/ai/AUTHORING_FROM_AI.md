@@ -535,15 +535,17 @@ builds, what a token is filled with, how a record is parsed.
 | <https://github.com/ElicitSoftware/Survey> | The application respondents answer in. It evaluates every rule. | `src/main/java/com/elicitsoftware/QuestionManager.java` (builds a respondent's answers and applies the rules), `RepeatSource.java` beside it (what a REPEAT builds from a number and from a selection), `TokenSource.java` (what fills a token), `model/Relationship.java` (`evaluateOperator`: what each operator compares), `src/main/resources/db/migration/V001__Create_Survey_Schema.sql` and `V003__Populate_Schema.sql` (the tables and the lookup rows of section 6), `docs/use_cases/UC-002-answer-survey-questions.md` (the behavior, stated as rules) |
 | <https://github.com/ElicitSoftware/Admin> | The application that installs a definition at a site. | `src/main/java/com/elicitsoftware/service/SurveyDefinitionExportService.java` (the file format of section 2, as written), `SurveyDefinitionImportService.java` and `SurveyDefinitionFileFields.java` beside it (as read) |
 | <https://github.com/ElicitSoftware/FHHS> | The Family History Survey, a deployed survey. | `family-history-survey.elicit`: a complete definition, with tokens filled across steps and one step shown per repeated name |
+| <https://github.com/ElicitSoftware/Author> | The authoring tool that reads a draft. | `src/main/java/com/elicitsoftware/author/definition/ExportValidation.java` (the checks of section 5, as run), `SurveyDefinitionImporter.java` and `ElicitFormat.java` beside it (how a draft and an export are read) |
 | <https://github.com/ElicitSoftware/Elicit> | The project that assembles the applications. | `samples/census-household-survey.elicit`: a small survey that uses every question type, operator and action, and `samples/generate-census-household-survey.py`, the script that writes it |
 
 Current work lands on each repository's `V3` branch; read that branch where it
-exists, since `main` may be a release behind it.
+exists, since `main` may be a release behind it. Author has no `V3`; read its
+`main`.
 
 Two cautions. Those definitions are **exports** (`ELICIT_SURVEY_EXPORT_V1`): they
 carry element keys, versions and effective dates that a draft leaves blank
 (section 4), so copy their structure, not their records. And where the code and
 this document seem to disagree, write what this document says and tell the person
-what you saw — Author validates a draft against the rules in section 5, and Author
-itself is not among these repositories.
+what you saw — Author validates a draft against the rules in section 5, and this
+document is what its validation is tested against.
 

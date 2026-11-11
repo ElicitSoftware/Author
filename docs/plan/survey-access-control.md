@@ -64,8 +64,8 @@ the `quarkus.datasource.owner.*` and `quarkus.flyway.owner.*` lines):
   supplies the `owner` datasource URL and credentials (`elicit_owner` already exists in
   `db/testcontainers-init.sql`). Hibernate `validate` then covers the new tables at every boot.
 - Deployment: add `ELICIT_OWNER_DB_PASSWORD` and the `owner` JDBC URL to the `author` service
-  in `docker-compose.yml`, `docker-compose-full.yml`, `e2e_multisite/site1/docker-compose.yml`
-  and `e2e_multisite_multilingual/usa/docker-compose.yml`; add the password to
+  in the umbrella's `docker-compose.yml`, `e2e_multisite/site1/docker-compose.yml` and
+  `e2e_multisite_multilingual/usa/docker-compose.yml` (Elicit#72 moved all three there); add the password to
   `diagnostics/RequiredConfigCheck.java`.
 
 ### 2. Identity
@@ -177,8 +177,8 @@ offers none.
   page link (UC-048 A5, today a link to the preview root) open it in a new tab. Being guarded, it
   is only reachable for a survey the author is granted, so a minted code is the only door and an
   author holds codes only for their own surveys.
-- **The preview runs with `accessCode.autoRegister=false`** in `docker-compose.yml`,
-  `docker-compose-full.yml` and the two e2e compose files; `author.preview.survey.url` keeps the
+- **The preview runs with `accessCode.autoRegister=false`** in the umbrella's
+  `docker-compose.yml` and the two e2e compose files; `author.preview.survey.url` keeps the
   internal address for the three calls (host set, host clear, schema drop), and the browser-facing
   link is built from the host suffix, so the property no longer has to be browser-reachable.
 - **What still shows**: a visitor who guesses another survey's preview host sees its login page

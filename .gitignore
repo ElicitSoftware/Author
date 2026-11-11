@@ -64,9 +64,9 @@ src/main/resources/manual/
 docs/manual/capture/node_modules/
 docs/manual/capture/package-lock.json
 
-# Runtime state of the stack in docker-compose.yml. The compose file itself, ./keycloak and
-# ./db-init are committed. The three e2e suites carry their own .gitignore for target/, data/,
-# exports/ and __pycache__, so nothing for them is needed here.
+# Runtime state Author's own stack left here before Elicit#72 moved the stack, the realm, the
+# `author` database script and the e2e suites to the umbrella, which keeps its state in its own
+# directory now. Ignored so an old checkout's data directories do not show up as untracked.
 /postgresql/
 /mailpit_data/
 /sftp_data/

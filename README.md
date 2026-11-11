@@ -41,43 +41,28 @@ for local development and testing, though any OIDC-compliant server works in pro
 ### Prerequisites
 
 - Java 25
-- Docker. Two compose files in this repo run one stack at two sizes; they share host ports and
-  `./postgresql/PGDATA`, so run one at a time:
-  - [`docker-compose.yml`](docker-compose.yml) runs Author's own stack: Postgres with the
-    `author` database, Keycloak (realm from [`keycloak/elicit-realm.json`](keycloak/elicit-realm.json),
-    test user `author` / `author`), the `author-survey` preview instance and Author itself.
-    `docker compose up -d`.
-  - [`docker-compose-full.yml`](docker-compose-full.yml) runs the whole platform: the same,
-    plus the site's `survey` database, Survey, Admin, FHHS, Pedigree, Mailpit and Jaeger, so the
-    end-to-end suites have a site to drive. `docker compose -f docker-compose-full.yml up -d`.
-- **An Elicit umbrella checkout around this one.** Author is a private repository and is no
-  longer cloned by the umbrella's `cloneAllProjects.sh`, but it is still expected to sit at
-  `Elicit/Author/`. Shared assets are not duplicated here: the compose file mounts
-  `../elicit-brand`, `../sftp_ssh` and `../elicit-i18n` (the curated translations; the image
-  carries English only and the dev and test profiles read the same directory), and the
-  end-to-end suites install `../../FHHS/family-history-survey.elicit`. The Survey, Admin, FHHS
-  and Pedigree images come from the umbrella's `buildDockerImages.sh`; the Author image from
-  `./buildDockerImage.sh`.
+- Docker, and **the Elicit umbrella checkout around this one**
+  ([ElicitSoftware/Elicit](https://github.com/ElicitSoftware/Elicit)), whose
+  `cloneAllProjects.sh` clones Author to `Elicit/Author/`. The umbrella holds everything Author
+  shares with the platform: the stack (`docker-compose.yml`, with Postgres carrying a dedicated
+  `author` database next to the site's `survey` database, Keycloak with the test user `author` /
+  `author`, and the `author-survey` preview instance), the curated translations in
+  `../elicit-i18n` (the image carries English only; the dev and test profiles read the same
+  directory), the brand, the sample definitions and the end-to-end suites. All images, Author's
+  included, come from the umbrella's `buildDockerImages.sh`; `./buildDockerImage.sh` here builds
+  Author's alone.
 
 ### End-to-end tests
 
-Three Playwright suites live here and drive the platform through a browser. They are
-opt-in (`-DskipTests=false`); `e2e-tests/` needs `docker-compose-full.yml` running, and the two
-multi-site suites start their own sites:
-
-| Suite | What it covers |
-| --- | --- |
-| [`e2e-tests/`](e2e-tests) | Author → Admin → Survey on one site, plus the respondent journey, CSV registration and search filters |
-| [`e2e_multisite/`](e2e_multisite) | Authoring at a master site and applying the definition at a second one |
-| [`e2e_multisite_multilingual/`](e2e_multisite_multilingual) | The same across three sites in English, Spanish and Arabic |
-
-`e2e_multisite` and `e2e_multisite_multilingual` compile the Author page objects out of
-`e2e-tests/src/test/java`, so the three move together. Each has its own `run.sh`.
+The platform's Playwright suites drive Author together with Admin and Survey, and live in the
+umbrella (`../e2e-tests`, `../e2e_multisite`, `../e2e_multisite_multilingual`).
 
 ### Running in dev mode
 
+Start what Author calls from the umbrella's stack, then Author itself:
+
 ```shell script
-docker compose up -d db keycloak author-survey
+(cd .. && docker compose up -d db keycloak author-survey)
 ./mvnw quarkus:dev
 ```
 

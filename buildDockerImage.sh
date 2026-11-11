@@ -5,14 +5,13 @@ export JAVA_HOME="$(jenv javahome)"
 # Survey, Admin and Author must agree on which languages Elicit carries: the images carry English
 # only, the curated ../elicit-i18n mount gives all three the same translated languages, no
 # translated bundle is back on a classpath, and Author publishes content in exactly that set.
-# This is the authoritative run of that check: Author is the module most likely to break the
-# invariant -- a language Author has and Survey lacks lets an author publish survey content no
-# respondent could ever read (Author#40) -- and now that Author lives outside the umbrella's
-# clone script, this is the only build that sees all three modules. It needs the surrounding
-# umbrella checkout for ../Survey, ../Admin and ../elicit-i18n; SKIP_LANGUAGE_CHECK=1 builds
-# without it, for a tree that has no umbrella around it.
+# Author is the module most likely to break the invariant -- a language Author has and Survey
+# lacks lets an author publish survey content no respondent could ever read (Author#40) -- so
+# its own build runs the umbrella's check too. It needs the surrounding umbrella checkout for
+# ../Survey, ../Admin and ../elicit-i18n; SKIP_LANGUAGE_CHECK=1 builds without it, and the
+# umbrella's buildDockerImages.sh sets it because that run has already checked.
 if [ "${SKIP_LANGUAGE_CHECK:-0}" != 1 ]; then
-    if ! ./checkLanguages.sh; then
+    if ! ../checkLanguages.sh; then
         echo "Aborting: the applications disagree on their languages (see above)." >&2
         exit 1
     fi
