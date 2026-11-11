@@ -63,6 +63,8 @@ docs/manual/build-info.tex
 src/main/resources/manual/
 docs/manual/capture/node_modules/
 docs/manual/capture/package-lock.json
+# The installation manual (UC-051) is a release artifact, attached to the release; never committed.
+docs/manual/elicit-author-installation-manual.pdf
 
 # Runtime state Author's own stack left here before Elicit#72 moved the stack, the realm, the
 # `author` database script and the e2e suites to the umbrella, which keeps its state in its own
