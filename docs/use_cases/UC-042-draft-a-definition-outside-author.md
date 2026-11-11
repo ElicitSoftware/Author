@@ -114,6 +114,6 @@ An imported draft is an ordinary working copy. Its draft-ness is expressed by fa
 
 Author hands over the specification and states the round trip; the drafting happens in a session Author has no part in. Nothing is sent anywhere by the tool — the author carries the specification out and carries the draft back — so the path needs no network access, no vendor account and no configuration, and works with whatever agent the author already uses.
 
-The specification is served role-gated and from the classpath, exactly as the manual is (UC-039 BR-004): it is authoring documentation, and `elicit_admin` does not imply `elicit_author` (UC-002 BR-001). What the image serves is the reviewed document byte for byte, so the drift gate on the document (BR-002) governs what an author actually receives.
+The specification is served role-gated and from the classpath, exactly as the manual is (UC-039 BR-004): it is authoring documentation, and `elicit_author_admin` does not imply `elicit_author` (UC-002 BR-001). What the image serves is the reviewed document byte for byte, so the drift gate on the document (BR-002) governs what an author actually receives.
 
 The specification stays in English, the language it is written and gated in. The instruction copied in front of it is the tool's own chrome and is translated (UC-040), so an author addresses the agent in their language even though the document it reads is English.

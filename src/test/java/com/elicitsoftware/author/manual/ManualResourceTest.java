@@ -46,9 +46,9 @@ class ManualResourceTest {
     }
 
     @Test
-    @TestSecurity(user = "manual.admin", roles = {"elicit_admin"})
+    @TestSecurity(user = "manual.admin", roles = {"elicit_author_admin"})
     void theAdminRoleAloneIsRefused() {
-        // UC-002 BR-001: elicit_admin does not imply elicit_author, and the manual follows the
+        // UC-002 BR-001: elicit_author_admin does not imply elicit_author, and the manual follows the
         // authoring views rather than the System pages.
         given().when().get("/api/manual").then().statusCode(403);
     }

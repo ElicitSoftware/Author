@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The System screens render for an {@code elicit_admin} holder, show their sections, and never
+ * The System screens render for an {@code elicit_author_admin} holder, show their sections, and never
  * render a secret.
  *
  * <p>Traceability: UC-034 (View System Overview), UC-035 (Diagnose Database), UC-036 (Diagnose
@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @QuarkusTest
 @QuarkusTestResource(PostgresTestResource.class)
-@TestSecurity(user = "system.admin", roles = {"elicit_admin"})
+@TestSecurity(user = "system.admin", roles = {"elicit_author_admin"})
 class SystemViewsRenderTest extends QuarkusBrowserlessTest {
 
     @Inject
@@ -147,7 +147,7 @@ class SystemViewsRenderTest extends QuarkusBrowserlessTest {
         assertEquals(view.getTranslation("oidcDiagnosticsView.title"), find(H3.class, view).single().getText());
         String info = find(Pre.class, view).single().getText();
         assertTrue(info.contains("User: system.admin"), info);
-        assertTrue(info.contains("Has elicit_admin: true"), info);
+        assertTrue(info.contains("Has elicit_author_admin: true"), info);
         assertTrue(info.contains("Has elicit_author: false"), info);
         assertEquals("**cdef", OidcDiagnosticsView.maskToken("abcdef", false));
         assertEquals("********wxyz", OidcDiagnosticsView.maskToken("abcdefghwxyz", false));

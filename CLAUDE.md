@@ -38,7 +38,8 @@ and expresses removals as retirements (`effective_to` closed). See
   `author` database in the umbrella's `docker-compose.yml`), never a deployed
   site's database. Connects as `survey_user`.
 - OIDC / Keycloak authorization (matches Admin's setup); client
-  `elicit-author`, role `elicit_author` (not implied by `elicit_admin`).
+  `elicit-author`, role `elicit_author` (not implied by `elicit_author_admin`
+  or Admin's `elicit_admin`).
   Dev port **8084**.
 - Docker for deployment
 
@@ -51,7 +52,7 @@ the platform lives in the umbrella, once, and nothing of it is duplicated here:
 | In the umbrella (`..`) | What Author uses it for |
 | --- | --- |
 | `docker-compose.yml` | The stack: `author` (8084), `author-survey` (the preview Survey on the `author` database, 8085), `db`, `keycloak` and the site applications |
-| `keycloak/elicit-realm.json` | The `elicit-author` client, its roles and the `author` / `author` test user |
+| `keycloak/elicit-realm.json` | The `elicit-author` client, its roles (`elicit_author`, `elicit_author_admin`) and the `author` / `author` test user |
 | `db-init/V0.0.4__CREATE_AUTHOR_DATABASE.sql` | The `author` database, created when the cluster is first initialized |
 | `elicit-brand/`, `elicit-i18n/author/` | The brand and the curated translations, mounted and read by the tests (`../elicit-i18n`) |
 | `samples/`, `../FHHS/family-history-survey.elicit` | Definitions the tests import |

@@ -67,7 +67,7 @@ class AuthoringSpecificationResourceTest {
     }
 
     @Test
-    @TestSecurity(user = "spec.admin", roles = {"elicit_admin"})
+    @TestSecurity(user = "spec.admin", roles = {"elicit_author_admin"})
     void theAdminRoleAloneIsRefused() {
         given().when().get("/api/authoring-spec").then().statusCode(403);
     }

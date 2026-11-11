@@ -35,7 +35,7 @@ import java.util.List;
  * each asset came from, with an explicit reload (BR-002).
  */
 @Route(value = "system/branding", layout = MainLayout.class)
-@RolesAllowed(AuthorRoles.ADMIN)
+@RolesAllowed(AuthorRoles.AUTHOR_ADMIN)
 public class SystemBrandingView extends VerticalLayout implements HasDynamicTitle {
 
     static final String SUMMARY_GRID_ID = "system-brand-summary";
