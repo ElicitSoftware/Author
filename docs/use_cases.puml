@@ -6,6 +6,7 @@ actor "Survey Author" as author
 actor "System Administrator" as admin
 actor "Identity Provider\n(Keycloak/OIDC)" as idp
 actor "Admin App\n(Apply Survey Definition)" as adminapp
+actor "Release Engineer" as releng
 
 rectangle "Elicit Author" {
 
@@ -84,6 +85,10 @@ rectangle "Elicit Author" {
     usecase "UC-044\nManage Content Languages" as UC044
     usecase "UC-045\nRequest a Content Translation" as UC045
     usecase "UC-046\nImport Content Translations" as UC046
+
+    ' Installation (FR-070..FR-078)
+    usecase "UC-050\nInstall Author from the Installation Manual" as UC050
+    usecase "UC-051\nBuild the Author Installation Manual" as UC051
 }
 
 ' Access
@@ -166,6 +171,12 @@ author --> UC046
 
 ' Survey deletion
 author --> UC047
+
+' Installation
+admin --> UC050
+releng --> UC051
+UC050 ..> UC034 : <<include>> verification reads the System overview
+UC050 ..> UC039 : <<extend>> hands over to the author's manual
 
 ' Relationships worth calling out explicitly
 UC008 ..> UC007 : <<include>>
