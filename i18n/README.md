@@ -55,8 +55,7 @@ Hand `TRANSLATION_REQUEST.md` to a translator or an AI agent. Put the returned
 matching placeholders.
 
 All three applications must gain the language together — Survey, Admin and Author — or an author
-could publish survey content in a language a respondent's Survey cannot render. This repository's
-`checkLanguages.sh` is the authoritative three-way check (`elicit-i18n/survey/`, `admin/` and
-`author/` against `author.content.languages`), and `buildDockerImage.sh` runs it before building.
-The umbrella's copy holds the three mount directories to one set but only warns about Author: a
-private repository must never be able to fail the public build.
+could publish survey content in a language a respondent's Survey cannot render. The umbrella's
+`checkLanguages.sh` holds `elicit-i18n/survey/`, `admin/` and `author/` to one set and
+`author.content.languages` to the same, and fails the build otherwise; `buildDockerImage.sh` here
+runs it before building.
