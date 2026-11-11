@@ -35,53 +35,37 @@ and expresses removals as retirements (`effective_to` closed). See
   scripts (`src/test/resources/db/schema-mirror`, refreshed by
   `scripts/sync-survey-schema.sh`) into a Testcontainers Postgres.
 - PostgreSQL — Author's **own** database carrying the `survey` schema (the
-  `author` database in this repo's `docker-compose.yml`), never a deployed
+  `author` database in the umbrella's `docker-compose.yml`), never a deployed
   site's database. Connects as `survey_user`.
 - OIDC / Keycloak authorization (matches Admin's setup); client
   `elicit-author`, role `elicit_author` (not implied by `elicit_admin`).
   Dev port **8084**.
 - Docker for deployment
 
-## This repo is private, and nests inside the umbrella
+## Author is a module of the umbrella
 
-Author is **not** open source and is no longer cloned by the umbrella's
-`cloneAllProjects.sh`. It is still expected to sit at `Elicit/Author/`, where
-the umbrella's `.gitignore` hides it, because shared assets are kept in exactly
-one place — the umbrella — rather than duplicated here:
+Author is the fifth module of the open-source Elicit platform, cloned by the
+umbrella's `cloneAllProjects.sh` to `Elicit/Author/`. Everything it shares with
+the platform lives in the umbrella, once, and nothing of it is duplicated here:
 
-| Lives in the umbrella | Lives here |
+| In the umbrella (`..`) | What Author uses it for |
 | --- | --- |
-| `../elicit-brand`, `../elicit-i18n` (the curated translations; `author/` is this tool's), `../sftp_ssh`, `../../FHHS/family-history-survey.elicit` | `docker-compose.yml`, `keycloak/`, `db-init/`, `i18n/TRANSLATION_REQUEST.md` |
+| `docker-compose.yml` | The stack: `author` (8084), `author-survey` (the preview Survey on the `author` database, 8085), `db`, `keycloak` and the site applications |
+| `keycloak/elicit-realm.json` | The `elicit-author` client, its roles and the `author` / `author` test user |
+| `db-init/V0.0.4__CREATE_AUTHOR_DATABASE.sql` | The `author` database, created when the cluster is first initialized |
+| `elicit-brand/`, `elicit-i18n/author/` | The brand and the curated translations, mounted and read by the tests (`../elicit-i18n`) |
+| `samples/`, `../FHHS/family-history-survey.elicit` | Definitions the tests import |
+| `e2e-tests/`, `e2e_multisite/`, `e2e_multisite_multilingual/` | The platform's Playwright suites, which drive Author with Admin and Survey (see the umbrella's `CLAUDE.md`) |
+| `buildDockerImages.sh`, `checkLanguages.sh`, `resetDatabase.sh`, `status.sh` | Building, checking and resetting the whole platform |
 
-`keycloak/elicit-realm.json` is Author's own copy and deliberately diverges from
-the umbrella's: the umbrella's no longer carries the `elicit-author` client, its
-roles or the `author` user, and this one does. A realm change that matters to
-both has to be made twice.
+For dev mode, start what Author calls from the umbrella —
+`docker compose up -d db keycloak author-survey` in `..` — and run Author on
+8084. A change to the stack, the realm, the database script or a suite is made
+in the umbrella, on a branch with the same name as the one here (Author's CI
+clones the umbrella's same-named branch, else `V3`).
 
-`docker-compose.yml` here runs the **whole platform** — Survey, Admin, FHHS and
-Pedigree alongside `author` and `author-survey` — because the end-to-end suites
-drive the site applications too. It cannot run at the same time as the
-umbrella's stack or either multi-site suite; they share host ports.
-
-## End-to-end suites
-
-`e2e-tests/`, `e2e_multisite/` and `e2e_multisite_multilingual/` are standalone
-Maven projects (no parent pom) holding the platform's Playwright tests. They
-moved here when Author went private, because all three drive Author and the two
-multi-site suites compile the Author page objects out of
-`e2e-tests/src/test/java` by relative path — which is why they must stay
-siblings.
-
-> **These run through `mvn`, not the Quarkus Dev MCP tools.** Each suite's
-> `run.sh` calls `mvn -DskipTests=false test` against an already-running stack
-> that it starts itself. The "never `mvn test`" rule below governs Author's own
-> module tests under `src/test/`; it does not apply here. Do not "fix" the
-> suites to use `devui-testing_runTests` — there is no dev-mode app to run them
-> in.
-
-They are opt-in (`skipTests` defaults to true) and need Docker images built
-first: Survey/Admin/FHHS/Pedigree from the umbrella's `buildDockerImages.sh`,
-Author from `./buildDockerImage.sh`.
+Author's integration branch is `main`; unlike Survey, Admin and FHHS it has no
+`V3`.
 
 ## MCP Servers and Skills
 
@@ -149,7 +133,7 @@ relevant only once implementation code exists.
 
 ## Git Commits
 
-- `main` and `main` change only through a pull request whose CI check passed; a ruleset
+- `main` changes only through a pull request whose CI check passed; a ruleset
   enforces it on GitHub and `.claude/hooks/branch-guard.py` (a `PreToolUse` hook in
   `.claude/settings.json`) refuses `git commit` and `git push` on `main`, `master`, `V2` or
   `V3` locally. Branch from `main` as `<type>/<issue>-<slug>`; never set the hook's
