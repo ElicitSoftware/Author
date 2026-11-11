@@ -31,7 +31,7 @@
              with -DskipTests=false, e.g.: mvn -pl e2e-tests -DskipTests=false test -->
         <skipTests>true</skipTests>
 
-        <!-- Defaults match docker-compose.yml; override with -Dadmin.baseUrl=... etc for CI. -->
+        <!-- Defaults match docker-compose-full.yml; override with -Dadmin.baseUrl=... etc for CI. -->
         <admin.baseUrl>http://localhost:8081</admin.baseUrl>
         <survey.baseUrl>http://localhost:8080</survey.baseUrl>
         <author.baseUrl>http://localhost:8084</author.baseUrl>

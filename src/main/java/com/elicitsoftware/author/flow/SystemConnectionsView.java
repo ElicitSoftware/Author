@@ -37,7 +37,7 @@ import java.util.List;
  * Nothing is probed until asked.
  */
 @Route(value = "system/connections", layout = MainLayout.class)
-@RolesAllowed(AuthorRoles.ADMIN)
+@RolesAllowed(AuthorRoles.AUTHOR_ADMIN)
 public class SystemConnectionsView extends VerticalLayout implements HasDynamicTitle {
 
     static final String GRID_ID = "system-connections-grid";

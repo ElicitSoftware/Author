@@ -24,7 +24,7 @@ import jakarta.annotation.security.PermitAll;
 /**
  * View displayed when a user is authenticated but lacks required permissions.
  * <p>
- * This view informs users that they need the 'elicit_user' or 'elicit_admin' role
+ * This view informs users that they need the 'elicit_author' role
  * to access the application and provides a logout option.
  * </p>
  */

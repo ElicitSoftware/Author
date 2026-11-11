@@ -53,7 +53,7 @@ class RoleSecurityIdentityAugmentorOidcModeTest {
     void adminRoleDoesNotImplyAuthor() {
         SecurityIdentity identity = QuarkusSecurityIdentity.builder()
                 .setPrincipal(new QuarkusPrincipal("admin"))
-                .addRole("elicit_admin")
+                .addRole(AuthorRoles.AUTHOR_ADMIN)
                 .build();
         SecurityIdentity augmented = augmentor.augment(identity, SYNC_CONTEXT).await().indefinitely();
         assertFalse(augmented.hasRole(AuthorRoles.AUTHOR));

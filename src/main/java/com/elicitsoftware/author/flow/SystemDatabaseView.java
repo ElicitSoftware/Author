@@ -33,7 +33,7 @@ import java.util.List;
  * is stored. Reads only.
  */
 @Route(value = "system/database", layout = MainLayout.class)
-@RolesAllowed(AuthorRoles.ADMIN)
+@RolesAllowed(AuthorRoles.AUTHOR_ADMIN)
 public class SystemDatabaseView extends VerticalLayout implements HasDynamicTitle {
 
     static final String CONNECTION_GRID_ID = "system-db-connection";

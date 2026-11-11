@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>Targets an already-running docker-compose stack (Author, Admin, Survey, Keycloak) -- this
  * class never starts or manages any app itself. Base URLs and credentials default to the
- * values in {@code docker-compose.yml} / the Keycloak {@code elicit} realm, overridable via
+ * values in {@code docker-compose-full.yml} / the Keycloak {@code elicit} realm, overridable via
  * {@code -D} system properties for CI (see {@code pom.xml}).</p>
  */
 public abstract class E2ETestBase {

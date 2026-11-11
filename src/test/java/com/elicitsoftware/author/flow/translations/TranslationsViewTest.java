@@ -234,7 +234,7 @@ class TranslationsViewTest extends QuarkusBrowserlessTest {
     }
 
     @Test
-    @TestSecurity(user = "translations.admin", roles = {"elicit_admin"})
+    @TestSecurity(user = "translations.admin", roles = {"elicit_author_admin"})
     void adminRoleAloneCannotOpenTheTranslationsPage() {
         Survey fixture = Survey.find("name", "AuthorFixture").firstResult();
         org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,

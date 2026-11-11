@@ -11,7 +11,7 @@
 
 ## Preconditions
 
-- The administrator is authenticated and holds the `elicit_admin` role (UC-001). That role grants no authoring access (UC-002).
+- The administrator is authenticated and holds the `elicit_author_admin` role (UC-001). That role grants no authoring access (UC-002).
 
 ## Main Success Scenario
 

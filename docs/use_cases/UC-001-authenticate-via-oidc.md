@@ -70,7 +70,7 @@
 
 ### BR-001: Roles come only from the Author client
 
-Roles are read from what the identity provider assigns to the `elicit-author` client. Roles held for the Admin or Survey applications, including `elicit_admin`, do not grant authoring access.
+Roles are read from what the identity provider assigns to the `elicit-author` client. Roles held for the Admin or Survey applications, including Admin's `elicit_admin`, do not grant authoring access; nor does Author's own `elicit_author_admin`.
 
 ### BR-002: Every authoring route requires authentication
 

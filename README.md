@@ -41,11 +41,15 @@ for local development and testing, though any OIDC-compliant server works in pro
 ### Prerequisites
 
 - Java 25
-- Docker. [`docker-compose.yml`](docker-compose.yml) in this repo runs the whole platform:
-  Postgres with a dedicated `author` database next to the site's `survey` database, Keycloak
-  (realm from [`keycloak/elicit-realm.json`](keycloak/elicit-realm.json), test user `author` /
-  `author`), the `author-survey` preview instance, and Survey, Admin, FHHS and Pedigree so the
-  end-to-end suites have a site to drive.
+- Docker. Two compose files in this repo run one stack at two sizes; they share host ports and
+  `./postgresql/PGDATA`, so run one at a time:
+  - [`docker-compose.yml`](docker-compose.yml) runs Author's own stack: Postgres with the
+    `author` database, Keycloak (realm from [`keycloak/elicit-realm.json`](keycloak/elicit-realm.json),
+    test user `author` / `author`), the `author-survey` preview instance and Author itself.
+    `docker compose up -d`.
+  - [`docker-compose-full.yml`](docker-compose-full.yml) runs the whole platform: the same,
+    plus the site's `survey` database, Survey, Admin, FHHS, Pedigree, Mailpit and Jaeger, so the
+    end-to-end suites have a site to drive. `docker compose -f docker-compose-full.yml up -d`.
 - **An Elicit umbrella checkout around this one.** Author is a private repository and is no
   longer cloned by the umbrella's `cloneAllProjects.sh`, but it is still expected to sit at
   `Elicit/Author/`. Shared assets are not duplicated here: the compose file mounts
@@ -57,8 +61,9 @@ for local development and testing, though any OIDC-compliant server works in pro
 
 ### End-to-end tests
 
-Three Playwright suites live here and drive the stack above through a browser. They are
-opt-in (`-DskipTests=false`) and need it running:
+Three Playwright suites live here and drive the platform through a browser. They are
+opt-in (`-DskipTests=false`); `e2e-tests/` needs `docker-compose-full.yml` running, and the two
+multi-site suites start their own sites:
 
 | Suite | What it covers |
 | --- | --- |
@@ -72,6 +77,7 @@ opt-in (`-DskipTests=false`) and need it running:
 ### Running in dev mode
 
 ```shell script
+docker compose up -d db keycloak author-survey
 ./mvnw quarkus:dev
 ```
 
