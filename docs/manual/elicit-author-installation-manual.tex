@@ -85,7 +85,7 @@ Elicit Software \textperiodcentered\ PolyForm Noncommercial License 1.0.0\par}
 \vfill
 
 \begin{elicitnote}[Who this manual is for]
-Someone comfortable with PostgreSQL, a container runtime or a JVM service manager, and an
+Someone comfortable with PostgreSQL, a container runtime, and an
 OIDC provider, who is adding the authoring tool to an Elicit installation or setting it up on
 its own. It covers \emph{provisioning} Author. Building a survey is the author's manual, and
 provisioning a site's Survey and Admin is the platform's installation manual.
@@ -155,8 +155,8 @@ once.
         platform's installation manual gives the role script for a cluster that does not.
   \item \textbf{An OIDC provider} on which you can create a confidential client and two
         client roles. Keycloak is what Elicit is tested with.
-  \item \textbf{A container runtime}, or \textbf{Java 25} to run Author and the preview Survey
-        as JVM services.
+  \item \textbf{A container runtime}. Author and the preview Survey are released as container
+        images only; there is no separate Java distribution to install.
   \item \textbf{The Survey image of the same release} as Author, for the preview. Author and
         the preview are tested together at one version.
   \item The addresses a browser will reach Author and the preview at, for the OIDC redirect
@@ -348,34 +348,42 @@ development values. Replace them, and the bundled realm, before Author reaches a
 \end{elicitsecurity}
 
 %% ================================================================== 7
-\section{Installing without Docker}
-\label{sec:jvm}
-\markboth{Installing without Docker}{}
+\section{Installing without Compose}
+\label{sec:images}
+\markboth{Installing without Compose}{}
 
-Author and the preview are Quarkus applications and run as JVM services on Java 25. Each is a
-\file{quarkus-app/} directory started with \file{quarkus-run.jar}; configuration reaches them
-as environment variables (Chapter~\ref{sec:config}).
+Author and the preview are released as container images only, \file{elicitsoftware/author}
+and \file{elicitsoftware/survey}, at the same tag. A site that runs its containers under
+something other than the umbrella's compose file (Podman, Kubernetes, a container service)
+starts the same two images against its own database and identity provider. Configuration
+reaches them as environment variables (Chapter~\ref{sec:config}); nothing ever orders their
+start for you.
 
 \begin{enumerate}
   \item Provision the \val{author} database (Chapter~\ref{sec:database}).
   \item Start the preview Survey with the settings of Chapter~\ref{sec:preview}, and wait
         until \val{/q/health/ready} answers \val{200}.
-  \item Start Author:
+  \item Start Author, mounting the brand and the translations read-only:
 \end{enumerate}
 
 \begin{elicitcmd}[fontsize = \footnotesize]
-export QUARKUS_DATASOURCE_JDBC_URL='jdbc:postgresql://db.example.org:5432/author'\
+JDBC_URL='jdbc:postgresql://db.example.org:5432/author'\
 '?connectTimeout=30&socketTimeout=600&tcpKeepAlive=true&tcpKeepAlivesIdle=60'
-export ELICIT_DB_PASSWORD='<survey_user password>'
-export QUARKUS_OIDC_AUTH_SERVER_URL='https://idp.example.org/realms/elicit/'
-export OIDC_CLIENT_SECRET='<elicit-author client secret>'
-export AUTHOR_PREVIEW_SURVEY_URL='http://preview.internal:8080'
-export BRAND_FILE_SYSTEM_PATH=/opt/elicit/brand
-export I18N_FILE_SYSTEM_PATH=/opt/elicit/i18n
-java -jar quarkus-app/quarkus-run.jar
+docker run -d --name author -p 8084:8080 \
+  -e QUARKUS_DATASOURCE_JDBC_URL="$JDBC_URL" \
+  -e ELICIT_DB_PASSWORD='<survey_user password>' \
+  -e QUARKUS_OIDC_AUTH_SERVER_URL='https://idp.example.org/realms/elicit/' \
+  -e OIDC_CLIENT_SECRET='<elicit-author client secret>' \
+  -e AUTHOR_PREVIEW_SURVEY_URL='http://preview.internal:8080' \
+  -e BRAND_FILE_SYSTEM_PATH=/opt/brand \
+  -e I18N_FILE_SYSTEM_PATH=/opt/i18n \
+  -v /srv/elicit/brand:/opt/brand:ro \
+  -v /srv/elicit/i18n:/opt/i18n:ro \
+  elicitsoftware/author:<version>
 \end{elicitcmd}
 
-Author listens on \val{8080} unless \val{QUARKUS_HTTP_PORT} says otherwise. Behind a
+\val{<version>} is the version on this manual's title page; the preview Survey runs at the
+same tag. Author listens on \val{8080} inside its container unless \val{QUARKUS_HTTP_PORT} says otherwise. Behind a
 reverse proxy it trusts the forwarded host, prefix and protocol headers, so the OIDC
 redirect is built from the address the browser used.
 
@@ -396,7 +404,7 @@ site must set the value (\chgset), may (\chgmay), or should leave it alone (\chg
 \opt{quarkus.datasource.jdbc.url} & \val{jdbc:postgresql://db:5432/survey} & \chgset &
 The database Author works in. The shipped default names a database called \val{survey};
 point it at \val{author}, keeping the default's connection options, which
-Chapter~\ref{sec:jvm} shows in full. \\
+Chapter~\ref{sec:images} shows in full. \\
 \opt{quarkus.datasource.username} & \val{survey_user} & \chgkeep & The role Author connects
 as. \\
 \opt{quarkus.datasource.password} & --- & \chgset & Its password. Environment variable
