@@ -1,0 +1,575 @@
+%% The Elicit Author installation manual — UC-050, "Install Author from the Installation Manual".
+%%
+%% Build it with MANUAL=installation docs/manual/build-manual.sh, which checks the configuration
+%% reference against the code (UC-051 A3, NFR-021), renders it through a TeX Live container and
+%% stamps it with Author's version and build date (UC-051 BR-001). See README.md.
+%%
+%% It is a release artifact, attached to each tagged release and never packaged into the image
+%% (C-027): the reader has no Author yet. Running the authoring tool is the author's manual
+%% (UC-039); provisioning the rest of a site is the platform's installation manual. This one
+%% points at both and stops.
+%%
+%% \opt{} is checked against Author's code by the umbrella's check-properties.sh. Settings that
+%% belong to the preview Survey, not to Author, are written with \optlit{} so the check does not
+%% hold Author to them.
+
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[a4paper, margin = 25mm, bottom = 28mm]{geometry}
+
+%% The footer's product name; the brand package is the umbrella's, shared by every Elicit manual (C-028).
+\newcommand{\elicitProduct}{Elicit Author}
+\usepackage{elicit-brand}
+\usepackage[hidelinks]{hyperref}
+
+\hypersetup{
+  pdftitle = {Elicit Author — Installing the Authoring Tool},
+  pdfauthor = {Elicit Software},
+  pdfsubject = {Installing and configuring Elicit Author and its preview Survey},
+  colorlinks = true,
+  linkcolor = elicitInkDark,
+  urlcolor = elicitInkDark,
+}
+
+\graphicspath{{./}}
+
+\begin{document}
+
+%% ------------------------------------------------------------------ title page
+\begin{titlepage}
+\thispagestyle{empty}
+\centering
+\vspace*{3.5cm}
+
+\includegraphics[width = 34mm]{images/elicit-logo.png}
+
+\vspace{1.4cm}
+
+{\color{elicitInkDarkest}\Huge\bfseries Installing Author\par}
+
+\vspace{0.5cm}
+
+{\color{elicitSlate}\Large The Elicit Author installation manual\par}
+
+\vspace{0.4cm}
+
+{\color{elicitSlate}\large Author \textperiodcentered\ preview Survey\par}
+
+\vspace{2.2cm}
+
+{\color{elicitSlate}\large
+Version \textbf{\elicitVersion}\\[0.35em]
+Built \textbf{\elicitBuildDate}\par}
+
+\vfill
+
+{\color{elicitSlate}\small
+This manual describes the Author version named above. It is published beside that\\
+release and is read before any Author service is running.\\[0.6em]
+Elicit Software \textperiodcentered\ PolyForm Noncommercial License 1.0.0\par}
+
+\vspace{1cm}
+\end{titlepage}
+
+%% ------------------------------------------------------------------ contents
+\pagenumbering{roman}
+\setcounter{page}{1}
+{\color{elicitInkDarkest}\section*{Contents}}
+\vspace{-0.6em}
+\begingroup
+\hypersetup{linkcolor = elicitCharcoal}
+\makeatletter\@starttoc{toc}\makeatother
+\endgroup
+
+\vfill
+
+\begin{elicitnote}[Who this manual is for]
+Someone comfortable with PostgreSQL, a container runtime or a JVM service manager, and an
+OIDC provider, who is adding the authoring tool to an Elicit installation or setting it up on
+its own. It covers \emph{provisioning} Author. Building a survey is the author's manual, and
+provisioning a site's Survey and Admin is the platform's installation manual.
+\end{elicitnote}
+
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+%% ================================================================== 1
+\section{What Author is}
+\label{sec:what}
+\markboth{What Author is}{}
+
+\term{Author} is the tool in which surveys are designed. An author lays out steps, sections and
+questions, connects them with rules, and \emph{exports} the result as a survey definition
+file (\file{.elicit}). An administrator applies that file at a site through Admin's
+\ui{Apply Survey Definition}. The file is the only thing that ever travels from Author to a
+site: Author calls neither Survey, Admin, FHHS nor Pedigree at any site, and no site calls
+Author.
+
+\begin{elicitnote}[A site that only delivers surveys needs no Author]
+A site that applies definition files written elsewhere runs Survey and Admin and nothing
+from this manual. The platform's installation manual covers that site completely. Install
+Author where surveys are written, which may be one place serving many sites.
+\end{elicitnote}
+
+\subsection{What Author needs}
+
+\begin{plaintable}{tab:needs}{What an Author installation is made of}{@{}>{\raggedright\arraybackslash}p{0.22\linewidth} >{\raggedright\arraybackslash}p{0.72\linewidth}@{}}{\thead{Piece} & \thead{What it is}}
+\ui{Author} & The authoring application, image \file{elicitsoftware/author}. Signed-in
+authors work in it from a browser. \\
+\addlinespace
+A database & Author's own database, called \val{author} here, carrying the same
+\val{survey} schema a site's database carries. Author writes working copies of surveys into
+it. It is never a site's survey database (Chapter~\ref{sec:database}). \\
+\addlinespace
+The preview Survey & A second instance of the Survey application, image
+\file{elicitsoftware/survey}, pointed at the \val{author} database. It builds the
+\val{survey} schema there on its first start, and authors walk through a survey as a
+respondent would (Chapter~\ref{sec:preview}). \\
+\addlinespace
+An OIDC client & Author's client at the identity provider, \val{elicit-author}, with two
+roles (Chapter~\ref{sec:oidc}). \\
+\addlinespace
+Brand and translations & The same brand directory and curated translations the site
+applications mount (Chapter~\ref{sec:brand}). Optional: without them Author runs in the
+default brand and in English. \\
+\end{plaintable}
+
+\subsection{The start order}
+
+The database first, then the preview Survey, then Author. The preview Survey creates the
+schema Author maps its entities onto. Author never creates it and does not check it at start,
+so an Author started against an empty \val{author} database comes up, but every screen fails
+and the \ui{System} database screen reports the schema missing until the preview has started
+once.
+
+%% ================================================================== 2
+\section{Before you start}
+\label{sec:before}
+\markboth{Before you start}{}
+
+\begin{itemize}
+  \item \textbf{PostgreSQL 17}, with the Elicit database roles (\val{dbowner}, \val{dbuser},
+        \val{elicit_owner}, \val{survey_user}). A site's cluster already has them; the
+        platform's installation manual gives the role script for a cluster that does not.
+  \item \textbf{An OIDC provider} on which you can create a confidential client and two
+        client roles. Keycloak is what Elicit is tested with.
+  \item \textbf{A container runtime}, or \textbf{Java 25} to run Author and the preview Survey
+        as JVM services.
+  \item \textbf{The Survey image of the same release} as Author, for the preview. Author and
+        the preview are tested together at one version.
+  \item The addresses a browser will reach Author and the preview at, for the OIDC redirect
+        and for the preview links.
+\end{itemize}
+
+%% ================================================================== 3
+\section{The database}
+\label{sec:database}
+\markboth{The database}{}
+
+Author works in a database of its own. It may live in the same cluster as a site's
+\val{survey} database, but it is never that database: authors save half-finished work, and
+nothing they do should touch respondent data.
+
+Run this once, as a superuser, in the cluster. It creates the database, grants it to the
+Elicit roles, and creates the two empty schemas. Every table inside them comes from the
+preview Survey's migrations on its first start.
+
+\begin{elicitsql}
+CREATE DATABASE author;
+GRANT CONNECT ON DATABASE author TO dbowner;
+GRANT CREATE ON DATABASE author TO dbowner;
+GRANT CONNECT ON DATABASE author TO dbuser;
+\c author
+
+GRANT USAGE, CREATE ON SCHEMA public TO dbowner;
+GRANT USAGE ON SCHEMA public TO dbuser;
+
+CREATE SCHEMA survey AUTHORIZATION elicit_owner;
+GRANT USAGE ON SCHEMA survey TO survey_user;
+GRANT USAGE ON SCHEMA survey TO surveyadmin_user;
+GRANT USAGE ON SCHEMA survey TO surveyreport_user;
+
+CREATE SCHEMA surveyreport AUTHORIZATION elicit_owner;
+GRANT USAGE ON SCHEMA surveyreport TO surveyreport_user;
+GRANT USAGE ON SCHEMA surveyreport TO surveyadmin_user;
+GRANT USAGE ON SCHEMA surveyreport TO survey_user;
+
+GRANT USAGE, CREATE ON SCHEMA surveyreport TO dbowner;
+GRANT SELECT, INSERT, UPDATE, DELETE
+  ON ALL TABLES IN SCHEMA surveyreport TO dbowner;
+ALTER DEFAULT PRIVILEGES IN SCHEMA surveyreport
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO dbowner;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA surveyreport TO dbowner;
+ALTER DEFAULT PRIVILEGES IN SCHEMA surveyreport
+  GRANT USAGE ON SEQUENCES TO dbowner;
+\end{elicitsql}
+
+Author connects as \val{survey_user}, the role the preview's migrations grant full access to
+every definition table. Author owns no migrations of its own and never creates or alters the
+schema.
+
+\begin{elicitnote}[The umbrella's compose file does this for you, once]
+The umbrella mounts this script as \file{db-init/V0.0.4__CREATE_AUTHOR_DATABASE.sql} into
+the database container's initialization directory. That directory runs \emph{only} against an
+empty data directory, so a cluster that was first started before the script was there has no
+\val{author} database. Run the script once by hand against it:
+\end{elicitnote}
+
+\begin{elicitcmd}
+docker compose exec -T db psql -U survey -d survey \
+  < db-init/V0.0.4__CREATE_AUTHOR_DATABASE.sql
+\end{elicitcmd}
+
+%% ================================================================== 4
+\section{The identity provider}
+\label{sec:oidc}
+\markboth{The identity provider}{}
+
+Author authenticates against a confidential OIDC client of its own. It does not share Admin's
+client, and a role on Admin's client grants nothing in Author.
+
+\subsection{The client}
+
+\begin{plaintable}{tab:client}{Author's OIDC client}{@{}>{\raggedright\arraybackslash}p{0.22\linewidth} >{\raggedright\arraybackslash}p{0.20\linewidth} >{\raggedright\arraybackslash}p{0.52\linewidth}@{}}{\thead{Client} & \thead{Type} & \thead{Redirect}}
+\val{elicit-author} & confidential & The address a browser reaches Author at, for example
+\val{http://localhost:8084/*}. Post-logout redirects return to the same address. \\
+\end{plaintable}
+
+The client needs a secret, which reaches Author as \opt{OIDC_CLIENT_SECRET}. Author accepts
+browser sign-ins and bearer tokens on the same client. It signs in through
+\val{/callback} and signs out through \val{/logout}, both under its own address, which the
+redirect pattern above covers.
+
+\subsection{The roles}
+
+\begin{plaintable}{tab:roles}{The roles Author checks, both on the elicit-author client}{@{}>{\raggedright\arraybackslash}p{0.24\linewidth} >{\raggedright\arraybackslash}p{0.70\linewidth}@{}}{\thead{Role} & \thead{What it permits}}
+\val{elicit_author} & Authoring: every survey screen, import and export, the author's manual
+and the AI drafting page. Without it a signed-in user sees only a page saying access was not
+granted. \\
+\addlinespace
+\val{elicit_author_admin} & The \ui{System} section: setup and diagnostics. It grants no
+authoring; give a person both roles if they need both. \\
+\end{plaintable}
+
+Neither role implies the other, and neither is implied by Admin's \val{elicit_admin}. Being an
+administrator of a site grants nothing in Author.
+
+\subsection{The bundled example}
+
+The umbrella's Keycloak realm, \file{keycloak/elicit-realm.json}, carries this client, both
+roles and two accounts: \val{author}/\val{author} with \val{elicit_author}, and
+\val{admin}/\val{admin} with both Author roles besides Admin's. It is an evaluation provider.
+
+\begin{elicitsecurity}
+The bundled client's secret is the literal string \val{secret} and the accounts' passwords
+are their names. Create the client and accounts in your own provider, with a generated
+secret, before Author reaches anyone.
+\end{elicitsecurity}
+
+%% ================================================================== 5
+\section{The preview Survey}
+\label{sec:preview}
+\markboth{The preview Survey}{}
+
+The preview is an ordinary Survey application of the same release, configured for the
+\val{author} database. It does two jobs:
+
+\begin{itemize}
+  \item On its first start its migrations build the \val{survey} schema in the \val{author}
+        database. Author has no migrations of its own.
+  \item Authors use it to walk through a survey as a respondent would. Author also calls it
+        to drop a survey's reporting schema before deleting the survey; if it cannot be
+        reached, that delete is refused with the reason shown.
+\end{itemize}
+
+It needs Survey's usual configuration (the platform's installation manual lists it), with
+these differences:
+
+\begin{plaintable}{tab:preview}{How the preview differs from a site's Survey}{@{}>{\raggedright\arraybackslash}p{0.40\linewidth} >{\raggedright\arraybackslash}p{0.54\linewidth}@{}}{\thead{Survey setting} & \thead{For the preview}}
+\optlit{quarkus.datasource.jdbc.url} & The \val{author} database, not a site's
+\val{survey} database. \\
+\addlinespace
+\optlit{quarkus.datasource.owner.jdbc.url} & The same: the migrating connection must build
+the schema in \val{author}. \\
+\addlinespace
+\optlit{accessCode.autoRegister} & \val{true}: an author types any access code to walk
+through a draft. Never set this on a site's Survey. \\
+\addlinespace
+\optlit{elicit.etl.enabled} & \val{false}: nothing reports on preview answers, so no
+reporting schema is built for them. \\
+\addlinespace
+\optlit{elicit.etl.drop.enabled} & \val{true}: lets Author drop a survey's reporting schema
+before deleting it, should one exist. \\
+\end{plaintable}
+
+The preview connects as \val{survey_user} and migrates as \val{elicit_owner}, with the same
+passwords those roles have in the cluster (\optlit{ELICIT\_DB\_PASSWORD} and
+\optlit{ELICIT\_OWNER\_DB\_PASSWORD}). Author reaches it at \opt{author.preview.survey.url}, an
+address on the network Author runs on; it need not be reachable from a browser for that call.
+
+%% ================================================================== 6
+\section{Installing with Docker Compose}
+\label{sec:compose}
+\markboth{Installing with Docker Compose}{}
+
+The Elicit umbrella repository runs the whole platform from one compose file, Author
+included: \val{author} on port 8084 and \val{author-survey}, the preview, on 8085. On a fresh
+data directory it creates the \val{author} database (Chapter~\ref{sec:database}), and its
+realm already carries Author's client and roles.
+
+\begin{elicitcmd}
+git clone https://github.com/ElicitSoftware/Elicit.git
+cd Elicit
+./cloneAllProjects.sh
+docker compose up -d
+\end{elicitcmd}
+
+Authoring needs none of the site applications. To run only Author's side:
+
+\begin{elicitcmd}
+docker compose up -d author keycloak jaeger
+\end{elicitcmd}
+
+\val{author} waits for the database and for the preview to report ready, so the start order
+of Chapter~\ref{sec:what} is kept for you. Every application image is pulled at one tag,
+\opt{ELICIT_TAG} (default \val{latest}), so Author and its preview are always the same
+release:
+
+\begin{elicitcmd}
+ELICIT_TAG=3.0.0-beta.1 docker compose up -d author keycloak jaeger
+\end{elicitcmd}
+
+\begin{elicitsecurity}
+The compose file's database passwords (\val{SURVEYPW}) and client secret (\val{secret}) are
+development values. Replace them, and the bundled realm, before Author reaches anyone
+(Chapter~\ref{sec:oidc}).
+\end{elicitsecurity}
+
+%% ================================================================== 7
+\section{Installing without Docker}
+\label{sec:jvm}
+\markboth{Installing without Docker}{}
+
+Author and the preview are Quarkus applications and run as JVM services on Java 25. Each is a
+\file{quarkus-app/} directory started with \file{quarkus-run.jar}; configuration reaches them
+as environment variables (Chapter~\ref{sec:config}).
+
+\begin{enumerate}
+  \item Provision the \val{author} database (Chapter~\ref{sec:database}).
+  \item Start the preview Survey with the settings of Chapter~\ref{sec:preview}, and wait
+        until \val{/q/health/ready} answers \val{200}.
+  \item Start Author:
+\end{enumerate}
+
+\begin{elicitcmd}[fontsize = \footnotesize]
+export QUARKUS_DATASOURCE_JDBC_URL='jdbc:postgresql://db.example.org:5432/author'\
+'?connectTimeout=30&socketTimeout=600&tcpKeepAlive=true&tcpKeepAlivesIdle=60'
+export ELICIT_DB_PASSWORD='<survey_user password>'
+export QUARKUS_OIDC_AUTH_SERVER_URL='https://idp.example.org/realms/elicit/'
+export OIDC_CLIENT_SECRET='<elicit-author client secret>'
+export AUTHOR_PREVIEW_SURVEY_URL='http://preview.internal:8080'
+export BRAND_FILE_SYSTEM_PATH=/opt/elicit/brand
+export I18N_FILE_SYSTEM_PATH=/opt/elicit/i18n
+java -jar quarkus-app/quarkus-run.jar
+\end{elicitcmd}
+
+Author listens on \val{8080} unless \val{QUARKUS_HTTP_PORT} says otherwise. Behind a
+reverse proxy it trusts the forwarded host, prefix and protocol headers, so the OIDC
+redirect is built from the address the browser used.
+
+%% ================================================================== 8
+\section{Configuration}
+\label{sec:config}
+\markboth{Configuration}{}
+
+Every setting can be given as a system property, or as an environment variable named by
+upper-casing it and replacing each dot and hyphen with an underscore:
+\opt{author.preview.survey.url} becomes \val{AUTHOR_PREVIEW_SURVEY_URL}. A few settings read
+a shorter variable of their own, named in the table. The \emph{Change} column says whether a
+site must set the value (\chgset), may (\chgmay), or should leave it alone (\chgkeep).
+
+\subsection{Database and identity provider}
+
+\begin{settings}{tab:cfg-core}{Database and identity-provider settings}
+\opt{quarkus.datasource.jdbc.url} & \val{jdbc:postgresql://db:5432/survey} & \chgset &
+The database Author works in. The shipped default names a database called \val{survey};
+point it at \val{author}, keeping the default's connection options, which
+Chapter~\ref{sec:jvm} shows in full. \\
+\opt{quarkus.datasource.username} & \val{survey_user} & \chgkeep & The role Author connects
+as. \\
+\opt{quarkus.datasource.password} & --- & \chgset & Its password. Environment variable
+\opt{ELICIT_DB_PASSWORD}. A secret. \\
+\opt{quarkus.oidc.auth-server-url} & \val{http://host.docker.internal:8180/realms/elicit/} &
+\chgset & The identity provider's realm. It must resolve both from Author and from the
+browser, because the browser is redirected to it. \\
+\opt{quarkus.oidc.client-id} & \val{elicit-author} & \chgmay & Author's client. \\
+\opt{quarkus.oidc.credentials.secret} & --- & \chgset & The client's secret. Environment
+variable \opt{OIDC_CLIENT_SECRET}. A secret. \\
+\end{settings}
+
+\subsection{Authoring}
+
+\begin{settings}{tab:cfg-author}{Authoring settings}
+\opt{author.preview.survey.url} & \val{http://localhost:8085} & \chgset & The preview
+Survey, at an address Author can reach (Chapter~\ref{sec:preview}). \\
+\opt{author.content.languages} & \val{en,ar,es-419} & \chgkeep & The languages a survey's
+content may be published in. Set by the release to the curated translations and checked
+against them when the release is built; see Chapter~\ref{sec:brand}. \\
+\opt{author.manual.resource} & \val{manual/elicit-author-manual.pdf} & \chgkeep & Where the
+author's manual sits on the classpath. \\
+\opt{author.ai.specification.resource} & \val{ai/AUTHORING_FROM_AI.md} & \chgkeep & Where
+the AI authoring specification sits on the classpath. \\
+\end{settings}
+
+\subsection{Brand and translations}
+
+\begin{settings}{tab:cfg-brand}{Brand and translation settings}
+\opt{brand.file.system.path} & \val{/brand} & \chgmay & The mounted brand directory.
+Missing assets fall back to the default brand. \\
+\opt{brand.local.path} & \val{brand} & \chgkeep & A second, relative brand directory
+consulted before the default brand. \\
+\opt{i18n.file.system.path} & \val{/i18n} & \chgmay & The mounted translations; Author reads
+its own \val{author/} sub-directory of it. \\
+\opt{i18n.app.name} & \val{author} & \chgkeep & That sub-directory's name. \\
+\opt{i18n.offered.locales} & --- & \chgmay & Offer fewer languages than are mounted, for
+example \val{en,es-419}. Unset offers every mounted language. \\
+\opt{i18n.pseudo-locale.enabled} & \val{false} & \chgkeep & A test-only language that shows
+every text's key. \\
+\end{settings}
+
+\subsection{Operation}
+
+\begin{settings}{tab:cfg-ops}{Operational settings}
+\opt{quarkus.log.level} & \val{WARN} & \chgmay & The root log level. Environment variable
+\opt{LOG_LEVEL}; Author's own classes follow \opt{ELICIT_LOG_LEVEL} (default \val{INFO}). \\
+\opt{quarkus.http.cors.origins} & --- & \chgmay & Origins allowed to call Author from another
+site's pages. Environment variable \opt{CORS_ALLOWED_ORIGINS}. None by default, and none is
+needed: Author's pages call only Author. \\
+\opt{quarkus.application.name} & \val{elicit-author} & \chgmay & The service name in metrics
+and traces. \\
+\opt{build.timestamp} & build & \chgkeep & Stamped by the build and shown on the System
+overview. \\
+\opt{elicit.debug.reveal-tokens} & \val{false} & \chgkeep & Shows raw tokens on the OIDC
+diagnostics screen. Never set it outside a development machine. \\
+\end{settings}
+
+Telemetry follows Quarkus's OpenTelemetry settings, \val{quarkus.otel.*}. Every setting
+this manual does not list is in the Quarkus configuration reference:
+\url{https://quarkus.io/guides/all-config}.
+
+%% ================================================================== 9
+\section{Brand and translations}
+\label{sec:brand}
+\markboth{Brand and translations}{}
+
+Author mounts the \emph{same} brand directory as the site applications, so the authoring tool
+looks like the rest of the installation. A mounted brand may be partial; whatever it lacks
+comes from the default brand.
+
+The image carries English only. Every other language is a file in the curated translations
+ElicitSoftware publishes beside each release, the umbrella's \file{elicit-i18n/}, mounted
+read-only. Author reads its own \val{author/} sub-directory of it, as Survey reads
+\val{survey/} and Admin \val{admin/}. The platform's installation manual explains both
+mechanisms, fallback and right-to-left layout included.
+
+Two settings are easily confused:
+
+\begin{description}
+  \item[\opt{i18n.offered.locales}] Which languages \emph{Author's own screens} are offered
+        in at this installation. A site may narrow it.
+  \item[\opt{author.content.languages}] Which languages \emph{a survey's content} may be
+        published in. The release sets it to the curated set, and the release's build fails
+        if it differs, because content in a language a site's Survey lacks could never reach a
+        respondent. Leave it.
+\end{description}
+
+%% ================================================================== 10
+\section{Verifying the installation}
+\label{sec:verify}
+\markboth{Verifying the installation}{}
+
+In this order; each check assumes the ones before it passed.
+
+\begin{enumerate}
+  \item The preview's \val{/q/health/ready} answers \val{200}.
+  \item Author's \val{/q/health/ready} answers \val{200}. Both endpoints are open without
+        signing in.
+\end{enumerate}
+
+\begin{elicitcmd}
+curl -fsS http://localhost:8085/q/health/ready
+curl -fsS http://localhost:8084/q/health/ready
+\end{elicitcmd}
+
+\begin{enumerate}
+  \setcounter{enumi}{2}
+  \item A user holding \val{elicit_author} signs in at Author's address and reaches the
+        \ui{Surveys} list.
+  \item A user holding \val{elicit_author_admin} opens \ui{System}. The overview reports every
+        required setting as present and the database check passes; the database screen
+        reports the \val{survey} schema and the preview's migration level.
+  \item An author creates a survey, adds a question, and exports it. An administrator applies
+        the file at a site through Admin's \ui{Apply Survey Definition}.
+\end{enumerate}
+
+When all five pass, hand Author to its authors with the author's manual, which Author serves
+from its own \ui{Manual} link.
+
+%% ================================================================== 11
+\section{When it does not work}
+\label{sec:trouble}
+\markboth{When it does not work}{}
+
+\begin{plaintable}{tab:trouble}{Failures actually seen, and their cures}{@{}>{\raggedright\arraybackslash}p{0.36\linewidth} >{\raggedright\arraybackslash}p{0.58\linewidth}@{}}{\thead{Symptom} & \thead{Cause and cure}}
+Author does not start, naming \opt{ELICIT_DB_PASSWORD} or \opt{OIDC_CLIENT_SECRET}. & A
+required secret is unset. Supply it; the System overview lists every required setting. \\
+\addlinespace
+Author starts, but every screen fails and the database screen reports the \val{survey}
+schema missing. & The preview Survey has not built the schema yet, or Author and the preview
+use different databases. Start the preview against the same database first. \\
+\addlinespace
+The database \val{author} does not exist. & The cluster was initialized before the database
+script was mounted. Run it once by hand (Chapter~\ref{sec:database}). \\
+\addlinespace
+Sign-in works, then a page says access was not granted. & The user lacks
+\val{elicit_author}, or holds it on another client. The OIDC diagnostics screen under
+\ui{System} shows the roles the provider actually sent. \\
+\addlinespace
+Sign-in loops, or the provider rejects the redirect. & The redirect URI on
+\val{elicit-author} does not cover the address the browser used, or
+\opt{quarkus.oidc.auth-server-url} is not reachable from the browser. \\
+\addlinespace
+Deleting a survey is refused, naming a connection failure. & Author cannot reach the preview
+at \opt{author.preview.survey.url}. Check the address from Author's host. \\
+\addlinespace
+A language is missing from Author's language selector. & The mounted translations lack
+\val{author/translations_<tag>.properties}, or \opt{i18n.offered.locales} leaves the
+language out. \\
+\end{plaintable}
+
+%% ================================================================== 12
+\section{Where to look next}
+\label{sec:next}
+\markboth{Where to look next}{}
+
+\begin{description}
+  \item[The author's manual] Building a survey, from an empty list to an exported definition.
+        Author serves it from its \ui{Manual} link.
+  \item[The platform's installation manual] Provisioning a site's Survey and Admin: the
+        database roles, the site's identity-provider client, branding and translations in
+        depth, and applying a definition.
+  \item[\url{https://github.com/ElicitSoftware/Author}] Author's source, its use cases under
+        \file{docs/use_cases/}, and this manual's sources under \file{docs/manual/}.
+\end{description}
+
+\vspace{1em}
+
+\begin{elicitnote}[Which version is this?]
+This manual describes Elicit Author \textbf{\elicitVersion}, built
+\textbf{\elicitBuildDate}. The same pair is printed at the foot of every page, so a printed
+copy can always be matched back to the release it came from.
+\end{elicitnote}
+
+\end{document}

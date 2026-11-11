@@ -1,4 +1,14 @@
-# The author's manual (UC-039)
+# Author's manuals
+
+Two manuals live here, built by the same script with the same brand package:
+
+- **The author's manual** (UC-039), `Building a Survey`, which ships inside the
+  image. Most of this page is about it.
+- **The installation manual** (UC-050, UC-051), `Installing Author`, a release
+  artifact attached to each tagged release and never packaged (C-027). See
+  [The installation manual](#the-installation-manual) below.
+
+## The author's manual
 
 `Building a Survey` — the printable, illustrated manual that ships inside the
 application image. It is the printable form of the in-app `How surveys work`
@@ -12,11 +22,13 @@ for the behavior this implements, and FR-047 / NFR-016 in
 
 | Path | Committed? | What it is |
 | --- | --- | --- |
-| `elicit-author-manual.tex` | yes | the manual |
-| `elicit-brand.sty` | yes | the Elicit default brand as LaTeX — colors, IBM Plex, the page furniture and the call-out boxes (UC-039 BR-005) |
+| `elicit-author-manual.tex` | yes | the author's manual |
+| `elicit-author-installation-manual.tex` | yes | the installation manual |
+| `../../../docs/manual/elicit-brand.sty` | in the umbrella | the Elicit default brand as LaTeX — colors, IBM Plex, the page furniture, the call-out boxes and the settings tables (UC-039 BR-005, C-028). Read in place; there is no copy here |
 | `images/` | yes | the captured screens, plus `elicit-logo.png` for the title page |
 | `capture/` | yes | `capture-screenshots.mjs`, its own `package.json`, and `fixtures/` — the sample survey the figures walk; regenerates `images/` from a running Author |
-| `build-manual.sh` | yes | typesets the PDF and puts it where the application packages it |
+| `build-manual.sh` | yes | typesets either manual: the author's manual where the application packages it, the installation manual beside its source |
+| `elicit-author-installation-manual.pdf` | **no** | generated: the installation manual |
 | `build-info.tex` | **no** | generated: the version and build date stamped into this build |
 | `build/` | **no** | generated: LaTeX's working directory and the PDF |
 
@@ -42,7 +54,10 @@ without a role check. It reaches the browser only through `ManualResource`
 
 There is no TeX installation to maintain: the script typesets inside a TeX Live
 container (`TEXLIVE_IMAGE`, default `texlive/texlive:latest`), which is where
-IBM Plex and the LaTeX packages come from. Docker must be running.
+IBM Plex and the LaTeX packages come from. Docker must be running, and Author
+must sit inside the umbrella checkout: the container reads the brand package
+from the umbrella's `docs/manual/` (mounted read-only, found through `TEXINPUTS`),
+the one copy every Elicit manual is typeset with (C-028).
 
 `SKIP_MANUAL=1` builds the application without the manual. The application then
 simply does not offer the link (UC-039 A1) — nothing else changes.
@@ -97,3 +112,30 @@ Env: `AUTHOR_URL` (default `http://localhost:8084`), `AUTHOR_USER`,
 
 After regenerating, check that every `\screenshot{…}` in the `.tex` still
 matches what the figure shows — the caption is part of the instruction.
+
+## The installation manual
+
+`Installing Author` takes an operator from no Author to a running, verified one:
+the `author` database, the `elicit-author` client and its roles, the preview
+Survey, both installation paths, the configuration reference and verification.
+See [`../use_cases/UC-050-install-author-from-the-installation-manual.md`](../use_cases/UC-050-install-author-from-the-installation-manual.md)
+for what it covers and
+[`../use_cases/UC-051-build-the-author-installation-manual.md`](../use_cases/UC-051-build-the-author-installation-manual.md)
+for how it is built.
+
+```bash
+MANUAL=installation docs/manual/build-manual.sh                    # version from pom.xml
+MANUAL=installation docs/manual/build-manual.sh 3.0.0 "2026-09-24"  # explicit stamp
+```
+
+The PDF is written beside its source as `elicit-author-installation-manual.pdf`
+and is not committed. Before typesetting, the script runs the umbrella's
+`docs/manual/check-properties.sh --modules Author` against it: every key Author
+reads must be documented in the configuration reference, and every default it
+prints must be the value in `application.properties` (NFR-021, UC-051 A3).
+`SKIP_PROPERTY_CHECK=1` typesets without the check. A setting that belongs to the
+preview Survey rather than to Author is written with `\optlit{}`, which the check
+does not count, so Author is not held to Survey's keys.
+
+The release workflow typesets it for every tag and attaches it to that tag's
+GitHub release, creating the release when there is none yet (UC-051 BR-004, A6).
