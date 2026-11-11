@@ -14,7 +14,7 @@
 - The administrator holds the installation manual for the Author release being installed, from that release or built from its sources (UC-051).
 - A PostgreSQL cluster carrying the roles the Elicit database image creates is available, either a site's cluster or one of Author's own.
 - An OIDC provider is available, on which the administrator can create a client and roles.
-- Either a container runtime, or Java 25 for running Author and its preview as JVM services, is available.
+- A container runtime is available. Author and its preview are released as container images only (BR-007).
 
 ## Main Success Scenario
 
@@ -121,6 +121,10 @@ Every password and client secret the umbrella's compose file and realm carry is 
 ### BR-006: The configuration reference is the code's
 
 Every setting Author reads is in the manual's configuration reference with the default its sources carry, and the manual's build fails on any difference (NFR-021, UC-051 A3).
+
+### BR-007: The images are the only distribution
+
+A release publishes Author and Survey as container images and nothing else; no runnable Java artifact is distributed. The manual therefore gives two installation paths, the umbrella's compose file (A3) and the same images under the site's own container platform, and no procedure that runs either application on a bare Java runtime.
 
 ## Reference
 
