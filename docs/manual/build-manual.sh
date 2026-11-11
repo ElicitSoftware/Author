@@ -1,31 +1,75 @@
 #!/usr/bin/env bash
 #
-# Builds the author's manual (UC-039) and drops the PDF where the application packages it.
+# Builds one of Author's two manuals.
 #
-# The manual is typeset by a TeX Live container, so no TeX installation is needed on the
-# machine doing the build. The version and build date are stamped into the document
-# (UC-039 BR-003); when they are not supplied both read "unknown" (UC-039 A3).
+#   author's manual (default)  UC-039. Dropped where the application packages it: it ships
+#                              inside the image (UC-039 BR-004).
+#   MANUAL=installation        UC-051. The installation manual, written beside its sources: it
+#                              is a release artifact, never packaged (C-027). Its configuration
+#                              reference is checked against the code first (UC-051 A3).
 #
-# Usage: docs/manual/build-manual.sh [version] [build-date]
+# Both are typeset by a TeX Live container, so no TeX installation is needed on the machine
+# doing the build. The version and build date are stamped into the document (UC-039 BR-003,
+# UC-051 BR-001); when they are not supplied both read "unknown".
+#
+# Both use the umbrella's brand package, docs/manual/elicit-brand.sty, read in place from
+# the surrounding Elicit checkout (C-028): the container sees that directory read-only and
+# finds the package there through TEXINPUTS. There is no copy of it in this repository.
+#
+# Usage: [MANUAL=installation] docs/manual/build-manual.sh [version] [build-date]
 #
 # Env:
-#   TEXLIVE_IMAGE   container image to typeset with (default texlive/texlive:latest)
-#   MANUAL_OUT      where to write the PDF (default src/main/resources/manual)
-#   SKIP_MANUAL=1   skip the build entirely and exit 0
+#   MANUAL               author (default) or installation
+#   TEXLIVE_IMAGE        container image to typeset with (default texlive/texlive:latest)
+#   MANUAL_OUT           where to write the PDF (default src/main/resources/manual for the
+#                        author's manual, docs/manual for the installation manual)
+#   SKIP_MANUAL=1        skip the build entirely and exit 0
+#   SKIP_PROPERTY_CHECK=1  typeset the installation manual without checking its reference
 
 set -euo pipefail
 
 MANUAL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${MANUAL_DIR}/../.." && pwd)"
+UMBRELLA_MANUAL_DIR="$(cd "${PROJECT_DIR}/.." && pwd)/docs/manual"
 
 TEXLIVE_IMAGE="${TEXLIVE_IMAGE:-texlive/texlive:latest}"
-MANUAL_OUT="${MANUAL_OUT:-${PROJECT_DIR}/src/main/resources/manual}"
-JOB="elicit-author-manual"
-PDF_NAME="elicit-author-manual.pdf"
+
+case "${MANUAL:-author}" in
+  author)
+    JOB="elicit-author-manual"
+    MANUAL_OUT="${MANUAL_OUT:-${PROJECT_DIR}/src/main/resources/manual}"
+    ;;
+  installation)
+    JOB="elicit-author-installation-manual"
+    MANUAL_OUT="${MANUAL_OUT:-${MANUAL_DIR}}"
+    ;;
+  *)
+    echo "[manual] MANUAL must be author or installation, not '${MANUAL}'." >&2
+    exit 2
+    ;;
+esac
+PDF_NAME="${JOB}.pdf"
 
 if [[ "${SKIP_MANUAL:-0}" == "1" ]]; then
-  echo "[manual] SKIP_MANUAL=1 — not building the manual"
+  echo "[manual] SKIP_MANUAL=1 — not building ${JOB}"
   exit 0
+fi
+
+# The brand package lives in the umbrella (C-028). Without it there is nothing to typeset with
+# (UC-051 A4), and the message says why rather than leaving LaTeX to report a missing file.
+if [[ ! -f "${UMBRELLA_MANUAL_DIR}/elicit-brand.sty" ]]; then
+  echo "[manual] ${UMBRELLA_MANUAL_DIR}/elicit-brand.sty is missing." >&2
+  echo "[manual] Author must sit inside an Elicit umbrella checkout (Elicit/Author/), which" >&2
+  echo "[manual] carries the brand package every Elicit manual is typeset with." >&2
+  exit 1
+fi
+
+# The installation manual's configuration reference must match the code before anything is
+# typeset, so a stale reference is never produced (UC-051 BR-003, NFR-021). The rules live in
+# the umbrella's script, which checks the platform manual the same way.
+if [[ "${JOB}" == "elicit-author-installation-manual" && "${SKIP_PROPERTY_CHECK:-0}" != "1" ]]; then
+  "${UMBRELLA_MANUAL_DIR}/check-properties.sh" \
+    --manual "${MANUAL_DIR}/${JOB}.tex" --modules Author
 fi
 
 # The version and build date the PDF is stamped with. Default to the pom's version and today,
@@ -44,7 +88,7 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "[manual] version ${VERSION}, built ${BUILD_DATE}"
+echo "[manual] ${JOB}: version ${VERSION}, built ${BUILD_DATE}"
 
 # LaTeX takes the stamp from a generated file rather than the command line, so the same
 # sources build by hand (with "unknown") and in the application build (with the real values).
@@ -55,16 +99,22 @@ cat > "${MANUAL_DIR}/build-info.tex" <<EOF
 EOF
 
 echo "[manual] typesetting with ${TEXLIVE_IMAGE}"
+# TEXINPUTS: this directory first, then the umbrella's brand package; the trailing colon keeps
+# TeX Live's own search path after both.
 docker run --rm \
   -v "${MANUAL_DIR}:/manual" \
+  -v "${UMBRELLA_MANUAL_DIR}:/brand:ro" \
   -w /manual \
   -u "$(id -u):$(id -g)" \
   -e HOME=/tmp \
+  -e TEXINPUTS=.:/brand: \
   "${TEXLIVE_IMAGE}" \
   latexmk -lualatex -interaction=nonstopmode -halt-on-error -file-line-error \
           -outdir=build "${JOB}.tex"
 
 mkdir -p "${MANUAL_OUT}"
-cp "${MANUAL_DIR}/build/${JOB}.pdf" "${MANUAL_OUT}/${PDF_NAME}"
+if [[ "${MANUAL_DIR}/build/${JOB}.pdf" != "${MANUAL_OUT}/${PDF_NAME}" ]]; then
+  cp "${MANUAL_DIR}/build/${JOB}.pdf" "${MANUAL_OUT}/${PDF_NAME}"
+fi
 
 echo "[manual] wrote ${MANUAL_OUT}/${PDF_NAME} ($(du -h "${MANUAL_OUT}/${PDF_NAME}" | cut -f1))"
