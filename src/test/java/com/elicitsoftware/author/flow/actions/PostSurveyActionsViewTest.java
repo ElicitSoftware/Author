@@ -63,7 +63,7 @@ class PostSurveyActionsViewTest extends QuarkusBrowserlessTest {
         test(dialog.save).click();
         assertFalse(dialog.isOpened());
 
-        view.actions.add(view.survey.id, "Notify", "Tells someone.", "https://example.org/notify");
+        view.actions.add(view.survey.id, "Notify", "Tells someone.", "POST", "https://example.org/notify", false);
         view.load();
         List<PostSurveyAction> rows = rows(view);
         assertEquals(before + 2, rows.size(), "UC-052 step 4");

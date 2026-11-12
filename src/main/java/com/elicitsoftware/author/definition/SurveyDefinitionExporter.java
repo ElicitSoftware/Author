@@ -93,7 +93,7 @@ public class SurveyDefinitionExporter {
                 + "downstream_sq_id, operator_id, action_id, description, token, reference_value, default_upstream_value, override_upstream_value, " + T2_TAIL
                 + " FROM survey.relationships WHERE survey_id = :sid ORDER BY relationship_id, version", surveyId));
         tables.put("reports", rows("SELECT id, report_key, name, description, url, display_order FROM survey.reports WHERE survey_id = :sid ORDER BY display_order", surveyId));
-        tables.put("post_survey_actions", rows("SELECT id, post_survey_action_key, name, description, url, execution_order FROM survey.post_survey_actions WHERE survey_id = :sid ORDER BY execution_order", surveyId));
+        tables.put("post_survey_actions", rows("SELECT id, post_survey_action_key, name, description, url, execution_order, method, sends_external_id FROM survey.post_survey_actions WHERE survey_id = :sid ORDER BY execution_order", surveyId));
         tables.put("dimensions", rows("SELECT DISTINCT d.id, d.dimension_key, d.name FROM survey.dimensions d INNER JOIN survey.ontology o ON o.dimension = d.id WHERE o.survey_id = :sid ORDER BY d.id", surveyId));
         tables.put("ontology", rows("SELECT id, ontology_key, name, tag, dimension FROM survey.ontology WHERE survey_id = :sid ORDER BY id", surveyId));
         tables.put("metadata", rows("SELECT id, metadata_key, steps_sections_id, question_id, sections_question_id, ontology_id, value FROM survey.metadata WHERE survey_id = :sid ORDER BY id", surveyId));

@@ -1203,11 +1203,22 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `postSurveyActionDialog.name` | Name | Post-survey action dialog · field label | 20 |  |
 | `postSurveyActionDialog.description` | Description | Post-survey action dialog · field label | 20 |  |
 | `postSurveyActionDialog.url` | Address | Post-survey action dialog · field label for the web address | 20 |  |
-| `postSurveyActionDialog.url.helper` | The full http(s) address the site's Survey calls, for example http://fhhs:8080/familyhistory/generate | Post-survey action dialog · helper text under the address field; keep the example address unchanged | 200 |  |
+| `postSurveyActionDialog.url.helper` | The full http(s) address the site's Survey calls, for example http://fhhs:8080/familyhistory/generate. It may hold {respondentId}, and {externalId} when the action sends the External ID. | Post-survey action dialog · helper text under the address field; keep the example address and the two placeholders unchanged | 250 |  |
 | `postSurveyActionDialog.help.name` | Identifies the action in this list and on a site's Connections screen; not shown to respondents. | Post-survey action dialog · help tooltip of the name field; Connections is a screen name in the Admin application | 150 |  |
 | `postSurveyActionDialog.help.url` | Called exactly as written, from the site's Survey; it must be reachable from there. | Post-survey action dialog · help tooltip of the address field | 150 |  |
 | `postSurveyActionDialog.added` | Added action "{0}" | Post-survey action dialog · notification | 60 | params: {0} = action name |
 | `postSurveyActionDialog.updated` | Updated action "{0}" | Post-survey action dialog · notification | 60 | params: {0} = action name |
+| `postSurveyActionDialog.method` | Method | Post-survey action dialog · field label for the HTTP method; POST, GET and PUT stay | 20 |  |
+| `postSurveyActionDialog.method.helper` | How the site's Survey calls the address; POST unless the service expects GET or PUT | Post-survey action dialog · helper text under the method field; POST, GET and PUT stay | 120 |  |
+| `postSurveyActionDialog.sendsExternalId` | Send the subject's External ID | Post-survey action dialog · checkbox label | 50 |  |
+| `postSurveyActionDialog.sendsExternalId.warning` | The External ID usually identifies the person in another system, such as a medical record number. The site sends it, with the department's code, on every call of this action, and only to an https address. | Post-survey action dialog · warning shown while the checkbox is ticked; https stays | 250 |  |
+| `postSurveyActionsView.grid.method` | Method | Post-survey actions grid · column header | 12 |  |
+| `postSurveyActionsView.grid.externalId` | External ID | Post-survey actions grid · column header: whether the action sends the External ID | 20 |  |
+| `postSurveyActionsView.grid.externalId.yes` | Sent | Post-survey actions grid · cell text when the action sends the External ID | 12 |  |
+| `error.postSurveyAction.methodInvalid` | Unsupported method {0}; choose POST, GET or PUT | Error message · post-survey action dialog; POST, GET and PUT stay | 100 | params: {0} = the method entered |
+| `error.postSurveyAction.placeholderUnknown` | The address may hold only the placeholders respondentId and externalId, not {0} | Error message · post-survey action dialog; respondentId and externalId are placeholder names, keep them | 140 | params: {0} = the placeholder found, with its braces |
+| `error.postSurveyAction.externalIdPlaceholderNeedsFlag` | {externalId} needs the action to send the External ID; tick the box or remove the placeholder | Error message · post-survey action dialog; keep the placeholder exactly as written | 140 |  |
+| `error.postSurveyAction.externalIdNeedsHttps` | An action that sends the External ID must use an https address | Error message · post-survey action dialog; https stays | 100 |  |
 | `error.postSurveyAction.gone` | The post-survey action no longer exists | Error message · post-survey actions | 80 |  |
 | `error.postSurveyAction.nameRequired` | Name is required | Error message · post-survey action dialog | 60 |  |
 | `error.postSurveyAction.nameTooLong` | Name must be 255 characters or fewer | Error message · post-survey action dialog | 80 |  |
@@ -2381,11 +2392,22 @@ postSurveyActionDialog.title.edit=Edit post-survey action
 postSurveyActionDialog.name=Name
 postSurveyActionDialog.description=Description
 postSurveyActionDialog.url=Address
-postSurveyActionDialog.url.helper=The full http(s) address the site's Survey calls, for example http://fhhs:8080/familyhistory/generate
+postSurveyActionDialog.url.helper=The full http(s) address the site's Survey calls, for example http://fhhs:8080/familyhistory/generate. It may hold {respondentId}, and {externalId} when the action sends the External ID.
 postSurveyActionDialog.help.name=Identifies the action in this list and on a site's Connections screen; not shown to respondents.
 postSurveyActionDialog.help.url=Called exactly as written, from the site's Survey; it must be reachable from there.
 postSurveyActionDialog.added=Added action "{0}"
 postSurveyActionDialog.updated=Updated action "{0}"
+postSurveyActionDialog.method=Method
+postSurveyActionDialog.method.helper=How the site's Survey calls the address; POST unless the service expects GET or PUT
+postSurveyActionDialog.sendsExternalId=Send the subject's External ID
+postSurveyActionDialog.sendsExternalId.warning=The External ID usually identifies the person in another system, such as a medical record number. The site sends it, with the department's code, on every call of this action, and only to an https address.
+postSurveyActionsView.grid.method=Method
+postSurveyActionsView.grid.externalId=External ID
+postSurveyActionsView.grid.externalId.yes=Sent
+error.postSurveyAction.methodInvalid=Unsupported method {0}; choose POST, GET or PUT
+error.postSurveyAction.placeholderUnknown=The address may hold only the placeholders respondentId and externalId, not {0}
+error.postSurveyAction.externalIdPlaceholderNeedsFlag={externalId} needs the action to send the External ID; tick the box or remove the placeholder
+error.postSurveyAction.externalIdNeedsHttps=An action that sends the External ID must use an https address
 error.postSurveyAction.gone=The post-survey action no longer exists
 error.postSurveyAction.nameRequired=Name is required
 error.postSurveyAction.nameTooLong=Name must be 255 characters or fewer

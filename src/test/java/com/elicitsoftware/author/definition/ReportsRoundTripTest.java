@@ -191,13 +191,13 @@ class ReportsRoundTripTest {
     @TestTransaction
     void postSurveyActionsAreWrittenAndReadBackWithTheirKeys() throws IOException {
         int sid = importText(importer, withSurveyKey(sample(), UUID.randomUUID())).surveyId();
-        com.elicitsoftware.model.PostSurveyAction second = actions.add(sid, "Notify", "Tells the coordinator.", "https://example.org/notify");
-        com.elicitsoftware.model.PostSurveyAction first = actions.add(sid, "File", "Files the PDF.", "https://example.org/file");
+        com.elicitsoftware.model.PostSurveyAction second = actions.add(sid, "Notify", "Tells the coordinator.", "POST", "https://example.org/notify", false);
+        com.elicitsoftware.model.PostSurveyAction first = actions.add(sid, "File", "Files the PDF.", "POST", "https://example.org/file", false);
         actions.reorder(sid, List.of(first.id));
 
         String exported = new String(exporter.export(Survey.findById(sid)).bytes(), StandardCharsets.UTF_8);
         assertTrue(exported.contains("\n# post_survey_actions: 2\n"), "UC-008: header counts the actions");
-        int fileLine = exported.indexOf("\npost_survey_actions: " + first.id + "|" + first.postSurveyActionKey + "|File|Files the PDF.|https://example.org/file|1\n");
+        int fileLine = exported.indexOf("\npost_survey_actions: " + first.id + "|" + first.postSurveyActionKey + "|File|Files the PDF.|https://example.org/file|1|POST|false\n");
         int notifyLine = exported.indexOf("\npost_survey_actions: " + second.id + "|" + second.postSurveyActionKey + "|Notify|");
         assertTrue(fileLine >= 0 && notifyLine > fileLine, "UC-052 BR-005: in execution order: " + exported);
 

@@ -63,40 +63,40 @@ class PostSurveyActionServiceTest {
     void add_appendsInOrderAndValidates() {
         int sid = fixture().id;
         int before = service.actions(sid).size();
-        PostSurveyAction a = service.add(sid, " File the history ", " Uploads the PDF. ", "http://fhhs:8080/familyhistory/generate");
+        PostSurveyAction a = service.add(sid, " File the history ", " Uploads the PDF. ", "POST", "http://fhhs:8080/familyhistory/generate", false);
         assertEquals("File the history", a.name, "trimmed");
         assertEquals("Uploads the PDF.", a.description, "trimmed");
         assertEquals(before + 1, a.executionOrder, "UC-052 step 4: at the end");
         assertNotNull(a.postSurveyActionKey, "BR-007: the key is minted");
 
         assertEquals("name", assertThrows(AuthoringException.class,
-                () -> service.add(sid, "File the history", "d", "https://x.example/a")).field(), "A1: name taken");
-        assertEquals("name", assertThrows(AuthoringException.class, () -> service.add(sid, " ", "d", "https://x.example/a")).field());
+                () -> service.add(sid, "File the history", "d", "POST", "https://x.example/a", false)).field(), "A1: name taken");
+        assertEquals("name", assertThrows(AuthoringException.class, () -> service.add(sid, " ", "d", "POST", "https://x.example/a", false)).field());
         assertEquals("description", assertThrows(AuthoringException.class,
-                () -> service.add(sid, "Other", " ", "https://x.example/a")).field(), "BR-003: required");
+                () -> service.add(sid, "Other", " ", "POST", "https://x.example/a", false)).field(), "BR-003: required");
         assertEquals("description", assertThrows(AuthoringException.class,
-                () -> service.add(sid, "Long", "d".repeat(256), "https://x.example/a")).field(), "BR-003: 255 characters");
-        assertEquals("url", assertThrows(AuthoringException.class, () -> service.add(sid, "Other", "d", "")).field(), "A2");
+                () -> service.add(sid, "Long", "d".repeat(256), "POST", "https://x.example/a", false)).field(), "BR-003: 255 characters");
+        assertEquals("url", assertThrows(AuthoringException.class, () -> service.add(sid, "Other", "d", "POST", "", false)).field(), "A2");
         assertEquals("url", assertThrows(AuthoringException.class,
-                () -> service.add(sid, "Other", "d", "/api/reports/respondent-summary")).field(), "BR-004: no path form");
-        assertEquals("url", assertThrows(AuthoringException.class, () -> service.add(sid, "Other", "d", "ftp://x")).field(), "BR-004");
+                () -> service.add(sid, "Other", "d", "POST", "/api/reports/respondent-summary", false)).field(), "BR-004: no path form");
+        assertEquals("url", assertThrows(AuthoringException.class, () -> service.add(sid, "Other", "d", "POST", "ftp://x", false)).field(), "BR-004");
         assertEquals("url", assertThrows(AuthoringException.class,
-                () -> service.add(sid, "Other", "d", "https://x.example/" + "a".repeat(240))).field(), "BR-004: 255 characters");
-        assertEquals("https://x.example/other", service.add(sid, "Other", "kept", " https://x.example/other ").url);
+                () -> service.add(sid, "Other", "d", "POST", "https://x.example/" + "a".repeat(240), false)).field(), "BR-004: 255 characters");
+        assertEquals("https://x.example/other", service.add(sid, "Other", "kept", "POST", " https://x.example/other ", false).url);
     }
 
     @Test
     @TestTransaction
     void update_keepsTheKey_reorder_renumbers() {
         int sid = fixture().id;
-        PostSurveyAction first = service.add(sid, "First", "d", "https://x.example/1");
-        PostSurveyAction second = service.add(sid, "Second", "d", "https://x.example/2");
+        PostSurveyAction first = service.add(sid, "First", "d", "POST", "https://x.example/1", false);
+        PostSurveyAction second = service.add(sid, "Second", "d", "POST", "https://x.example/2", false);
         UUID key = first.postSurveyActionKey;
 
-        PostSurveyAction edited = service.update(sid, first.id, "First renamed", "changed", "https://x.example/1b");
+        PostSurveyAction edited = service.update(sid, first.id, "First renamed", "changed", "POST", "https://x.example/1b", false);
         assertEquals(key, edited.postSurveyActionKey, "UC-052 step 6 / BR-007: in place, same key");
         assertEquals("name", assertThrows(AuthoringException.class,
-                () -> service.update(sid, first.id, "Second", "d", "https://x.example/1")).field(), "A1 on edit");
+                () -> service.update(sid, first.id, "Second", "d", "POST", "https://x.example/1", false)).field(), "A1 on edit");
 
         service.reorder(sid, List.of(second.id));
         List<PostSurveyAction> rows = service.actions(sid);
@@ -109,8 +109,8 @@ class PostSurveyActionServiceTest {
     @TestTransaction
     void remove_deletesTheActionAndItsPreviewDeliveryRecords() {
         int sid = fixture().id;
-        PostSurveyAction first = service.add(sid, "Notify", "d", "https://x.example/notify");
-        PostSurveyAction second = service.add(sid, "File", "d", "https://x.example/file");
+        PostSurveyAction first = service.add(sid, "Notify", "d", "POST", "https://x.example/notify", false);
+        PostSurveyAction second = service.add(sid, "File", "d", "POST", "https://x.example/file", false);
         em.createNativeQuery("INSERT INTO survey.respondents (id, survey_id, access_code) "
                         + "VALUES (nextval('survey.respondents_seq'), ?1, 'psa-preview-1')")
                 .setParameter(1, sid).executeUpdate();
@@ -129,5 +129,33 @@ class PostSurveyActionServiceTest {
         List<Integer> orders = service.actions(sid).stream().map(a -> a.executionOrder).toList();
         assertEquals(java.util.stream.IntStream.rangeClosed(1, orders.size()).boxed().toList(), orders, "renumbered 1..n");
         assertThrows(AuthoringException.class, () -> service.remove(sid, first.id));
+    }
+
+    /** UC-052 BR-009, BR-010, BR-011, A5, A6: method, placeholders and the External ID. */
+    @Test
+    @TestTransaction
+    void methodPlaceholdersAndExternalId() {
+        int sid = fixture().id;
+        PostSurveyAction get = service.add(sid, "Get", "d", "get", "https://x.example/n?r={respondentId}", false);
+        assertEquals("GET", get.method, "BR-009: normalized");
+        assertEquals("method", assertThrows(AuthoringException.class,
+                () -> service.add(sid, "Del", "d", "DELETE", "https://x.example/n", false)).field(), "BR-009");
+        assertEquals("POST", service.add(sid, "Default", "d", null, "https://x.example/n", false).method);
+
+        assertEquals("url", assertThrows(AuthoringException.class,
+                () -> service.add(sid, "Odd", "d", "POST", "https://x.example/{surveyKey}", false)).field(), "A6: unknown placeholder");
+        assertEquals("url", assertThrows(AuthoringException.class,
+                () -> service.add(sid, "NoFlag", "d", "POST", "https://x.example/{externalId}", false)).field(),
+                "A6: {externalId} only when the action sends it");
+        assertEquals("url", assertThrows(AuthoringException.class,
+                () -> service.add(sid, "Plain", "d", "POST", "http://x.example/{externalId}", true)).field(),
+                "BR-011: the External ID only over https");
+
+        PostSurveyAction ext = service.add(sid, "Ext", "d", "PUT", "https://x.example/p/{externalId}", true);
+        assertTrue(ext.sendsExternalId);
+        assertEquals("PUT", ext.method);
+        PostSurveyAction off = service.update(sid, ext.id, "Ext", "d", "POST", "https://x.example/p", false);
+        assertEquals(ext.postSurveyActionKey, off.postSurveyActionKey, "BR-007: same key");
+        assertTrue(!off.sendsExternalId);
     }
 }
