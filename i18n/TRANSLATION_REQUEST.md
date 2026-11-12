@@ -1181,6 +1181,42 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `reportServiceDialog.help.url` | A path is resolved by each site against its own Survey; a full address is used as written. | Report service dialog · help popover | 120 |  |
 | `reportServiceDialog.added` | Added report "{0}" | Report service dialog · success notification | 40 | params: {0} = report name |
 | `reportServiceDialog.updated` | Updated report "{0}" | Report service dialog · success notification | 40 | params: {0} = report name |
+| `surveyEditorView.postSurveyActions` | Post-survey actions… | Survey overview · toolbar button opening the post-survey actions page | 30 |  |
+| `postSurveyActionsView.pageTitle` | Post-survey actions | Post-survey actions page · browser tab title | 40 |  |
+| `postSurveyActionsView.heading` | Post-survey actions — {0} | Post-survey actions page · heading | 80 | params: {0} = survey title |
+| `postSurveyActionsView.surveyOverview` | Survey overview | Post-survey actions page · button back to the survey overview | 25 |  |
+| `postSurveyActionsView.intro` | What the survey's site does when a respondent finishes: each action is an address the site's Survey calls, in the order listed, with the respondent's id. Respondents never see them. Use one to file a respondent's results in another system. | Post-survey actions page · introduction paragraph; Survey is the application name, keep it | 300 |  |
+| `postSurveyActionsView.notTranslated` | Names and descriptions are notes for authors and site operators, so they are not translated. | Post-survey actions page · secondary paragraph | 150 |  |
+| `postSurveyActionsView.dragHint` | Drag a row to change the order. | Post-survey actions page · hint under the introduction | 60 |  |
+| `postSurveyActionsView.addAction` | Add action… | Post-survey actions page · primary button | 25 |  |
+| `postSurveyActionsView.grid.order` | Order | Post-survey actions grid · column header | 12 |  |
+| `postSurveyActionsView.grid.name` | Name | Post-survey actions grid · column header | 20 |  |
+| `postSurveyActionsView.grid.description` | Description | Post-survey actions grid · column header | 20 |  |
+| `postSurveyActionsView.grid.url` | Address | Post-survey actions grid · column header for the web address | 20 |  |
+| `postSurveyActionsView.empty` | No post-survey actions. The site calls nothing when a respondent finishes. | Post-survey actions page · shown instead of an empty grid | 120 |  |
+| `postSurveyActionsView.edit` | Edit… | Post-survey actions grid · row button | 15 |  |
+| `postSurveyActionsView.remove.header` | Remove post-survey action | Remove action confirmation · dialog title | 40 |  |
+| `postSurveyActionsView.remove.text` | Remove the action "{0}"? Sites applying the next export stop calling it, and delete their record of which respondents it was called for. | Remove action confirmation · dialog text | 200 | params: {0} = action name |
+| `postSurveyActionsView.removed` | Removed action "{0}" | Post-survey actions page · notification | 60 | params: {0} = action name |
+| `postSurveyActionDialog.title.add` | Add post-survey action | Post-survey action dialog · dialog title | 40 |  |
+| `postSurveyActionDialog.title.edit` | Edit post-survey action | Post-survey action dialog · dialog title | 40 |  |
+| `postSurveyActionDialog.name` | Name | Post-survey action dialog · field label | 20 |  |
+| `postSurveyActionDialog.description` | Description | Post-survey action dialog · field label | 20 |  |
+| `postSurveyActionDialog.url` | Address | Post-survey action dialog · field label for the web address | 20 |  |
+| `postSurveyActionDialog.url.helper` | The full http(s) address the site's Survey calls, for example http://fhhs:8080/familyhistory/generate | Post-survey action dialog · helper text under the address field; keep the example address unchanged | 200 |  |
+| `postSurveyActionDialog.help.name` | Identifies the action in this list and on a site's Connections screen; not shown to respondents. | Post-survey action dialog · help tooltip of the name field; Connections is a screen name in the Admin application | 150 |  |
+| `postSurveyActionDialog.help.url` | Called exactly as written, from the site's Survey; it must be reachable from there. | Post-survey action dialog · help tooltip of the address field | 150 |  |
+| `postSurveyActionDialog.added` | Added action "{0}" | Post-survey action dialog · notification | 60 | params: {0} = action name |
+| `postSurveyActionDialog.updated` | Updated action "{0}" | Post-survey action dialog · notification | 60 | params: {0} = action name |
+| `error.postSurveyAction.gone` | The post-survey action no longer exists | Error message · post-survey actions | 80 |  |
+| `error.postSurveyAction.nameRequired` | Name is required | Error message · post-survey action dialog | 60 |  |
+| `error.postSurveyAction.nameTooLong` | Name must be 255 characters or fewer | Error message · post-survey action dialog | 80 |  |
+| `error.postSurveyAction.nameTaken` | This survey already has an action named ''{0}'' | Error message · post-survey action dialog | 100 | params: {0} = action name |
+| `error.postSurveyAction.descriptionRequired` | Description is required | Error message · post-survey action dialog | 60 |  |
+| `error.postSurveyAction.descriptionTooLong` | Description must be 255 characters or fewer | Error message · post-survey action dialog | 80 |  |
+| `error.postSurveyAction.urlRequired` | Address is required | Error message · post-survey action dialog | 60 |  |
+| `error.postSurveyAction.urlTooLong` | Address must be 255 characters or fewer | Error message · post-survey action dialog | 80 |  |
+| `error.postSurveyAction.urlInvalid` | Enter the full http(s) address the site's Survey calls; a path is not enough for an action | Error message · post-survey action dialog; Survey is the application name, keep it | 160 |  |
 | `reportMarkDialog.title.mark` | Mark for a report | Report mark dialog · dialog header | 30 |  |
 | `reportMarkDialog.title.label` | Edit label | Report mark dialog · dialog header when only the label is edited | 25 |  |
 | `reportMarkDialog.element` | Element | Report mark dialog · field label | 15 |  |
@@ -2323,6 +2359,42 @@ reportServiceDialog.help.name=Heads the report's card; translatable on the Trans
 reportServiceDialog.help.url=A path is resolved by each site against its own Survey; a full address is used as written.
 reportServiceDialog.added=Added report "{0}"
 reportServiceDialog.updated=Updated report "{0}"
+surveyEditorView.postSurveyActions=Post-survey actions…
+postSurveyActionsView.pageTitle=Post-survey actions
+postSurveyActionsView.heading=Post-survey actions — {0}
+postSurveyActionsView.surveyOverview=Survey overview
+postSurveyActionsView.intro=What the survey's site does when a respondent finishes: each action is an address the site's Survey calls, in the order listed, with the respondent's id. Respondents never see them. Use one to file a respondent's results in another system.
+postSurveyActionsView.notTranslated=Names and descriptions are notes for authors and site operators, so they are not translated.
+postSurveyActionsView.dragHint=Drag a row to change the order.
+postSurveyActionsView.addAction=Add action…
+postSurveyActionsView.grid.order=Order
+postSurveyActionsView.grid.name=Name
+postSurveyActionsView.grid.description=Description
+postSurveyActionsView.grid.url=Address
+postSurveyActionsView.empty=No post-survey actions. The site calls nothing when a respondent finishes.
+postSurveyActionsView.edit=Edit…
+postSurveyActionsView.remove.header=Remove post-survey action
+postSurveyActionsView.remove.text=Remove the action "{0}"? Sites applying the next export stop calling it, and delete their record of which respondents it was called for.
+postSurveyActionsView.removed=Removed action "{0}"
+postSurveyActionDialog.title.add=Add post-survey action
+postSurveyActionDialog.title.edit=Edit post-survey action
+postSurveyActionDialog.name=Name
+postSurveyActionDialog.description=Description
+postSurveyActionDialog.url=Address
+postSurveyActionDialog.url.helper=The full http(s) address the site's Survey calls, for example http://fhhs:8080/familyhistory/generate
+postSurveyActionDialog.help.name=Identifies the action in this list and on a site's Connections screen; not shown to respondents.
+postSurveyActionDialog.help.url=Called exactly as written, from the site's Survey; it must be reachable from there.
+postSurveyActionDialog.added=Added action "{0}"
+postSurveyActionDialog.updated=Updated action "{0}"
+error.postSurveyAction.gone=The post-survey action no longer exists
+error.postSurveyAction.nameRequired=Name is required
+error.postSurveyAction.nameTooLong=Name must be 255 characters or fewer
+error.postSurveyAction.nameTaken=This survey already has an action named ''{0}''
+error.postSurveyAction.descriptionRequired=Description is required
+error.postSurveyAction.descriptionTooLong=Description must be 255 characters or fewer
+error.postSurveyAction.urlRequired=Address is required
+error.postSurveyAction.urlTooLong=Address must be 255 characters or fewer
+error.postSurveyAction.urlInvalid=Enter the full http(s) address the site's Survey calls; a path is not enough for an action
 reportMarkDialog.title.mark=Mark for a report
 reportMarkDialog.title.label=Edit label
 reportMarkDialog.element=Element

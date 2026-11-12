@@ -64,6 +64,7 @@ public class SurveyEditorView extends VerticalLayout implements BeforeEnterObser
     final Button design = new Button(getTranslation("surveyEditorView.design"), VaadinIcon.SITEMAP.create());
     final Button reporting = new Button(getTranslation("surveyEditorView.reporting"), VaadinIcon.TABLE.create());
     final Button reports = new Button(getTranslation("surveyEditorView.reports"), VaadinIcon.CLIPBOARD_TEXT.create());
+    final Button postSurveyActions = new Button(getTranslation("surveyEditorView.postSurveyActions"), VaadinIcon.PAPERPLANE.create());
     final Button translations = new Button(getTranslation("surveyEditorView.translations"), VaadinIcon.GLOBE.create());
     final Div validationPanel = new Div();
 
@@ -72,8 +73,11 @@ public class SurveyEditorView extends VerticalLayout implements BeforeEnterObser
     ValidationFindings findings;
 
     public SurveyEditorView() {
-        HorizontalLayout toolbar = new HorizontalLayout(design, reporting, reports, translations, editDetails, exportButton);
+        HorizontalLayout toolbar = new HorizontalLayout(design, reporting, reports, postSurveyActions, translations, editDetails, exportButton);
         reports.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(com.elicitsoftware.author.flow.reports.ReportsView.class,
+                new com.vaadin.flow.router.RouteParameters(SURVEY_ID, String.valueOf(survey.id)))));
+        postSurveyActions.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(
+                com.elicitsoftware.author.flow.actions.PostSurveyActionsView.class,
                 new com.vaadin.flow.router.RouteParameters(SURVEY_ID, String.valueOf(survey.id)))));
         translations.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(
                 com.elicitsoftware.author.flow.translations.TranslationsView.class,
