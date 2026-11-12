@@ -197,7 +197,7 @@ Always write `0` for `version` and leave the other four empty: `0||||`
 | `sections_questions` | 10 | `sections_question_id \| sections_question_key \| question_id \| section_id \| display_order \| ` + tail |
 | `relationships` | 19 | `relationship_id \| relationship_key \| upstream_step_id \| upstream_sq_id \| downstream_step_id \| downstream_ss_id \| downstream_sq_id \| operator_id \| action_id \| description \| token \| reference_value \| default_upstream_value \| override_upstream_value \| ` + tail |
 | `reports` | 6 | `id \| report_key \| name \| description \| url \| display_order` |
-| `post_survey_actions` | 6 | `id \| post_survey_action_key \| name \| description \| url \| execution_order` |
+| `post_survey_actions` | 6 | `id \| post_survey_action_key \| name \| description \| url \| execution_order`, then optionally `\| method \| sends_external_id` |
 | `dimensions` | 3 | `id \| dimension_key \| name` |
 | `ontology` | 5 | `id \| ontology_key \| name \| tag \| dimension` |
 | `metadata` | 7 | `id \| metadata_key \| steps_sections_id \| question_id \| sections_question_id \| ontology_id \| value` |

@@ -34,6 +34,15 @@ public class PostSurveyActionService {
 
     private static final Pattern ABSOLUTE_URL = Pattern.compile("^https?://\\S+$");
 
+    /** UC-052 BR-009: the methods a site's Survey calls an action with. */
+    public static final List<String> METHODS = List.of("POST", "GET", "PUT");
+
+    /** UC-052 BR-010: the placeholders an address may hold. */
+    public static final String RESPONDENT_ID = "{respondentId}";
+    public static final String EXTERNAL_ID = "{externalId}";
+
+    private static final Pattern PLACEHOLDER = Pattern.compile("\\{[^}]*}");
+
     @Inject
     EntityManager em;
 
@@ -47,12 +56,14 @@ public class PostSurveyActionService {
 
     /** UC-052 steps 3-4: a new action at the end of the order. */
     @Transactional
-    public PostSurveyAction add(int surveyId, String name, String description, String url) {
+    public PostSurveyAction add(int surveyId, String name, String description, String method, String url, boolean sendsExternalId) {
         PostSurveyAction a = new PostSurveyAction();
         a.surveyId = surveyId;
         a.name = validName(surveyId, name, null);
         a.description = validDescription(description);
-        a.url = validUrl(url);
+        a.method = validMethod(method);
+        a.url = validUrl(url, sendsExternalId);
+        a.sendsExternalId = sendsExternalId;
         a.executionOrder = actions(surveyId).size() + 1;
         try {
             a.persist();
@@ -65,11 +76,14 @@ public class PostSurveyActionService {
 
     /** UC-052 step 6, BR-007: in place, under the same key. */
     @Transactional
-    public PostSurveyAction update(int surveyId, int actionId, String name, String description, String url) {
+    public PostSurveyAction update(int surveyId, int actionId, String name, String description, String method, String url,
+                                   boolean sendsExternalId) {
         PostSurveyAction a = action(surveyId, actionId);
         a.name = validName(surveyId, name, actionId);
         a.description = validDescription(description);
-        a.url = validUrl(url);
+        a.method = validMethod(method);
+        a.url = validUrl(url, sendsExternalId);
+        a.sendsExternalId = sendsExternalId;
         try {
             em.flush();
         } catch (RuntimeException e) {
@@ -149,6 +163,38 @@ public class PostSurveyActionService {
         }
         if (clean.length() > 255) {
             throw new AuthoringException(Translations.get("error.postSurveyAction.descriptionTooLong"), "description");
+        }
+        return clean;
+    }
+
+    /** UC-052 BR-009: POST unless the author chose GET or PUT. */
+    static String validMethod(String method) {
+        String clean = method == null || method.isBlank() ? "POST" : method.strip().toUpperCase();
+        if (!METHODS.contains(clean)) {
+            throw new AuthoringException(Translations.get("error.postSurveyAction.methodInvalid", clean), "method");
+        }
+        return clean;
+    }
+
+    /**
+     * UC-052 BR-004, BR-010, BR-011: a complete http(s) address whose only placeholders are
+     * {@code {respondentId}} and, on an action that sends the External ID, {@code {externalId}};
+     * an action that sends the External ID must use https.
+     */
+    static String validUrl(String url, boolean sendsExternalId) {
+        String clean = validUrl(url);
+        var m = PLACEHOLDER.matcher(clean);
+        while (m.find()) {
+            String found = m.group();
+            if (found.equals(EXTERNAL_ID) && !sendsExternalId) {
+                throw new AuthoringException(Translations.get("error.postSurveyAction.externalIdPlaceholderNeedsFlag"), "url");
+            }
+            if (!found.equals(RESPONDENT_ID) && !found.equals(EXTERNAL_ID)) {
+                throw new AuthoringException(Translations.get("error.postSurveyAction.placeholderUnknown", found), "url");
+            }
+        }
+        if (sendsExternalId && !clean.regionMatches(true, 0, "https://", 0, 8)) {
+            throw new AuthoringException(Translations.get("error.postSurveyAction.externalIdNeedsHttps"), "url");
         }
         return clean;
     }

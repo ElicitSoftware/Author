@@ -500,12 +500,37 @@ filing their results in a records system, telling a study coordinator. Each acti
 address the site's Survey calls, with the respondent's id; respondents never see it. List a
 survey's actions on its \ui{Post-survey actions…} page, reached from the survey overview.
 
-\ui{Add action…} asks for a name, a description and the address. The address must be a full
-\texttt{http} or \texttt{https} address the site's Survey can reach, such as
+\ui{Add action…} asks for a name, a description, the method and the address. The address must
+be a full \texttt{http} or \texttt{https} address the site's Survey can reach, such as
 \texttt{http://fhhs:8080/familyhistory/generate}; unlike a report service, an action has no
-path form. Survey calls the actions in the order listed, each on its own, so one failing does
-not stop the next; drag a row to change the order. \ui{Edit…} changes an action in place, and a
-site applying the next export updates it.
+path form. The method is \texttt{POST} unless the service you are calling expects \texttt{GET} or
+\texttt{PUT}. A \texttt{POST} or \texttt{PUT} sends the respondent's id in its body; a
+\texttt{GET} sends no body, so put the id in the address instead, with the placeholder
+\texttt{\{respondentId\}}:
+
+\begin{quote}
+\texttt{https://records.example.org/notify?respondent=\{respondentId\}}
+\end{quote}
+
+Survey calls the actions in the order listed, each on its own, so one failing does not stop the
+next, and calls a failed one again later; drag a row to change the order. \ui{Edit…} changes an
+action in place, and a site applying the next export updates it.
+
+\subsection{Sending the External ID}
+
+The outside system often knows the person not by Elicit's respondent id but by the subject's
+\term{External ID}, such as a medical record number. Tick \ui{Send the subject's External ID}
+and the site sends it, with the department's code, on every call of the action, in the body and
+wherever the address holds \texttt{\{externalId\}}:
+
+\begin{quote}
+\texttt{https://records.example.org/patients/\{externalId\}/history}
+\end{quote}
+
+Because the External ID identifies a person, an action that sends it must use an \texttt{https}
+address; Author will not save one at \texttt{http}, and \texttt{\{externalId\}} is refused on an
+action that does not send it. Any credential the outside service requires is set up by whoever
+runs the site, never here.
 
 Names and descriptions are notes for authors and for whoever runs the site, so they are not
 translated. A new survey starts with no actions.

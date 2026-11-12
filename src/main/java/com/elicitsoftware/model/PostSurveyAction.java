@@ -58,6 +58,14 @@ public class PostSurveyAction extends PanacheEntityBase {
     @Column(name = "execution_order", nullable = false)
     public Integer executionOrder;
 
+    /** POST, GET or PUT (UC-052 BR-009). */
+    @Column(name = "method", nullable = false, length = 10)
+    public String method = "POST";
+
+    /** Whether the site sends the subject's External ID and department code; https only (UC-052 BR-011). */
+    @Column(name = "sends_external_id", nullable = false)
+    public boolean sendsExternalId;
+
     @PrePersist
     void ensureKey() {
         if (postSurveyActionKey == null) {

@@ -88,7 +88,10 @@ public class PostSurveyActionsView extends VerticalLayout implements BeforeEnter
         grid.addColumn(a -> a.executionOrder).setHeader(getTranslation("postSurveyActionsView.grid.order")).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(a -> a.name).setHeader(getTranslation("postSurveyActionsView.grid.name")).setAutoWidth(true);
         grid.addColumn(a -> a.description == null ? "" : a.description).setHeader(getTranslation("postSurveyActionsView.grid.description")).setAutoWidth(true);
+        grid.addColumn(a -> a.method).setHeader(getTranslation("postSurveyActionsView.grid.method")).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(a -> a.url).setHeader(getTranslation("postSurveyActionsView.grid.url")).setAutoWidth(true);
+        grid.addColumn(a -> a.sendsExternalId ? getTranslation("postSurveyActionsView.grid.externalId.yes") : "")
+                .setHeader(getTranslation("postSurveyActionsView.grid.externalId")).setAutoWidth(true).setFlexGrow(0);
         grid.addComponentColumn(a -> {
             Button edit = new Button(getTranslation("postSurveyActionsView.edit"), e -> new PostSurveyActionDialog(actions, survey, a, saved -> load()).open());
             edit.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);

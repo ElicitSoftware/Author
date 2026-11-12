@@ -517,10 +517,16 @@ public class SurveyDefinitionImporter {
 
     private void insertPostSurveyAction(String[] f, Long surveyId) {
         requireFields("post_survey_actions", f);
+        // UC-052 BR-008, BR-009: method and sends_external_id trail the record; a file written
+        // before Elicit#95 has neither, and reads as POST without the External ID.
+        String method = f.length > 6 && f[6] != null && !f[6].isBlank() ? f[6].trim().toUpperCase() : "POST";
+        boolean sendsExternalId = f.length > 7 && f[7] != null
+                && (Boolean.parseBoolean(f[7].trim()) || "t".equalsIgnoreCase(f[7].trim()));
         Query q = em.createNativeQuery("""
                 INSERT INTO survey.post_survey_actions
-                    (id, survey_id, post_survey_action_key, name, description, url, execution_order)
-                VALUES (nextval('survey.post_survey_actions_seq'), ?1, ?2, ?3, ?4, ?5, ?6)
+                    (id, survey_id, post_survey_action_key, name, description, url, execution_order,
+                     method, sends_external_id)
+                VALUES (nextval('survey.post_survey_actions_seq'), ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
                 """);
         q.setParameter(1, surveyId);
         q.setParameter(2, parseKeyOrMint(f[1], "element_key"));
@@ -528,6 +534,8 @@ public class SurveyDefinitionImporter {
         q.setParameter(4, nullIfEmpty(f[3]));
         q.setParameter(5, nullIfEmpty(f[4]));
         q.setParameter(6, parseIntOrNull(f[5]));
+        q.setParameter(7, method);
+        q.setParameter(8, sendsExternalId);
         q.executeUpdate();
     }
 
