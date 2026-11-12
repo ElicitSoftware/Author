@@ -49,9 +49,10 @@ rectangle "Elicit Author" {
     usecase "UC-023\nManage Analysis Tags and Dimensions" as UC023
     usecase "UC-024\nPreview Dimensional Impact" as UC024
 
-    ' Reports (FR-068..FR-069)
+    ' Reports and post-survey actions (FR-068, FR-069, FR-079)
     usecase "UC-048\nManage Report Services" as UC048
     usecase "UC-049\nMark Elements for a Report" as UC049
+    usecase "UC-052\nManage Post-Survey Actions" as UC052
 
     ' Requirements Collection & First-Draft Generation (FR-027..FR-029)
     usecase "UC-025\nAuthor the Requirements-Collection Meta-Survey" as UC025
@@ -129,6 +130,7 @@ author --> UC022
 author --> UC023
 author --> UC024
 author --> UC048
+author --> UC052
 author --> UC049
 
 ' Requirements Collection & First-Draft Generation
@@ -206,6 +208,7 @@ UC009 ..> UC043 : <<extend>> retiring an element retires its translations
 UC005 ..> UC047 : <<extend>> re-importing the backup restores it
 UC048 ..> UC003 : <<extend>> a new survey starts with the built-in report
 UC048 ..> UC008 : <<extend>> report services travel in the definition file
+UC052 ..> UC008 : <<extend>> post-survey actions travel in the definition file
 UC049 ..> UC008 : <<extend>> report marks travel in the definition file
 UC049 ..> UC043 : <<extend>> a mark's label is translatable
 

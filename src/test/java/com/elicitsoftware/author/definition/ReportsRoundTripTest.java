@@ -61,6 +61,9 @@ class ReportsRoundTripTest {
     ReportMarkService marks;
 
     @Inject
+    com.elicitsoftware.author.survey.PostSurveyActionService actions;
+
+    @Inject
     SurveyStructureQuery structure;
 
     private static String sample() throws IOException {
@@ -181,5 +184,27 @@ class ReportsRoundTripTest {
                 .replace("# " + ElicitFormat.FORMAT_VERSION, "# " + ElicitFormat.DRAFT_FORMAT_VERSION);
         ImportResult restored = importText(importer, backup);
         assertTrue(reports.reports(restored.surveyId()).isEmpty());
+    }
+
+    /** UC-052 with UC-008 and UC-005: actions written from the page export in order and read back with their keys. */
+    @Test
+    @TestTransaction
+    void postSurveyActionsAreWrittenAndReadBackWithTheirKeys() throws IOException {
+        int sid = importText(importer, withSurveyKey(sample(), UUID.randomUUID())).surveyId();
+        com.elicitsoftware.model.PostSurveyAction second = actions.add(sid, "Notify", "Tells the coordinator.", "https://example.org/notify");
+        com.elicitsoftware.model.PostSurveyAction first = actions.add(sid, "File", "Files the PDF.", "https://example.org/file");
+        actions.reorder(sid, List.of(first.id));
+
+        String exported = new String(exporter.export(Survey.findById(sid)).bytes(), StandardCharsets.UTF_8);
+        assertTrue(exported.contains("\n# post_survey_actions: 2\n"), "UC-008: header counts the actions");
+        int fileLine = exported.indexOf("\npost_survey_actions: " + first.id + "|" + first.postSurveyActionKey + "|File|Files the PDF.|https://example.org/file|1\n");
+        int notifyLine = exported.indexOf("\npost_survey_actions: " + second.id + "|" + second.postSurveyActionKey + "|Notify|");
+        assertTrue(fileLine >= 0 && notifyLine > fileLine, "UC-052 BR-005: in execution order: " + exported);
+
+        Remapped again = remap(exported);
+        ImportResult back = importText(importer, again.text());
+        assertEquals(2, back.imported().get("post_survey_actions"));
+        assertEquals(List.of(again.keys().get(first.postSurveyActionKey), again.keys().get(second.postSurveyActionKey)),
+                actions.actions(back.surveyId()).stream().map(a -> a.postSurveyActionKey).toList(), "BR-007: keys verbatim, in order");
     }
 }

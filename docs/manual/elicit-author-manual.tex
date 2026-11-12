@@ -492,6 +492,30 @@ sensitive question for the respondent report therefore shows its answer to anyon
 that code.
 \end{elicitcaution}
 
+\section{Post-survey actions}
+\markboth{Post-survey actions}{}
+
+A \term{post-survey action} is something the site does at the moment a respondent finishes:
+filing their results in a records system, telling a study coordinator. Each action is an
+address the site's Survey calls, with the respondent's id; respondents never see it. List a
+survey's actions on its \ui{Post-survey actions…} page, reached from the survey overview.
+
+\ui{Add action…} asks for a name, a description and the address. The address must be a full
+\texttt{http} or \texttt{https} address the site's Survey can reach, such as
+\texttt{http://fhhs:8080/familyhistory/generate}; unlike a report service, an action has no
+path form. Survey calls the actions in the order listed, each on its own, so one failing does
+not stop the next; drag a row to change the order. \ui{Edit…} changes an action in place, and a
+site applying the next export updates it.
+
+Names and descriptions are notes for authors and for whoever runs the site, so they are not
+translated. A new survey starts with no actions.
+
+\begin{elicitcaution}[Removing an action removes it at the site]
+A site applying the next export stops calling a removed action and deletes its record of
+which respondents the action was called for. The preview Survey calls actions too: a preview
+respondent who finishes triggers every action whose address the authoring stack can reach.
+\end{elicitcaution}
+
 %% ------------------------------------------------------------------ 10
 \section{Checking and exporting}
 \markboth{Checking and exporting}{}
