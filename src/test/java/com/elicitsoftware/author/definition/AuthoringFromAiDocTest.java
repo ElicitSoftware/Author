@@ -11,6 +11,7 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.survey.Tokens;
 import com.elicitsoftware.model.ActionType;
 import com.elicitsoftware.model.OperatorType;
@@ -198,6 +199,30 @@ class AuthoringFromAiDocTest {
         List<ValidationIssue> errors = validation.validate(survey).stream().filter(ValidationIssue::isError).toList();
         assertTrue(errors.isEmpty(), "UC-042: the document's worked example does not validate: "
                 + errors.stream().map(ValidationIssue::message).toList());
+    }
+
+    /**
+     * Rule 15 of the document, checked the way a draft meets it (UC-007 BR-015): a name written with
+     * a line-break escape still imports -- an import stores, it does not judge -- and is reported.
+     */
+    @Test
+    @TestTransaction
+    void aDraftWhoseNameIsNotOneLineImportsAndIsReported() throws IOException {
+        assertTrue(doc().contains("15. **The survey's `name` and `title` are one line each.**"),
+                "UC-042: the document states the rule validation applies");
+        String example = fencedBlockContaining(doc(), ElicitFormat.DRAFT_FORMAT_VERSION + "\n\nsurveys:");
+        String surveys = example.lines().filter(l -> l.startsWith("surveys:")).findFirst().orElseThrow();
+        String[] f = ElicitFormat.parseFields(surveys.substring("surveys:".length()).trim());
+        f[2] = f[2] + "\nsecond line";
+        String draft = example.replace(surveys, "surveys: " + ElicitFormat.joinFields((Object[]) f));
+
+        ImportResult imported = importer.importFile(new ByteArrayInputStream(draft.getBytes(StandardCharsets.UTF_8)));
+
+        Survey survey = Survey.findById(imported.surveyId());
+        assertTrue(survey.name.contains("\n"), "stored as the file holds it");
+        assertTrue(validation.validate(survey).stream().anyMatch(i -> i.isError() && i.message().equals(
+                        Translations.get("validation.survey.nameSingleLine", Translations.get("surveyMetadataDialog.editSurvey")))),
+                "UC-007 BR-015");
     }
 
     /** UC-042: every record in the example carries its full field count, trailing separators included. */

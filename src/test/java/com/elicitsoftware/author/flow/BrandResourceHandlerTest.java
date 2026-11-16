@@ -22,6 +22,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -106,6 +107,23 @@ class BrandResourceHandlerTest {
         Files.writeString(mountDir.resolve("icon.svg"), "<svg></svg>");
         Response response = handler(mountDir).getBrandFile("icon.svg");
         assertEquals("image/svg+xml", response.getMediaType().toString());
+    }
+
+    /** UC-030 BR-004. */
+    @Test
+    void getBrandFile_svg_isServedSandboxed(@TempDir Path mountDir) throws IOException {
+        Files.writeString(mountDir.resolve("icon.svg"), "<svg></svg>");
+        Response response = handler(mountDir).getBrandFile("icon.svg");
+        assertEquals("sandbox", response.getHeaderString("Content-Security-Policy"));
+    }
+
+    /** UC-030 BR-004: only the SVG image; a stylesheet has to stay usable by the page that loads it. */
+    @Test
+    void getBrandFile_otherAssets_carryNoSandbox(@TempDir Path mountDir) throws IOException {
+        Files.writeString(mountDir.resolve("theme.css"), "body {}");
+        Files.write(mountDir.resolve("logo.png"), new byte[]{1, 2, 3});
+        assertNull(handler(mountDir).getBrandFile("theme.css").getHeaderString("Content-Security-Policy"));
+        assertNull(handler(mountDir).getBrandFile("logo.png").getHeaderString("Content-Security-Policy"));
     }
 
     @Test

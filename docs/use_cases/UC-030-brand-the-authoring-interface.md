@@ -79,3 +79,7 @@ A missing or malformed brand configuration falls back to the embedded default br
 ### BR-003: Brand files are served only from within the brand root
 
 A requested brand-file path that contains a parent-directory segment or an empty segment is rejected, so no file outside the brand directory can ever be served.
+
+### BR-004: An SVG brand asset is served as an image only
+
+A brand asset whose name ends in `.svg` is served with `Content-Security-Policy: sandbox`. Used as an image — the logo in the application shell — it renders as before; opened as a page of its own it runs no script. Every brand asset also carries the headers every response carries (NFR-024).

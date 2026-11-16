@@ -17,7 +17,7 @@
 ## Main Success Scenario
 
 1. The author opens the survey in the editor (UC-006) or chooses Export (UC-008).
-2. The system checks the current elements of the survey: every reference from one element to another resolves to a current element; every relationship has a downstream path that holds together (a step, a section mounted in it, a question assigned to that section; a question outside the upstream question's own section names its step and section) and a valid operator and action; every choice-type question refers to a select group that has at least one current item; every placeholder a step name, section name or question text uses is filled by a rule that reaches it, and every placeholder name a rule carries, whatever its action, is a name a text could write between angle brackets and is used by a text it reaches (BR-005..BR-007); every step has at least one section, every section is mounted in a step and holds at least one question, and every question is assigned to a section; every question outside the first step is reached by a Show or Repeat rule (BR-012); ordering values are unique within their parent; the survey's initial display key names a current section assignment.
+2. The system checks the current elements of the survey: every reference from one element to another resolves to a current element; every relationship has a downstream path that holds together (a step, a section mounted in it, a question assigned to that section; a question outside the upstream question's own section names its step and section) and a valid operator and action; every choice-type question refers to a select group that has at least one current item; every placeholder a step name, section name or question text uses is filled by a rule that reaches it, and every placeholder name a rule carries, whatever its action, is a name a text could write between angle brackets and is used by a text it reaches (BR-005..BR-007); every step has at least one section, every section is mounted in a step and holds at least one question, and every question is assigned to a section; every question outside the first step is reached by a Show or Repeat rule (BR-012); ordering values are unique within their parent; the survey's initial display key names a current section assignment; the survey's name and title are single-line (BR-015).
 3. The system classifies each finding as an error (blocks export) or a warning (informational).
 4. The system adds a retroactivity warning for each step or section whose name changed since the last export and for each question whose ontology assignment changed since the last export.
 5. The system displays the findings in the validation panel, each worded for the author and in the author's language (BR-013), each naming where in the survey its element sits and, where an element can be opened, linked to it.
@@ -260,3 +260,10 @@ repeated section or question simply never appears, and nothing says why. It is a
 a definition that was imported, or drafted outside the tool (UC-042), never passed through that
 dialog. The message names the remedy: change the operator to Field exists.
 
+### BR-015: Names are single-line
+
+A survey name or title that holds a control character — a line break, a tab or any other — is an
+**error** on the survey (BR-001). The survey details form refuses such a value when it is saved
+(UC-003 BR-005, UC-004 BR-004); it is checked again here because a definition that was imported, or
+drafted outside the tool (UC-042), never passed through that form. The message says which of the
+two it is and that the author corrects it in the survey's details.

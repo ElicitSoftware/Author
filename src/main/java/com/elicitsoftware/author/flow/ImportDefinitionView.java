@@ -98,6 +98,16 @@ public class ImportDefinitionView extends VerticalLayout implements HasDynamicTi
     /** Package-private so tests can feed a file without the browser upload. */
     void handleUpload(byte[] data, String fileName) {
         result.removeAll();
+        // UC-005 A6, NFR-023: the upload component's limit is the browser's; the length is checked
+        // again on what arrived, before anything is read from it.
+        if (data.length > ElicitFormat.MAX_FILE_BYTES) {
+            Paragraph p = new Paragraph(getTranslation("error.handoff.tooLarge",
+                    String.valueOf(ElicitFormat.MAX_FILE_BYTES / (1024 * 1024))));
+            p.addClassName(LumoUtility.TextColor.ERROR);
+            result.add(p);
+            upload.clearFileList();
+            return;
+        }
         try {
             ImportResult imported = importer.importFile(new ByteArrayInputStream(data));
             H3 importedHeading = new H3(getTranslation("importDefinitionView.imported", imported.surveyName()));

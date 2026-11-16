@@ -155,6 +155,8 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `validation.section.empty` | Section ''{0}'' is empty. Add a question to it. | Validation finding · warning: the section holds no questions | 120 | params: {0} = section name |
 | `validation.question.unplaced` | Question ''{0}'' is not used. Place it in a section, or remove it. | Validation finding · warning: the question is in no section | 150 | params: {0} = question short text |
 | `validation.survey.startingPoint` | The survey''s starting point is not set, or points to a section that is no longer in the survey. Set "{0}" in "{1}". | Validation finding · error: the survey does not say which section it opens on | 260 | params: {0} = the field label surveyMetadataDialog.initialDisplayKey, {1} = the dialog title surveyMetadataDialog.editSurvey, both already translated |
+| `validation.survey.nameSingleLine` | The survey''s name contains a line break or another control character. Correct it in "{0}". | Validation finding · error: the survey name is not a single line of text | 220 | params: {0} = the dialog title surveyMetadataDialog.editSurvey, already translated |
+| `validation.survey.titleSingleLine` | The survey''s title contains a line break or another control character. Correct it in "{0}". | Validation finding · error: the survey title is not a single line of text | 220 | params: {0} = the dialog title surveyMetadataDialog.editSurvey, already translated |
 | `validation.order.steps` | Two steps share position {0}. Reorder them. | Validation finding · warning: two steps have the same position | 120 | params: {0} = position number |
 | `validation.order.sections` | Two sections in this step share position {0}. Reorder them. | Validation finding · warning: two sections of one step have the same position | 140 | params: {0} = position number |
 | `validation.order.questions` | Two questions in this section share position {0}. Reorder them. | Validation finding · warning: two questions of one section have the same position | 140 | params: {0} = position number |
@@ -952,6 +954,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `designer.staleTranslations.open` | Open translations | Designer · button in that notification | 20 |  |
 | `error.name.required` | Name is required | Error message · a name field was left empty | 60 |  |
 | `error.name.tooLong` | Name must be 255 characters or fewer | Error message · a name is too long | 80 |  |
+| `error.name.singleLine` | Name must be a single line of text | Error message · a name holds a line break, a tab or another control character | 80 |  |
 | `error.list.gone` | The list no longer exists | Error message · the list of options was removed meanwhile | 60 |  |
 | `error.list.descriptionTooLong` | Description must be 255 characters or fewer | Error message · list of options dialog | 90 |  |
 | `error.list.dataTypeTooLong` | Data type must be 50 characters or fewer | Error message · list of options dialog | 90 |  |
@@ -970,6 +973,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `error.survey.exportNeedsAuthor` | An export must be attributed to a signed-in author | Error message · export dialog | 140 |  |
 | `error.survey.titleRequired` | Title is required | Error message · survey details dialog | 60 |  |
 | `error.survey.titleTooLong` | Title must be 255 characters or fewer | Error message · survey details dialog | 90 |  |
+| `error.survey.titleSingleLine` | Title must be a single line of text | Error message · survey details dialog; the title holds a line break, a tab or another control character | 90 |  |
 | `error.survey.descriptionTooLong` | Description must be 2000 characters or fewer | Error message · survey details dialog | 90 |  |
 | `error.survey.initialDisplayKeyTooLong` | Initial display key must be 255 characters or fewer | Error message · survey details dialog; same field name as surveyMetadataDialog.initialDisplayKey | 120 |  |
 | `error.survey.postSurveyUrlTooLong` | Post-survey address must be 255 characters or fewer | Error message · survey details dialog; same field name as surveyMetadataDialog.postSurveyUrl | 120 |  |
@@ -1344,6 +1348,8 @@ validation.section.unplaced=Section ''{0}'' is not used. Place it in a step, or 
 validation.section.empty=Section ''{0}'' is empty. Add a question to it.
 validation.question.unplaced=Question ''{0}'' is not used. Place it in a section, or remove it.
 validation.survey.startingPoint=The survey''s starting point is not set, or points to a section that is no longer in the survey. Set "{0}" in "{1}".
+validation.survey.nameSingleLine=The survey''s name contains a line break or another control character. Correct it in "{0}".
+validation.survey.titleSingleLine=The survey''s title contains a line break or another control character. Correct it in "{0}".
 validation.order.steps=Two steps share position {0}. Reorder them.
 validation.order.sections=Two sections in this step share position {0}. Reorder them.
 validation.order.questions=Two questions in this section share position {0}. Reorder them.
@@ -2141,6 +2147,7 @@ designer.staleTranslations=The {0} changed. Its {1} translation(s) ({2}) are now
 designer.staleTranslations.open=Open translations
 error.name.required=Name is required
 error.name.tooLong=Name must be 255 characters or fewer
+error.name.singleLine=Name must be a single line of text
 error.list.gone=The list no longer exists
 error.list.descriptionTooLong=Description must be 255 characters or fewer
 error.list.dataTypeTooLong=Data type must be 50 characters or fewer
@@ -2159,6 +2166,7 @@ error.survey.languageUnsupported={0} is not one of the languages Elicit carries,
 error.survey.exportNeedsAuthor=An export must be attributed to a signed-in author
 error.survey.titleRequired=Title is required
 error.survey.titleTooLong=Title must be 255 characters or fewer
+error.survey.titleSingleLine=Title must be a single line of text
 error.survey.descriptionTooLong=Description must be 2000 characters or fewer
 error.survey.initialDisplayKeyTooLong=Initial display key must be 255 characters or fewer
 error.survey.postSurveyUrlTooLong=Post-survey address must be 255 characters or fewer

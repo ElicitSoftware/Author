@@ -97,6 +97,16 @@ class TranslationsViewTest extends QuarkusBrowserlessTest {
         assertEquals(0, view.grid.getGenericDataView().getItems().count());
     }
 
+    /** UC-046 A4, NFR-023: the upload refuses a file over the accepted size before sending it. */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "translations.author", roles = {"elicit_author"})
+    void theUploadCarriesTheAcceptedSize() {
+        TranslationsView view = open(survey("es-419"));
+
+        assertEquals(TranslationHandoff.MAX_FILE_BYTES, view.upload.getMaxFileSize());
+    }
+
     @Test
     @TestTransaction
     @TestSecurity(user = "translations.author", roles = {"elicit_author"})

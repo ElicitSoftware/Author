@@ -79,3 +79,7 @@ The position of a survey in Author's list is an Author concern; a deployed site 
 ### BR-004: Last editor is recorded
 
 Creating or editing a survey records the author's principal name on the survey; exporting overwrites it with the exporting author (UC-008).
+
+### BR-005: Name and title are single-line
+
+A survey's name and title are one line of text each. A value holding a control character — a line break, a tab or any other — is refused with the field marked (A1), because both are shown in lists and headings and the name is written into the header of the exported file (UC-008 BR-004).

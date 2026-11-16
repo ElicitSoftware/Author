@@ -11,6 +11,7 @@ package com.elicitsoftware.author.flow;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.definition.ElicitFormat;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
@@ -78,5 +79,19 @@ class ImportDefinitionViewTest extends QuarkusBrowserlessTest {
         view.handleUpload("not a definition".getBytes(StandardCharsets.UTF_8), "junk.elicit");
         String text = find(Paragraph.class, view.result).single().getText();
         assertTrue(text.startsWith(view.getTranslation("importDefinitionView.importFailed", "")), text);
+    }
+
+    /** UC-005 A6, NFR-023: the 5 MB limit holds for what reaches the server, whatever the browser allowed. */
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "import.author", roles = {"elicit_author"})
+    void aFileOverTheLimitIsRefusedOnTheServerAndNothingIsImported() {
+        long before = Survey.count();
+        ImportDefinitionView view = navigate(ImportDefinitionView.class);
+        view.handleUpload(new byte[ElicitFormat.MAX_FILE_BYTES + 1], "large.elicit");
+        assertEquals(view.getTranslation("error.handoff.tooLarge", "5"),
+                find(Paragraph.class, view.result).single().getText());
+        assertTrue(find(Button.class, view.result).all().isEmpty(), "nothing to open");
+        assertEquals(before, Survey.count(), "nothing was imported");
     }
 }

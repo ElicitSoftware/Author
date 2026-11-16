@@ -29,6 +29,7 @@ import com.elicitsoftware.author.survey.ReportingService;
 import com.elicitsoftware.author.survey.RuleOrdering;
 import com.elicitsoftware.author.survey.RulePath;
 import com.elicitsoftware.author.survey.StructureNode;
+import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.author.survey.TokenSamples;
 import com.elicitsoftware.author.survey.Tokens;
 import com.elicitsoftware.author.survey.TranslationService;
@@ -92,6 +93,15 @@ public class ExportValidation {
 
         if (steps.isEmpty()) {
             issues.add(ValidationIssue.warning("surveys", sid, Translations.get("validation.survey.noSteps")));
+        }
+        // BR-015: the details form refuses these on save; an imported or drafted survey never passed it.
+        if (!SurveyService.singleLine(survey.name)) {
+            issues.add(ValidationIssue.error("surveys", sid, Translations.get("validation.survey.nameSingleLine",
+                    Translations.get("surveyMetadataDialog.editSurvey"))));
+        }
+        if (!SurveyService.singleLine(survey.title)) {
+            issues.add(ValidationIssue.error("surveys", sid, Translations.get("validation.survey.titleSingleLine",
+                    Translations.get("surveyMetadataDialog.editSurvey"))));
         }
 
         Set<Integer> stepsWithSections = new HashSet<>();
