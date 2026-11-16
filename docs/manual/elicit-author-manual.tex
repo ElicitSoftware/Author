@@ -39,8 +39,9 @@
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
-%% ------------------------------------------------------------------ 1
+%% ------------------------------------------------------------------
 \section{What a survey is made of}
+\label{sec:model}
 
 An Elicit survey is a decision tree a respondent walks through. What they answer decides what
 they see next, so designing a survey means designing that path. Everything in this manual uses
@@ -70,7 +71,7 @@ built \emph{just in time} instead — by a Show or Repeat rule, at the moment th
 answers call for it. That keeps the first page fast, and it keeps the database free of questions
 nobody sees: a respondent who abandons the survey in the first step or two has had only those
 steps saved. Every step, section and question after the first step therefore needs a rule that
-builds it (see \emph{Connecting questions with rules}).
+builds it (Chapter~\ref{sec:rules}).
 
 \subsection{The rules}
 
@@ -92,13 +93,16 @@ There are three actions:
         a list, the target is repeated once for each item selected instead, for example one
         \ui{Game} section per game attended.
   \item \term{Text} — the answer is written into the target's text wherever a
-        \texttt{\{<TOKEN>|default\}} placeholder appears, so a later question can say
-        ``your daughter'' rather than ``your child''.
+        \val{{<TOKEN>|default}} placeholder appears, so a later question can say
+        “your daughter” rather than “your child”.
 \end{itemize}
 
 There is no Hide rule. Hiding is the same as not showing: give the element a Show rule and it
-stays hidden until that rule holds. The operators are Boolean, Greater than, Equal, Not equal,
-Field exists and Contains. When several rules point at the same target, all of them must hold.
+stays hidden until that rule holds. The operators, by the names the rule editor gives them, are
+\ui{BOOLEAN} (yes or no), \ui{GREATER THAN} (which holds when the answer is \emph{at least} the
+value: $\geq$), \ui{EQUAL}, \ui{NOT\_EQUAL}, \ui{FIELD\_EXIST} (the question has been presented)
+and \ui{CONTAINS} (a selection includes the value). When several rules point at the same target,
+all of them must hold.
 
 \begin{elicitnote}[The same page, inside the application]
 Everything in this section is also on the \ui{How surveys work} page in the application
@@ -110,19 +114,20 @@ step-by-step procedure that follows.
 
 Every element gets a key the moment it is created and keeps it for life. Removing an element
 \term{retires} it rather than deleting it, so answers already recorded at a site keep their
-meaning. When the survey is ready you \term{export} a \texttt{.elicit} file; the Admin app
+meaning. When the survey is ready you \term{export} a \file{.elicit} file; the Admin app
 installs it at a site the first time and updates it in place after that, matching elements by
-key. Deleting a whole survey is the one thing that does remove rows; it has its own section at
-the end, because it cannot be undone.
+key. Deleting a whole survey is the one thing that does remove rows; it has its own chapter
+(Chapter~\ref{sec:delete}), because it cannot be undone.
 
 \begin{elicitnote}[Vocabulary]
-Author never uses ``publish'' for a state in the database — the verb is \emph{export}. The
+Author never uses “publish” for a state in the database — the verb is \emph{export}. The
 credential a respondent enters to reach a survey is the \term{access code}, never a token;
-``token'' means only the \texttt{\{<KEY>|default\}} placeholder in question text.
+“token” means only the \val{{<KEY>|default}} placeholder in question text.
 \end{elicitnote}
 
-%% ------------------------------------------------------------------ 2
+%% ------------------------------------------------------------------
 \section{Signing in}
+\label{sec:signin}
 
 Author uses the platform's identity provider, the same one as the Admin and Survey apps. Open
 Author in a browser and you are sent to the sign-in page.
@@ -130,18 +135,24 @@ Author in a browser and you are sent to the sign-in page.
 \screenshot{01-sign-in}{The identity provider's sign-in page. Author itself never asks for a
 password.}
 
-Authoring requires the \texttt{elicit\_author} role. It is granted explicitly and is \emph{not}
-implied by \texttt{elicit\_admin}: an administrator who has not been given it can open the
-System pages but not a survey. If you sign in and the surveys are not there, that role is the
-first thing to check with whoever administers your identity provider.
+Authoring requires the \val{elicit_author} role. The \ui{System} pages require another,
+\val{elicit_author_admin}. Neither implies the other, and neither is implied by the Admin
+console's \val{elicit_admin}: an account with only \val{elicit_author_admin} can read the System
+pages but not open a survey. If you sign in and the surveys are not there, \val{elicit_author} is
+the first thing to check with whoever administers your identity provider.
+
+The header carries \ui{Manual}, which opens this document, and a language selector for Author's
+own screens. The language you choose there is the language of the buttons and labels, not of the
+survey you are writing; a survey's languages are its own (Chapter~\ref{sec:translate}).
 
 After signing in you land on the \ui{Surveys} list, the application's front door.
 
 \screenshot{02-surveys-list}{The Surveys list. Every survey you can edit, with who last edited
 it and the note from its last export.}
 
-%% ------------------------------------------------------------------ 3
+%% ------------------------------------------------------------------
 \section{Creating a survey}
+\label{sec:create}
 
 Choose \ui{New survey}. A survey needs two things to exist: a \ui{Name}, which is the machine
 name and may not contain spaces, and a \ui{Title}, which is what a respondent sees.
@@ -150,34 +161,44 @@ name and may not contain spaces, and a \ui{Title}, which is what a respondent se
 in later from \ui{Edit details}.}
 
 \begin{itemize}
-  \item \ui{Name} — the machine name, for example \texttt{FamilyHistory}. No spaces.
-  \item \ui{Title} — the respondent-facing title, for example ``Family Health History''.
+  \item \ui{Name} — the machine name, for example \val{FamilyHistory}. No spaces.
+  \item \ui{Title} — the respondent-facing title, for example “Family Health History”.
   \item \ui{Description} — a note for your colleagues; respondents never see it.
   \item \ui{Initial display key} — where the respondent starts. Leave it empty unless you have a
         reason not to.
   \item \ui{Post-survey address} — where the respondent is sent when they finish.
+  \item \ui{Content language} — the language the survey's questions are written in, and
+        \ui{Published translations} — the languages it is published in
+        (Chapter~\ref{sec:translate}).
 \end{itemize}
 
-Save, and the survey appears in the list. Open it and you get its overview: the survey key, when
-it was last exported, the four things you can do to it, and a validation panel.
+Save, and the survey appears in the list. Open it and you get its overview: the survey key, who
+last edited and exported it, a validation panel, and seven actions:
+
+\begin{center}\small
+\ui{Edit details} \quad \ui{Design…} \quad \ui{Analysis…} \quad \ui{Reports…} \quad
+\ui{Post-survey actions…} \quad \ui{Translations…} \quad \ui{Export…}
+\end{center}
 
 \screenshot{04-survey-overview}{A survey's overview page. The validation panel is the thing to
 watch — it is what stands between you and a clean export.}
 
 The validation panel is live. It tells you what is still wrong with the definition — a survey
-with no steps, a choice question with no list, a rule that points backwards — and it has to read
-``Ready to export. No problems found.'' before the export is worth doing.
+with no steps, a choice question with no list, a rule that points backwards — and sorts what it
+finds into errors and warnings. An error stops the export until it is fixed; a warning does not,
+but read it. A clean survey reads “Ready to export. No problems found.”
 
-%% ------------------------------------------------------------------ 4
+%% ------------------------------------------------------------------
 \section{Starting from an AI draft}
+\label{sec:ai}
 
 There is a third way to start, beside the empty form and importing a file someone sent you: have
 an AI agent write the first draft. Choose \ui{Draft with AI}, beside \ui{New survey} on the
 surveys list and in the navigation.
 
-Author does none of the drafting. What the page gives you is the \emph{specification} --- one
+Author does none of the drafting. What the page gives you is the \emph{specification}: one
 self-contained document that teaches an agent the survey model and the exact record format of a
-\texttt{.elicit} file --- and the four steps of the round trip:
+\file{.elicit} file, and the four steps of the round trip:
 
 \begin{enumerate}
   \item \ui{Copy prompt to clipboard} puts a short instruction and the whole specification on
@@ -186,7 +207,7 @@ self-contained document that teaches an agent the survey model and the exact rec
   \item Describe the survey you want. A good agent will ask you the questions that decide
         structure: the topics to cover, what repeats per person or per item, what has to be
         conditional.
-  \item Save the \texttt{.elicit} file it writes.
+  \item Save the \file{.elicit} file it writes.
   \item Bring it back to \ui{Import definition}. The two pages link to each other.
 \end{enumerate}
 
@@ -196,8 +217,8 @@ specification out and you carry the draft back, so this works with whatever agen
 use, and a deployment with no outbound network access loses nothing.
 \end{elicitnote}
 
-A draft is not a deployable definition. It is marked so that only Author will read it --- the
-Admin console refuses it --- and it arrives here with no keys of its own: Author mints the
+A draft is not a deployable definition. It is marked so that only Author will read it (the
+Admin console refuses it), and it arrives here with no keys of its own: Author mints the
 survey key and every element key on import, so what you get is an ordinary working copy, exactly
 like one you had typed yourself.
 
@@ -206,8 +227,9 @@ has never seen your data will get some rules backwards and leave some lists empt
 the designer, or hand the findings back to the agent and import a corrected draft as a second
 survey. Nothing is deployed until you export it yourself.
 
-%% ------------------------------------------------------------------ 5
+%% ------------------------------------------------------------------
 \section{Laying out steps and sections}
+\label{sec:layout}
 
 Choose \ui{Design…} from the survey overview. The drawer on the left is your toolbox; the board
 on the right is the survey; the panel beside the board previews the selection as a respondent
@@ -243,23 +265,52 @@ A step with no sections shows the respondent nothing. Add one from the step's me
 \screenshot{08-new-section}{A new section. The name is the page heading the respondent reads.}
 
 One click on a lane opens it to reveal its section cards; one click on a card opens it to reveal
-its question rows. A double click on any of them opens its editor.
+its question rows. A double click on any of them opens its editor. The breadcrumb above the
+board says where the selection sits: step, section, question.
 
-%% ------------------------------------------------------------------ 6
+\subsection{The board's switches}
+
+Three switches at the top of the board change what it shows, never the survey:
+
+\begin{description}
+  \item[\ui{Show rules}] Draws every rule as an arrow. Untick it to work on structure alone.
+  \item[\ui{Show removed}] Shows retired elements, greyed, in their former places. Open one
+        and choose \ui{Restore} on its details page: it reopens where it was, with its element
+        key, together with anything that was retired with it.
+  \item[\ui{Show preview}] Opens or closes the respondent preview beside the board.
+\end{description}
+
+\subsection{Copying and mounting a section}
+
+A section's menu offers two ways to use it in another step:
+
+\begin{description}
+  \item[\ui{Copy to step…}] Makes a new section, with new questions, that starts out the same
+        and then goes its own way. The notification that confirms the copy offers \ui{Undo}.
+  \item[\ui{Also mount in step…}] Shows the \emph{same} section in a second step, as the
+        \ui{Sections} panel's \ui{Mount in step…} does: a change to it reaches both places, and
+        so do its answers' reporting rows.
+\end{description}
+
+%% ------------------------------------------------------------------
 \section{Giving choice questions their options}
+\label{sec:lists}
 
 A choice question — radio, combo box, multi-select or checkbox group — needs a \term{list of
-options} before it can be saved. Define the list first, from the \ui{Lists} panel in the drawer.
+options} before it can be saved. Define the list from the \ui{Lists} panel in the drawer, or with
+\ui{New list…} inside the question's own editor.
 
 \screenshot{09-list-of-options}{A new list of options. The options are in the order respondents
 see them; the arrows reorder them and the coded value defaults to the display text.}
 
 A list belongs to the survey, not to one question, so several questions can offer the same
 options. Drag a list's glyph onto a question to give it those options, or pick the list in the
-question's own editor.
+question's own editor. \ui{Search lists} at the top of the panel finds a list by its name, its
+description or the text of an option.
 
-%% ------------------------------------------------------------------ 7
+%% ------------------------------------------------------------------
 \section{Adding questions}
+\label{sec:questions}
 
 Add a question from a section's menu, or drag the \ui{QUESTION} glyph — set to the type you want
 — into the card.
@@ -274,14 +325,14 @@ The fields worth knowing:
         the type, and the preview at the bottom shows the field the respondent will get.
   \item \ui{Short text} — the label on the board and in the structure tree. Keep it short.
   \item \ui{Question text} — what the respondent reads. This is where a
-        \texttt{\{<TOKEN>|default\}} placeholder goes if a Text rule is to fill it.
+        \val{{<TOKEN>|default}} placeholder goes if a rule is to fill it.
   \item \ui{Required} and \ui{Validation message} — whether an answer is compulsory, and what
         the respondent is told when it is missing.
   \item \ui{Sample answer} — previews what a Text rule reading this question would write
         elsewhere.
 \end{itemize}
 
-Choose a choice type and the editor asks for the list of options you defined earlier.
+Choose a choice type and the editor asks for its list of options.
 
 \screenshot{11-choice-question}{A radio question with its list of options attached. Without a
 list the editor refuses to save.}
@@ -292,18 +343,26 @@ glyph, and the respondent's view of the same page beside it.
 \screenshot{12-section-opened}{A section opened on the board, with the rules drawn as arrows and
 the respondent preview beside it.}
 
+\subsection{Renaming is retroactive}
+
+A name that reaches reporting (a step's or section's dimension name, a question's short text)
+also names the data deployed sites have already recorded. Changing one asks you to tick \ui{I
+understand that the new name relabels data already recorded at deployed sites} before it saves.
+
 \subsection{Asking the same question twice}
 
 The \ui{Sections} and \ui{Questions} panels in the drawer list every section and every question
 in the survey once, with the number of places each appears in. Drag one into another container,
 or use \ui{Also add to section…}, and it is the \emph{same} element shown in a second place — a
-change to its text reaches every section it is in.
+change to its text reaches every section it is in. Each panel has a search box (\ui{Search
+sections}, \ui{Search questions}) that narrows it as you type.
 
 \screenshot{15-question-bank}{The Questions panel. Each question appears once, with how many
 sections use it; the search box narrows the panel as you type.}
 
-%% ------------------------------------------------------------------ 8
+%% ------------------------------------------------------------------
 \section{Connecting questions with rules}
+\label{sec:rules}
 
 Anything conditional is a rule. Start one from the upstream question — the one whose answer is
 read — using \ui{Add rule…} in its menu, or by dragging a rule glyph from \ui{Controls} onto the
@@ -327,12 +386,26 @@ repeats — a section cannot repeat itself.
 Only the first step may hold elements without a rule. Every question in a later step has to be
 reached by a Show or Repeat rule — one on its step, on its section in that step, or on the
 question itself; a rule reaches its target and everything inside it. Text rules do not count,
-because they build nothing. For a step that always follows, the usual rule is \ui{Field exists}
+because they build nothing. For a step that always follows, the usual rule is \ui{FIELD\_EXIST}
 $\rightarrow$ \ui{Show} on the step, read from a question on an earlier step such as its
 introduction: it holds as soon as that question has been presented. Validation reports a step
 nothing builds as an error, and inside a step that has rules, each section or question nothing
 reaches; export waits until each has its rule.
 \end{elicitcaution}
+
+\subsection{Tokens}
+
+A rule may carry a \term{token}: a name of at most ten characters, written in upper case, that
+the upstream answer fills in the target's texts and in every text inside the target. A Text
+rule must have one; a Show or Repeat rule may. In the text, the token sits in braces with a
+default for when there is no answer:
+
+\begin{center}\small
+\val{{<CHILD>|your child}} \qquad or, as a phrase: \qquad \val{{Has <CHILD> been|Were you}}
+\end{center}
+
+The phrase form swaps a whole phrase, so the sentence reads naturally both ways. In the rule
+editor the token is written without its angle brackets; they belong to the text.
 
 \subsection{Repeating once per selected item}
 
@@ -350,14 +423,14 @@ selection and the section would never appear.
 Give the rule a \term{token} and name it in the section's own name:
 
 \begin{quote}
-\texttt{Michigan vs.\ \{<GAME>|this game\}}
+\val{Michigan vs. {<GAME>|this game}}
 \end{quote}
 
 Each repetition is then titled with its item's display text. The token reaches every text inside
 the section, so a question can name the item too:
 
 \begin{quote}
-\texttt{Did you use the restrooms at the \{<GAME>|this\} game?}
+\val{Did you use the restrooms at the {<GAME>|this} game?}
 \end{quote}
 
 The preview shows one repetition, with the first option of the list in the token's place.
@@ -391,14 +464,15 @@ Rules are drawn on the board as arrows from the question that is read to the ele
 acted on, labeled with the action. Untick \ui{Show rules} at the top of the board to hide them
 while you work on structure.
 
-%% ------------------------------------------------------------------ 9
+%% ------------------------------------------------------------------
 \section{Tagging for analysis}
+\label{sec:analysis}
 
 An \term{analysis tag} names a column of the star schema a site builds from the answers for
 analysis. Tag a question and its answers fill that column; tag a section as it appears in a step
 with a fixed value, and every respondent who reaches it is classified by that value. Tags that
 share a \term{dimension} share one table of values. Tags are not reports: what a respondent or an
-administrator reads is decided on the \ui{Reports…} page (next section).
+administrator reads is decided on the \ui{Reports…} page (Chapter~\ref{sec:reports}).
 
 Open the survey's \ui{Analysis…} page to see every tag, every assignment, and the schema they
 will produce.
@@ -407,7 +481,9 @@ will produce.
 dimension tables and columns the site's analysis build will create.}
 
 Define a tag with \ui{New tag…} and attach it with \ui{Assign tag…}, or use \ui{Analysis tags…}
-in a question's or section's own menu.
+in a question's or section's own menu. \ui{Dimensional impact}, at the foot of the page, lists
+the tables and columns the site's reporting build will create from the tags as they stand, so you
+can see a change's effect on the schema before you export it.
 
 \screenshot{17-assign-tag}{Assigning a tag. A question can record the respondent's answer; a
 section in a step can classify everyone who reaches it by a fixed value.}
@@ -419,6 +495,7 @@ tag change as a decision about past data, not only about future data.
 \end{elicitcaution}
 
 \section{Reports}
+\label{sec:reports}
 
 A survey can show its respondents one or more \term{reports} after they finish, and every new
 survey starts with the built-in \term{respondent report}, which echoes back the answers the
@@ -452,6 +529,7 @@ that code.
 \end{elicitcaution}
 
 \section{Post-survey actions}
+\label{sec:actions}
 
 A \term{post-survey action} is something the site does at the moment a respondent finishes:
 filing their results in a records system, telling a study coordinator. Each action is an
@@ -459,15 +537,15 @@ address the site's Survey calls, with the respondent's id; respondents never see
 survey's actions on its \ui{Post-survey actions…} page, reached from the survey overview.
 
 \ui{Add action…} asks for a name, a description, the method and the address. The address must
-be a full \texttt{http} or \texttt{https} address the site's Survey can reach, such as
-\texttt{http://fhhs:8080/familyhistory/generate}; unlike a report service, an action has no
-path form. The method is \texttt{POST} unless the service you are calling expects \texttt{GET} or
-\texttt{PUT}. A \texttt{POST} or \texttt{PUT} sends the respondent's id in its body; a
-\texttt{GET} sends no body, so put the id in the address instead, with the placeholder
-\texttt{\{respondentId\}}:
+be a full \val{http} or \val{https} address the site's Survey can reach, such as
+\val{http://fhhs:8080/familyhistory/generate}; unlike a report service, an action has no
+path form. The method is \val{POST} unless the service you are calling expects \val{GET} or
+\val{PUT}. A \val{POST} or \val{PUT} sends the respondent's id in its body; a
+\val{GET} sends no body, so put the id in the address instead, with the placeholder
+\val{{respondentId}}:
 
 \begin{quote}
-\texttt{https://records.example.org/notify?respondent=\{respondentId\}}
+\val{https://records.example.org/notify?respondent={respondentId}}
 \end{quote}
 
 Survey calls the actions in the order listed, each on its own, so one failing does not stop the
@@ -479,14 +557,14 @@ action in place, and a site applying the next export updates it.
 The outside system often knows the person not by Elicit's respondent id but by the subject's
 \term{External ID}, such as a medical record number. Tick \ui{Send the subject's External ID}
 and the site sends it, with the department's code, on every call of the action, in the body and
-wherever the address holds \texttt{\{externalId\}}:
+wherever the address holds \val{{externalId}}:
 
 \begin{quote}
-\texttt{https://records.example.org/patients/\{externalId\}/history}
+\val{https://records.example.org/patients/{externalId}/history}
 \end{quote}
 
-Because the External ID identifies a person, an action that sends it must use an \texttt{https}
-address; Author will not save one at \texttt{http}, and \texttt{\{externalId\}} is refused on an
+Because the External ID identifies a person, an action that sends it must use an \val{https}
+address; Author will not save one at \val{http}, and \val{{externalId}} is refused on an
 action that does not send it. Any credential the outside service requires is set up by whoever
 runs the site, never here.
 
@@ -499,43 +577,100 @@ which respondents the action was called for. The preview Survey calls actions to
 respondent who finishes triggers every action whose address the authoring stack can reach.
 \end{elicitcaution}
 
-%% ------------------------------------------------------------------ 10
-\section{Checking and exporting}
+\section{Translating a survey}
+\label{sec:translate}
 
-Go back to the survey overview and read the validation panel. It must say ``Ready to export. No
-problems found.'' Anything else names the element, the problem and what to do about it — fix it on
-the board and the panel updates.
+A survey is written in one language, its \ui{Content language}, and may be published in
+others, its \ui{Published translations}. Both are in \ui{Edit details}. The languages offered are
+the ones Elicit carries; a translation reaches a respondent only where the site also offers that
+language for its own screens.
+
+Open \ui{Translations…} from the survey overview.
+
+\begin{enumerate}
+  \item Choose the \ui{Language}. Choosing one the survey does not publish yet adds it to the
+        published set, and says how many strings it leaves to translate.
+  \item The grid lists every text a respondent reads: \ui{Where} it is, which \ui{Text} it is,
+        the \ui{Original}, the \ui{Translation} and its \ui{Status}. Tick \ui{Only what needs
+        work} to see only the rows still \ui{Missing} or \ui{Out of date}.
+  \item Type a translation in place. It is saved against the element's key, with the wording it
+        was translated from.
+\end{enumerate}
+
+A translation is \ui{Out of date} once the original is edited after it was made, and is not shown
+to respondents until it is translated again; the designer says so at the moment you change such a
+text, with a link to this page. A row with no translation is shown in the content language.
+
+\subsection{Having a survey translated outside Author}
+
+\ui{Request translation} writes the survey's texts for one language to a file, every string or
+only those that need work, each with the context a translator needs: where it sits, the
+question's type and options, its tokens, and how long it may be. Send the file to a translator or
+an AI agent; they return the same file filled in. \ui{Import a returned file} reads it back,
+checks every item (the element still exists, the tokens match the original, the length is within
+its budget) and reports what was imported, left untranslated or rejected, and why.
+
+\begin{elicitcaution}[Tokens stay as they are]
+A translation must carry exactly the tokens of its original, \val{<CHILD>} and all, or it is
+rejected. A phrase token's two halves are translated; the name inside the angle brackets is not.
+\end{elicitcaution}
+
+\section{Previewing a survey}
+\label{sec:preview}
+
+The authoring stack runs a Survey of its own, the \term{preview Survey}, on Author's database.
+It shows the survey as it stands now, before any export, and accepts any access code: type one
+and a preview respondent is created for it. Walk the survey there to check the rules and, once
+you finish, to read the respondent report with its marks as they stand.
+
+\ui{Preview in Survey…}, on the \ui{Reports…} page, opens it in a new tab. Answers given there
+stay in Author's database, are counted as preview respondents when the survey is deleted, and
+never reach a site.
+
+\begin{elicitcaution}[The preview link and the shipped compose file]
+The link uses the address Author calls the preview Survey at. The platform's compose file gives
+it the containers' internal address, \val{http://author-survey:8080}, which a browser cannot
+open; on that stack, open \val{http://localhost:8085} yourself.
+\end{elicitcaution}
+
+\section{Checking and exporting}
+\label{sec:export}
+
+Go back to the survey overview and read the validation panel. Each finding names the element,
+the problem and what to do about it — fix it on the board and the panel updates. Errors must all
+be fixed before the export; warnings may stay, and the export dialog says so.
 
 Then choose \ui{Export…}.
 
 \screenshot{18-export}{Exporting. The release note is required: it is recorded on the survey and
 inside the file, and it is what a colleague sees in the Surveys list.}
 
-The export writes a \texttt{.elicit} file in the \texttt{ELICIT\_SURVEY\_EXPORT\_V1} format,
+The export writes a \file{.elicit} file in the \val{ELICIT_SURVEY_EXPORT_V1} format,
 records who exported it and the note, and mints a revision. Hand that file to the Admin app's
 \ui{Apply Survey Definition}: the first time it installs the survey at a site, and every time
 after that it updates it in place, matching elements by their keys. Elements you removed travel
 as retirements, so answers already recorded keep their meaning.
 
 \begin{elicitnote}[The round trip]
-\ui{Import definition} in the application navigation reads a \texttt{.elicit} file back into
+\ui{Import definition} in the application navigation reads a \file{.elicit} file back into
 Author for further editing, keeping every key. That is how you pick up a survey someone else
 exported, or start from one of the sample definitions.
 \end{elicitnote}
 
-%% ------------------------------------------------------------------ 11
+%% ------------------------------------------------------------------
 \section{Deleting a survey}
+\label{sec:delete}
 
 A survey you no longer need, or one you are about to replace from a file, can be deleted from the
 \ui{Surveys} list: choose \ui{Delete} on its row. Unlike removing an element, which retires it,
-this deletes the survey and everything in it --- steps, sections, questions, choice lists, rules,
+this deletes the survey and everything in it: steps, sections, questions, choice lists, rules,
 analysis tags, reports, report marks and translations, removed elements included. Nothing in Author can bring it back.
 
 The confirmation therefore asks for three things:
 
 \begin{itemize}
-  \item \textbf{Take the backup.} \ui{Download backup} saves the whole survey exactly as it stands
-        --- even with validation errors --- to a \texttt{.elicit} file. \ui{Import definition} reads
+  \item \textbf{Take the backup.} \ui{Download backup} saves the whole survey exactly as it stands,
+        even with validation errors, to a \file{.elicit} file. \ui{Import definition} reads
         it back with every key unchanged, which is the only way to undo a delete.
   \item \textbf{Read what it says about sites.} If the survey has been exported, the confirmation
         names who exported it last and the release note. Author holds the master copy; every site
@@ -551,7 +686,7 @@ the site beside the old one rather than update it.
 \end{elicitnote}
 
 The backup is not an export: it records no release note, and it is marked as a draft
-(\texttt{ELICIT\_SURVEY\_DRAFT\_V1}), so the Admin app refuses it and no site can install it
+(\val{ELICIT_SURVEY_DRAFT_V1}), so the Admin app refuses it and no site can install it
 by mistake. Re-import it, check the validation panel, and export as usual before it goes
 anywhere.
 
@@ -560,17 +695,18 @@ application, the answers entered there are in Author's own database. The confirm
 preview respondents the survey has, and they and their answers are deleted with it. Answers
 collected at a site are never affected.
 
-%% ------------------------------------------------------------------ 12
+%% ------------------------------------------------------------------
 \section{Where to look next}
+\label{sec:next}
 
 \begin{itemize}
-  \item \ui{How surveys work} in the application navigation — this manual's first section, drawn
+  \item \ui{How surveys work} in the application navigation — this manual's first chapter, drawn
         live with the real glyphs.
   \item \ui{Draft with AI} — the specification that lets an AI agent write a first draft,
         and the round trip it belongs to.
-  \item \ui{Import definition} — bring an existing \texttt{.elicit} file into Author.
-  \item \ui{System} (for administrators) — version, database, branding, connections and OIDC
-        diagnostics for a deployment.
+  \item \ui{Import definition} — bring an existing \file{.elicit} file into Author.
+  \item \ui{System} (with \val{elicit_author_admin}) — version, database, branding, connections
+        and OIDC diagnostics for a deployment.
 \end{itemize}
 
 \screenshot{19-guide}{The in-app guide. It is always the version you are running, because it

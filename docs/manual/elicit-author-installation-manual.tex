@@ -100,6 +100,7 @@ default brand and in English. \\
 \end{plaintable}
 
 \subsection{The start order}
+\label{sec:startorder}
 
 The database first, then the preview Survey, then Author. The preview Survey creates the
 schema Author maps its entities onto. Author never creates it and does not check it at start,
@@ -107,31 +108,48 @@ so an Author started against an empty \val{author} database comes up, but every 
 and the \ui{System} database screen reports the schema missing until the preview has started
 once.
 
+\subsection{Ports}
+
+Author and the preview each listen on \val{8080} inside their containers. The umbrella's compose
+file publishes them as below; a site publishes them to its reverse proxy and to nothing else.
+
+\begin{plaintable}{tab:ports}{Author's ports in the umbrella's compose file}{@{\hspace{4pt}}>{\raggedright\arraybackslash}p{0.14\linewidth} >{\raggedright\arraybackslash}p{0.28\linewidth} >{\raggedright\arraybackslash}p{0.48\linewidth}@{\hspace{4pt}}}{\thead{Host port} & \thead{Service} & \thead{Reached by}}
+\val{8084} & Author & Authors, in a browser. \\
+\val{8085} & The preview Survey & Authors, in a browser; Author, for the call that drops a
+reporting schema. \\
+\val{8180} & Keycloak (bundled) & Browsers and Author. \\
+\val{5452} & PostgreSQL (\val{5432} inside) & Author, the preview, and you. \\
+\end{plaintable}
+
 %% ================================================================== 2
 \section{Before you start}
 \label{sec:before}
 
 \begin{itemize}
   \item \textbf{PostgreSQL 17}, with the Elicit database roles (\val{dbowner}, \val{dbuser},
-        \val{elicit_owner}, \val{survey_user}). A site's cluster already has them; the
-        platform's installation manual gives the role script for a cluster that does not.
+        \val{elicit_owner}, \val{survey_user}, \val{surveyadmin_user} and
+        \val{surveyreport_user}; the script below grants to all of them). A site's cluster
+        already has them; the platform's installation manual gives the role script for a
+        cluster that does not.
   \item \textbf{An OIDC provider} on which you can create a confidential client and two
         client roles. Keycloak is what Elicit is tested with.
   \item \textbf{A container runtime}. Author and the preview Survey are released as container
         images only; there is no separate Java distribution to install.
   \item \textbf{The Survey image of the same release} as Author, for the preview. Author and
         the preview are tested together at one version.
-  \item The addresses a browser will reach Author and the preview at, for the OIDC redirect
-        and for the preview links.
+  \item The address a browser will reach Author at, for the OIDC redirect, and the address
+        Author will reach the preview at (Chapter~\ref{sec:preview}).
 \end{itemize}
 
 %% ================================================================== 3
 \section{The database}
 \label{sec:database}
 
-Author works in a database of its own. It may live in the same cluster as a site's
-\val{survey} database, but it is never that database: authors save half-finished work, and
-nothing they do should touch respondent data.
+Author works in a database of its own, never a site's \val{survey} database: authors save
+half-finished work, and nothing they do should touch respondent data. The compose stack keeps
+it in the same cluster for convenience; a real installation is better served by a cluster of
+its own, so that an authoring account, a backup or a restore of authoring work never shares a
+server with respondents' answers.
 
 Run this once, as a superuser, in the cluster. It creates the database, grants it to the
 Elicit roles, and creates the two empty schemas. Every table inside them comes from the
@@ -176,12 +194,12 @@ The umbrella mounts this script as \file{db-init/V0.0.4__CREATE_AUTHOR_DATABASE.
 the database container's initialization directory. That directory runs \emph{only} against an
 empty data directory, so a cluster that was first started before the script was there has no
 \val{author} database. Run the script once by hand against it:
-\end{elicitnote}
 
 \begin{elicitcmd}
 docker compose exec -T db psql -U survey -d survey \
   < db-init/V0.0.4__CREATE_AUTHOR_DATABASE.sql
 \end{elicitcmd}
+\end{elicitnote}
 
 %% ================================================================== 4
 \section{The identity provider}
@@ -194,7 +212,7 @@ client, and a role on Admin's client grants nothing in Author.
 
 \begin{plaintable}{tab:client}{Author's OIDC client}{@{}>{\raggedright\arraybackslash}p{0.22\linewidth} >{\raggedright\arraybackslash}p{0.20\linewidth} >{\raggedright\arraybackslash}p{0.52\linewidth}@{}}{\thead{Client} & \thead{Type} & \thead{Redirect}}
 \val{elicit-author} & confidential & The address a browser reaches Author at, for example
-\val{http://localhost:8084/*}. Post-logout redirects return to the same address. \\
+\val{http://localhost:8084/*}. Allow post-logout redirects to the same address only. \\
 \end{plaintable}
 
 The client needs a secret, which reaches Author as \opt{OIDC_CLIENT_SECRET}. Author accepts
@@ -220,7 +238,8 @@ administrator of a site grants nothing in Author.
 
 The umbrella's Keycloak realm, \file{keycloak/elicit-realm.json}, carries this client, both
 roles and two accounts: \val{author}/\val{author} with \val{elicit_author}, and
-\val{admin}/\val{admin} with both Author roles besides Admin's. It is an evaluation provider.
+\val{admin}/\val{admin} with both Author roles besides Admin's. It is an evaluation provider,
+and it allows a post-logout redirect to any address.
 
 \begin{elicitsecurity}
 The bundled client's secret is the literal string \val{secret} and the accounts' passwords
@@ -268,8 +287,14 @@ before deleting it, should one exist. \\
 
 The preview connects as \val{survey_user} and migrates as \val{elicit_owner}, with the same
 passwords those roles have in the cluster (\optlit{ELICIT\_DB\_PASSWORD} and
-\optlit{ELICIT\_OWNER\_DB\_PASSWORD}). Author reaches it at \opt{author.preview.survey.url}, an
-address on the network Author runs on; it need not be reachable from a browser for that call.
+\optlit{ELICIT\_OWNER\_DB\_PASSWORD}).
+
+Author uses \opt{author.preview.survey.url} for two things: it calls the preview there to drop a
+reporting schema, and the \ui{Reports…} page's \ui{Preview in Survey…} link opens it in the
+author's browser. One address therefore has to work from both Author and a browser. The
+umbrella's compose file sets it to the containers' internal address,
+\val{http://author-survey:8080}, which serves the call but not the link; authors on that stack
+open \val{http://localhost:8085} themselves.
 
 \subsection{The service token}
 \label{sec:servicetoken}
@@ -310,7 +335,7 @@ request Author makes to it, not the preview's pages.
 \end{elicitsecurity}
 
 %% ================================================================== 6
-\section{Installing with Docker Compose}
+\section{Evaluating with Docker Compose}
 \label{sec:compose}
 
 The Elicit umbrella repository runs the whole platform from one compose file, Author
@@ -332,7 +357,7 @@ docker compose up -d author keycloak jaeger
 \end{elicitcmd}
 
 \val{author} waits for the database and for the preview to report ready, so the start order
-of Chapter~\ref{sec:what} is kept for you. Every application image is pulled at one tag,
+of Section~\ref{sec:startorder} is kept for you. Every application image is pulled at one tag,
 \opt{ELICIT_TAG} (default \val{latest}), so Author and its preview are always the same
 release:
 
@@ -386,9 +411,14 @@ docker run -d --name author -p 8084:8080 \
 \end{elicitcmd}
 
 \val{<version>} is the version on this manual's title page; the preview Survey runs at the
-same tag. Author listens on \val{8080} inside its container unless \val{QUARKUS_HTTP_PORT} says otherwise. Behind a
-reverse proxy it trusts the forwarded host, prefix and protocol headers, so the OIDC
-redirect is built from the address the browser used.
+same tag. Author listens on \val{8080} inside its container unless \opt{QUARKUS_HTTP_PORT} says
+otherwise.
+
+Author trusts the forwarded host, prefix and protocol headers, so that behind a reverse proxy
+the OIDC redirect is built from the address the browser used. That trust is safe only when
+nothing but the proxy reaches Author: publish its port to the proxy alone, and have the proxy
+replace any forwarded headers a client sends. The same goes for \val{/q/metrics}, which answers
+without a sign-in for a scraper on the private network; have the proxy refuse \val{/q}.
 
 %% ================================================================== 8
 \section{Configuration}
@@ -461,7 +491,13 @@ every text's key. \\
 site's pages. Environment variable \opt{CORS_ALLOWED_ORIGINS}. None by default, and none is
 needed: Author's pages call only Author. \\
 \opt{quarkus.application.name} & \val{elicit-author} & \chgmay & The service name in metrics
-and traces. \\
+and traces. The umbrella's compose file sets \val{author}. \\
+\opt{quarkus.application.version} & build & \chgkeep & The release, stamped by the build and
+shown on the System overview. \\
+\opt{quarkus.http.limits.max-body-size} & \val{10M} & \chgmay & The largest request Author
+accepts, which bounds a definition file an author can import. \\
+\opt{quarkus.datasource.db-version} & \val{17} & \chgkeep & The PostgreSQL version Author is
+built against. \\
 \opt{build.timestamp} & build & \chgkeep & Stamped by the build and shown on the System
 overview. \\
 \opt{elicit.debug.reveal-tokens} & \val{false} & \chgkeep & Shows raw tokens on the OIDC
@@ -481,7 +517,7 @@ looks like the rest of the installation. A mounted brand may be partial; whateve
 comes from the default brand.
 
 The image carries English only. Every other language is a file in the curated translations
-ElicitSoftware publishes beside each release, the umbrella's \file{elicit-i18n/}, mounted
+Elicit Software publishes beside each release, the umbrella's \file{elicit-i18n/}, mounted
 read-only. Author reads its own \val{author/} sub-directory of it, as Survey reads
 \val{survey/} and Admin \val{admin/}. The platform's installation manual explains both
 mechanisms, fallback and right-to-left layout included.
