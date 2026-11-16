@@ -211,6 +211,9 @@ self-contained document that teaches an agent the survey model and the exact rec
   \item Bring it back to \ui{Import definition}. The two pages link to each other.
 \end{enumerate}
 
+\screenshot{20-ai-draft}{Draft with AI. The specification goes out by clipboard or download;
+the draft comes back through \ui{Import definition}.}
+
 \begin{elicitnote}[Nothing leaves the building on its own]
 Author sends nothing to any AI service and needs no account with one. You carry the
 specification out and you carry the draft back, so this works with whatever agent you already
@@ -505,6 +508,9 @@ is added with \ui{Add report service…}, giving its name, a description and its
 row to reorder, \ui{Edit…} it, or \ui{Remove} it; a survey whose list is empty ends on its
 post-survey address with no report page.
 
+\screenshot{21-reports}{The Reports page: the survey's report services in the order a respondent
+sees them, and the marks each report shows.}
+
 \begin{elicitnote}[The address is the site's]
 A report service is a small web application the site runs; the platform's installation manual
 describes what it is sent and what it must answer, in its custom reports chapters. The address
@@ -535,6 +541,9 @@ A \term{post-survey action} is something the site does at the moment a responden
 filing their results in a records system, telling a study coordinator. Each action is an
 address the site's Survey calls, with the respondent's id; respondents never see it. List a
 survey's actions on its \ui{Post-survey actions…} page, reached from the survey overview.
+
+\screenshot{22-post-survey-actions}{The Post-survey actions page: what the site calls when a
+respondent finishes, in the order it calls them.}
 
 \ui{Add action…} asks for a name, a description, the method and the address. The address must
 be a full \val{http} or \val{https} address the site's Survey can reach, such as
@@ -597,6 +606,9 @@ Open \ui{Translations…} from the survey overview.
         was translated from.
 \end{enumerate}
 
+\screenshot{24-translations}{The Translations page: every text a respondent reads, beside its
+translation and its status in the chosen language.}
+
 A translation is \ui{Out of date} once the original is edited after it was made, and is not shown
 to respondents until it is translated again; the designer says so at the moment you change such a
 text, with a link to this page. A row with no translation is shown in the content language.
@@ -622,6 +634,9 @@ The authoring stack runs a Survey of its own, the \term{preview Survey}, on Auth
 It shows the survey as it stands now, before any export, and accepts any access code: type one
 and a preview respondent is created for it. Walk the survey there to check the rules and, once
 you finish, to read the respondent report with its marks as they stand.
+
+\screenshot{25-preview}{The preview Survey's front page. Any access code opens the survey as it
+stands in Author now.}
 
 \ui{Preview in Survey…}, on the \ui{Reports…} page, opens it in a new tab. Answers given there
 stay in Author's database, are counted as preview respondents when the survey is deleted, and
@@ -678,6 +693,9 @@ The confirmation therefore asks for three things:
   \item \textbf{Type the survey's name.} \ui{Delete survey} stays disabled until the name matches
         exactly.
 \end{itemize}
+
+\screenshot{23-delete-survey}{The delete confirmation: the backup, what it says about sites, and
+the name to type before \ui{Delete survey} is enabled.}
 
 \begin{elicitnote}[Changing a site after a delete]
 A site matches every update by the keys in the file. To change a site's copy later, import the

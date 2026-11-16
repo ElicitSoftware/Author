@@ -5,11 +5,12 @@
  * the manual's figures to docs/manual/images/. See docs/manual/README.md for how to run it.
  */
 import { chromium } from 'playwright';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const BASE = process.env.AUTHOR_URL || 'http://localhost:8084';
+const PREVIEW = process.env.PREVIEW_URL || 'http://localhost:8085';
 const USER = process.env.AUTHOR_USER || 'author';
 const PASS = process.env.AUTHOR_PASSWORD || 'author';
 const OUT = process.env.MANUAL_IMAGES || path.resolve(import.meta.dirname, '../images');
@@ -40,7 +41,8 @@ const FIGURES = [
   '01-sign-in', '02-surveys-list', '03-new-survey', '04-survey-overview', '05-designer-board',
   '06-new-step', '07-step-menu', '08-new-section', '09-list-of-options', '10-question-editor',
   '11-choice-question', '12-section-opened', '13-question-menu', '14-new-rule', '15-question-bank',
-  '16-reporting', '17-assign-tag', '18-export', '19-guide',
+  '16-reporting', '17-assign-tag', '18-export', '19-guide', '20-ai-draft', '21-reports',
+  '22-post-survey-actions', '23-delete-survey', '24-translations', '25-preview',
 ];
 
 const captured = new Set();
@@ -60,12 +62,109 @@ const field = (label) => host(label).locator('input, textarea').first();
 
 const pause = (ms) => page.waitForTimeout(ms);
 
-async function shot(name) {
+/*
+ * #132: a figure ends a little below the last thing on its screen instead of carrying the empty
+ * band under a short page, and a figure a procedure points into carries that procedure's step
+ * numbers. `marks` is a list of [step number, locator]; their positions are written to
+ * <name>.markers.tex beside the image, which the manual's \screenshot reads, so a recapture moves
+ * the markers with the screen.
+ */
+const MIN_FIGURE_HEIGHT = 420;
+
+/** The lowest visible text, control, image or ruled box: where the screen's content ends. */
+async function contentBottom(fullPage) {
+  return page.evaluate((whole) => {
+    const limit = whole ? document.documentElement.scrollHeight : window.innerHeight;
+    const media = /^(INPUT|TEXTAREA|BUTTON|IMG|SVG|CANVAS|VAADIN-BUTTON|VAADIN-ICON)$/i;
+    let bottom = 0;
+    const walk = (root) => {
+      for (const el of root.querySelectorAll('*')) {
+        if (el.shadowRoot) walk(el.shadowRoot);
+        const r = el.getBoundingClientRect();
+        const top = r.top + window.scrollY;
+        // A container nearly as tall as the window is layout, not content.
+        if (r.width < 2 || r.height < 2 || r.height > window.innerHeight * 0.6) continue;
+        if (top >= limit || r.bottom + window.scrollY <= 0) continue;
+        const st = getComputedStyle(el);
+        if (st.visibility === 'hidden' || st.display === 'none' || Number(st.opacity) === 0) continue;
+        const leaf = el.children.length === 0 || media.test(el.tagName);
+        const drawn = el.textContent.trim() || media.test(el.tagName) || st.backgroundImage !== 'none'
+          || st.borderBottomWidth !== '0px';
+        if (leaf && drawn) bottom = Math.max(bottom, Math.min(r.bottom + window.scrollY, limit));
+      }
+    };
+    walk(document);
+    return bottom;
+  }, fullPage);
+}
+
+/**
+ * Where a step's disc goes: beside the control, on whichever side the screen is empty, so it
+ * covers neither the control's label nor a neighbour's; on its corner when both sides are taken.
+ * The disc is about 48 CSS pixels across at the manual's figure width.
+ */
+async function markerSpot(box) {
+  return page.evaluate((b) => {
+    const media = /^(INPUT|TEXTAREA|BUTTON|IMG|SVG|CANVAS|VAADIN-BUTTON|VAADIN-ICON|LABEL)$/i;
+    const deepest = (x, y) => {
+      let el = document.elementFromPoint(x, y);
+      while (el && el.shadowRoot) {
+        const inner = el.shadowRoot.elementFromPoint(x, y);
+        if (!inner || inner === el) break;
+        el = inner;
+      }
+      return el;
+    };
+    const occupied = (x, y) => {
+      if (x < 4 || y < 4 || x > window.innerWidth - 4 || y > window.innerHeight - 4) return true;
+      const el = deepest(x, y);
+      if (!el) return false;
+      return media.test(el.tagName) || (el.children.length === 0 && el.textContent.trim() !== '');
+    };
+    const free = (cx, cy) => [[0, 0], [-18, 0], [18, 0], [0, -14], [0, 14]]
+      .every(([dx, dy]) => !occupied(cx + dx, cy + dy));
+    const cy = b.y + b.height / 2;
+    for (const [cx, cyy] of [[b.x - 30, cy], [b.x + b.width + 30, cy]]) {
+      if (free(cx, cyy)) return [cx, cyy];
+    }
+    return [Math.max(12, b.x), Math.max(12, b.y)];
+  }, box);
+}
+
+async function framedScreenshot(file, { fullPage = false, marks = [] } = {}) {
+  const { width, height: viewportHeight } = page.viewportSize();
+  const bottom = await contentBottom(fullPage);
+  let height = Math.max(MIN_FIGURE_HEIGHT, Math.ceil(bottom + 28));
+  if (!fullPage) height = Math.min(height, viewportHeight);
+  await page.screenshot({ path: file, fullPage, clip: { x: 0, y: 0, width, height } });
+
+  const markers = file.replace(/\.png$/, '.markers.tex');
+  if (!marks.length) {
+    await rm(markers, { force: true });
+    return;
+  }
+  const scrollY = fullPage ? await page.evaluate(() => window.scrollY) : 0;
+  const lines = ['% Written by capture-screenshots.mjs: the step markers on this figure (#132).'];
+  for (const [step, locator] of marks) {
+    const box = await locator.first().boundingBox().catch(() => null);
+    if (!box) {
+      console.warn(`    ! marker ${step}: its element is not on the screen`);
+      continue;
+    }
+    const [vx, vy] = await markerSpot(box);
+    const x = vx;
+    const y = vy + scrollY;
+    lines.push(`\\elicitmark{${step}}{${(x / width).toFixed(4)}}{${(y / height).toFixed(4)}}`);
+  }
+  await writeFile(markers, lines.join('\n') + '\n');
+}
+
+async function shot(name, options = {}) {
   if (!FIGURES.includes(name)) {
     throw new Error(`${name} is not one of the manual's figures`);
   }
   await pause(700);
-  await page.screenshot({ path: path.join(OUT, `${name}.png`) });
+  await framedScreenshot(path.join(OUT, `${name}.png`), options);
   captured.add(name);
   console.log('  ✓', name);
 }
@@ -120,8 +219,8 @@ async function revealPanel(name, probe) {
  * matches, and taking the first Open on the page opens whichever survey sorts first. Walk the slot
  * instead — name cell -> its slot -> the row that slot sits in -> that row's cell holding a button.
  */
-async function rowButtonSlot(cellText) {
-  return page.evaluate((text) => {
+async function rowButtonSlot(cellText, buttonText = null) {
+  return page.evaluate(([text, label]) => {
     const contents = [...document.querySelectorAll('vaadin-grid-cell-content')];
     const cell = contents.find((c) => c.textContent.trim() === text);
     if (!cell) return null;
@@ -131,10 +230,11 @@ async function rowButtonSlot(cellText) {
     if (!tr) return null;
     for (const name of [...tr.querySelectorAll('slot')].map((sl) => sl.getAttribute('name'))) {
       const content = document.querySelector(`vaadin-grid-cell-content[slot="${name}"]`);
-      if (content?.querySelector('vaadin-button')) return name;
+      const buttons = [...(content?.querySelectorAll('vaadin-button') || [])];
+      if (buttons.some((b) => !label || b.textContent.trim() === label)) return name;
     }
     return null;
-  }, cellText);
+  }, [cellText, buttonText]);
 }
 
 async function dismiss() {
@@ -193,7 +293,7 @@ async function ensureSurvey() {
 async function main() {
   await mkdir(OUT, { recursive: true });
   const browser = await chromium.launch();
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.25 });
   page = await context.newPage();
 
   // 01 — the identity provider's sign-in page (UC-001).
@@ -375,6 +475,48 @@ async function main() {
   await attempt('19-guide', async () => {
     await goto(`${BASE}/guide`);
     await shot('19-guide');
+  });
+
+  // 20 — Draft with AI: the specification an agent drafts from, and the round trip (UC-042).
+  await attempt('20-ai-draft', async () => {
+    await goto(`${BASE}/ai-draft`);
+    await shot('20-ai-draft');
+  });
+
+  // 21 — the Reports page: the report services and the marks each report shows (UC-047, UC-048).
+  await attempt('21-reports', async () => {
+    await goto(surveyUrl.replace(/\/$/, '') + '/reports');
+    await shot('21-reports');
+  });
+
+  // 22 — the Post-survey actions page (UC-049).
+  await attempt('22-post-survey-actions', async () => {
+    await goto(surveyUrl.replace(/\/$/, '') + '/actions');
+    await shot('22-post-survey-actions');
+  });
+
+  // 24 — the Translations page, every respondent string beside its translation (UC-043).
+  await attempt('24-translations', async () => {
+    await goto(surveyUrl.replace(/\/$/, '') + '/translations');
+    await shot('24-translations');
+  });
+
+  // 23 — the delete confirmation, opened and cancelled: nothing is deleted (UC-041).
+  await attempt('23-delete-survey', async () => {
+    await goto(BASE);
+    const slot = await rowButtonSlot(SURVEY, 'Delete');
+    if (!slot) throw new Error(`no Delete button in the row of ${SURVEY}`);
+    await page.locator(`vaadin-grid-cell-content[slot="${slot}"] vaadin-button`)
+      .filter({ hasText: 'Delete' }).first().click();
+    await pause(1800);
+    await shot('23-delete-survey');
+    await dismiss();
+  });
+
+  // 25 — the preview Survey, where an author walks the survey as a respondent (UC-048 A5).
+  await attempt('25-preview', async () => {
+    await goto(PREVIEW);
+    await shot('25-preview');
   });
 
   await browser.close();

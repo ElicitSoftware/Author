@@ -25,7 +25,7 @@ for the behavior this implements, and FR-047 / NFR-016 in
 | `elicit-author-manual.tex` | yes | the author's manual |
 | `elicit-author-installation-manual.tex` | yes | the installation manual |
 | `../../../docs/manual/elicit-brand.sty` | in the umbrella | the Elicit default brand as LaTeX — colors, IBM Plex, the page furniture, the call-out boxes and the settings tables (UC-039 BR-005, C-028). Read in place; there is no copy here |
-| `images/` | yes | the captured screens, plus `elicit-logo.png` for the title page |
+| `images/` | yes | the captured screens, and the step-marker files the capture script writes beside them |
 | `capture/` | yes | `capture-screenshots.mjs`, its own `package.json`, and `fixtures/` — the sample survey the figures walk; regenerates `images/` from a running Author |
 | `build-manual.sh` | yes | typesets either manual: the author's manual where the application packages it, the installation manual beside its source |
 | `elicit-author-installation-manual.pdf` | **no** | generated: the installation manual |
