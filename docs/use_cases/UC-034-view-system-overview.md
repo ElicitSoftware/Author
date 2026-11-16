@@ -7,7 +7,7 @@
 **Primary Actor:** System Administrator  
 **Goal:** See on one screen whether this Author deployment is wired correctly: what is running, whether it is healthy, and whether every required setting is present.  
 **Status:** Tested  
-**Requirements:** [FR-042, NFR-014, C-020, C-021](../requirements.md)
+**Requirements:** [FR-042, NFR-014, NFR-025, C-020, C-021](../requirements.md)
 
 ## Preconditions
 
@@ -18,7 +18,7 @@
 1. The administrator opens Overview from the System section of the navigation.
 2. The system shows what is running: application name, version, build time, active profile and the time since the service started.
 3. The system shows health: the database connection, whether the survey schema is present, a one-line branding summary, and how many outbound targets are configured, each linking to its own screen (UC-035 to UC-037).
-4. The system lists every setting that has no default and must be supplied by the deployment (the database password and the OIDC client secret) and reports each as present or absent, never its value.
+4. The system lists every setting that has no default and must be supplied by the deployment (the database password, the OIDC client secret and the service token) and reports each as present or absent, never its value.
 5. The administrator reads the result and follows a link to the screen that explains a failure.
 
 ## Alternative Flows
@@ -47,6 +47,14 @@
 1. The system shows "unknown" for that value instead of failing.
 2. Use case continues at step 3.
 
+### A4: The service token is the development value
+
+**Trigger:** The service token equals the value the platform's compose files and the development profile carry (step 4)  
+**Flow:**
+
+1. The system reports the setting as present and shows a warning that the development value is in use and must be replaced at a real site, without showing it.
+2. Use case continues at step 5.
+
 ## Postconditions
 
 ### Success Postconditions
@@ -61,7 +69,7 @@
 
 ### BR-001: Secrets are reported as present or absent
 
-No password, client secret or token value is rendered on any System screen (NFR-014). A required secret is shown only as present or absent, together with the name of the setting that supplies it.
+No password, client secret, service token or token value is rendered on any System screen (NFR-014). A required secret is shown only as present or absent, together with the name of the setting that supplies it.
 
 ### BR-002: The overview reports what is true now
 
@@ -75,7 +83,7 @@ Datasource, OIDC and telemetry settings are startup configuration (C-020). The s
 
 ## Reference
 
-Traces to FR-042. Implemented by `SystemOverviewView` with `BuildInfo`, `RequiredConfigCheck` and the per-area
+Traces to FR-042. Implemented by `SystemOverviewView` with `BuildInfo`, `RequiredConfigCheck`, `ServiceToken` and the per-area
 summaries from `DatabaseDiagnostics`, `BrandDiagnostics` and `ConnectionChecks` (all under
 `com.elicitsoftware.author.diagnostics`). The version and build time come from the Maven-filtered
 `quarkus.application.version` and `build.timestamp` properties. Verified by `SystemViewsRenderTest`.

@@ -34,6 +34,10 @@ import java.util.Optional;
  * Bounded, harmless probes of Author's outbound dependencies (UC-037): the identity provider
  * and the telemetry collector. Author calls nothing else; its only other dependency is the
  * database (UC-035). Every probe gives up after {@link #TIMEOUT} (NFR-015).
+ * <p>
+ * A probe carries no credential (UC-037 BR-001): the service token is never attached to one,
+ * and a 401 or 503 from an endpoint that requires it is an HTTP answer like any other, so the
+ * target counts as reachable.
  */
 @ApplicationScoped
 public class ConnectionChecks {

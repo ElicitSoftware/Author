@@ -40,6 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @QuarkusTestResource(PostgresTestResource.class)
 class ConnectionChecksTest {
 
+    private static final List<String> AUTHORIZATION_SEEN = new java.util.concurrent.CopyOnWriteArrayList<>();
+    private static final java.util.concurrent.atomic.AtomicInteger PROBED = new java.util.concurrent.atomic.AtomicInteger();
+
     private static HttpServer server;
     private static String base;
 
@@ -50,6 +53,11 @@ class ConnectionChecksTest {
     static void startServer() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/ok", exchange -> respond(exchange, 200, "ok"));
+        server.createContext("/protected/401", exchange -> {
+            exchange.getResponseHeaders().add("WWW-Authenticate", "Bearer");
+            respond(exchange, 401, "");
+        });
+        server.createContext("/protected/503", exchange -> respond(exchange, 503, "{\"error\":\"service token not configured\"}"));
         server.createContext("/forbidden", exchange -> respond(exchange, 403, "no license"));
         server.createContext("/realm/.well-known/openid-configuration",
                 exchange -> respond(exchange, 200, "{\"issuer\":\"" + base + "/realm\"}"));
@@ -73,6 +81,11 @@ class ConnectionChecksTest {
     }
 
     private static void respond(com.sun.net.httpserver.HttpExchange exchange, int status, String body) throws IOException {
+        PROBED.incrementAndGet();
+        List<String> authorization = exchange.getRequestHeaders().get("Authorization");
+        if (authorization != null) {
+            AUTHORIZATION_SEEN.addAll(authorization);
+        }
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.sendResponseHeaders(status, bytes.length);
         try (OutputStream out = exchange.getResponseBody()) {
@@ -88,6 +101,31 @@ class ConnectionChecksTest {
 
         assertTrue(result.isUp(), result.detail());
         assertTrue(result.detail().contains("HTTP 200"));
+    }
+
+    /** UC-037 BR-001: an endpoint that requires the service token answers 401, or 503 without one of its own; both count as reachable. */
+    @Test
+    void anEndpointThatRequiresTheServiceTokenIsReachable() {
+        for (int status : new int[]{401, 503}) {
+            CheckResult result = checks.check(new ConnectionChecks.Target("Preview Survey", "t", base + "/protected/" + status,
+                    ConnectionChecks.Kind.HTTP));
+
+            assertTrue(result.isUp(), result.detail());
+            assertTrue(result.detail().contains("HTTP " + status), result.detail());
+        }
+    }
+
+    /** UC-037 BR-001: no probe of any kind carries a credential. */
+    @Test
+    void probesCarryNoCredential() {
+        AUTHORIZATION_SEEN.clear();
+        PROBED.set(0);
+        checks.check(new ConnectionChecks.Target("Preview Survey", "t", base + "/protected/401", ConnectionChecks.Kind.HTTP));
+        checks.check(new ConnectionChecks.Target("Report service", "t", base + "/ok", ConnectionChecks.Kind.HTTP));
+        checks.check(new ConnectionChecks.Target("Identity provider", "oidc", base + "/realm/", ConnectionChecks.Kind.OIDC_DISCOVERY));
+
+        assertTrue(PROBED.get() >= 3, "every probe reached the server");
+        assertTrue(AUTHORIZATION_SEEN.isEmpty(), "no Authorization header on a probe");
     }
 
     /** UC-037 step 4: the discovery document is recognized by its issuer. */
