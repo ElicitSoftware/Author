@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -132,5 +134,49 @@ class AppConfigTest {
 
         assertEquals("@import url('https://fonts.googleapis.com/css2?family=Inter');\n"
                 + "html { --lumo-primary-color: var(--brand-primary); }\n", stripped);
+    }
+
+    // UC-030 BR-005: a relative url() names a file of the brand, relative to its stylesheet, and is resolved
+    // to where BrandResourceHandler serves it, since the inlined stylesheet has no address of its own.
+    @Test
+    void withBrandUrls_resolvesRelativeUrlsAgainstTheStylesheetsDirectory() {
+        String css = "@font-face { src: url(\"fonts/Face.woff2\") format(\"woff2\"); }\n"
+                + ".a { background: url( './images/a.png' ); }\n"
+                + ".b { background: url(../images/b.png); }\n";
+
+        assertEquals("@font-face { src: url(\"/api/brand/typography/fonts/Face.woff2\") format(\"woff2\"); }\n"
+                + ".a { background: url(\"/api/brand/typography/images/a.png\"); }\n"
+                + ".b { background: url(\"/api/brand/images/b.png\"); }\n",
+                AppConfig.withBrandUrls(css, "typography/brand-typography.css"));
+        assertEquals(".c { background: url(\"/api/brand/images/c.png\"); }",
+                AppConfig.withBrandUrls(".c { background: url(images/c.png); }", "theme.css"));
+    }
+
+    @Test
+    void withBrandUrls_leavesAbsoluteRootedDataAndEscapingUrlsAsWritten() {
+        String css = "@import url('https://fonts.example/css');\n"
+                + ".a { background: url(/static/a.png); }\n"
+                + ".b { background: url(data:image/png;base64,AAAA); }\n"
+                + ".c { fill: url(#gradient); }\n"
+                + ".d { background: url(../../etc/passwd); }\n";
+
+        assertEquals(css, AppConfig.withBrandUrls(css, "colors/brand-colors.css"));
+    }
+
+    // The embedded default brand names its fonts this way, and every file it names is in the image.
+    @Test
+    void embeddedTypography_namesOnlyFontsTheImageCarries() throws IOException {
+        String css;
+        try (var in = AppConfig.class.getResourceAsStream("/META-INF/brand/typography/brand-typography.css")) {
+            css = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        var urls = java.util.regex.Pattern.compile("url\\(\"" + AppConfig.BRAND_URL + "([^\"]+)\"\\)")
+                .matcher(AppConfig.withBrandUrls(css, "typography/brand-typography.css"));
+        int fonts = 0;
+        while (urls.find()) {
+            fonts++;
+            assertNotNull(AppConfig.class.getResource("/META-INF/brand/" + urls.group(1)), urls.group(1));
+        }
+        assertTrue(fonts > 0, "the default brand declares its own fonts");
     }
 }

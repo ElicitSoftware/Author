@@ -83,3 +83,7 @@ A requested brand-file path that contains a parent-directory segment or an empty
 ### BR-004: An SVG brand asset is served as an image only
 
 A brand asset whose name ends in `.svg` is served with `Content-Security-Policy: sandbox`. Used as an image — the logo in the application shell — it renders as before; opened as a page of its own it runs no script. Every brand asset also carries the headers every response carries (NFR-024).
+
+### BR-005: A brand's stylesheets name the brand's own files
+
+A relative `url()` in a brand stylesheet names a file of the brand, relative to that stylesheet: `url("fonts/Face.woff2")` in `typography/brand-typography.css` is `typography/fonts/Face.woff2`. The stylesheets are inlined into the page, so the system resolves each such URL to the address the file is served from before the page is sent. That is how a brand carries its own fonts, and the embedded default brand carries IBM Plex Sans and Mono this way, so no font is requested from a third party. A URL that is absolute, or that would leave the brand root, is left as written.
