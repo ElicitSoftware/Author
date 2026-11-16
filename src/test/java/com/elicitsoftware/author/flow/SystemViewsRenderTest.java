@@ -12,6 +12,7 @@ package com.elicitsoftware.author.flow;
  */
 
 import com.elicitsoftware.author.diagnostics.RequiredConfigCheck;
+import com.elicitsoftware.author.security.ServiceToken;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
 import com.vaadin.flow.component.Component;
@@ -20,6 +21,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Pre;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.enterprise.inject.spi.CDI;
@@ -28,6 +30,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,7 +55,8 @@ class SystemViewsRenderTest extends QuarkusBrowserlessTest {
     private static List<String> secrets() {
         var config = ConfigProvider.getConfig();
         return List.of(config.getValue("quarkus.datasource.password", String.class),
-                config.getValue("quarkus.oidc.credentials.secret", String.class));
+                config.getValue("quarkus.oidc.credentials.secret", String.class),
+                config.getValue("elicit.service.token", String.class));
     }
 
     private <T extends Component> T attach(Class<T> type) {
@@ -94,11 +98,33 @@ class SystemViewsRenderTest extends QuarkusBrowserlessTest {
 
         assertTrue(settings.stream().anyMatch(s -> s.property().equals("quarkus.datasource.password") && s.present()));
         assertTrue(settings.stream().anyMatch(s -> s.property().equals("quarkus.oidc.credentials.secret") && s.present()));
+        assertTrue(settings.stream().anyMatch(s -> s.property().equals("elicit.service.token")
+                && s.envVar().equals("ELICIT_SERVICE_TOKEN") && s.present()), "NFR-025: the service token is a required setting");
         for (var setting : settings) {
             for (String secret : secrets()) {
                 assertFalse(setting.toString().contains(secret), "a required-setting report carries no value");
             }
         }
+    }
+
+    /** UC-034 A4: the development-value warning appears only for the development value; the tests' token is not it. */
+    @Test
+    void overviewShowsNoDevelopmentWarningForADeploymentsOwnToken() {
+        SystemOverviewView view = attach(SystemOverviewView.class);
+
+        assertFalse(containsId(view, SystemOverviewView.SERVICE_TOKEN_WARNING_ID));
+    }
+
+    /** UC-034 A4: the development value is warned about, by the variable's name and never by value. */
+    @Test
+    void overviewWarnsAboutTheDevelopmentValue() {
+        QuarkusMock.installMockForType(new ServiceToken(Optional.of(ServiceToken.DEVELOPMENT_VALUE)), ServiceToken.class);
+        SystemOverviewView view = attach(SystemOverviewView.class);
+
+        assertTrue(containsId(view, SystemOverviewView.SERVICE_TOKEN_WARNING_ID));
+        String text = view.getElement().getTextRecursively();
+        assertTrue(text.contains("ELICIT_SERVICE_TOKEN"), text);
+        assertFalse(text.contains(ServiceToken.DEVELOPMENT_VALUE), "the development value itself is not rendered");
     }
 
     /** UC-035: the database screen shows the connection and the schema state. */

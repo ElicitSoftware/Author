@@ -45,7 +45,9 @@ public class RequiredConfigCheck {
             new Required("quarkus.datasource.password", "ELICIT_DB_PASSWORD",
                     "systemOverviewView.setting.datasourcePassword"),
             new Required("quarkus.oidc.credentials.secret", "OIDC_CLIENT_SECRET",
-                    "systemOverviewView.setting.oidcSecret"));
+                    "systemOverviewView.setting.oidcSecret"),
+            new Required("elicit.service.token", "ELICIT_SERVICE_TOKEN",
+                    "systemOverviewView.setting.serviceToken"));
 
     public RequiredConfigCheck() {
         // CDI managed bean

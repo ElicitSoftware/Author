@@ -105,6 +105,7 @@ Key environment variables (see `src/main/resources/application.properties`):
 |---|---|
 | `ELICIT_DB_PASSWORD` | Password for the `survey_user` Postgres role |
 | `OIDC_CLIENT_SECRET` | Client secret for the `elicit-author` OIDC client |
+| `ELICIT_SERVICE_TOKEN` | The deployment's service token, at least 32 characters; sent as a bearer credential on Author's call to the preview Survey, which is given the same value |
 | `CORS_ALLOWED_ORIGINS` | Allowed CORS origins, if this app is called cross-origin |
 | `LOG_LEVEL` / `ELICIT_LOG_LEVEL` | Root / `com.elicitsoftware.*` log levels |
 

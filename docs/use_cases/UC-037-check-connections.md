@@ -62,7 +62,7 @@
 
 ### BR-001: Probes are harmless
 
-A web target is probed with a read-only request and redirects are not followed. A socket target is only connected to and closed.
+A web target is probed with a read-only request and redirects are not followed. A socket target is only connected to and closed. A probe carries no credential: the service token (NFR-025) is never attached to one, and an answer of 401 or 503 from an endpoint that requires it counts as reachable, like any other HTTP answer.
 
 ### BR-002: Probes are bounded
 

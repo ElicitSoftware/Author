@@ -7,7 +7,7 @@
 **Primary Actor:** System Administrator  
 **Goal:** Take a machine with no Author to a running, verified Author — its own database, its identity-provider client, its preview Survey and the application itself — by following a printed manual, without reading Author's source or the platform's compose file.  
 **Status:** Draft  
-**Requirements:** [FR-070, FR-072, FR-073, FR-074, FR-075, FR-076, FR-077, FR-078, NFR-020, NFR-021, NFR-022, C-027](../requirements.md)
+**Requirements:** [FR-070, FR-072, FR-073, FR-074, FR-075, FR-076, FR-077, FR-078, NFR-020, NFR-021, NFR-022, NFR-025, C-027](../requirements.md)
 
 ## Preconditions
 
@@ -23,8 +23,8 @@
 3. The administrator works through the prerequisites checklist.
 4. The administrator provisions the `author` database following the manual: creating it in the cluster, granting it to the Elicit roles, and creating the `survey` schema owned by `elicit_owner`. The tables are left to the preview Survey's migrations (BR-002).
 5. The administrator creates the `elicit-author` client at the identity provider, with its redirect and post-logout URIs and its secret. They create the client's two roles, `elicit_author` and `elicit_author_admin`, and grant each to the people who need it (BR-003).
-6. The administrator starts the preview Survey: a Survey instance of the same release, pointed at the `author` database, with the preview settings the manual lists. They wait for it to report ready. On its first start it builds the `survey` schema there.
-7. The administrator starts Author with its database, its client secret, the identity provider's address, the preview Survey's address, and the brand and translations directories. The values are taken from the configuration reference, which marks each setting as one to set, one that may be set, or one to leave alone, and identifies every secret.
+6. The administrator starts the preview Survey: a Survey instance of the same release, pointed at the `author` database, with the preview settings the manual lists and the deployment's service token (BR-008). They wait for it to report ready. On its first start it builds the `survey` schema there.
+7. The administrator starts Author with its database, its client secret, the same service token as the preview, the identity provider's address, the preview Survey's address, and the brand and translations directories. The values are taken from the configuration reference, which marks each setting as one to set, one that may be set, or one to leave alone, and identifies every secret.
 8. The administrator mounts the site's brand directory and the curated translations, so that Author reads its own `author/` sub-directory. They leave `author.content.languages` at the release's value (BR-005).
 9. The administrator verifies the installation in the order the manual gives, starting with Author's health endpoint, which reports ready.
 10. A user holding `elicit_author` signs in and reaches the Surveys list.
@@ -86,6 +86,15 @@
 2. The administrator corrects the preview's address or starts the preview.
 3. Use case continues at step 12.
 
+### A7: The service token is missing, too short, or differs
+
+**Trigger:** Author or the preview does not report ready, does not start, or a survey delete is refused naming the service token (step 9)  
+**Flow:**
+
+1. The manual states the three symptoms. Without the token an application starts but reports not ready, through a health check named `service-token` whose reason names the variable. With a token shorter than 32 characters it does not start, and its log names the variable and the required length. With different tokens in Author and the preview, deleting a survey that has a reporting schema is refused, naming the token (UC-047 A7).
+2. The administrator gives both containers the same token of at least 32 characters and restarts them.
+3. Use case continues at step 9.
+
 ## Postconditions
 
 ### Success Postconditions
@@ -125,6 +134,10 @@ Every setting Author reads is in the manual's configuration reference with the d
 ### BR-007: The images are the only distribution
 
 A release publishes Author and Survey as container images and nothing else; no runnable Java artifact is distributed. The manual therefore gives two installation paths, the umbrella's compose file (A3) and the same images under the site's own container platform, and no procedure that runs either application on a bare Java runtime.
+
+### BR-008: One service token for Author and its preview
+
+Author and the preview Survey receive the same `ELICIT_SERVICE_TOKEN`: Author sends it on its call to the preview, which refuses a request without it (NFR-025). The token is generated for the deployment, at least 32 characters, and supplied like the database passwords. The value the umbrella's compose file carries is a development value (BR-004), and Author warns at startup and on the System overview while it is in use.
 
 ## Reference
 

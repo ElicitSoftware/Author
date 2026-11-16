@@ -18,6 +18,7 @@ import com.elicitsoftware.author.diagnostics.ConnectionChecks;
 import com.elicitsoftware.author.diagnostics.DatabaseDiagnostics;
 import com.elicitsoftware.author.diagnostics.RequiredConfigCheck;
 import com.elicitsoftware.author.security.AuthorRoles;
+import com.elicitsoftware.author.security.ServiceToken;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -46,6 +47,7 @@ public class SystemOverviewView extends VerticalLayout implements HasDynamicTitl
     static final String BUILD_GRID_ID = "system-build-grid";
     static final String HEALTH_GRID_ID = "system-health-grid";
     static final String CONFIG_GRID_ID = "system-config-grid";
+    static final String SERVICE_TOKEN_WARNING_ID = "system-service-token-warning";
 
     record Row(String label, String value) {
     }
@@ -67,6 +69,9 @@ public class SystemOverviewView extends VerticalLayout implements HasDynamicTitl
 
     @Inject
     RequiredConfigCheck requiredConfig;
+
+    @Inject
+    ServiceToken serviceToken;
 
     public SystemOverviewView() {
         setWidthFull();
@@ -108,6 +113,13 @@ public class SystemOverviewView extends VerticalLayout implements HasDynamicTitl
         config.setAllRowsVisible(true);
         config.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_WRAP_CELL_CONTENT);
         add(config);
+        // UC-034 A4: the development value is named as outstanding work, never shown.
+        if (serviceToken.isDevelopmentValue()) {
+            Component warning = SystemBadges.badge(
+                    getTranslation("systemOverviewView.serviceToken.developmentValue", ServiceToken.VARIABLE), "warning");
+            warning.setId(SERVICE_TOKEN_WARNING_ID);
+            add(warning);
+        }
     }
 
     private CheckResult brandSummary() {

@@ -302,12 +302,53 @@ reporting schema is built for them. \\
 \addlinespace
 \optlit{elicit.etl.drop.enabled} & \val{true}: lets Author drop a survey's reporting schema
 before deleting it, should one exist. \\
+\addlinespace
+\optlit{ELICIT\_SERVICE\_TOKEN} & The same value Author is given
+(Section~\ref{sec:servicetoken}). \\
 \end{plaintable}
 
 The preview connects as \val{survey_user} and migrates as \val{elicit_owner}, with the same
 passwords those roles have in the cluster (\optlit{ELICIT\_DB\_PASSWORD} and
 \optlit{ELICIT\_OWNER\_DB\_PASSWORD}). Author reaches it at \opt{author.preview.survey.url}, an
 address on the network Author runs on; it need not be reachable from a browser for that call.
+
+\subsection{The service token}
+\label{sec:servicetoken}
+
+Elicit's applications authenticate their calls to each other with one shared secret per
+deployment, the service token. Author makes one such call, the request that drops a reporting
+schema, and sends the token with it as a bearer credential; the preview Survey answers that
+request only when it carries the token the preview was given itself. Both containers therefore
+receive the same environment variable, \opt{ELICIT_SERVICE_TOKEN}. An Author installed apart
+from a site has a token of its own, not the site's.
+
+Generate it once, and supply it the way the database passwords are supplied (the platform's
+secret store, a container secret, or the \file{.env} file beside the compose file), never in
+a file under version control:
+
+\begin{elicitcmd}
+openssl rand -hex 32
+\end{elicitcmd}
+
+\begin{itemize}
+  \item The token is at least 32 characters. An application given a shorter one does not
+        start, and its log names the variable and the length required.
+  \item An application given no token starts, logs one warning, and reports not ready:
+        \val{/q/health/ready} carries a check named \val{service-token} with the reason.
+        Author then refuses to delete a survey that has a reporting schema rather than
+        make the call without a credential, and the preview answers the request with
+        \val{503}.
+  \item Author sends the token to the address in \opt{author.preview.survey.url} and nowhere
+        else, never follows a redirect with it, and never writes it to a log, a page or an
+        error message. The \ui{System} overview reports it as present or absent only.
+  \item To replace it, give both containers the new value and restart them together.
+\end{itemize}
+
+\begin{elicitsecurity}
+The preview accepts any access code and is meant for authors' browsers only. Publish it to
+authors alone, behind the same network boundary or sign-on as Author. The token protects the
+request Author makes to it, not the preview's pages.
+\end{elicitsecurity}
 
 %% ================================================================== 6
 \section{Installing with Docker Compose}
@@ -342,8 +383,11 @@ ELICIT_TAG=3.0.0-beta.1 docker compose up -d author keycloak jaeger
 \end{elicitcmd}
 
 \begin{elicitsecurity}
-The compose file's database passwords (\val{SURVEYPW}) and client secret (\val{secret}) are
-development values. Replace them, and the bundled realm, before Author reaches anyone
+The compose file's database passwords (\val{SURVEYPW}), client secret (\val{secret}) and
+service token (\val{elicit-dev-service-token-not-for-a-real-site}, used when
+\opt{ELICIT_SERVICE_TOKEN} is unset) are development values. Author logs a warning at startup
+and shows one on the \ui{System} overview while that token is in use. Replace them, and the
+bundled realm, before Author reaches anyone
 (Chapter~\ref{sec:oidc}).
 \end{elicitsecurity}
 
@@ -361,7 +405,8 @@ start for you.
 
 \begin{enumerate}
   \item Provision the \val{author} database (Chapter~\ref{sec:database}).
-  \item Start the preview Survey with the settings of Chapter~\ref{sec:preview}, and wait
+  \item Start the preview Survey with the settings of Chapter~\ref{sec:preview}, the
+        service token among them, and wait
         until \val{/q/health/ready} answers \val{200}.
   \item Start Author, mounting the brand and the translations read-only:
 \end{enumerate}
@@ -374,6 +419,7 @@ docker run -d --name author -p 8084:8080 \
   -e ELICIT_DB_PASSWORD='<survey_user password>' \
   -e QUARKUS_OIDC_AUTH_SERVER_URL='https://idp.example.org/realms/elicit/' \
   -e OIDC_CLIENT_SECRET='<elicit-author client secret>' \
+  -e ELICIT_SERVICE_TOKEN='<the token the preview was given>' \
   -e AUTHOR_PREVIEW_SURVEY_URL='http://preview.internal:8080' \
   -e BRAND_FILE_SYSTEM_PATH=/opt/brand \
   -e I18N_FILE_SYSTEM_PATH=/opt/i18n \
@@ -422,6 +468,9 @@ variable \opt{OIDC_CLIENT_SECRET}. A secret. \\
 \begin{settings}{tab:cfg-author}{Authoring settings}
 \opt{author.preview.survey.url} & \val{http://localhost:8085} & \chgset & The preview
 Survey, at an address Author can reach (Chapter~\ref{sec:preview}). \\
+\opt{elicit.service.token} & --- & \chgset & The service token Author sends to the preview
+Survey, the same value the preview is given (Section~\ref{sec:servicetoken}). At least 32
+characters. Environment variable \opt{ELICIT_SERVICE_TOKEN}. A secret. \\
 \opt{author.content.languages} & \val{en,ar,es-419} & \chgkeep & The languages a survey's
 content may be published in. Set by the release to the curated translations and checked
 against them when the release is built; see Chapter~\ref{sec:brand}. \\
@@ -551,6 +600,17 @@ Sign-in loops, or the provider rejects the redirect. & The redirect URI on
 \addlinespace
 Deleting a survey is refused, naming a connection failure. & Author cannot reach the preview
 at \opt{author.preview.survey.url}. Check the address from Author's host. \\
+\addlinespace
+Author or the preview is not ready, and \val{/q/health/ready} names \val{service-token}. &
+\opt{ELICIT_SERVICE_TOKEN} is unset for that container. Supply it
+(Section~\ref{sec:servicetoken}). \\
+\addlinespace
+Author or the preview does not start, naming \opt{ELICIT_SERVICE_TOKEN}. & The token is
+shorter than 32 characters. Generate a longer one. \\
+\addlinespace
+Deleting a survey is refused, naming the service token. & Author has no token, or Author and
+the preview were given different ones. Give both containers the same value and restart
+them. \\
 \addlinespace
 A language is missing from Author's language selector. & The mounted translations lack
 \val{author/translations_<tag>.properties}, or \opt{i18n.offered.locales} leaves the

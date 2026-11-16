@@ -814,6 +814,8 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `systemOverviewView.grid.purpose` | Purpose | System overview · grid column header | 20 |  |
 | `systemOverviewView.setting.datasourcePassword` | password of the database user Author connects as | System overview · purpose of a required setting | 60 |  |
 | `systemOverviewView.setting.oidcSecret` | client secret registered with the identity provider | System overview · purpose of a required setting | 60 |  |
+| `systemOverviewView.setting.serviceToken` | service token Author sends to the preview Survey | System overview · purpose of a required setting; the service token is the secret Elicit's applications authenticate each other with | 70 |  |
+| `systemOverviewView.serviceToken.developmentValue` | {0} is the development value. Replace it before this Author is used at a real site. | System overview · warning below the required settings | 140 | params: {0} = environment variable name |
 | `systemDatabaseView.pageTitle` | System Database | System database · browser tab title | 40 |  |
 | `systemDatabaseView.title` | Database | System database · page heading | 30 |  |
 | `systemDatabaseView.intro` | Author owns no migrations. The survey schema in its database is created by the Survey preview instance that shares the database, so a missing schema means that instance has not started against this database yet. | System database · introductory paragraph | 300 |  |
@@ -965,6 +967,8 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `error.survey.gone` | Survey {0} no longer exists | Error message · the survey was deleted meanwhile | 80 | params: {0} = survey id |
 | `error.survey.delete.previewUnreachable` | The survey was not deleted: its reporting schema could not be dropped because the preview Survey at {0} could not be reached ({1}). Start it and try again. | Error message · Delete survey dialog; the preview Survey (a service) was down | 200 | params: {0} = address, {1} = technical reason |
 | `error.survey.delete.previewRefused` | The survey was not deleted: the preview Survey did not drop its reporting schema (answered {0}: {1}). | Error message · Delete survey dialog; the preview Survey answered but refused | 160 | params: {0} = HTTP status code, {1} = its answer |
+| `error.survey.delete.serviceTokenMissing` | The survey was not deleted: service token not configured. Set {0} for Author and the preview Survey, then try again. | Error message · Delete survey dialog; Author was started without its service token | 200 | params: {0} = environment variable name |
+| `error.survey.delete.previewUnauthorized` | The survey was not deleted: the preview Survey refused the request. Check that Author and the preview Survey are given the same service token ({0}). | Error message · Delete survey dialog; the preview Survey did not accept Author's service token | 220 | params: {0} = environment variable name |
 | `error.survey.notLanguageTag` | ''{0}'' is not a language tag. Choose one of the languages Elicit carries. | Error message · survey details and Translations page | 160 | params: {0} = what was typed |
 | `error.survey.baseLanguage` | {0} is the language this survey is written in; it needs no translation. | Error message · Translations page, publishing the survey own language | 160 | params: {0} = language tag |
 | `error.survey.languagePublished` | {0} is already one of this survey''s published languages. | Error message · Translations page | 140 | params: {0} = language tag |
@@ -2007,6 +2011,8 @@ systemOverviewView.grid.suppliedBy=Supplied by
 systemOverviewView.grid.purpose=Purpose
 systemOverviewView.setting.datasourcePassword=password of the database user Author connects as
 systemOverviewView.setting.oidcSecret=client secret registered with the identity provider
+systemOverviewView.setting.serviceToken=service token Author sends to the preview Survey
+systemOverviewView.serviceToken.developmentValue={0} is the development value. Replace it before this Author is used at a real site.
 systemDatabaseView.pageTitle=System Database
 systemDatabaseView.title=Database
 systemDatabaseView.intro=Author owns no migrations. The survey schema in its database is created by the Survey preview instance that shares the database, so a missing schema means that instance has not started against this database yet.
@@ -2158,6 +2164,8 @@ error.list.codedValueTooLong=Coded value must be 255 characters or fewer
 error.survey.gone=Survey {0} no longer exists
 error.survey.delete.previewUnreachable=The survey was not deleted: its reporting schema could not be dropped because the preview Survey at {0} could not be reached ({1}). Start it and try again.
 error.survey.delete.previewRefused=The survey was not deleted: the preview Survey did not drop its reporting schema (answered {0}: {1}).
+error.survey.delete.serviceTokenMissing=The survey was not deleted: service token not configured. Set {0} for Author and the preview Survey, then try again.
+error.survey.delete.previewUnauthorized=The survey was not deleted: the preview Survey refused the request. Check that Author and the preview Survey are given the same service token ({0}).
 error.survey.notLanguageTag=''{0}'' is not a language tag. Choose one of the languages Elicit carries.
 error.survey.baseLanguage={0} is the language this survey is written in; it needs no translation.
 error.survey.languagePublished={0} is already one of this survey''s published languages.
