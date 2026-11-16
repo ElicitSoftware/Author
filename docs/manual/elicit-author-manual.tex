@@ -5,12 +5,12 @@
 
 \documentclass[11pt, a4paper]{article}
 
-\usepackage[T1]{fontenc}
 \usepackage[a4paper, margin = 25mm, bottom = 28mm]{geometry}
 %% The footer's product name; the brand package is the umbrella's, shared by every Elicit manual (C-028).
 \newcommand{\elicitProduct}{Elicit Author}
 \usepackage{elicit-brand}
-\usepackage[hidelinks]{hyperref}
+\usepackage{hyperref}
+\elicitAccent{elicitAmber}
 
 \hypersetup{
   pdftitle = {Elicit Author — Building a Survey},
@@ -26,45 +26,14 @@
 \begin{document}
 
 %% ------------------------------------------------------------------ title page
-\begin{titlepage}
-\thispagestyle{empty}
-\centering
-\vspace*{3.5cm}
-
-\includegraphics[width = 70mm]{images/elicit-logo.png}
-
-\vspace{1.4cm}
-
-{\color{elicitInk}\Huge\bfseries Building a Survey\par}
-
-\vspace{0.5cm}
-
-{\color{elicitSlate}\Large The Elicit Author manual\par}
-
-\vspace{2.6cm}
-
-{\color{elicitSlate}\large
-Version \textbf{\elicitVersion}\\[0.35em]
-Built \textbf{\elicitBuildDate}\par}
-
-\vfill
-
-{\color{elicitSlate}\small
-This manual was produced by the same build as the application it ships inside,\\
-and describes that version. Elicit Software.\par}
-
-\vspace{1cm}
-\end{titlepage}
+\elicitTitlePage{Building a Survey}{The Elicit Author manual}%
+  {Surveys \textperiodcentered\ steps, sections and questions \textperiodcentered\ rules \textperiodcentered\ reporting and reports \textperiodcentered\ translations \textperiodcentered\ preview \textperiodcentered\ export}%
+  {This manual was produced by the same build as the application it ships inside, and describes that version.\\[0.5em] Elicit Software \textperiodcentered\ PolyForm Noncommercial License 1.0.0}
 
 %% ------------------------------------------------------------------ contents
 \pagenumbering{roman}
 \setcounter{page}{1}
-{\color{elicitInk}\section*{Contents}}
-\vspace{-0.6em}
-\begingroup
-\hypersetup{linkcolor = elicitCharcoal}
-\makeatletter\@starttoc{toc}\makeatother
-\endgroup
+\elicitContents
 
 \clearpage
 \pagenumbering{arabic}
@@ -72,7 +41,6 @@ and describes that version. Elicit Software.\par}
 
 %% ------------------------------------------------------------------ 1
 \section{What a survey is made of}
-\markboth{What a survey is made of}{}
 
 An Elicit survey is a decision tree a respondent walks through. What they answer decides what
 they see next, so designing a survey means designing that path. Everything in this manual uses
@@ -155,7 +123,6 @@ credential a respondent enters to reach a survey is the \term{access code}, neve
 
 %% ------------------------------------------------------------------ 2
 \section{Signing in}
-\markboth{Signing in}{}
 
 Author uses the platform's identity provider, the same one as the Admin and Survey apps. Open
 Author in a browser and you are sent to the sign-in page.
@@ -175,7 +142,6 @@ it and the note from its last export.}
 
 %% ------------------------------------------------------------------ 3
 \section{Creating a survey}
-\markboth{Creating a survey}{}
 
 Choose \ui{New survey}. A survey needs two things to exist: a \ui{Name}, which is the machine
 name and may not contain spaces, and a \ui{Title}, which is what a respondent sees.
@@ -204,7 +170,6 @@ with no steps, a choice question with no list, a rule that points backwards — 
 
 %% ------------------------------------------------------------------ 4
 \section{Starting from an AI draft}
-\markboth{Starting from an AI draft}{}
 
 There is a third way to start, beside the empty form and importing a file someone sent you: have
 an AI agent write the first draft. Choose \ui{Draft with AI}, beside \ui{New survey} on the
@@ -243,7 +208,6 @@ survey. Nothing is deployed until you export it yourself.
 
 %% ------------------------------------------------------------------ 5
 \section{Laying out steps and sections}
-\markboth{Laying out steps and sections}{}
 
 Choose \ui{Design…} from the survey overview. The drawer on the left is your toolbox; the board
 on the right is the survey; the panel beside the board previews the selection as a respondent
@@ -283,7 +247,6 @@ its question rows. A double click on any of them opens its editor.
 
 %% ------------------------------------------------------------------ 6
 \section{Giving choice questions their options}
-\markboth{Giving choice questions their options}{}
 
 A choice question — radio, combo box, multi-select or checkbox group — needs a \term{list of
 options} before it can be saved. Define the list first, from the \ui{Lists} panel in the drawer.
@@ -297,7 +260,6 @@ question's own editor.
 
 %% ------------------------------------------------------------------ 7
 \section{Adding questions}
-\markboth{Adding questions}{}
 
 Add a question from a section's menu, or drag the \ui{QUESTION} glyph — set to the type you want
 — into the card.
@@ -342,7 +304,6 @@ sections use it; the search box narrows the panel as you type.}
 
 %% ------------------------------------------------------------------ 8
 \section{Connecting questions with rules}
-\markboth{Connecting questions with rules}{}
 
 Anything conditional is a rule. Start one from the upstream question — the one whose answer is
 read — using \ui{Add rule…} in its menu, or by dragging a rule glyph from \ui{Controls} onto the
@@ -432,7 +393,6 @@ while you work on structure.
 
 %% ------------------------------------------------------------------ 9
 \section{Tagging for analysis}
-\markboth{Tagging for analysis}{}
 
 An \term{analysis tag} names a column of the star schema a site builds from the answers for
 analysis. Tag a question and its answers fill that column; tag a section as it appears in a step
@@ -459,7 +419,6 @@ tag change as a decision about past data, not only about future data.
 \end{elicitcaution}
 
 \section{Reports}
-\markboth{Reports}{}
 
 A survey can show its respondents one or more \term{reports} after they finish, and every new
 survey starts with the built-in \term{respondent report}, which echoes back the answers the
@@ -493,7 +452,6 @@ that code.
 \end{elicitcaution}
 
 \section{Post-survey actions}
-\markboth{Post-survey actions}{}
 
 A \term{post-survey action} is something the site does at the moment a respondent finishes:
 filing their results in a records system, telling a study coordinator. Each action is an
@@ -543,7 +501,6 @@ respondent who finishes triggers every action whose address the authoring stack 
 
 %% ------------------------------------------------------------------ 10
 \section{Checking and exporting}
-\markboth{Checking and exporting}{}
 
 Go back to the survey overview and read the validation panel. It must say ``Ready to export. No
 problems found.'' Anything else names the element, the problem and what to do about it — fix it on
@@ -568,7 +525,6 @@ exported, or start from one of the sample definitions.
 
 %% ------------------------------------------------------------------ 11
 \section{Deleting a survey}
-\markboth{Deleting a survey}{}
 
 A survey you no longer need, or one you are about to replace from a file, can be deleted from the
 \ui{Surveys} list: choose \ui{Delete} on its row. Unlike removing an element, which retires it,
@@ -606,7 +562,6 @@ collected at a site are never affected.
 
 %% ------------------------------------------------------------------ 12
 \section{Where to look next}
-\markboth{Where to look next}{}
 
 \begin{itemize}
   \item \ui{How surveys work} in the application navigation — this manual's first section, drawn

@@ -15,13 +15,13 @@
 
 \documentclass[11pt, a4paper]{article}
 
-\usepackage[T1]{fontenc}
 \usepackage[a4paper, margin = 25mm, bottom = 28mm]{geometry}
 
 %% The footer's product name; the brand package is the umbrella's, shared by every Elicit manual (C-028).
 \newcommand{\elicitProduct}{Elicit Author}
 \usepackage{elicit-brand}
-\usepackage[hidelinks]{hyperref}
+\usepackage{hyperref}
+\elicitAccent{elicitLedger}
 
 \hypersetup{
   pdftitle = {Elicit Author — Installing the Authoring Tool},
@@ -37,50 +37,14 @@
 \begin{document}
 
 %% ------------------------------------------------------------------ title page
-\begin{titlepage}
-\thispagestyle{empty}
-\centering
-\vspace*{3.5cm}
-
-\includegraphics[width = 70mm]{images/elicit-logo.png}
-
-\vspace{1.4cm}
-
-{\color{elicitInk}\Huge\bfseries Installing Author\par}
-
-\vspace{0.5cm}
-
-{\color{elicitSlate}\Large The Elicit Author installation manual\par}
-
-\vspace{0.4cm}
-
-{\color{elicitSlate}\large Author \textperiodcentered\ preview Survey\par}
-
-\vspace{2.2cm}
-
-{\color{elicitSlate}\large
-Version \textbf{\elicitVersion}\\[0.35em]
-Built \textbf{\elicitBuildDate}\par}
-
-\vfill
-
-{\color{elicitSlate}\small
-This manual describes the Author version named above. It is published beside that\\
-release and is read before any Author service is running.\\[0.6em]
-Elicit Software \textperiodcentered\ PolyForm Noncommercial License 1.0.0\par}
-
-\vspace{1cm}
-\end{titlepage}
+\elicitTitlePage{Installing Author}{The Elicit Author installation manual}%
+  {Author \textperiodcentered\ the preview Survey}%
+  {This manual describes the Author version named above. It is published beside that release and is read before any Author service is running.\\[0.5em] Elicit Software \textperiodcentered\ PolyForm Noncommercial License 1.0.0}
 
 %% ------------------------------------------------------------------ contents
 \pagenumbering{roman}
 \setcounter{page}{1}
-{\color{elicitInk}\section*{Contents}}
-\vspace{-0.6em}
-\begingroup
-\hypersetup{linkcolor = elicitCharcoal}
-\makeatletter\@starttoc{toc}\makeatother
-\endgroup
+\elicitContents
 
 \vfill
 
@@ -98,7 +62,6 @@ provisioning a site's Survey and Admin is the platform's installation manual.
 %% ================================================================== 1
 \section{What Author is}
 \label{sec:what}
-\markboth{What Author is}{}
 
 \term{Author} is the tool in which surveys are designed. An author lays out steps, sections and
 questions, connects them with rules, and \emph{exports} the result as a survey definition
@@ -147,7 +110,6 @@ once.
 %% ================================================================== 2
 \section{Before you start}
 \label{sec:before}
-\markboth{Before you start}{}
 
 \begin{itemize}
   \item \textbf{PostgreSQL 17}, with the Elicit database roles (\val{dbowner}, \val{dbuser},
@@ -166,7 +128,6 @@ once.
 %% ================================================================== 3
 \section{The database}
 \label{sec:database}
-\markboth{The database}{}
 
 Author works in a database of its own. It may live in the same cluster as a site's
 \val{survey} database, but it is never that database: authors save half-finished work, and
@@ -225,7 +186,6 @@ docker compose exec -T db psql -U survey -d survey \
 %% ================================================================== 4
 \section{The identity provider}
 \label{sec:oidc}
-\markboth{The identity provider}{}
 
 Author authenticates against a confidential OIDC client of its own. It does not share Admin's
 client, and a role on Admin's client grants nothing in Author.
@@ -271,7 +231,6 @@ secret, before Author reaches anyone.
 %% ================================================================== 5
 \section{The preview Survey}
 \label{sec:preview}
-\markboth{The preview Survey}{}
 
 The preview is an ordinary Survey application of the same release, configured for the
 \val{author} database. It does two jobs:
@@ -353,7 +312,6 @@ request Author makes to it, not the preview's pages.
 %% ================================================================== 6
 \section{Installing with Docker Compose}
 \label{sec:compose}
-\markboth{Installing with Docker Compose}{}
 
 The Elicit umbrella repository runs the whole platform from one compose file, Author
 included: \val{author} on port 8084 and \val{author-survey}, the preview, on 8085. On a fresh
@@ -394,7 +352,6 @@ bundled realm, before Author reaches anyone
 %% ================================================================== 7
 \section{Installing without Compose}
 \label{sec:images}
-\markboth{Installing without Compose}{}
 
 Author and the preview are released as container images only, \file{elicitsoftware/author}
 and \file{elicitsoftware/survey}, at the same tag. A site that runs its containers under
@@ -436,7 +393,6 @@ redirect is built from the address the browser used.
 %% ================================================================== 8
 \section{Configuration}
 \label{sec:config}
-\markboth{Configuration}{}
 
 Every setting can be given as a system property, or as an environment variable named by
 upper-casing it and replacing each dot and hyphen with an underscore:
@@ -519,7 +475,6 @@ this manual does not list is in the Quarkus configuration reference:
 %% ================================================================== 9
 \section{Brand and translations}
 \label{sec:brand}
-\markboth{Brand and translations}{}
 
 Author mounts the \emph{same} brand directory as the site applications, so the authoring tool
 looks like the rest of the installation. A mounted brand may be partial; whatever it lacks
@@ -545,7 +500,6 @@ Two settings are easily confused:
 %% ================================================================== 10
 \section{Verifying the installation}
 \label{sec:verify}
-\markboth{Verifying the installation}{}
 
 In this order; each check assumes the ones before it passed.
 
@@ -577,7 +531,6 @@ from its own \ui{Manual} link.
 %% ================================================================== 11
 \section{When it does not work}
 \label{sec:trouble}
-\markboth{When it does not work}{}
 
 \begin{plaintable}{tab:trouble}{Failures actually seen, and their cures}{@{}>{\raggedright\arraybackslash}p{0.36\linewidth} >{\raggedright\arraybackslash}p{0.58\linewidth}@{}}{\thead{Symptom} & \thead{Cause and cure}}
 Author does not start, naming \opt{ELICIT_DB_PASSWORD} or \opt{OIDC_CLIENT_SECRET}. & A
@@ -620,7 +573,6 @@ language out. \\
 %% ================================================================== 12
 \section{Where to look next}
 \label{sec:next}
-\markboth{Where to look next}{}
 
 \begin{description}
   \item[The author's manual] Building a survey, from an empty list to an exported definition.
