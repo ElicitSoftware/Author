@@ -88,7 +88,7 @@ An export always records the exporting author; the release note is optional but 
 
 ### BR-004: Byte compatibility
 
-The file is written exactly as Admin's exporter would write it, so Admin's install and update read it without special handling.
+The file is written exactly as Admin's exporter would write it, so Admin's install and update read it without special handling. The header's `# survey_name:` line carries the name as it is stored, on one line: a line break in the name is written as its `\n` or `\r` escape, so that every line after the header is a record the export wrote as one. For a name without a line break the bytes are those Admin writes.
 
 ### BR-005: Local identifiers are not identity
 

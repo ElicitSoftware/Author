@@ -57,7 +57,7 @@
 **Trigger:** The upload is not the expected format, is not valid JSON, is larger than the accepted size, or has had items added, removed or reordered (step 2)  
 **Flow:**
 
-1. The system rejects the file, naming what is wrong, and stores nothing.
+1. The system rejects the file, naming what is wrong, and stores nothing. The accepted size is 5 MB: the upload refuses a larger file before sending it, and the server checks the size again on what arrives (NFR-023).
 2. Use case ends.
 
 ## Postconditions

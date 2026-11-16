@@ -27,7 +27,7 @@
 
 ### A1: Validation fails
 
-**Trigger:** A required field is missing, too long, or the name is used by another survey (step 4)  
+**Trigger:** A required field is missing, too long, the name or title holds a control character (BR-004), or the name is used by another survey (step 4)  
 **Flow:**
 
 1. The system marks the field with a message and keeps the form open.
@@ -74,3 +74,7 @@ The survey key cannot be edited through this or any other use case.
 ### BR-003: Initial display key prefix is not significant
 
 The leading survey component of the initial display key is rewritten by each deployed site when it applies the definition; authors may leave Author's own prefix in place.
+
+### BR-004: Name and title are single-line
+
+As when the survey is created (UC-003 BR-005), the name and the title may hold no control character. A survey that arrived by import with one keeps it until the author saves the details, and is reported by validation until then (UC-007 BR-015).

@@ -86,10 +86,14 @@ public class BrandResourceHandler {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
             
-            return Response.ok(content)
+            Response.ResponseBuilder response = Response.ok(content)
                     .type(mediaType)
-                    .header("Cache-Control", "public, max-age=3600") // Cache for 1 hour
-                    .build();
+                    .header("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
+            if ("image/svg+xml".equals(mediaType)) {
+                // UC-030 BR-004: an image where it is used as one; opened as a page it runs no script.
+                response.header("Content-Security-Policy", "sandbox");
+            }
+            return response.build();
                     
         } catch (IOException e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();

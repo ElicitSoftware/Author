@@ -11,6 +11,7 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.author.survey.DesignerService;
 import com.elicitsoftware.model.Question;
 import com.elicitsoftware.model.Section;
@@ -74,6 +75,25 @@ class ExportValidationTest {
         List<ValidationIssue> issues = validation.validate(empty);
         assertTrue(issues.stream().anyMatch(i -> !i.isError() && i.message().contains("no steps")));
         assertTrue(issues.stream().noneMatch(ValidationIssue::isError));
+    }
+
+    /** UC-007 BR-015: a stored name or title that is not one line is an error on the survey. */
+    @Test
+    @TestTransaction
+    void aNameOrTitleThatIsNotOneLineIsAnError() {
+        Survey s = fixture();
+        em.createNativeQuery("UPDATE survey.surveys SET name = ?2, title = ?3 WHERE id = ?1")
+                .setParameter(1, s.id).setParameter(2, "Two\nlines").setParameter(3, "Tabbed\ttitle").executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<ValidationIssue> errors = validation.validate(Survey.findById(s.id)).stream()
+                .filter(i -> i.isError() && "surveys".equals(i.kind())).toList();
+        String dialog = Translations.get("surveyMetadataDialog.editSurvey");
+        assertTrue(errors.stream().anyMatch(i -> i.message().equals(Translations.get("validation.survey.nameSingleLine", dialog))),
+                errors.toString());
+        assertTrue(errors.stream().anyMatch(i -> i.message().equals(Translations.get("validation.survey.titleSingleLine", dialog))),
+                errors.toString());
     }
 
     /** UC-007 BR-010: an element out of the structure is reported as out of the structure. */

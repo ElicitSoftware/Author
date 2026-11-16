@@ -12,6 +12,7 @@ package com.elicitsoftware.author.survey;
  */
 
 import com.elicitsoftware.author.AuthoringException;
+import com.elicitsoftware.author.i18n.Translations;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import io.quarkus.test.TestTransaction;
@@ -80,6 +81,41 @@ class SurveyServiceTest {
         d.name = "   ";
         AuthoringException ex = assertThrows(AuthoringException.class, () -> service.create(d));
         assertEquals("name", ex.field());
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void create_rejectsANameOrTitleThatIsNotOneLine() {
+        for (String control : new String[]{"\n", "\r", "\t", "\u0000"}) {
+            Survey named = draft("UC003 two" + control + "lines");
+            named.title = "UC003 title";
+            AuthoringException ex = assertThrows(AuthoringException.class, () -> service.create(named));
+            assertEquals("name", ex.field(), "UC-003 BR-005");
+            assertEquals(Translations.get("error.name.singleLine"), ex.getMessage());
+
+            Survey titled = draft("UC003 single line");
+            titled.title = "Two" + control + "lines";
+            ex = assertThrows(AuthoringException.class, () -> service.create(titled));
+            assertEquals("title", ex.field(), "UC-003 BR-005");
+            assertEquals(Translations.get("error.survey.titleSingleLine"), ex.getMessage());
+        }
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.two", roles = {"elicit_author"})
+    void updateMetadata_rejectsANameOrTitleThatIsNotOneLine() {
+        Survey created = service.create(draft("UC004 single line"));
+
+        Survey named = draft("UC004 two\nlines");
+        AuthoringException ex = assertThrows(AuthoringException.class, () -> service.updateMetadata(created.id, named));
+        assertEquals("name", ex.field(), "UC-004 BR-004");
+
+        Survey titled = draft("UC004 single line");
+        titled.title = "Two\r\nlines";
+        ex = assertThrows(AuthoringException.class, () -> service.updateMetadata(created.id, titled));
+        assertEquals("title", ex.field(), "UC-004 BR-004");
     }
 
     @Test

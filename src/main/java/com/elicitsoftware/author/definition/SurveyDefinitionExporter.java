@@ -111,7 +111,7 @@ public class SurveyDefinitionExporter {
         out.append("# ").append(marker).append('\n');
         out.append("# survey_id: ").append(surveyId).append('\n');
         out.append("# survey_key: ").append(s[1]).append('\n');
-        out.append("# survey_name: ").append(s[2]).append('\n');
+        out.append("# survey_name: ").append(headerValue(s[2])).append('\n');
         out.append("# surveys: 1\n");
         Map<String, Integer> counts = new LinkedHashMap<>();
         counts.put("surveys", 1);
@@ -140,5 +140,14 @@ public class SurveyDefinitionExporter {
     static String safeName(String name) {
         String cleaned = name == null ? "survey" : name.replaceAll("[^A-Za-z0-9._-]+", "_").replaceAll("^_+|_+$", "");
         return cleaned.isEmpty() ? "survey" : cleaned;
+    }
+
+    /**
+     * A value as a header comment carries it (UC-008 BR-004, C-015): raw, as Admin's exporter
+     * writes it, but on one line -- a line break is written as the escape a field would use, so
+     * every line after the header is a record this export wrote as one.
+     */
+    static String headerValue(Object value) {
+        return value == null ? "" : value.toString().replace("\n", "\\n").replace("\r", "\\r");
     }
 }

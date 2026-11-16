@@ -174,6 +174,8 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
         // in the file chooser; the hand-off file is JSON and is named *.json by the request button.
         upload.setAcceptedFileExtensions(".json");
         upload.setAcceptedMimeTypes("application/json");
+        // UC-046 A4, NFR-023: refused before it is sent; TranslationHandoff checks what arrives.
+        upload.setMaxFileSize(TranslationHandoff.MAX_FILE_BYTES);
         upload.setMaxFiles(1);
         upload.setDropAllowed(false);
         upload.setUploadButton(new Button(getTranslation("translationsView.import")));

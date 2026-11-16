@@ -336,6 +336,8 @@ can use and a draft they have to repair.
     that can hold for a selection.** Use `FIELD_EXIST`. `BOOLEAN` and
     `GREATER THAN` are never true for a selection, so such a rule would repeat
     nothing for anyone.
+15. **The survey's `name` and `title` are one line each.** No line break, no tab,
+    and no `\n` or `\r` escape in either field.
 
 **Warnings — allowed, but a person will have to look at them:**
 
@@ -501,6 +503,7 @@ the option's `coded_value`, not its `display_text`. And question 1 is a `RADIO`
 5. Before you hand the file over, check it yourself:
    - one `surveys` record, first, and the header marker is
      `ELICIT_SURVEY_DRAFT_V1`;
+   - the survey's `name` and `title` are one line each;
    - every record has its exact field count, trailing separators included;
    - every id referenced exists and appears earlier in the file;
    - every rule points forward, names one target, and reads from a

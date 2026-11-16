@@ -72,7 +72,8 @@
 **Flow:**
 
 1. The system refuses the selection before uploading.
-2. Use case ends.
+2. A file larger than 5 MB that reaches the server all the same is refused there, with the same message and before anything is read from it (NFR-023).
+3. Use case ends.
 
 ## Postconditions
 

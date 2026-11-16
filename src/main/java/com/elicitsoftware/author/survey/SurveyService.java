@@ -341,6 +341,13 @@ public class SurveyService {
         if (s.title.length() > 255) {
             throw new AuthoringException(Translations.get("error.survey.titleTooLong"), "title");
         }
+        // UC-003 BR-005, UC-004 BR-004: both are one line of text.
+        if (!singleLine(s.name)) {
+            throw new AuthoringException(Translations.get("error.name.singleLine"), "name");
+        }
+        if (!singleLine(s.title)) {
+            throw new AuthoringException(Translations.get("error.survey.titleSingleLine"), "title");
+        }
         if (s.description != null && s.description.length() > 2000) {
             throw new AuthoringException(Translations.get("error.survey.descriptionTooLong"), "description");
         }
@@ -369,6 +376,14 @@ public class SurveyService {
                 }
             }
         }
+    }
+
+    /**
+     * Whether a name or title is one line of text: no line break, tab or other control character
+     * (UC-003 BR-005). Export validation asks the same of a stored value (UC-007 BR-015).
+     */
+    public static boolean singleLine(String value) {
+        return value == null || value.chars().noneMatch(Character::isISOControl);
     }
 
     /** The survey's published set as canonical tags; empty for a survey that has none. */

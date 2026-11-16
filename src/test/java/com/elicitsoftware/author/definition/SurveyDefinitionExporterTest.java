@@ -152,4 +152,37 @@ class SurveyDefinitionExporterTest {
         DefinitionException ex = assertThrows(DefinitionException.class, () -> exporter.export(Survey.findById(fixture.id)));
         assertFalse(ex.details().isEmpty());
     }
+
+    /** The file as {@code backup} writes it: the same writer as an export, without the validation. */
+    private String written(int surveyId, String storedName) {
+        em.createNativeQuery("UPDATE survey.surveys SET name = ?2 WHERE id = ?1")
+                .setParameter(1, surveyId).setParameter(2, storedName).executeUpdate();
+        em.flush();
+        em.clear();
+        return new String(exporter.backup(Survey.findById(surveyId)).bytes(), StandardCharsets.UTF_8);
+    }
+
+    @Test
+    @TestTransaction
+    void aLineBreakInTheNameStaysOnTheHeaderLine() {
+        Survey fixture = Survey.find("name", "AuthorFixture").firstResult();
+        String exported = written(fixture.id, "Fixture\nsurveys: 9|00000000-0000-0000-0000-000000000009|Other\r\nontology: 99|injected");
+
+        assertTrue(exported.contains("# survey_name: Fixture\\nsurveys: 9|00000000-0000-0000-0000-000000000009|Other\\r\\nontology: 99|injected\n"),
+                "UC-008 BR-004: the name is one header line, its line breaks written as escapes");
+        assertEquals(1, exported.lines().filter(l -> l.startsWith("surveys:")).count(), "one surveys record");
+        assertFalse(exported.lines().anyMatch(l -> l.startsWith("ontology: 99|injected")), "no record the export did not write");
+        assertFalse(exported.contains("\r"), "no bare carriage return anywhere in the file");
+    }
+
+    @Test
+    @TestTransaction
+    void aNameWithoutALineBreakIsWrittenToTheHeaderAsStored() {
+        Survey fixture = Survey.find("name", "AuthorFixture").firstResult();
+
+        assertTrue(written(fixture.id, "Family History").contains("# survey_name: Family History\n"));
+        // C-015: Admin's exporter writes the name raw in the comment, and so does Author.
+        assertTrue(written(fixture.id, "Name|with\\odd").contains("# survey_name: Name|with\\odd\n"),
+                "a vertical bar and a backslash are not escaped in the header");
+    }
 }
