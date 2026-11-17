@@ -58,7 +58,7 @@
 **Trigger:** The author wants to see what the respondent report shows (step 2)  
 **Flow:**
 
-1. The page shows Preview in Survey…, a link to the preview Survey Author runs beside it (`author.preview.survey.url`), and says that finishing the survey there as a preview respondent shows the respondent report with the marks as they stand (Survey UC-014).
+1. The page shows Preview in Survey…, a link to the preview Survey Author runs beside it (BR-007), and says that finishing the survey there as a preview respondent shows the respondent report with the marks as they stand (Survey UC-014).
 2. The author opens the link in a new tab and finishes the survey there.
 3. Use case continues at step 3.
 
@@ -106,7 +106,10 @@ Reports render on the respondent's report page in display order (Survey UC-005 B
 
 `reports` is a Type 1 table with no history (C-015): removing a row deletes it, and a site applying the next export deletes the row whose key the file no longer lists (Admin UC-017 BR-113). The report key is minted once in Author and never changes (C-017), so an edit updates the site's row in place.
 
+### BR-007: The preview link is the browser's address
+
+The link opens in the author's browser, so it uses the preview Survey's browser-facing address, `author.preview.survey.public-url`, not the address Author itself calls the preview at (`author.preview.survey.url`, UC-047 BR-008). The two differ wherever the preview has an internal name, as in the platform's compose file (`http://author-survey:8080` for the call, `http://localhost:8085` for the browser). An unset or blank `author.preview.survey.public-url` falls back to `author.preview.survey.url`, which is right when one address serves both, and with neither set the page shows no link. The service token is never sent to the browser-facing address (NFR-025).
+
 ## Notes / Known Gaps
 
 - The built-in service (`/api/reports/respondent-summary`) is phase 4 of the umbrella's default reports plan (`Elicit/docs/research/default_reports.md`, section 3), in Survey. Until it ships, a site renders the seeded row's card as an error; nothing is released, so no site sees it.
-- The preview of the respondent report through the preview Survey (plan section 2.2) is part of phase 4 and is not offered by this page yet.
