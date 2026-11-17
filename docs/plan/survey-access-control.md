@@ -4,6 +4,11 @@ Tracking issue: [#96](https://github.com/ElicitSoftware/Author/issues/96). Writt
 before any of the AIUP artifacts or code it names existed; the artifacts under `docs/` take
 precedence over this document once they are written.
 
+Status (2026-11-16): only the rename of `elicit_admin` to `elicit_author_admin` has landed (#99).
+The new requirement and use-case IDs were renumbered on that date, because the installation
+manual (#101) took the ones first chosen here: the new IDs start at FR-080, NFR-027, C-029 and
+UC-053.
+
 ## Context
 
 Today anyone holding `elicit_author` can open, edit, export and delete every survey in the
@@ -159,7 +164,8 @@ enters any of them. Hiding a survey in Author while the preview shows it is not 
 asked for. Survey has no sign-in and cannot know who an author is, so the preview is made an
 **issued** thing: Author decides who may preview what, and the preview only renders what Author
 hands it. It rests on Survey's survey-per-host change
-(`Survey/docs/plans/survey-per-host.md`, FR-036 / UC-015 there): a host offers one survey, a
+(Survey#189, planned in `docs/plans/survey-per-host.md` on Survey's `feature/189-survey-per-host`
+branch; the FR-036 and UC-015 it names are taken in Survey since): a host offers one survey, a
 code for another survey is refused on it, and once any survey is mapped a host with no mapping
 offers none.
 
@@ -181,6 +187,7 @@ offers none.
   `docker-compose.yml` and the two e2e compose files; `author.preview.survey.url` keeps the
   internal address for the three calls (host set, host clear, schema drop), and the browser-facing
   link is built from the host suffix, so the property no longer has to be browser-reachable.
+  Until then the link's browser address is #122's separate setting, which this replaces.
 - **What still shows**: a visitor who guesses another survey's preview host sees its login page
   and title, and nothing more. That is the same class of leak as the name-collision item below;
   deriving the slug from the survey key rather than the name closes it, at the cost of
@@ -192,9 +199,9 @@ offers none.
   from the code and hides the picker) and is not part of this plan.
 
 Artifacts: FR-030 moves from Open to the design above and gains the host and minted-code rules;
-a new UC-054 "Preview a Survey as a Respondent" (actor: survey author; preconditions: granted;
+a new UC-057 "Preview a Survey as a Respondent" (actor: survey author; preconditions: granted;
 business rules: minted code, one host per survey, auto-registration off); UC-047 adds the host
-clear beside the schema drop; UC-048 A5 points at the minted link; C-028 is narrowed to the name
+clear beside the schema drop; UC-048 A5 points at the minted link; C-030 is narrowed to the name
 leak. Tests: `SurveyAccessTest` gains "user B cannot mint a preview for A's survey";
 `PreviewSurveyClientTest` covers host set, clear and an unreachable preview; the
 `AuthorToRespondentE2ETest` journey enters the preview through the minted link instead of a typed
@@ -263,13 +270,13 @@ Use the `aiup-core` skills: `/requirements`, `/use-case-diagram`, `/use-case-spe
 
 | ID | Change |
 | --- | --- |
-| FR-070 (new) | Limit Surveys to Granted Authors |
-| FR-071 (new) | Manage Survey Access (`elicit_author_admin`) |
-| FR-072 (new) | Manage Author Users |
-| FR-073 (new) | Assign Roles Locally (DATABASE mode) |
-| NFR-020 (new) | Access enforced below the interface (the two gate tests) |
-| C-027 (new) | Access data is local: never in a `.elicit` file, never at a site |
-| C-028 (new) | Scope of access control (see Limitations) |
+| FR-080 (new) | Limit Surveys to Granted Authors |
+| FR-081 (new) | Manage Survey Access (`elicit_author_admin`) |
+| FR-082 (new) | Manage Author Users |
+| FR-083 (new) | Assign Roles Locally (DATABASE mode) |
+| NFR-027 (new) | Access enforced below the interface (the two gate tests) |
+| C-029 (new) | Access data is local: never in a `.elicit` file, never at a site |
+| C-030 (new) | Scope of access control (see Limitations) |
 | C-005 | Narrowed to "No Migrations of the Survey Schema" |
 | C-008 | Adds `elicit_author_admin` and the Admin-style local role fallback |
 | FR-033 | Role plus grant |
@@ -280,10 +287,10 @@ management" group.
 
 | ID | Use case |
 | --- | --- |
-| UC-050 (new) | Restrict Surveys to Granted Authors |
-| UC-051 (new) | Manage Survey Access |
-| UC-052 (new) | Manage Author Users |
-| UC-053 (new) | Assign Roles from the Local Database |
+| UC-053 (new) | Restrict Surveys to Granted Authors |
+| UC-054 (new) | Manage Survey Access |
+| UC-055 (new) | Manage Author Users |
+| UC-056 (new) | Assign Roles from the Local Database |
 | UC-001, UC-002 | Roles and BR-001 ("single authoring role") reworded; A3 realised |
 | UC-003, UC-005 | Creator is granted on create and on import; the already-present message |
 | UC-008 | Grants never travel in the file |
@@ -318,22 +325,22 @@ Existing tests that change:
 
 ## Sequencing
 
-Four pull requests, each with its own sub-issue referencing #96, branch
+Five pull requests, each with its own sub-issue referencing #96, branch
 `feature/<issue>-<slug>` from `main`, docs commit first, no AI co-author trailer. Grants
 accumulate before they are enforced, so `main` stays usable.
 
-1. **Author-owned schema and local identity** (FR-072, FR-073, C-005, C-008, C-027; UC-052,
-   UC-053): pom, Flyway, entities, registrar, augmentor, compose files, realm. No UI strings.
-2. **Manage survey access** (FR-071; UC-051): the three views, nav section, landing, and
+1. **Author-owned schema and local identity** (FR-082, FR-083, C-005, C-008, C-029; UC-055,
+   UC-056): pom, Flyway, entities, registrar, augmentor, compose files, realm. No UI strings.
+2. **Manage survey access** (FR-081; UC-054): the three views, nav section, landing, and
    recording creator grants on create and import. Needs a same-named umbrella branch carrying
    the new keys in `elicit-i18n/author/translations_es_419.properties` and `_ar.properties`,
    and a regenerated `i18n/TRANSLATION_REQUEST.md`.
-3. **Enforce grants** (FR-070, NFR-020, C-028; UC-050 and the amendments): interceptor,
+3. **Enforce grants** (FR-080, NFR-027, C-030; UC-053 and the amendments): interceptor,
    annotations, importer, delete, tag rule, test infrastructure, gate tests. A small umbrella
    branch for the new messages.
 4. **Manual and end-to-end:** the manual chapter and screenshots; confirm
    `AuthorToRespondentE2ETest` still passes as `author`.
-5. **Issued preview** (FR-030, UC-054, C-028): after Survey's survey-per-host change has shipped
+5. **Issued preview** (FR-030, UC-057, C-030): after Survey's survey-per-host change has shipped
    in the image the preview runs. Host suffix property, host calls on create/import/delete,
    `SurveyService.preview`, the two buttons, auto-registration off in the compose files, the
    e2e journey through the minted link. A small umbrella branch for the button strings.
@@ -364,7 +371,7 @@ accumulate before they are enforced, so `main` stays usable.
 Reviewed against the intended site: `author.survey.med.umich.edu` behind Microsoft Entra ID,
 authors limited to the surveys they are authorized for, sibling hosts for Admin and for each
 survey, and no data shared between surveys. The full table is in Survey's plan
-(`Survey/docs/plans/survey-per-host.md`, "Target deployment"). For Author the verdict is **yes**
+(Survey#189's `docs/plans/survey-per-host.md`, "Target deployment"). For Author the verdict is **yes**
 once PRs 1-3 land with the section 6 settings, with three leaks accepted and on record: unique
 survey names report "name in use" for a hidden survey; reporting tags and dimensions stay a
 shared vocabulary across authors (section 3); and a guessed preview host shows that survey's
@@ -377,7 +384,7 @@ bundle, French as its base language and French in `author.content.languages`.
 
 - **The preview Survey (port 8085) is outside this control until PR 5.** Through PRs 1-4 it
   renders any survey in the authoring database to anyone with an access code, with no sign-in,
-  so "hidden" holds inside Author only; C-028 records it and the preview should be restricted at
+  so "hidden" holds inside Author only; C-030 records it and the preview should be restricted at
   the network meanwhile. Section 5 closes it once Survey's survey-per-host change is available,
   leaving only the title of a survey whose preview host is guessed.
 - **Name collisions leak existence:** survey names are unique, so creating a survey with a
