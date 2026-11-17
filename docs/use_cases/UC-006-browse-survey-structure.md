@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** See the whole survey as a navigable tree of steps, sections and questions, always knowing which element is selected, so that large surveys stay orientable while editing.  
 **Status:** Implemented  
-**Requirements:** [FR-031, FR-038, NFR-001, NFR-013](../requirements.md)
+**Requirements:** [FR-031, FR-038, NFR-001, NFR-013, NFR-028](../requirements.md)
 
 ## Preconditions
 
@@ -56,7 +56,9 @@
 **Flow:**
 
 1. The system shows an empty tree with guidance to add a step or import a definition.
-2. Use case continues at step 3.
+2. On the designer, the Step glyph is the only tool that can be dragged; the others are dimmed and
+   say that a step comes first (BR-008).
+3. Use case continues at step 3.
 
 ## Postconditions
 
@@ -118,3 +120,36 @@ two never disagree about how a text will render (FR-038).
 The designer targets tablet-sized screens and larger. Below 768px it shows a full-screen notice
 asking for a wider screen rather than reflowing the board, its lanes and its drag targets into a
 phone layout that cannot be used (NFR-013).
+
+### BR-007: A drag lights up only what can take it
+
+While something is dragged onto the board, only the places that can take it respond:
+
+| Dragged | Taken by |
+| --- | --- |
+| A step | the insertion bars between steps |
+| A section | a step lane's header, its body and the insertion bars between its sections |
+| A question | a section card's header, its body, the insertion bars between its rows, and a row (the question lands before it) |
+| A rule | a question row: the question the rule reads (UC-019) |
+| A list | a question row: the question the list gives its options (UC-014) |
+
+Every other drop target, and anything removed, shows no highlight and a not-allowed pointer for as
+long as the drag lasts, so the board never invites a drop it would refuse. Should a refused drop
+land anyway, nothing changes and the designer says where that kind of element goes instead of
+ignoring the drop (NFR-028).
+
+### BR-008: A tool with nowhere to go cannot be dragged
+
+A palette glyph or a drawer row that could land nowhere on the board is not draggable: it is shown
+dimmed, and its tooltip says what to add first.
+
+- While the survey has no step, only the Step glyph can be dragged. The Section glyph and the
+  Sections panel's rows, with their Mount in step… action, wait for a step.
+- While no step holds a section, the question glyph and the Questions panel's rows, with their Add
+  to section… action, wait for a section.
+- While no section holds a question, the rule glyphs and the Lists panel's rows wait for a
+  question. A row's other actions stay available.
+
+Removed elements count for none of these. The tools are re-evaluated whenever the board reloads, so
+each comes back as soon as it has somewhere to go, and goes again when the last such place is
+removed (NFR-028).

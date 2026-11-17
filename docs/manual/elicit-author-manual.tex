@@ -249,6 +249,12 @@ that give them meaning.
 Use \ui{Add step} at the top of the board, or drag the \ui{STEP} glyph from \ui{Controls} onto
 the board. Both open the same editor.
 
+While you drag, only the places that can take what you are dragging light up: a step goes
+between steps, a section into a lane, a question into a section card, and a rule or a list onto
+a question row. Anywhere else the pointer shows that the drop is not allowed. A glyph with
+nowhere to go yet is dimmed, and its tooltip says what to add first: before the first step, only
+the \ui{STEP} glyph can be dragged.
+
 \screenshot{06-new-step}{A new step. \ui{Dimension name} is what the analysis schema calls this
 step; it defaults to the name, and changing it later is an analysis change rather than a rename.}
 

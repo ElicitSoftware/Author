@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Define the lists of options (select groups and their items) a survey's choice questions offer, and attach a list to a question, so that respondents see the right choices.  
 **Status:** Implemented  
-**Requirements:** [FR-014, NFR-012](../requirements.md)
+**Requirements:** [FR-014, NFR-012, NFR-028](../requirements.md)
 
 ## Preconditions
 
@@ -60,6 +60,16 @@
 
 1. The system marks the field and keeps the dialog open.
 2. Use case continues at step 4.
+
+### A5: Dropped anywhere but a question row
+
+**Trigger:** The author drags the list's glyph over anything but a question row: an insertion bar, a step lane, a section card's header, or a removed question (step 6)  
+**Flow:**
+
+1. Only the current question rows light up; everything else shows no highlight and a not-allowed pointer (UC-006 BR-007).
+2. If the drop lands anyway, nothing changes, and the system warns that a list is dropped on the question that will use it.
+3. While no section holds a question, the Lists panel's rows cannot be dragged at all; their other actions stay available (UC-006 BR-008).
+4. Use case continues at step 6.
 
 ## Postconditions
 
