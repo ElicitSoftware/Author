@@ -82,6 +82,11 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver, 
     @ConfigProperty(name = "author.preview.survey.url")
     java.util.Optional<String> previewSurveyUrl;
 
+    /** UC-048 BR-007: the preview's address as a browser opens it, when it differs from the one above. */
+    @Inject
+    @ConfigProperty(name = "author.preview.survey.public-url")
+    java.util.Optional<String> previewSurveyPublicUrl;
+
     final H2 heading = new H2();
     final Button overview = new Button(VaadinIcon.ARROW_LEFT.create());
     final Button openDesigner = new Button(VaadinIcon.SITEMAP.create());
@@ -230,7 +235,7 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver, 
         survey = surveyService.find(survey.id).orElseThrow();
         heading.setText(getTranslation("reportsView.heading", survey.title == null || survey.title.isBlank() ? survey.name : survey.title));
         // UC-048 A5: the preview Survey renders the built-in report for a preview respondent.
-        String previewUrl = previewSurveyUrl == null ? null : previewSurveyUrl.filter(u -> !u.isBlank()).orElse(null);
+        String previewUrl = previewLink(previewSurveyPublicUrl, previewSurveyUrl);
         preview.setVisible(previewUrl != null);
         previewHint.setVisible(previewUrl != null);
         if (previewUrl != null) {
@@ -241,6 +246,26 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver, 
         services.setVisible(!rows.isEmpty());
         servicesEmpty.setVisible(rows.isEmpty());
         refreshMarks();
+    }
+
+    /**
+     * The preview link's address (UC-048 BR-007): the browser-facing address when one is set,
+     * else the address Author calls the preview at, else none.
+     *
+     * @param publicUrl {@code author.preview.survey.public-url}
+     * @param url       {@code author.preview.survey.url}
+     * @return the address to link to, or {@code null} to show no link
+     */
+    static String previewLink(java.util.Optional<String> publicUrl, java.util.Optional<String> url) {
+        for (java.util.Optional<String> candidate : List.of(
+                publicUrl == null ? java.util.Optional.<String>empty() : publicUrl,
+                url == null ? java.util.Optional.<String>empty() : url)) {
+            String address = candidate.map(String::strip).filter(u -> !u.isEmpty()).orElse(null);
+            if (address != null) {
+                return address;
+            }
+        }
+        return null;
     }
 
     private void refreshMarks() {
