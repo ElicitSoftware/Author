@@ -119,26 +119,27 @@ public class SectionCard extends Div {
             }
         });
         header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '"); // i18n:ignore
+        DropSpot append = new DropSpot(node, questions.size(), StructureNode.Kind.QUESTION);
         DropTarget<Div> headerDrop = DropTarget.create(header);
         headerDrop.setDropEffect(DropEffect.MOVE);
-        headerDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
-                view.onDrop(data, new DropSpot(node, questions.size(), StructureNode.Kind.QUESTION))));
+        headerDrop.addDropListener(e -> e.getDragData().ifPresent(data -> view.onDrop(data, append)));
+        view.admit(headerDrop, append::takes);
 
         body.addClassName("designer-card-body");
         body.setVisible(open);
         // Dropping anywhere in the open card's body (not on a row or zone) appends.
         DropTarget<Div> bodyDrop = DropTarget.create(body);
         bodyDrop.setDropEffect(DropEffect.MOVE);
-        bodyDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
-                view.onDrop(data, new DropSpot(node, questions.size(), StructureNode.Kind.QUESTION))));
+        bodyDrop.addDropListener(e -> e.getDragData().ifPresent(data -> view.onDrop(data, append)));
+        view.admit(bodyDrop, append::takes);
         rows = new java.util.ArrayList<>();
         for (int i = 0; i < questions.size(); i++) {
-            body.add(new DropZone(new DropSpot(node, i, StructureNode.Kind.QUESTION), view::onDrop));
+            body.add(new DropZone(view, new DropSpot(node, i, StructureNode.Kind.QUESTION)));
             QuestionRow row = new QuestionRow(view, questions.get(i), i, questions.size());
             rows.add(row);
             body.add(row);
         }
-        body.add(new DropZone(new DropSpot(node, questions.size(), StructureNode.Kind.QUESTION), view::onDrop));
+        body.add(new DropZone(view, append));
         if (questions.isEmpty()) {
             Span empty = new Span(getTranslation("sectionCard.empty"));
             empty.addClassName("designer-empty");

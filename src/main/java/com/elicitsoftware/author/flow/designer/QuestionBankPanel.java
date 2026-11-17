@@ -51,20 +51,28 @@ public class QuestionBankPanel extends VerticalLayout {
         /** False for a question no section assigns: it exports, but nothing on the board holds it. */
         final boolean placed;
 
-        Row(SurveyDesignerView view, StructureNode node, int placements, String questionText) {
+        /**
+         * @param unavailable why the question cannot be dragged yet (UC-006 BR-008: there is no
+         *                    section to add it to), or null when it can
+         */
+        Row(SurveyDesignerView view, StructureNode node, int placements, String questionText, String unavailable) {
             this.node = node;
             this.placed = placements > 0;
             this.searchText = (node.label() + " " + (questionText == null ? "" : questionText.replaceAll("<[^>]+>", " ")) + " "
                     + (node.detail() == null ? "" : node.detail())).toLowerCase(java.util.Locale.ROOT);
             addClassName("designer-panel-row");
             glyph = Glyph.question(node.detail());
-            glyph.getElement().setAttribute("draggable", "true");
             glyph.getElement().setAttribute("aria-roledescription", getTranslation("questionBankPanel.roledescription"));
             DragSource<Glyph> source = DragSource.create(glyph);
             source.setDragData(new BankQuestion(node.durableId(), node.label(), node.detail()));
             source.setEffectAllowed(EffectAllowed.COPY_MOVE);
+            source.setDraggable(unavailable == null);
             source.addDragStartListener(e -> view.dragStarted(StructureNode.Kind.QUESTION));
             source.addDragEndListener(e -> view.dragEnded());
+            if (unavailable == null) {
+                glyph.getElement().setAttribute("draggable", "true");
+            }
+            glyph.setUnavailable(unavailable);
             label.setText(node.label());
             label.addClassName("designer-panel-label");
             label.getElement().setAttribute("data-i18n-content", "");
@@ -74,7 +82,7 @@ public class QuestionBankPanel extends VerticalLayout {
             uses.addClassName("designer-badge");
             uses.addClassName(placed ? "designer-badge-placed" : "designer-badge-unplaced");
             menu = new NodeMenu(getTranslation("questionBankPanel.menu.aria", node.label()));
-            menu.item(getTranslation("questionBankPanel.menu.addToSection"), () -> view.addBankQuestionTo(node));
+            menu.item(getTranslation("questionBankPanel.menu.addToSection"), () -> view.addBankQuestionTo(node), unavailable == null);
             menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node));
             // UC-011 A7: an unassigned question has no assignment whose removal could retire it.
             if (!placed) {
@@ -106,9 +114,12 @@ public class QuestionBankPanel extends VerticalLayout {
     final Span empty = new Span();
     private String query = "";
 
-    /** One row per question durable id; placements counted over the current tree, unplaced questions last. */
+    /**
+     * One row per question durable id; placements counted over the current tree, unplaced questions
+     * last. {@code unavailable} is why no question can be dragged yet, or null (UC-006 BR-008).
+     */
     void refresh(SurveyDesignerView view, List<StructureNode> all, List<StructureNode> unplaced,
-                 Map<Integer, String> textByQuestionId) {
+                 Map<Integer, String> textByQuestionId, String unavailable) {
         rows.removeAll();
         items.clear();
         Map<Integer, StructureNode> first = new LinkedHashMap<>();
@@ -125,7 +136,7 @@ public class QuestionBankPanel extends VerticalLayout {
             placements.putIfAbsent(n.durableId(), 0);
         }
         for (StructureNode n : first.values()) {
-            Row row = new Row(view, n, placements.get(n.durableId()), textByQuestionId.get(n.durableId()));
+            Row row = new Row(view, n, placements.get(n.durableId()), textByQuestionId.get(n.durableId()), unavailable);
             items.add(row);
             rows.add(row);
         }

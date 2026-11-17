@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Create a question of a supported type inside a section, or edit an existing one, with its text, validation and choice list, from the designer board.  
 **Status:** Implemented  
-**Requirements:** [FR-010, FR-011, FR-013, FR-014, FR-035, FR-036, NFR-007, NFR-012](../requirements.md)
+**Requirements:** [FR-010, FR-011, FR-013, FR-014, FR-035, FR-036, NFR-007, NFR-012, NFR-028](../requirements.md)
 
 ## Preconditions
 
@@ -82,6 +82,16 @@
 
 1. The system retires the assignment and the rules bound to it; if it was the question's last assignment, the question is retired too (UC-009) with Undo.
 2. Use case ends.
+
+### A8: Dropped outside a section
+
+**Trigger:** The author drags a question (a palette glyph, a row or a Questions panel row) over anything but a section card or one of its rows: a step lane, the bar between two steps, or a removed element (step 1)  
+**Flow:**
+
+1. Nothing that refuses the question lights up, and the pointer shows that it cannot be dropped there (UC-006 BR-007).
+2. If the drop lands anyway, nothing is created, and the system warns that a question goes in a section: on a section card, or in a section added to the step first.
+3. While no step holds a section, the question glyph and the Questions panel's rows cannot be dragged at all (UC-006 BR-008).
+4. Use case continues at step 1.
 
 ## Postconditions
 

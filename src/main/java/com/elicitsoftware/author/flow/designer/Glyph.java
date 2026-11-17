@@ -120,4 +120,14 @@ public class Glyph extends Span {
     public String accessibleName() {
         return getElement().getAttribute("aria-label");
     }
+
+    /**
+     * Shows the glyph as a tool that cannot be dragged yet (UC-006 BR-008): dimmed, with
+     * {@code reason} as its tooltip, which assistive technology reads as its description. Null makes
+     * it available again, with its name back as the tooltip. Making it undraggable is the caller's.
+     */
+    public void setUnavailable(String reason) {
+        setClassName("unavailable", reason != null);
+        getElement().setAttribute("title", reason == null ? accessibleName() : reason);
+    }
 }

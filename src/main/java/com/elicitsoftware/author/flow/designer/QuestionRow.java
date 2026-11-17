@@ -86,20 +86,23 @@ public class QuestionRow extends Div {
         // The row itself is a drop target: a rule glyph starts a rule that reads this question
         // (UC-019 step 1); a question glyph or palette question lands *before* this row, so the
         // natural gesture of dropping onto a row works as well as hitting the thin zone above it.
+        // A step or a section is refused, and a removed row refuses everything (UC-006 BR-007).
+        DropSpot before = new DropSpot(node.parent(), indexInSection, StructureNode.Kind.QUESTION);
         DropTarget<QuestionRow> drop = DropTarget.create(this);
         drop.setDropEffect(DropEffect.MOVE);
         drop.addDropListener(e -> e.getDragData().ifPresent(data -> {
             if (node.retired()) {
-                return;
-            }
-            if (data instanceof PaletteItem item && item.isRule()) {
+                view.refuse(data, node);
+            } else if (data instanceof PaletteItem item && item.isRule()) {
                 view.startRule(item.action(), node);
             } else if (data instanceof PaletteList list) {
                 view.useList(node, list);
             } else {
-                view.onDrop(data, new DropSpot(node.parent(), indexInSection, StructureNode.Kind.QUESTION));
+                view.onDrop(data, before);
             }
         }));
+        view.admit(drop, payload -> !node.retired()
+                && (payload == DragPayload.RULE || payload == DragPayload.LIST || before.takes(payload)));
 
         add(glyph, label, type, tagBadge, reportBadge, menu);
         // Single click selects; double click opens the edit screen. The distinction is made on the

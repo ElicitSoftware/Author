@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Place sections in the steps where respondents should meet them — by creating a section in a step, mounting one section in several steps, or copying a section into another step — using the designer board.  
 **Status:** Draft  
-**Requirements:** [FR-015, NFR-007, NFR-012](../requirements.md)
+**Requirements:** [FR-015, NFR-007, NFR-012, NFR-028](../requirements.md)
 
 ## Preconditions
 
@@ -84,6 +84,16 @@
 1. The system lists the section in the Sections panel like any other, marked as being in no step, and gives it the same Edit… and Mount in step… actions plus Remove, since it has no assignment whose removal could retire it.
 2. Validation reports it (UC-007), and the finding links to it here, because the board cannot show a section no lane holds.
 3. Use case continues at step 1.
+
+### A8: Dropped outside a step
+
+**Trigger:** The author drags a section (the palette's Section glyph, a card or a Sections panel row) over anything but a step lane or the bars between its sections: the bar between two steps, a section card, a question row, or a removed step (step 1)  
+**Flow:**
+
+1. Nothing that refuses the section lights up, and the pointer shows that it cannot be dropped there (UC-006 BR-007).
+2. If the drop lands anyway, nothing is created or mounted, and the system warns that a section goes in a step: on a step lane, or between two of its sections.
+3. While the survey has no step, the Section glyph and the Sections panel's rows cannot be dragged at all (UC-006 BR-008).
+4. Use case continues at step 1.
 
 ## Postconditions
 

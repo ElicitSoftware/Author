@@ -343,6 +343,9 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `designer.menu.moveDown` | Move down | Designer node menus · menu item | 20 |  |
 | `designer.menu.openDetails` | Open details | Designer node menus · menu item opening the element details page | 25 |  |
 | `designer.menu.reportingTags` | Analysis tags… | Designer node menus · menu item opening the analysis-tags dialog | 25 |  |
+| `designer.needsStep` | Add a step first | Designer palette and drawer panels · tooltip on a glyph that cannot be dragged until the survey has a step | 40 |  |
+| `designer.needsSection` | Add a section first | Designer palette and drawer panels · tooltip on a glyph that cannot be dragged until a step holds a section | 40 |  |
+| `designer.needsQuestion` | Add a question first | Designer palette and drawer panels · tooltip on a glyph that cannot be dragged until a section holds a question | 40 |  |
 | `designerPalette.aria` | Palette: drag a glyph onto the board to add an element | Designer palette · accessible name of the palette | 80 |  |
 | `designerPalette.questionType` | Question type for new questions | Designer palette · accessible name of the question-type picker | 50 |  |
 | `designerPalette.step` | Step | Designer palette · row caption next to the step glyph | 15 |  |
@@ -457,6 +460,12 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `surveyDesignerView.movedStep` | Moved step ''{0}'' | Designer · notification after a move | 50 | params: {0} = step name |
 | `surveyDesignerView.movedSection` | Moved section ''{0}'' | Designer · notification after a move | 50 | params: {0} = section name |
 | `surveyDesignerView.movedQuestion` | Moved question ''{0}'' | Designer · notification after a move | 50 | params: {0} = question name |
+| `surveyDesignerView.refused.step` | A step goes on the board. Drop it between two steps or after the last one. | Designer · warning when a step is dropped where it cannot go | 120 |  |
+| `surveyDesignerView.refused.section` | A section goes in a step. Drop it on a step or between two of its sections. | Designer · warning when a section is dropped outside a step | 120 |  |
+| `surveyDesignerView.refused.question` | A question goes in a section. Drop it on a section card, or add a section to the step first. | Designer · warning when a question is dropped outside a section | 140 |  |
+| `surveyDesignerView.refused.rule` | A rule starts at the question whose answer it reads. Drop it on that question's row. | Designer · warning when a rule glyph is dropped anywhere but a question row | 130 |  |
+| `surveyDesignerView.refused.list` | A list gives a question its options. Drop it on that question's row. | Designer · warning when a list is dropped anywhere but a question row | 110 |  |
+| `surveyDesignerView.refused.removed` | ''{0}'' has been removed. Restore it before dropping anything on it. | Designer · warning when something is dropped on a removed element | 110 | params: {0} = element name |
 | `surveyDesignerView.copySection.title` | Copy section ''{0}'' | Designer, copy-section picker dialog · dialog title | 50 | params: {0} = section name |
 | `surveyDesignerView.copySection.label` | Into step | Designer, copy-section picker dialog · combo box label | 20 |  |
 | `surveyDesignerView.mountSection.title` | Mount section ''{0}'' | Designer, mount-section picker dialog · dialog title | 50 | params: {0} = section name |
@@ -1540,6 +1549,9 @@ designer.menu.moveUp=Move up
 designer.menu.moveDown=Move down
 designer.menu.openDetails=Open details
 designer.menu.reportingTags=Analysis tags…
+designer.needsStep=Add a step first
+designer.needsSection=Add a section first
+designer.needsQuestion=Add a question first
 designerPalette.aria=Palette: drag a glyph onto the board to add an element
 designerPalette.questionType=Question type for new questions
 designerPalette.step=Step
@@ -1654,6 +1666,12 @@ surveyDesignerView.questionAlsoInSection=Question ''{0}'' is now also in section
 surveyDesignerView.movedStep=Moved step ''{0}''
 surveyDesignerView.movedSection=Moved section ''{0}''
 surveyDesignerView.movedQuestion=Moved question ''{0}''
+surveyDesignerView.refused.step=A step goes on the board. Drop it between two steps or after the last one.
+surveyDesignerView.refused.section=A section goes in a step. Drop it on a step or between two of its sections.
+surveyDesignerView.refused.question=A question goes in a section. Drop it on a section card, or add a section to the step first.
+surveyDesignerView.refused.rule=A rule starts at the question whose answer it reads. Drop it on that question's row.
+surveyDesignerView.refused.list=A list gives a question its options. Drop it on that question's row.
+surveyDesignerView.refused.removed=''{0}'' has been removed. Restore it before dropping anything on it.
 surveyDesignerView.copySection.title=Copy section ''{0}''
 surveyDesignerView.copySection.label=Into step
 surveyDesignerView.mountSection.title=Mount section ''{0}''

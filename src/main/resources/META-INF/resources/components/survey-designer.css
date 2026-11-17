@@ -83,6 +83,14 @@
     opacity: 0.6;
 }
 
+/* A palette glyph or drawer handle with nowhere to land yet (UC-006 BR-008); its tooltip says what
+   to add first. An inactive control is exempt from the contrast minimums (WCAG 2.1 SC 1.4.3, 1.4.11). */
+.elicit-glyph.unavailable,
+.designer-panel-glyph.unavailable {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* ---- Guide page (UC-029) ------------------------------------------------------------ */
 
 .survey-guide {
@@ -625,11 +633,17 @@
 
    A rule is the exception that proves the shape: it is dropped on the question it reads from
    (UC-019), never on an insertion bar, so a rule drag lights the question rows instead. A retired
-   row refuses the drop, so it stays dim. Rows only exist inside an open section card, so a rule
-   drag over a board of collapsed cards has nothing to light -- expand first. */
+   row refuses the drop, so it stays dim, as do the bars inside a retired lane or card. Rows only
+   exist inside an open section card, so a rule drag over a board of collapsed cards has nothing to
+   light -- expand first.
+
+   The outline marks the targets; the hover highlight below follows the same rule, because every
+   target that does not take the payload is switched to drop effect "none" for the drag, which
+   Vaadin answers with no v-drag-over-target and the browser with a not-allowed pointer
+   (UC-006 BR-007). */
 .designer-board.dragging-step .designer-drop-zone-step,
-.designer-board.dragging-section .designer-drop-zone-section,
-.designer-board.dragging-question .designer-drop-zone-question,
+.designer-board.dragging-section .designer-lane:not(.retired) .designer-drop-zone-section,
+.designer-board.dragging-question .designer-card:not(.retired) .designer-drop-zone-question,
 .designer-board.dragging-rule .designer-row:not(.retired) {
     outline: 1px dashed var(--brand-primary-50pct, var(--lumo-primary-color-50pct));
     outline-offset: -1px;

@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Connect an upstream question's answer to a downstream step, section or question with an operator, a reference value and an action (Show, Repeat or Text), by drawing the rule on the designer board or from a question's menu.  
 **Status:** Implemented  
-**Requirements:** [FR-012, FR-019, FR-020, FR-022, FR-067, NFR-007, NFR-012](../requirements.md)
+**Requirements:** [FR-012, FR-019, FR-020, FR-022, FR-067, NFR-007, NFR-012, NFR-028](../requirements.md)
 
 ## Preconditions
 
@@ -81,6 +81,16 @@ text could write between angle brackets, or whose name exceeds 10 characters (st
 2. The author optionally names the token and writes it in a placeholder in the downstream's texts — a section named `Michigan vs. {<GAME>|this game}`, for example.
 3. An operator that can never hold for a selection — Boolean or Greater than — marks the operator field and refuses to save (BR-007).
 4. Use case continues at step 6.
+
+### A7: Rule glyph dropped anywhere but a question row
+
+**Trigger:** The author drags a rule glyph over anything but a current question row: an insertion bar, a step lane, a section card's header, or a removed question (step 1)  
+**Flow:**
+
+1. Only the current question rows light up; everything else shows no highlight and a not-allowed pointer (UC-006 BR-007).
+2. If the drop lands anyway, no rule is started, and the system warns that a rule is dropped on the question whose answer it reads.
+3. While no section holds a question, the rule glyphs cannot be dragged at all (UC-006 BR-008).
+4. Use case continues at step 1.
 
 ## Postconditions
 

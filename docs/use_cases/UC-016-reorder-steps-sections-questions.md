@@ -7,7 +7,7 @@
 **Primary Actor:** Survey Author  
 **Goal:** Change the order respondents meet steps, sections within a step, and questions within a section, by dragging on the designer board or from an element's menu.  
 **Status:** Draft  
-**Requirements:** [FR-016, FR-041, NFR-007, NFR-012](../requirements.md)
+**Requirements:** [FR-016, FR-041, NFR-007, NFR-012, NFR-028](../requirements.md)
 
 ## Preconditions
 
@@ -55,6 +55,15 @@
 1. The system completes the move; it never refuses a reorder because of a rule (UC-033 BR-002).
 2. The system draws each affected rule in the error color and tells the author how many rules now point backwards.
 3. Use case continues at step 4.
+
+### A5: Dropped where the element cannot go
+
+**Trigger:** What is under the pointer cannot take the dragged element: a step over a lane, a card or a row; a section over the bars between steps or anything inside a card; a question outside a section (step 1)  
+**Flow:**
+
+1. Nothing under the pointer lights up, and the pointer shows that the element cannot be dropped there (UC-006 BR-007).
+2. If the drop lands anyway, nothing moves, and the system warns where that kind of element goes (UC-015 A8, UC-011 A8).
+3. Use case ends.
 
 ## Postconditions
 

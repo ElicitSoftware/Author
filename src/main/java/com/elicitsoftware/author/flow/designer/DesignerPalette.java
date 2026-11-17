@@ -40,6 +40,8 @@ public class DesignerPalette extends VerticalLayout {
     final Glyph textRuleChip = Glyph.rule("TEXT");
 
     private Glyph questionChip;
+    /** Why the question glyph cannot be dragged yet, or null; kept for a chip rebuilt on a type change. */
+    private String questionUnavailable;
     private final Div questionSlot = new Div();
     private final Consumer<PaletteItem> onDragStart;
     private final Runnable onDragEnd;
@@ -89,11 +91,35 @@ public class DesignerPalette extends VerticalLayout {
         return questionChip;
     }
 
+    /**
+     * UC-006 BR-008: a glyph that could land nowhere on the board cannot be dragged. The Step glyph
+     * always can; each other one is given why it cannot yet, or null once it has somewhere to go.
+     */
+    void offer(String sectionUnavailable, String questionUnavailable, String ruleUnavailable) {
+        this.questionUnavailable = questionUnavailable;
+        setUnavailable(sectionChip, sectionUnavailable);
+        setUnavailable(questionChip, questionUnavailable);
+        setUnavailable(showRuleChip, ruleUnavailable);
+        setUnavailable(repeatRuleChip, ruleUnavailable);
+        setUnavailable(textRuleChip, ruleUnavailable);
+    }
+
+    private static void setUnavailable(Glyph chip, String reason) {
+        DragSource.configure(chip).setDraggable(reason == null);
+        // The attribute too, as the board's handles carry it: it is what the browser and the grab
+        // cursor read, whatever became of the property.
+        chip.getElement().setAttribute("draggable", String.valueOf(reason == null));
+        chip.setUnavailable(reason);
+    }
+
     private void rebuildQuestionChip() {
         QuestionType t = questionTypePicker.getValue();
         questionSlot.removeAll();
         questionChip = Glyph.question(t == null ? null : t.name);
         draggable(questionChip, PaletteItem.question(t == null ? null : t.name));
+        if (questionUnavailable != null) {
+            setUnavailable(questionChip, questionUnavailable);
+        }
         questionSlot.add(questionChip);
     }
 
