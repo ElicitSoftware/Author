@@ -289,12 +289,13 @@ The preview connects as \val{survey_user} and migrates as \val{elicit_owner}, wi
 passwords those roles have in the cluster (\optlit{ELICIT\_DB\_PASSWORD} and
 \optlit{ELICIT\_OWNER\_DB\_PASSWORD}).
 
-Author uses \opt{author.preview.survey.url} for two things: it calls the preview there to drop a
-reporting schema, and the \ui{Reports…} page's \ui{Preview in Survey…} link opens it in the
-author's browser. One address therefore has to work from both Author and a browser. The
-umbrella's compose file sets it to the containers' internal address,
-\val{http://author-survey:8080}, which serves the call but not the link; authors on that stack
-open \val{http://localhost:8085} themselves.
+Author knows the preview by two addresses. It calls the preview at
+\opt{author.preview.survey.url} to drop a reporting schema, so that address has to work from
+Author's host. The \ui{Reports…} page's \ui{Preview in Survey…} link opens the preview in the
+author's browser at \opt{author.preview.survey.public-url}, so that address has to work from a
+browser. Left unset, the browser address is the first one, which is right when one address serves
+both. The umbrella's compose file needs both: Author calls \val{http://author-survey:8080}, the
+containers' internal address, and the link opens \val{http://localhost:8085}.
 
 \subsection{The service token}
 \label{sec:servicetoken}
@@ -403,6 +404,7 @@ docker run -d --name author -p 8084:8080 \
   -e OIDC_CLIENT_SECRET='<elicit-author client secret>' \
   -e ELICIT_SERVICE_TOKEN='<the token the preview was given>' \
   -e AUTHOR_PREVIEW_SURVEY_URL='http://preview.internal:8080' \
+  -e AUTHOR_PREVIEW_SURVEY_PUBLIC_URL='https://preview.example.org' \
   -e BRAND_FILE_SYSTEM_PATH=/opt/brand \
   -e I18N_FILE_SYSTEM_PATH=/opt/i18n \
   -v /srv/elicit/brand:/opt/brand:ro \
@@ -454,6 +456,9 @@ variable \opt{OIDC_CLIENT_SECRET}. A secret. \\
 \begin{settings}{tab:cfg-author}{Authoring settings}
 \opt{author.preview.survey.url} & \val{http://localhost:8085} & \chgset & The preview
 Survey, at an address Author can reach (Chapter~\ref{sec:preview}). \\
+\opt{author.preview.survey.public-url} & --- & \chgmay & The preview Survey, at the address
+an author's browser opens from \ui{Preview in Survey…}. Unset or blank, the address above is
+used. Set it when Author reaches the preview by an internal name (Chapter~\ref{sec:preview}). \\
 \opt{elicit.service.token} & --- & \chgset & The service token Author sends to the preview
 Survey, the same value the preview is given (Section~\ref{sec:servicetoken}). At least 32
 characters. Environment variable \opt{ELICIT_SERVICE_TOKEN}. A secret. \\
