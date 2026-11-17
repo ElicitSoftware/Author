@@ -347,7 +347,6 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `designer.needsSection` | Add a section first | Designer palette and drawer panels · tooltip on a glyph that cannot be dragged until a step holds a section | 40 |  |
 | `designer.needsQuestion` | Add a question first | Designer palette and drawer panels · tooltip on a glyph that cannot be dragged until a section holds a question | 40 |  |
 | `designerPalette.aria` | Palette: drag a glyph onto the board to add an element | Designer palette · accessible name of the palette | 80 |  |
-| `designerPalette.questionType` | Question type for new questions | Designer palette · accessible name of the question-type picker | 50 |  |
 | `designerPalette.step` | Step | Designer palette · row caption next to the step glyph | 15 |  |
 | `designerPalette.section` | Section | Designer palette · row caption next to the section glyph | 15 |  |
 | `designerPalette.question` | Question | Designer palette · row caption next to the question glyph | 15 |  |
@@ -1553,7 +1552,6 @@ designer.needsStep=Add a step first
 designer.needsSection=Add a section first
 designer.needsQuestion=Add a question first
 designerPalette.aria=Palette: drag a glyph onto the board to add an element
-designerPalette.questionType=Question type for new questions
 designerPalette.step=Step
 designerPalette.section=Section
 designerPalette.question=Question

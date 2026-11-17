@@ -34,7 +34,6 @@ import com.elicitsoftware.author.flow.translations.TranslationsView;
 import com.elicitsoftware.author.survey.SurveyStructureQuery;
 import com.elicitsoftware.model.ActionType;
 import com.elicitsoftware.model.Question;
-import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.Relationship;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -588,7 +587,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
                 switch (item.kind()) {
                     case STEP -> createStepAt(spot.index());
                     case SECTION -> createSectionAt(spot.container(), spot.index());
-                    case QUESTION -> createQuestionAt(spot.container(), spot.index(), typeNamed(item.questionType()));
+                    case QUESTION -> createQuestionAt(spot.container(), spot.index());
                 }
             } else if (data instanceof BankSection bank) {
                 // UC-015 A6: a section from the drawer's Sections panel, mounted in the target step.
@@ -677,7 +676,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
                         e -> designer.rename(survey.id, e), saved -> load()).open();
                 case SECTION -> ElementDialog.section(designer.currentSection(survey.id, node.durableId()),
                         e -> designer.rename(survey.id, e), saved -> load()).open();
-                case QUESTION -> new QuestionDialog(survey.id, designer.currentQuestion(survey.id, node.durableId()), null,
+                case QUESTION -> new QuestionDialog(survey.id, designer.currentQuestion(survey.id, node.durableId()),
                         q -> designer.update(survey.id, q), saved -> load(), listService).open();
             }
         } catch (AuthoringException ae) {
@@ -688,7 +687,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
     public void addChild(StructureNode node) {
         switch (node.kind()) {
             case STEP -> createSectionAt(node, childrenOf(node).size());
-            case SECTION -> createQuestionAt(node, childrenOf(node).size(), palette.selectedQuestionType());
+            case SECTION -> createQuestionAt(node, childrenOf(node).size());
             default -> { }
         }
     }
@@ -1180,8 +1179,8 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }).open();
     }
 
-    void createQuestionAt(StructureNode section, int index, QuestionType type) {
-        new QuestionDialog(survey.id, null, type, draft -> designer.createQuestionIn(survey.id, section.durableId(), draft, index), saved -> {
+    void createQuestionAt(StructureNode section, int index) {
+        new QuestionDialog(survey.id, null, draft -> designer.createQuestionIn(survey.id, section.durableId(), draft, index), saved -> {
             open(section);
             load();
             select(find(StructureNode.Kind.QUESTION, saved.questionId, null));
@@ -1274,10 +1273,6 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
 
     private String sectionPath(StructureNode section) {
         return section.parent().label() + " › " + section.label();
-    }
-
-    private static QuestionType typeNamed(String name) {
-        return name == null ? null : QuestionType.find("name", name).firstResult();
     }
 
     private static void success(String message) {

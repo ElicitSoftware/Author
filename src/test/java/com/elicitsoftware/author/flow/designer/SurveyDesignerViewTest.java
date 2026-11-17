@@ -25,6 +25,7 @@ import com.elicitsoftware.model.SectionsQuestion;
 import com.elicitsoftware.model.Step;
 import com.elicitsoftware.model.StructuralElement;
 import com.elicitsoftware.model.Question;
+import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
@@ -32,6 +33,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.dnd.DragStartEvent;
@@ -197,6 +199,24 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
         assertFalse(dialog.renameWarningShown(), "no rename warning when creating");
         test(dialog.cancel).click();
         assertEquals(lanesBefore, view.lanes.size(), "cancel creates nothing");
+    }
+
+    @Test
+    @TestSecurity(user = "designer.author", roles = {"elicit_author"})
+    void aNewQuestionStartsAsTextAndItsTypeIsChosenInTheDialog_UC011BR006() {
+        SurveyDesignerView view = open(fixture());
+        assertTrue(find(ComboBox.class, view.palette).all().isEmpty(), "UC-011 BR-006: the palette picks no type");
+        view.toggleAndSelect(view.lanes.get(0).node());
+
+        view.addChild(view.lanes.get(0).cards.get(0).node());
+
+        QuestionDialog dialog = find(QuestionDialog.class).single();
+        assertEquals("TEXT", dialog.questionType.getValue().name, "a new question opens on TEXT");
+        QuestionType other = dialog.questionType.getListDataView().getItems()
+                .filter(t -> !"TEXT".equals(t.name)).findFirst().orElseThrow();
+        test(dialog.questionType).selectItem(other.name);
+        assertEquals(other, dialog.questionType.getValue(), "the author changes the type in the dialog");
+        test(dialog.cancel).click();
     }
 
     @Test

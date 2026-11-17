@@ -14,7 +14,6 @@ package com.elicitsoftware.author.flow.designer;
 import com.elicitsoftware.author.flow.SurveyEditorView;
 import com.elicitsoftware.author.survey.DesignerService;
 import com.elicitsoftware.model.Question;
-import com.elicitsoftware.model.QuestionType;
 import com.elicitsoftware.model.Step;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
@@ -335,11 +334,6 @@ class SurveyDesignerViewDropFeedbackTest extends QuarkusBrowserlessTest {
         QuestionBankPanel.Row question = view.toolbox().questions.items.get(0);
         assertUnavailable(question.glyph, needsSection);
         assertFalse(question.menu.find(view.getTranslation("questionBankPanel.menu.addToSection")).isEnabled());
-
-        QuestionType other = view.palette.questionTypePicker.getListDataView().getItems()
-                .filter(t -> !t.equals(view.palette.questionTypePicker.getValue())).findFirst().orElseThrow();
-        view.palette.questionTypePicker.setValue(other);
-        assertUnavailable(view.palette.questionChip(), needsSection);
     }
 
     @Test

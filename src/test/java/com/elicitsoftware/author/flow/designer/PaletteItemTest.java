@@ -23,17 +23,17 @@ class PaletteItemTest {
 
     @Test
     void elementGlyphs_carryTheirKind() {
-        assertEquals(new PaletteItem(StructureNode.Kind.STEP, null, null), PaletteItem.step());
-        assertEquals(new PaletteItem(StructureNode.Kind.SECTION, null, null), PaletteItem.section());
-        assertEquals(new PaletteItem(StructureNode.Kind.QUESTION, "TEXTFIELD", null), PaletteItem.question("TEXTFIELD"));
+        assertEquals(new PaletteItem(StructureNode.Kind.STEP, null), PaletteItem.step());
+        assertEquals(new PaletteItem(StructureNode.Kind.SECTION, null), PaletteItem.section());
+        assertEquals(new PaletteItem(StructureNode.Kind.QUESTION, null), PaletteItem.question());
         assertFalse(PaletteItem.step().isRule());
-        assertFalse(PaletteItem.question("TEXTFIELD").isRule());
+        assertFalse(PaletteItem.question().isRule());
     }
 
     @Test
     void ruleGlyph_carriesOnlyItsAction() {
         PaletteItem rule = PaletteItem.rule("SHOW");
-        assertEquals(new PaletteItem(null, null, "SHOW"), rule);
+        assertEquals(new PaletteItem(null, "SHOW"), rule);
         assertTrue(rule.isRule());
     }
 }

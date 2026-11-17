@@ -11,38 +11,30 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
-import com.elicitsoftware.model.QuestionType;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dnd.DragSource;
 import com.vaadin.flow.component.dnd.EffectAllowed;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import io.quarkus.panache.common.Sort;
-
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
  * The shape palette (UC-011 step 1, UC-015 A4, UC-016): one draggable glyph per kind of element
- * — step, section, and a question whose type is picked beside it — plus the three rule glyphs, all
- * in a single card in the drawer. Elements are created by dragging a glyph onto the board.
+ * — step, section and question — plus the three rule glyphs, all in a single card in the drawer.
+ * Elements are created by dragging a glyph onto the board; a question's type is chosen in the
+ * dialog the drop opens (UC-011 BR-006).
  */
 public class DesignerPalette extends VerticalLayout {
 
     final Glyph stepChip = Glyph.step(null);
     final Glyph sectionChip = Glyph.section();
-    final ComboBox<QuestionType> questionTypePicker = new ComboBox<>();
+    final Glyph questionChip = Glyph.question(null);
     final Glyph showRuleChip = Glyph.rule("SHOW");
     final Glyph repeatRuleChip = Glyph.rule("REPEAT");
     final Glyph textRuleChip = Glyph.rule("TEXT");
 
-    private Glyph questionChip;
-    /** Why the question glyph cannot be dragged yet, or null; kept for a chip rebuilt on a type change. */
-    private String questionUnavailable;
-    private final Div questionSlot = new Div();
     private final Consumer<PaletteItem> onDragStart;
     private final Runnable onDragEnd;
 
@@ -58,16 +50,7 @@ public class DesignerPalette extends VerticalLayout {
 
         draggable(stepChip, PaletteItem.step());
         draggable(sectionChip, PaletteItem.section());
-
-        List<QuestionType> types = QuestionType.listAll(Sort.by("name"));
-        questionTypePicker.setItems(types);
-        questionTypePicker.setItemLabelGenerator(t -> t.name);
-        questionTypePicker.setWidthFull();
-        questionTypePicker.setAriaLabel(getTranslation("designerPalette.questionType"));
-        types.stream().filter(t -> "TEXT".equals(t.name)).findFirst().ifPresentOrElse(questionTypePicker::setValue,
-                () -> types.stream().findFirst().ifPresent(questionTypePicker::setValue));
-        questionTypePicker.addValueChangeListener(e -> rebuildQuestionChip());
-        rebuildQuestionChip();
+        draggable(questionChip, PaletteItem.question());
 
         draggable(showRuleChip, PaletteItem.rule("SHOW"));
         draggable(repeatRuleChip, PaletteItem.rule("REPEAT"));
@@ -77,14 +60,9 @@ public class DesignerPalette extends VerticalLayout {
         card.addClassName("designer-palette-card");
         card.add(row(getTranslation("designerPalette.step"), chips(stepChip)),
                 row(getTranslation("designerPalette.section"), chips(sectionChip)),
-                row(getTranslation("designerPalette.question"), chips(questionSlot)),
-                questionTypePicker,
+                row(getTranslation("designerPalette.question"), chips(questionChip)),
                 row(getTranslation("designerPalette.rule"), chips(showRuleChip, repeatRuleChip, textRuleChip)));
         add(card);
-    }
-
-    public QuestionType selectedQuestionType() {
-        return questionTypePicker.getValue();
     }
 
     Glyph questionChip() {
@@ -96,7 +74,6 @@ public class DesignerPalette extends VerticalLayout {
      * always can; each other one is given why it cannot yet, or null once it has somewhere to go.
      */
     void offer(String sectionUnavailable, String questionUnavailable, String ruleUnavailable) {
-        this.questionUnavailable = questionUnavailable;
         setUnavailable(sectionChip, sectionUnavailable);
         setUnavailable(questionChip, questionUnavailable);
         setUnavailable(showRuleChip, ruleUnavailable);
@@ -110,17 +87,6 @@ public class DesignerPalette extends VerticalLayout {
         // cursor read, whatever became of the property.
         chip.getElement().setAttribute("draggable", String.valueOf(reason == null));
         chip.setUnavailable(reason);
-    }
-
-    private void rebuildQuestionChip() {
-        QuestionType t = questionTypePicker.getValue();
-        questionSlot.removeAll();
-        questionChip = Glyph.question(t == null ? null : t.name);
-        draggable(questionChip, PaletteItem.question(t == null ? null : t.name));
-        if (questionUnavailable != null) {
-            setUnavailable(questionChip, questionUnavailable);
-        }
-        questionSlot.add(questionChip);
     }
 
     /** A labeled row inside the tools card: a caption on the left, its draggable chips on the right. */
