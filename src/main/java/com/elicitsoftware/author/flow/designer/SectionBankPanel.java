@@ -52,19 +52,27 @@ public class SectionBankPanel extends VerticalLayout {
         /** False for a section no step mounts: it exports, but nothing on the board holds it. */
         final boolean placed;
 
-        Row(SurveyDesignerView view, StructureNode node, int mounts, String description) {
+        /**
+         * @param unavailable why the section cannot be dragged yet (UC-006 BR-008: there is no step
+         *                    to mount it in), or null when it can
+         */
+        Row(SurveyDesignerView view, StructureNode node, int mounts, String description, String unavailable) {
             this.placed = mounts > 0;
             this.node = node;
             this.searchText = (node.label() + " " + (description == null ? "" : description)).toLowerCase(java.util.Locale.ROOT);
             addClassName("designer-panel-row");
             glyph = Glyph.section();
-            glyph.getElement().setAttribute("draggable", "true");
             glyph.getElement().setAttribute("aria-roledescription", getTranslation("sectionBankPanel.roledescription"));
             DragSource<Glyph> source = DragSource.create(glyph);
             source.setDragData(new BankSection(node.durableId(), node.label()));
             source.setEffectAllowed(EffectAllowed.COPY_MOVE);
+            source.setDraggable(unavailable == null);
             source.addDragStartListener(e -> view.dragStarted(StructureNode.Kind.SECTION));
             source.addDragEndListener(e -> view.dragEnded());
+            if (unavailable == null) {
+                glyph.getElement().setAttribute("draggable", "true");
+            }
+            glyph.setUnavailable(unavailable);
             label.setText(node.label());
             label.addClassName("designer-panel-label");
             label.getElement().setAttribute("data-i18n-content", "");
@@ -74,7 +82,7 @@ public class SectionBankPanel extends VerticalLayout {
             uses.addClassName("designer-badge");
             uses.addClassName(placed ? "designer-badge-placed" : "designer-badge-unplaced");
             menu = new NodeMenu(getTranslation("sectionBankPanel.menu.aria", node.label()));
-            menu.item(getTranslation("sectionBankPanel.menu.mountInStep"), () -> view.mountIn(node));
+            menu.item(getTranslation("sectionBankPanel.menu.mountInStep"), () -> view.mountIn(node), unavailable == null);
             menu.item(getTranslation("designer.menu.edit"), () -> view.edit(node));
             // UC-015 A7: an unplaced section has no assignment whose removal could retire it, so the
             // only way to be rid of one is to remove the element itself.
@@ -107,9 +115,12 @@ public class SectionBankPanel extends VerticalLayout {
     final Span empty = new Span();
     private String query = "";
 
-    /** One row per section durable id; mounts counted over the current tree, unplaced sections last. */
+    /**
+     * One row per section durable id; mounts counted over the current tree, unplaced sections last.
+     * {@code unavailable} is why no section can be dragged yet, or null (UC-006 BR-008).
+     */
     void refresh(SurveyDesignerView view, List<StructureNode> all, List<StructureNode> unplaced,
-                 Map<Integer, String> descriptionBySectionId) {
+                 Map<Integer, String> descriptionBySectionId, String unavailable) {
         rows.removeAll();
         items.clear();
         Map<Integer, StructureNode> first = new LinkedHashMap<>();
@@ -126,7 +137,7 @@ public class SectionBankPanel extends VerticalLayout {
             mounts.putIfAbsent(n.durableId(), 0);
         }
         for (StructureNode n : first.values()) {
-            Row row = new Row(view, n, mounts.get(n.durableId()), descriptionBySectionId.get(n.durableId()));
+            Row row = new Row(view, n, mounts.get(n.durableId()), descriptionBySectionId.get(n.durableId()), unavailable);
             items.add(row);
             rows.add(row);
         }

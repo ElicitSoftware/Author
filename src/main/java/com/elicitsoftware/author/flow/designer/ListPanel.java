@@ -54,7 +54,11 @@ public class ListPanel extends VerticalLayout {
         /** Lower-cased name, description and option texts, what the drawer search matches against. */
         final String searchText;
 
-        Row(SurveyDesignerView view, SelectGroup group, long options, long users, List<String> optionTexts) {
+        /**
+         * @param unavailable why the list cannot be dragged yet (UC-006 BR-008: there is no question
+         *                    to give it to), or null when it can; the row's menu stays available
+         */
+        Row(SurveyDesignerView view, SelectGroup group, long options, long users, List<String> optionTexts, String unavailable) {
             this.group = group;
             this.searchText = (group.name + " " + (group.description == null ? "" : group.description) + " "
                     + String.join(" ", optionTexts)).toLowerCase(java.util.Locale.ROOT);
@@ -62,12 +66,18 @@ public class ListPanel extends VerticalLayout {
             glyph.add(new Icon(VaadinIcon.LIST));
             glyph.addClassName("designer-panel-glyph");
             glyph.getElement().setAttribute("aria-roledescription", getTranslation("listPanel.roledescription"));
-            glyph.getElement().setAttribute("draggable", "true");
             DragSource<Span> source = DragSource.create(glyph);
             source.setDragData(new PaletteList(group.selectGroupId, group.name));
             source.setEffectAllowed(EffectAllowed.COPY_MOVE);
+            source.setDraggable(unavailable == null);
             source.addDragStartListener(e -> view.dragStarted());
             source.addDragEndListener(e -> view.dragEnded());
+            if (unavailable == null) {
+                glyph.getElement().setAttribute("draggable", "true");
+            } else {
+                glyph.addClassName("unavailable");
+                glyph.getElement().setAttribute("title", unavailable);
+            }
             label.setText(group.name);
             label.addClassName("designer-panel-label");
             label.getElement().setAttribute("data-i18n-content", "");
@@ -120,13 +130,14 @@ public class ListPanel extends VerticalLayout {
     final Span empty = new Span();
     private String query = "";
 
+    /** {@code unavailable} is why no list can be dragged yet, or null (UC-006 BR-008). */
     void refresh(SurveyDesignerView view, List<SelectGroup> lists, Map<Integer, Long> optionCounts, Map<Integer, Long> users,
-                 Map<Integer, List<String>> optionTexts) {
+                 Map<Integer, List<String>> optionTexts, String unavailable) {
         rows.removeAll();
         items.clear();
         for (SelectGroup g : lists) {
             Row row = new Row(view, g, optionCounts.getOrDefault(g.selectGroupId, 0L), users.getOrDefault(g.selectGroupId, 0L),
-                    optionTexts.getOrDefault(g.selectGroupId, List.of()));
+                    optionTexts.getOrDefault(g.selectGroupId, List.of()), unavailable);
             items.add(row);
             rows.add(row);
         }

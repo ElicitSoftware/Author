@@ -47,6 +47,8 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.dnd.DropEffect;
+import com.vaadin.flow.component.dnd.DropTarget;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -70,6 +72,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * The designer board (UC-011, UC-015, UC-016, UC-018): steps as lanes, sections as collapsible
@@ -82,8 +85,6 @@ import java.util.Set;
 public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasDynamicTitle {
 
     public static final String SELECT = "select";
-    /** What {@code dragging-<what>} says when a rule glyph is in flight; the kinds use their own names. */
-    private static final String RULE_DRAG = "rule";
 
     @Inject
     SurveyService surveyService;
@@ -142,6 +143,13 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
     final Map<String, List<String>> tagLabels = new java.util.HashMap<>();
     /** Report-mark labels per board node, rebuilt with the board (UC-049). */
     final Map<String, List<String>> markLabels = new java.util.HashMap<>();
+    /** Every drop target on the board with what it takes, rebuilt with the board (UC-006 BR-007). */
+    private final List<Admission> admissions = new ArrayList<>();
+    /** The targets refusing the drag in flight, given back their drop effect when it ends. */
+    private final List<DropTarget<?>> refusing = new ArrayList<>();
+
+    private record Admission(DropTarget<?> target, Predicate<DragPayload> takes) {
+    }
 
     public SurveyDesignerView() {
         addClassName("designer");
@@ -294,7 +302,10 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
     }
 
     private void rebuildBoard() {
-        // A drop rebuilds the board, so the dragged element (and its dragend) never comes back.
+        // A drop rebuilds the board, so the dragged element (and its dragend) never comes back. The
+        // drop targets go with it; the new ones take everything until the next drag starts.
+        admissions.clear();
+        refusing.clear();
         dragEnded();
         board.removeAll();
         lanes.clear();
@@ -302,12 +313,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         collectMarkLabels();
         List<StructureNode> roots = tree.roots();
         for (int i = 0; i < roots.size(); i++) {
-            board.add(new DropZone(new DropSpot(null, i, StructureNode.Kind.STEP), this::onDrop));
+            board.add(new DropZone(this, new DropSpot(null, i, StructureNode.Kind.STEP)));
             StepLane lane = new StepLane(this, roots.get(i), i + 1, childrenOf(roots.get(i)), i, roots.size());
             lanes.add(lane);
             board.add(lane);
         }
-        board.add(new DropZone(new DropSpot(null, roots.size(), StructureNode.Kind.STEP), this::onDrop));
+        board.add(new DropZone(this, new DropSpot(null, roots.size(), StructureNode.Kind.STEP)));
         overlay.setEdges(Boolean.TRUE.equals(showRules.getValue()) ? edgesJson() : "[]");
         overlay.setSelectedAnchor(anchorOf(selected));
         board.add(overlay);
@@ -493,60 +504,87 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         render();
     }
 
-    /** A drag whose payload nothing on the board highlights for (a list onto a choice question). */
+    /** A drag of a list from the drawer: only the question rows take it (UC-014 step 6). */
     public void dragStarted() {
-        markDrag(null);
+        markDrag(DragPayload.LIST);
     }
 
     /**
-     * A drag of an element: only the insertion bars that accept this kind light up and lift.
+     * A drag of an element: only the targets that take this kind light up and lift.
      *
-     * @see #markDrag(String)
+     * @see #markDrag(DragPayload)
      */
     public void dragStarted(StructureNode.Kind kind) {
-        markDrag(kind == null ? null : kind.name().toLowerCase());
+        markDrag(kind == null ? null : DragPayload.of(kind));
     }
 
     /**
      * A drag from the palette. A rule glyph is dropped on the question it reads from (UC-019), not
-     * on an insertion bar — {@link #onDrop} turns a rule away, because its {@code kind()} is null
-     * and so matches no spot — so it marks the board for rules and the question rows light up
-     * instead. Every other glyph marks the board for the kind it creates.
+     * on an insertion bar, so it marks the board for rules and the question rows light up instead.
+     * Every other glyph marks the board for the kind it creates.
      */
     void paletteDragStarted(PaletteItem item) {
-        markDrag(item.isRule() ? RULE_DRAG : item.kind().name().toLowerCase());
+        markDrag(DragPayload.ofData(item));
     }
 
     /**
      * Marks the board for the duration of a drag: {@code dragging}, plus {@code dragging-<what>}
-     * naming what is being dragged, when something on the board can take it.
+     * naming what is being dragged.
      * <p>
      * That second class is what lets only the valid targets light up, and lift above the rule-arrow
      * overlay — whose arrow hit bands and glyphs are themselves drag handles, and would otherwise be
-     * what the pointer finds over a target (UC-016, UC-019, UC-020).
+     * what the pointer finds over a target (UC-016, UC-019, UC-020). Every target that does not take
+     * the payload is switched to {@link DropEffect#NONE} until the drag ends: Vaadin gives it no
+     * {@code v-drag-over-target} highlight, the pointer shows not-allowed, and the browser fires no
+     * drop on it (UC-006 BR-007).
      */
-    private void markDrag(String what) {
+    private void markDrag(DragPayload payload) {
+        admitAll();
         board.addClassName("dragging");
-        if (what != null) {
-            board.addClassName("dragging-" + what);
+        if (payload == null) {
+            return;
+        }
+        board.addClassName(payload.cssClass());
+        for (Admission admission : admissions) {
+            if (!admission.takes().test(payload)) {
+                admission.target().setDropEffect(DropEffect.NONE);
+                refusing.add(admission.target());
+            }
         }
     }
 
     public void dragEnded() {
         board.removeClassName("dragging");
-        board.removeClassName("dragging-" + RULE_DRAG);
-        for (StructureNode.Kind kind : StructureNode.Kind.values()) {
-            board.removeClassName("dragging-" + kind.name().toLowerCase());
+        for (DragPayload payload : DragPayload.values()) {
+            board.removeClassName(payload.cssClass());
         }
+        admitAll();
+    }
+
+    /** Gives every target refusing the last drag its drop effect back. */
+    private void admitAll() {
+        refusing.forEach(target -> target.setDropEffect(DropEffect.MOVE));
+        refusing.clear();
+    }
+
+    /**
+     * Registers a board drop target with what it takes (UC-006 BR-007). Each lane, card, row and
+     * insertion bar calls this as it is built.
+     */
+    void admit(DropTarget<?> target, Predicate<DragPayload> takes) {
+        admissions.add(new Admission(target, takes));
     }
 
     /** Central drop dispatcher: palette items create, nodes reorder within or copy across containers. */
     public void onDrop(Object data, DropSpot spot) {
+        // A target that refuses the payload stops taking drops when the drag starts, but a drop can
+        // land before the browser hears of it; it is answered, never ignored (UC-006 BR-007).
+        if (!spot.takes(DragPayload.ofData(data))) {
+            refuse(data, spot.container());
+            return;
+        }
         try {
             if (data instanceof PaletteItem item) {
-                if (item.kind() != spot.accepts()) {
-                    return;
-                }
                 switch (item.kind()) {
                     case STEP -> createStepAt(spot.index());
                     case SECTION -> createSectionAt(spot.container(), spot.index());
@@ -554,25 +592,19 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
                 }
             } else if (data instanceof BankSection bank) {
                 // UC-015 A6: a section from the drawer's Sections panel, mounted in the target step.
-                if (spot.accepts() != StructureNode.Kind.SECTION || spot.container() == null) {
-                    return;
-                }
                 StepsSections mount = designer.mountSection(survey.id, bank.sectionId(), spot.container().durableId(), spot.index());
                 load();
                 select(find(StructureNode.Kind.SECTION, bank.sectionId(), mount.stepsSectionsId));
                 success(getTranslation("surveyDesignerView.sectionAlsoInStep", bank.label(), spot.container().label()));
             } else if (data instanceof BankQuestion bank) {
                 // UC-011 A6: a question from the drawer's Questions panel, reused in the target section.
-                if (spot.accepts() != StructureNode.Kind.QUESTION || spot.container() == null) {
-                    return;
-                }
                 designer.assignQuestionInto(survey.id, bank.questionId(), spot.container().durableId(), spot.index());
                 open(spot.container());
                 load();
                 select(find(StructureNode.Kind.QUESTION, bank.questionId(), null));
                 success(getTranslation("surveyDesignerView.questionAlsoInSection", bank.label(), spot.container().label()));
             } else if (data instanceof StructureNode node) {
-                if (node.kind() != spot.accepts() || node.retired()) {
+                if (node.retired()) {
                     return;
                 }
                 Set<Integer> backwardBefore = backwardRules();
@@ -614,6 +646,28 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         } catch (AuthoringException ae) {
             error(ae.getMessage());
         }
+    }
+
+    /**
+     * UC-006 BR-007: a refused drop says where that kind of element goes, or, landing on something
+     * removed, that it has to be restored first (UC-011 A8, UC-014 A5, UC-015 A8, UC-016 A5, UC-019 A7).
+     */
+    void refuse(Object data, StructureNode target) {
+        DragPayload payload = DragPayload.ofData(data);
+        if (payload == null) {
+            return;
+        }
+        if (target != null && target.retired()) {
+            warning(getTranslation("surveyDesignerView.refused.removed", target.label()));
+            return;
+        }
+        warning(switch (payload) {
+            case STEP -> getTranslation("surveyDesignerView.refused.step");
+            case SECTION -> getTranslation("surveyDesignerView.refused.section");
+            case QUESTION -> getTranslation("surveyDesignerView.refused.question");
+            case RULE -> getTranslation("surveyDesignerView.refused.rule");
+            case LIST -> getTranslation("surveyDesignerView.refused.list");
+        });
     }
 
     public void edit(StructureNode node) {
@@ -714,11 +768,31 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         for (Section sec : Section.<Section>list("surveyId = ?1 and effectiveTo = ?2", survey.id, com.elicitsoftware.model.StructuralElement.SENTINEL)) { // i18n:ignore JPQL
             descriptions.put(sec.sectionId, sec.description);
         }
-        toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users, listService.optionTexts(survey.id));
+        // UC-006 BR-008: a tool that could land nowhere on the board cannot be dragged, and says what
+        // to add first. Each reason is null once that kind of element is on the board.
+        String needsStep = tree.roots().stream().anyMatch(SurveyDesignerView::current) ? null
+                : getTranslation("designer.needsStep");
+        String needsSection = tree.all().stream().anyMatch(n -> n.kind() == StructureNode.Kind.SECTION && current(n)) ? null
+                : Objects.requireNonNullElseGet(needsStep, () -> getTranslation("designer.needsSection"));
+        String needsQuestion = tree.all().stream().anyMatch(n -> n.kind() == StructureNode.Kind.QUESTION && current(n)) ? null
+                : Objects.requireNonNullElseGet(needsSection, () -> getTranslation("designer.needsQuestion"));
+        palette.offer(needsStep, needsSection, needsQuestion);
+        toolbox.lists.refresh(this, listService.lists(survey.id), listService.optionCounts(survey.id), users, listService.optionTexts(survey.id),
+                needsQuestion);
         // UC-006 BR-003a: the panels are the survey's contents, so they hold the elements the board
         // cannot draw -- a section in no step, a question in no section.
-        toolbox.sections.refresh(this, tree.all(), structureQuery.unplacedSections(survey.id), descriptions);
-        toolbox.questions.refresh(this, tree.all(), structureQuery.unplacedQuestions(survey.id), texts);
+        toolbox.sections.refresh(this, tree.all(), structureQuery.unplacedSections(survey.id), descriptions, needsStep);
+        toolbox.questions.refresh(this, tree.all(), structureQuery.unplacedQuestions(survey.id), texts, needsSection);
+    }
+
+    /** Neither the node nor anything it is placed in has been removed. */
+    private static boolean current(StructureNode node) {
+        for (StructureNode n = node; n != null; n = n.parent()) {
+            if (n.retired()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** The right-hand pane: the selection as a respondent sees it, rebuilt with the board. */

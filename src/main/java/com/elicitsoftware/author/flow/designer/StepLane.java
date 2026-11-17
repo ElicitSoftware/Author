@@ -110,26 +110,27 @@ public class StepLane extends Div {
             }
         });
         header.getElement().addEventListener("keydown", e -> view.toggleAndSelect(node)).setFilter("event.key === 'Enter' || event.key === ' '"); // i18n:ignore
+        DropSpot append = new DropSpot(node, sections.size(), StructureNode.Kind.SECTION);
         DropTarget<Div> headerDrop = DropTarget.create(header);
         headerDrop.setDropEffect(DropEffect.MOVE);
-        headerDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
-                view.onDrop(data, new DropSpot(node, sections.size(), StructureNode.Kind.SECTION))));
+        headerDrop.addDropListener(e -> e.getDragData().ifPresent(data -> view.onDrop(data, append)));
+        view.admit(headerDrop, append::takes);
 
         body.addClassName("designer-lane-body");
         body.setVisible(open);
         // Dropping anywhere in the lane body (not on a card or zone) appends.
         DropTarget<Div> bodyDrop = DropTarget.create(body);
         bodyDrop.setDropEffect(DropEffect.MOVE);
-        bodyDrop.addDropListener(e -> e.getDragData().ifPresent(data ->
-                view.onDrop(data, new DropSpot(node, sections.size(), StructureNode.Kind.SECTION))));
+        bodyDrop.addDropListener(e -> e.getDragData().ifPresent(data -> view.onDrop(data, append)));
+        view.admit(bodyDrop, append::takes);
         for (int i = 0; i < sections.size(); i++) {
-            body.add(new DropZone(new DropSpot(node, i, StructureNode.Kind.SECTION), view::onDrop));
+            body.add(new DropZone(view, new DropSpot(node, i, StructureNode.Kind.SECTION)));
             StructureNode section = sections.get(i);
             SectionCard card = new SectionCard(view, section, view.childrenOf(section), i, sections.size(), view.mountCount(section));
             cards.add(card);
             body.add(card);
         }
-        body.add(new DropZone(new DropSpot(node, sections.size(), StructureNode.Kind.SECTION), view::onDrop));
+        body.add(new DropZone(view, append));
         if (sections.isEmpty()) {
             Span empty = new Span(getTranslation("stepLane.empty"));
             empty.addClassName("designer-empty");
