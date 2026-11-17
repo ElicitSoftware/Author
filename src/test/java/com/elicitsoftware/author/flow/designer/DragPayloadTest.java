@@ -30,7 +30,7 @@ class DragPayloadTest {
     void everyDragSourceNamesItsPayload() {
         assertEquals(DragPayload.STEP, DragPayload.ofData(PaletteItem.step()));
         assertEquals(DragPayload.SECTION, DragPayload.ofData(PaletteItem.section()));
-        assertEquals(DragPayload.QUESTION, DragPayload.ofData(PaletteItem.question("TEXT")));
+        assertEquals(DragPayload.QUESTION, DragPayload.ofData(PaletteItem.question()));
         assertEquals(DragPayload.RULE, DragPayload.ofData(PaletteItem.rule("SHOW")));
         assertEquals(DragPayload.SECTION, DragPayload.ofData(new BankSection(1, "s")));
         assertEquals(DragPayload.QUESTION, DragPayload.ofData(new BankQuestion(1, "q", "TEXT")));

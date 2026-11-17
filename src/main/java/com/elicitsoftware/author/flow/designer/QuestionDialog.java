@@ -94,12 +94,12 @@ public class QuestionDialog extends Dialog {
     private final Map<String, HasValidation> fieldsByProperty;
     private final com.elicitsoftware.author.survey.ListService lists;
 
-    public QuestionDialog(int surveyId, Question existing, QuestionType presetType, Function<Question, Question> persist, Consumer<Question> onSaved) {
-        this(surveyId, existing, presetType, persist, onSaved, null);
+    public QuestionDialog(int surveyId, Question existing, Function<Question, Question> persist, Consumer<Question> onSaved) {
+        this(surveyId, existing, persist, onSaved, null);
     }
 
     /** @param lists when given, a "New list…" shortcut next to the list picker creates one in place (UC-014). */
-    public QuestionDialog(int surveyId, Question existing, QuestionType presetType, Function<Question, Question> persist, Consumer<Question> onSaved,
+    public QuestionDialog(int surveyId, Question existing, Function<Question, Question> persist, Consumer<Question> onSaved,
                           com.elicitsoftware.author.survey.ListService lists) {
         this.lists = lists;
         this.surveyId = surveyId;
@@ -212,8 +212,9 @@ public class QuestionDialog extends Dialog {
             bean.defaultValue = existing.defaultValue;
             bean.variant = existing.variant;
             bean.sample = existing.sample;
-        } else if (presetType != null) {
-            bean.questionType = presetType;
+        } else {
+            // UC-011 BR-006: a new question starts as TEXT; the author picks another type here.
+            bean.questionType = types.stream().filter(t -> "TEXT".equals(t.name)).findFirst().orElse(null);
         }
         binder.readBean(bean);
         questionType.addValueChangeListener(e -> updateChoiceFields());
