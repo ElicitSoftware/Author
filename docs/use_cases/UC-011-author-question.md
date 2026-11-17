@@ -16,8 +16,8 @@
 
 ## Main Success Scenario
 
-1. The author drags a question glyph of the wanted type from the palette and drops it between two rows of an open section card (or chooses Add question on the card).
-2. The system opens the question dialog with the type preselected: question text, short text, tooltip, required, minimum and maximum, validation text, mask, placeholder, default value, presentation variant, a sample answer for previews, and — for choice types — the select group. Each control carries an information icon explaining it, only the settings the chosen type uses are shown (for example HTML has no input mask), and a live preview shows the respondent's field for the type and variants, updating as the author edits.
+1. The author drags the question glyph from the palette and drops it between two rows of an open section card (or chooses Add question on the card).
+2. The system opens the question dialog with the type set to TEXT, which the author may change there (BR-006): question text, short text, tooltip, required, minimum and maximum, validation text, mask, placeholder, default value, presentation variant, a sample answer for previews, and — for choice types — the select group. Each control carries an information icon explaining it, only the settings the chosen type uses are shown (for example HTML has no input mask), and a live preview shows the respondent's field for the type and variants, updating as the author edits.
 3. The author fills in the text and saves.
 4. The system creates the question with a key minted once, assigns it to the section at the drop position, renumbers the section's questions, and refreshes the board and tree with the new row selected.
 
@@ -126,3 +126,7 @@ A value the author wrote and a value standing in for a respondent are not splice
 ### BR-005: A question may carry a sample answer
 
 A question may record an example answer. It is authoring-only — the designer substitutes it wherever a rule writes this question's answer into another text, so one sample serves every rule that reads the question — and it is never written to the export, so changing it never affects a deployed site. It stands in for what a respondent would type, which decides both when it is used (BR-004) and how: it is escaped and never re-read, exactly as the runtime treats the answer it represents. A display-only question's sample is never substituted anywhere: it collects no answer, so no rule reading it can write one into another text (UC-019 BR-006).
+
+### BR-006: The type is chosen in the dialog
+
+The palette carries one question glyph, not one per type. A new question's dialog opens with the type set to TEXT, the most common type, and the author changes it there before saving. Choosing the type before the drag as well would only preset the same field.
