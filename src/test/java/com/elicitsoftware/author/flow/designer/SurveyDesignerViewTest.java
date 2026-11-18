@@ -34,6 +34,7 @@ import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.dnd.DragStartEvent;
@@ -206,6 +207,8 @@ class SurveyDesignerViewTest extends QuarkusBrowserlessTest {
     void aNewQuestionStartsAsTextAndItsTypeIsChosenInTheDialog_UC011BR006() {
         SurveyDesignerView view = open(fixture());
         assertTrue(find(ComboBox.class, view.palette).all().isEmpty(), "UC-011 BR-006: the palette picks no type");
+        assertEquals("vaadin:input", find(Icon.class, view.palette.questionChip()).single().getElement().getAttribute("icon"),
+                "the question glyph is drawn as the TEXT question a new one starts as");
         view.toggleAndSelect(view.lanes.get(0).node());
 
         view.addChild(view.lanes.get(0).cards.get(0).node());
