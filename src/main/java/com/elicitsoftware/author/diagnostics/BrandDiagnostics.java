@@ -77,10 +77,13 @@ public class BrandDiagnostics {
      * @param version           the brand version from the metadata, or null
      * @param inUse             the brand the application resolved and cached
      * @param assets            every expected asset and its source
+     * @param logoUrl           the URL of the lockup the brand configuration names
+     * @param warnings          what the brand gets wrong about its logos (UC-036 BR-003)
      */
     public record BrandReport(String configuredPath, String localPath, boolean externalExists, boolean localExists,
                               String metadataFile, String brandName, String organization, String version,
-                              BrandUtil.BrandInfo inUse, List<AssetReport> assets) {
+                              BrandUtil.BrandInfo inUse, List<AssetReport> assets, String logoUrl,
+                              List<String> warnings) {
 
         /** A one-line summary for the overview (UC-034 step 3). */
         public String summary() {
@@ -103,13 +106,41 @@ public class BrandDiagnostics {
         }
     }
 
-    static final List<Expected> EXPECTED = List.of(
+    static final List<Expected> STYLESHEETS = List.of(
             new Expected("colors/brand-colors.css", "colorStylesheet"),
             new Expected("typography/brand-typography.css", "typographyStylesheet"),
-            new Expected("theme.css", "themeStylesheet"),
-            new Expected("images/HorizontalLogo.png", "horizontalLogo"),
-            new Expected("images/icon-white.png", "headerIcon"),
-            new Expected("images/favicon.ico", "favicon"));
+            new Expected("theme.css", "themeStylesheet"));
+
+    /**
+     * Every expected asset: the stylesheets, then the three logo files under the names the brand
+     * configuration gives them (UC-030 BR-006).
+     */
+    List<Expected> expected() {
+        List<Expected> expected = new ArrayList<>(STYLESHEETS);
+        expected.add(new Expected(logoPath(BrandUtil.Logo.HORIZONTAL), "horizontalLogo"));
+        expected.add(new Expected(logoPath(BrandUtil.Logo.ICON), "headerIcon"));
+        expected.add(new Expected(logoPath(BrandUtil.Logo.FAVICON), "favicon"));
+        return expected;
+    }
+
+    private String logoPath(BrandUtil.Logo logo) {
+        return "images/" + brandUtil.getLogoFile(logo).file();
+    }
+
+    /**
+     * What the brand gets wrong about its logos (UC-036 BR-003): a named file the mount lacks
+     * (umbrella UC-014 BR-008), and a favicon of its own with no icon of its own (BR-009).
+     */
+    List<String> warnings() {
+        List<String> warnings = new ArrayList<>();
+        for (String missing : brandUtil.getMissingLogoFiles()) {
+            warnings.add(Translations.get("systemBrandingView.warning.namedFileMissing", missing));
+        }
+        if (brandUtil.isIconMissingBesideFavicon()) {
+            warnings.add(Translations.get("systemBrandingView.warning.iconMissing"));
+        }
+        return warnings;
+    }
 
     @ConfigProperty(name = "brand.file.system.path", defaultValue = "/brand")
     String brandFileSystemPath;
@@ -154,11 +185,12 @@ public class BrandDiagnostics {
         }
 
         List<AssetReport> assets = new ArrayList<>();
-        for (Expected expected : EXPECTED) {
+        for (Expected expected : expected()) {
             assets.add(resolve(expected, external, local));
         }
         return new BrandReport(brandFileSystemPath, brandLocalPath, externalExists, localExists, metadataFile,
-                name, organization, version, brandUtil.detectCurrentBrand(), assets);
+                name, organization, version, brandUtil.detectCurrentBrand(), assets,
+                brandUtil.getLogoUrl(BrandUtil.Logo.HORIZONTAL), warnings());
     }
 
     /** Discards the cached brand so the next request re-resolves it (BR-002). */

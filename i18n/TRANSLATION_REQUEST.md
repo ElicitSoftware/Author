@@ -888,6 +888,9 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `systemBrandingView.asset.notFound` | not found in any location | System branding · asset location when nothing was found | 40 |  |
 | `systemBrandingView.asset.unreadable` | {0} exists but cannot be read | System branding · asset location when the file cannot be read | 80 | params: {0} = file path |
 | `systemBrandingView.logoPreview` | Logo preview | System branding · section heading | 30 |  |
+| `systemBrandingView.warnings` | Logo warnings | System branding · section heading | 30 |  |
+| `systemBrandingView.warning.iconMissing` | The brand supplies its own favicon but names no header icon (logos.icon in brand-config.json), so the header shows the Elicit mark beside the favicon of the site. Put the mark of the brand under images/ and name it as logos.icon. | System branding · warning; keep logos.icon, brand-config.json and images/ untranslated | 260 |  |
+| `systemBrandingView.warning.namedFileMissing` | brand-config.json names {0}, which the mounted brand does not hold. The file of the default brand is shown instead. | System branding · warning; {0} is a path such as images/icon.svg; keep brand-config.json untranslated | 160 |  |
 | `systemBrandingView.logoAlt` | Brand logo | System branding · logo image alternative text | 30 |  |
 | `systemConnectionsView.pageTitle` | System Connections | System connections · browser tab title | 40 |  |
 | `systemConnectionsView.title` | Connections | System connections · page heading | 30 |  |
@@ -2098,6 +2101,9 @@ systemBrandingView.asset.favicon=favicon
 systemBrandingView.asset.notFound=not found in any location
 systemBrandingView.asset.unreadable={0} exists but cannot be read
 systemBrandingView.logoPreview=Logo preview
+systemBrandingView.warnings=Logo warnings
+systemBrandingView.warning.iconMissing=The brand supplies its own favicon but names no header icon (logos.icon in brand-config.json), so the header shows the Elicit mark beside the favicon of the site. Put the mark of the brand under images/ and name it as logos.icon.
+systemBrandingView.warning.namedFileMissing=brand-config.json names {0}, which the mounted brand does not hold. The file of the default brand is shown instead.
 systemBrandingView.logoAlt=Brand logo
 systemConnectionsView.pageTitle=System Connections
 systemConnectionsView.title=Connections
