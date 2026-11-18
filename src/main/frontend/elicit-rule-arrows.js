@@ -24,7 +24,16 @@ import { LitElement, html, svg, css } from 'lit';
  *   edge-selected     {edgeId}                   – action glyph clicked
  *   edge-repointed    {edgeId, end, target, mount}      – an arrow end dropped on another element
  */
-const GLYPH = { SHOW: '\u{1F441}', REPEAT: '↻', TEXT: '{T}' };
+const GLYPH = { TEXT: '{T}' };
+/*
+ * Show and Repeat are drawn with the palette's icons (vaadin:eye and vaadin:refresh, 16x16), not
+ * characters: the eye character is an emoji, which browsers paint in color and which ignores the
+ * SVG fill, and a font's arrow never matched the palette.
+ */
+const ICON = {
+  SHOW: 'M8 3.9c-6.7 0-8 5.1-8 5.1s2.2 4.1 7.9 4.1 8.1-4 8.1-4-1.3-5.2-8-5.2zM5.3 5.4c0.5-0.3 1.3-0.3 1.3-0.3s-0.5 0.9-0.5 1.6c0 0.7 0.2 1.1 0.2 1.1l-1.1 0.2c0 0-0.3-0.5-0.3-1.2 0-0.8 0.4-1.4 0.4-1.4zM7.9 12.1c-4.1 0-6.2-2.3-6.8-3.2 0.3-0.7 1.1-2.2 3.1-3.2-0.1 0.4-0.2 0.8-0.2 1.3 0 2.2 1.8 4 4 4s4-1.8 4-4c0-0.5-0.1-0.9-0.2-1.3 2 0.9 2.8 2.5 3.1 3.2-0.7 0.9-2.8 3.2-7 3.2z',
+  REPEAT: 'M2.6 5.6c0.9-2.1 3-3.6 5.4-3.6 3 0 5.4 2.2 5.9 5h2c-0.5-3.9-3.8-7-7.9-7-3 0-5.6 1.6-6.9 4.1l-1.1-1.1v4h4l-1.4-1.4zM16 9h-4.1l1.5 1.4c-0.9 2.1-3 3.6-5.5 3.6-2.9 0-5.4-2.2-5.9-5h-2c0.5 3.9 3.9 7 7.9 7 3 0 5.6-1.7 7-4.1l1.1 1.1v-4z',
+};
 
 class ElicitRuleArrows extends LitElement {
   static properties = {
@@ -75,6 +84,7 @@ class ElicitRuleArrows extends LitElement {
       stroke-width: 2;
     }
     .edge.selected .glyph circle { stroke: var(--brand-primary, var(--lumo-primary-color, #1a5fb4)); stroke-width: 3; }
+    .glyph path { fill: var(--brand-text-on-accent, #fff); pointer-events: none; }
     .glyph text { fill: var(--brand-text-on-accent, #fff); font-size: 11px; font-weight: 700; text-anchor: middle; dominant-baseline: central; font-family: var(--lumo-font-family, sans-serif); pointer-events: none; }
     .label { fill: var(--brand-text-secondary, var(--lumo-secondary-text-color, #555)); font-size: 11px; text-anchor: middle; font-family: var(--lumo-font-family, sans-serif); paint-order: stroke; stroke: var(--brand-surface, var(--lumo-base-color, #fff)); stroke-width: 3px; pointer-events: none; }
     .end { pointer-events: all; cursor: move; fill: var(--brand-accent, var(--brand-warning, var(--lumo-warning-color, #b7791f))); stroke: var(--brand-surface, #fff); stroke-width: 1.5; }
@@ -373,7 +383,9 @@ class ElicitRuleArrows extends LitElement {
       <g class="glyph" transform="translate(${mid.x},${mid.y})"
          @pointerdown=${(ev) => this._grabEnd(ev, id, 'TARGET')}>
         <circle r="11"></circle>
-        <text>${GLYPH[e.action] || '?'}</text>
+        ${ICON[e.action]
+          ? svg`<path transform="translate(-6.5,-6.5) scale(0.8125)" d="${ICON[e.action]}"></path>`
+          : svg`<text>${GLYPH[e.action] || '?'}</text>`}
         <title>${invalid && e.problem ? e.problem + '. ' : ''}${e.label}${e.condition ? ' — ' + this.textWhen + ' ' + e.condition : ''}${e.description ? ' (' + e.description + ')' : ''}</title>
       </g>
       <text class="label" style="text-anchor:start" x="2" y="${mid.y - 8}">${label}</text>
