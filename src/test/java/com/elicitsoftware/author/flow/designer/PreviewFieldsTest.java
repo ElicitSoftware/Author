@@ -134,20 +134,35 @@ class PreviewFieldsTest {
     }
 
     /**
-     * A sample answer is HTML-escaped, because the respondent's own words it stands in for are
-     * attacker-controllable and the runtime escapes them. Previewing it raw showed the author bold
-     * text where the site renders the literal tag.
+     * UC-011 BR-004: in a display-only question's text, which the runtime renders as HTML, a sample
+     * answer is HTML-escaped, because the respondent's own words it stands in for are
+     * attacker-controllable and the runtime escapes them there. Previewing it raw showed the author
+     * bold text where the site renders the literal tag.
      */
     @Test
-    void aSampleAnswerIsHtmlEscapedButAnAuthoredValueIsNot() {
+    void aSampleAnswerIsHtmlEscapedInAnHtmlTextButAnAuthoredValueIsNot() {
         assertEquals("Hello &lt;b&gt;Bob&lt;/b&gt;",
-                PreviewFields.substituteTokens("Hello {<NAME>|friend}", values(Map.of("NAME", "<b>Bob</b>"))));
+                PreviewFields.substituteTokens("Hello {<NAME>|friend}", values(Map.of("NAME", "<b>Bob</b>")), true));
         assertEquals("Hello &lt;script&gt;",
-                PreviewFields.substituteTokens("Hello {<NAME>|friend}", values(Map.of("NAME", "<script>"))));
+                PreviewFields.substituteTokens("Hello {<NAME>|friend}", values(Map.of("NAME", "<script>")), true));
         // An authored value has already had its own substitutions escaped; escaping it again would
         // double-escape them, and would destroy the <TOKEN> brackets before they could be read.
         assertEquals("Hello <b>your mother</b>",
-                PreviewFields.substituteTokens("Hello {<S1>|friend}", values(Map.of("S1", "<b>your mother</b>"), "S1")));
+                PreviewFields.substituteTokens("Hello {<S1>|friend}", values(Map.of("S1", "<b>your mother</b>"), "S1"), true));
+    }
+
+    /**
+     * UC-011 BR-004 (#150, ElicitSoftware/Survey#149): a field label or section title is plain text
+     * at the site, so a sample answer goes in as typed there, not as entities a respondent never sees.
+     */
+    @Test
+    void aSampleAnswerGoesInAsTypedInAPlainTextLabel() {
+        assertEquals("What is Mary O'Brien & Co's current age?",
+                PreviewFields.substituteTokens("What is {<G1>'s|your} current age?",
+                        values(Map.of("G1", "Mary O'Brien & Co"))));
+        assertEquals("Is Mary O'Brien's mother still living?",
+                PreviewFields.substituteTokens("Is {<S1>|your mother} still living?",
+                        values(Map.of("S1", "{<G1>'s|your} mother", "G1", "Mary O'Brien"), "S1")));
     }
 
     /**
@@ -158,9 +173,9 @@ class PreviewFieldsTest {
     @Test
     void everyHtmlSignificantCharacterInASampleAnswerIsEscaped() {
         assertEquals("Hello &amp;&lt;&gt;&quot;&#39;",
-                PreviewFields.substituteTokens("Hello {<NAME>}", values(Map.of("NAME", "&<>\"'"))));
+                PreviewFields.substituteTokens("Hello {<NAME>}", values(Map.of("NAME", "&<>\"'")), true));
         assertEquals("Hello &amp;lt;",
-                PreviewFields.substituteTokens("Hello {<NAME>}", values(Map.of("NAME", "&lt;"))));
+                PreviewFields.substituteTokens("Hello {<NAME>}", values(Map.of("NAME", "&lt;")), true));
     }
 
     /**
@@ -185,7 +200,7 @@ class PreviewFieldsTest {
         // what this is checking.
         assertEquals("Ask &lt;b&gt;Dennis&lt;/b&gt;'s mother.",
                 PreviewFields.substituteTokens("Ask {<S1>|them}.",
-                        values(Map.of("S1", "{<G1>'s|your} mother", "G1", "<b>Dennis</b>"), "S1")));
+                        values(Map.of("S1", "{<G1>'s|your} mother", "G1", "<b>Dennis</b>"), "S1"), true));
         assertEquals("Ask Dennis' mother.",
                 PreviewFields.substituteTokens("Ask {<S1>|them}.",
                         values(Map.of("S1", "{<G1>'s|your} mother", "G1", "Dennis"), "S1")));

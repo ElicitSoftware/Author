@@ -90,27 +90,37 @@ final class PreviewFields {
      * cosmetic; see FHHS C-009 for what depends on them.</p>
      *
      * <p>A sample answer stands in for the respondent's own words, so it is treated as the runtime
-     * treats them: HTML-escaped on the way in, and never re-read for placeholders of its own, so
-     * an answer that happens to contain braces is not mistaken for one. A value the author wrote on
+     * treats them: HTML-escaped on the way in where the text is rendered as HTML, spliced in as
+     * typed where it is plain text, and never re-read for placeholders of its own, so an answer
+     * that happens to contain braces is not mistaken for one. A value the author wrote on
      * a rule is neither escaped nor withheld from the re-reading -- it is prose the respondent is
      * meant to read, and it is often a placeholder in its own right. {@code TokenSamples.Values}
      * carries which is which (ElicitSoftware/Author#22).</p>
      *
-     * <p>Escaping is right for both places a preview lands, because each mirrors the runtime
-     * component it stands for. A display-only question's text goes to {@link #html(String)} and so
-     * to {@code innerHTML}, as it does in Survey's {@code ElicitHtml}, where an escaped
-     * {@code &lt;b&gt;} renders as the literal {@code <b>} a respondent reads. A field's label and a
-     * section's title are plain text, as they are in {@code new TextField(answer.label())}, where
-     * the entities show literally. Both are what the site does.</p>
+     * <p>Each of the two places a preview lands mirrors the runtime component it stands for. A
+     * display-only question's text goes to {@link #html(String)} and so to {@code innerHTML}, as it
+     * does in Survey's {@code ElicitHtml}, so a sample is escaped there and an {@code &lt;b&gt;}
+     * renders as the literal {@code <b>} a respondent reads. A field's label and a section's title
+     * are plain text, as they are in {@code new TextField(answer.label())}, so a sample goes in as
+     * typed and {@code O'Brien} is not shown as {@code O&#39;Brien} (ElicitSoftware/Survey#149).</p>
      */
     static String substituteTokens(String text, TokenSamples.Values values) {
+        return substituteTokens(text, values, false);
+    }
+
+    /**
+     * {@link #substituteTokens(String, TokenSamples.Values)} for a text rendered as plain text
+     * ({@code html} false) or as HTML ({@code html} true, a display-only question): only in the
+     * second is a sample answer HTML-escaped, as Survey's {@code QuestionManager.replaceTokens} does.
+     */
+    static String substituteTokens(String text, TokenSamples.Values values, boolean html) {
         if (text == null || text.isEmpty()) {
             return "";
         }
         // One pass over the text, over values whose own placeholders were resolved first -- the
         // runtime's shape (QuestionManager.replaceTokens). Looping over the text instead would
         // re-read a respondent's words on the second pass.
-        String result = substituteOnce(text, resolveAuthoredValues(values), values.authored());
+        String result = substituteOnce(text, resolveAuthoredValues(values, html), values.authored(), html);
         return result.replace(" her's ", " her ").replace(" his's ", " his ").replace(" Your's ", " Your ")
                 .replaceAll("s's", "s'");
     }
@@ -121,7 +131,7 @@ final class PreviewFields {
      * {@code {<G1>'s|your} mother} and {@code G1} with the patient's name, so "Please indicate if
      * {@code {<S1>|you}} is still living" needs two rounds. Only authored values are re-read.
      */
-    private static Map<String, String> resolveAuthoredValues(TokenSamples.Values values) {
+    private static Map<String, String> resolveAuthoredValues(TokenSamples.Values values, boolean html) {
         Set<String> authored = values.authored();
         if (authored.isEmpty()) {
             return values.values();
@@ -134,7 +144,7 @@ final class PreviewFields {
                 if (value == null || value.indexOf('{') < 0) {
                     continue;
                 }
-                String next = substituteOnce(value, ready, authored);
+                String next = substituteOnce(value, ready, authored, html);
                 if (!next.equals(value)) {
                     ready.put(token, next);
                     changed = true;
@@ -147,7 +157,7 @@ final class PreviewFields {
         return ready;
     }
 
-    private static String substituteOnce(String text, Map<String, String> values, Set<String> authored) {
+    private static String substituteOnce(String text, Map<String, String> values, Set<String> authored, boolean html) {
         Matcher placeholder = Tokens.PLACEHOLDER.matcher(text);
         StringBuilder out = new StringBuilder();
         while (placeholder.find()) {
@@ -158,7 +168,7 @@ final class PreviewFields {
                 // {Q#} and {S#} are runtime counters, filled by the Survey app against the answer's own key.
                 replacement = placeholder.group();
             } else {
-                String filled = fillPhrase(phrase, values, authored);
+                String filled = fillPhrase(phrase, values, authored, html);
                 replacement = filled != null ? filled : (defaultText == null ? phrase : defaultText);
             }
             placeholder.appendReplacement(out, Matcher.quoteReplacement(replacement));
@@ -172,7 +182,7 @@ final class PreviewFields {
      * when any reference has no value, and when the phrase names no token at all. Either way the
      * caller falls back, so a phrase is never half filled.
      */
-    private static String fillPhrase(String phrase, Map<String, String> values, Set<String> authored) {
+    private static String fillPhrase(String phrase, Map<String, String> values, Set<String> authored, boolean html) {
         Matcher ref = Tokens.TOKEN_REF.matcher(phrase);
         StringBuilder filled = new StringBuilder();
         boolean any = false;
@@ -182,12 +192,13 @@ final class PreviewFields {
             if (value == null) {
                 return null;
             }
-            // A sample answer stands in for the respondent's words, which are escaped. A value the
-            // author wrote is not: it has already had its own placeholders resolved, and escaping
-            // it here would double-escape the sample spliced into it -- and would destroy the
-            // <TOKEN> brackets it carries before they could be read at all.
+            // A sample answer stands in for the respondent's words, which are escaped in a text
+            // rendered as HTML and go in as typed elsewhere. A value the author wrote is never
+            // escaped: it has already had its own placeholders resolved, and escaping it here would
+            // double-escape the sample spliced into it -- and would destroy the <TOKEN> brackets it
+            // carries before they could be read at all.
             boolean fromAuthor = authored.stream().anyMatch(t -> t.equalsIgnoreCase(ref.group(1)));
-            ref.appendReplacement(filled, Matcher.quoteReplacement(fromAuthor ? value : escapeHtml(value)));
+            ref.appendReplacement(filled, Matcher.quoteReplacement(fromAuthor || !html ? value : escapeHtml(value)));
         }
         ref.appendTail(filled);
         return any ? filled.toString() : null;
