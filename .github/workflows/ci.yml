@@ -34,10 +34,6 @@ jobs:
   test:
     name: Build and Test with Maven
     runs-on: ubuntu-latest
-    # Runs only for a release tag. Pull requests and branch pushes still trigger the workflow so
-    # that the ruleset's required check reports, but the job is skipped there, and a skipped job
-    # satisfies a required check. Actions minutes are spent once per release, not on every change.
-    if: github.ref_type == 'tag'
     timeout-minutes: 60
     # Naming any permission drops every one not named. The job only reads: it checks this
     # repository out and clones the umbrella, which is public.
