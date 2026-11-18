@@ -274,7 +274,8 @@ public class QuestionDialog extends Dialog {
             return;
         }
         if (PreviewFields.isDisplayOnly(t)) {
-            String content = text.getValue() == null || text.getValue().isBlank() ? null : substituteTokens(text.getValue());
+            String content = text.getValue() == null || text.getValue().isBlank() ? null
+                    : PreviewFields.substituteTokens(text.getValue(), tokenValues, true);
             preview.add(PreviewFields.html(content));
             return;
         }
