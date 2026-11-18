@@ -148,4 +148,7 @@ in [`CLAUDE.md`](CLAUDE.md); use case specs live in [`docs/use_cases/`](docs/use
 
 ## License
 
-[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0)
+[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0);
+see [LICENSE.MD](LICENSE.MD). Elicit Software LLC is the licensor. The classes taken from Survey,
+Admin and FHHS are copyright The Regents of the University of Michigan, licensed to Elicit Software
+LLC, and their headers say so.
