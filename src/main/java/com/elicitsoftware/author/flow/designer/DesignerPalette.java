@@ -30,7 +30,8 @@ public class DesignerPalette extends VerticalLayout {
 
     final Glyph stepChip = Glyph.step(null);
     final Glyph sectionChip = Glyph.section();
-    final Glyph questionChip = Glyph.question(null);
+    /** Drawn as a TEXT question, the type a new question's dialog opens on (UC-011 BR-006). */
+    final Glyph questionChip = Glyph.question("TEXT");
     final Glyph showRuleChip = Glyph.rule("SHOW");
     final Glyph repeatRuleChip = Glyph.rule("REPEAT");
     final Glyph textRuleChip = Glyph.rule("TEXT");
