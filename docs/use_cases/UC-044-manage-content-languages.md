@@ -16,10 +16,10 @@
 
 ## Main Success Scenario
 
-1. The author opens the survey's metadata dialog, or the Translations page (UC-043).
-2. The system shows the base language, the language the survey's content is written in, beside the survey's name, title and description.
-3. The system shows the content languages, the set the survey is published in: as a picker in the metadata dialog, and as the Translations page's language picker, which also offers the curated languages the survey is not published in. Both offer the same set, and both name a language rather than only showing its tag.
-4. The author adds a language to the published set, either by writing its tag in the metadata dialog or by choosing it on the Translations page.
+1. The author opens the survey details form (UC-004) to see or change the base language, or the Translations page (UC-043) to manage the published set.
+2. The survey details form shows the base language, the language the survey's content is written in, beside the survey's name, title and description. It is not asked for when a survey is created, which is written in `en` (UC-003 BR-006).
+3. The Translations page shows the content languages, the set the survey is published in, in its language picker, which also offers the curated languages the survey is not published in. Each is named rather than only tagged. This is the only place the set is managed (BR-007).
+4. The author adds a language to the published set by choosing it, or typing its tag, on the Translations page.
 5. The system records it with the survey and shows its outstanding strings (UC-043), reporting how many the new language leaves untranslated.
 6. The author translates the survey (UC-043, UC-045, UC-046) and exports it (UC-008); every site that mounts that language for its own chrome now serves the survey in it.
 
@@ -35,20 +35,20 @@
 
 ### A2: The author withdraws a language
 
-**Trigger:** The author removes a language from the published set (step 3)  
+**Trigger:** The author chooses Withdraw for a published language on the Translations page (step 3)  
 **Flow:**
 
 1. The system explains that the translations are kept, not deleted, and that no site will serve them until the language is published again.
-2. The author confirms; the language leaves the set at the next export.
+2. The author confirms; the language leaves the published set at once, is offered again as not published, and leaves the sites at the next export. If the author declines, nothing changes.
 3. Use case ends.
 
 ### A3: The author changes the base language
 
-**Trigger:** The author changes the language the content is written in (step 2)  
+**Trigger:** The author saves the survey details with a different base language (step 2, UC-004 A4)  
 **Flow:**
 
-1. The system warns that every existing translation was made from text in the old base language and that changing it does not translate the content.
-2. The author confirms; the base language changes and every translation of the new base language's own tag, if any, is redundant and reported.
+1. Before anything is stored, the system warns that every existing translation was made from text in the old base language and that changing it does not translate the content.
+2. The author confirms; the base language changes and every translation of the new base language's own tag, if any, is redundant and reported. If the author declines, the details form stays open and nothing is stored.
 3. Use case ends.
 
 ## Postconditions
@@ -67,7 +67,7 @@
 
 A language is published because the author says so, not because translations exist for it. A language may be fully translated and unpublished while work is reviewed, or published and incomplete with the missing strings falling back.
 
-The per-language counts live on the Translations page, where the translating is done, and are reported again when a language is added (A1) and at export. The metadata dialog shows the set without them: a second copy of the same numbers, on a dialog that is mostly about a survey's name and address, would be one more thing to keep true.
+The per-language counts live on the Translations page, where the translating is done, and are reported again when a language is added (A1) and at export. The published set is decided there too, beside them (BR-007).
 
 ### BR-002: A site serves a language only when its own chrome has it
 
@@ -98,3 +98,7 @@ A tag is accepted only when BCP-47 can parse it and its primary subtag names a r
 The underscore spelling is read rather than refused: `es_419` is not BCP-47, but it is how the translation bundle files are named, so it is the form an author is most likely to have in front of them. It is normalized on the way in, not stored.
 
 The base language is refused as a target wherever it is offered or typed, however it was itself written.
+
+### BR-007: One place manages the published set
+
+The published set is added to and withdrawn from on the Translations page only. Neither the form that creates a survey nor the one that edits its details shows it: a language chosen there is chosen without the counts that say what publishing it would mean, and a second control for one setting is a second place for it to be changed by mistake. Saving the survey details leaves the set as stored.

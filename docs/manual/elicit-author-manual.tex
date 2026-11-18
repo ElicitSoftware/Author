@@ -167,10 +167,11 @@ in later from \ui{Edit details}.}
   \item \ui{Initial display key} — where the respondent starts. Leave it empty unless you have a
         reason not to.
   \item \ui{Post-survey address} — where the respondent is sent when they finish.
-  \item \ui{Content language} — the language the survey's questions are written in, and
-        \ui{Published translations} — the languages it is published in
-        (Chapter~\ref{sec:translate}).
 \end{itemize}
+
+A new survey is written in English and published in no other language. If you write in another
+language, change its \ui{Content language} in \ui{Edit details} straight away
+(Chapter~\ref{sec:translate}).
 
 Save, and the survey appears in the list. Open it and you get its overview: the survey key, who
 last edited and exported it, a validation panel, and seven actions:
@@ -595,16 +596,20 @@ respondent who finishes triggers every action whose address the authoring stack 
 \section{Translating a survey}
 \label{sec:translate}
 
-A survey is written in one language, its \ui{Content language}, and may be published in
-others, its \ui{Published translations}. Both are in \ui{Edit details}. The languages offered are
-the ones Elicit carries; a translation reaches a respondent only where the site also offers that
-language for its own screens.
+A survey is written in one language, its \ui{Content language}, which you change in
+\ui{Edit details}. Changing it translates nothing, and Author warns you before it saves the
+change. The survey may also be published in other languages, which you add and withdraw on the
+Translations page and nowhere else. The languages offered are the ones Elicit carries; a
+translation reaches a respondent only where the site also offers that language for its own
+screens.
 
 Open \ui{Translations…} from the survey overview.
 
 \begin{enumerate}
   \item Choose the \ui{Language}. Choosing one the survey does not publish yet adds it to the
-        published set, and says how many strings it leaves to translate.
+        published set, and says how many strings it leaves to translate. \ui{Withdraw} takes the
+        chosen language back out; its translations are kept, and no site serves them after the
+        next export until you publish it again.
   \item The grid lists every text a respondent reads: \ui{Where} it is, which \ui{Text} it is,
         the \ui{Original}, the \ui{Translation} and its \ui{Status}. Tick \ui{Only what needs
         work} to see only the rows still \ui{Missing} or \ui{Out of date}.
