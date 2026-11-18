@@ -17,7 +17,7 @@
 
 1. The administrator mounts a brand directory for the Author deployment, holding a brand configuration and its assets (logo, theme styling).
 2. Author starts and detects the active brand, reading its key, display name and logo from the mounted configuration.
-3. The system applies the brand to the application shell so every authoring page shows the site's theme and logo.
+3. The system applies the brand to the application shell so every authoring page shows the site's theme, its mark in the header and its favicon in the browser tab, each the file the configuration names (BR-006).
 4. A page requests a brand asset by name, and the system serves it from the mounted brand directory with a caching header.
 5. The author works throughout the application and sees the site's brand.
 
@@ -87,3 +87,7 @@ A brand asset whose name ends in `.svg` is served with `Content-Security-Policy:
 ### BR-005: A brand's stylesheets name the brand's own files
 
 A relative `url()` in a brand stylesheet names a file of the brand, relative to that stylesheet: `url("fonts/Face.woff2")` in `typography/brand-typography.css` is `typography/fonts/Face.woff2`. The stylesheets are inlined into the page, so the system resolves each such URL to the address the file is served from before the page is sent. That is how a brand carries its own fonts, and the embedded default brand carries IBM Plex Sans and Mono this way, so no font is requested from a third party. A URL that is absolute, or that would leave the brand root, is left as written.
+
+### BR-006: The logos are the files the configuration names
+
+`brand-config.json` names three files under `images/`: the lockup (`logos.horizontal`), the mark shown in the header (`logos.icon`) and the browser tab's icon (`favicon`). The system reads those names wherever the file is used (umbrella UC-014 BR-008). A name left out, or naming a file the mount does not hold, falls back for that file alone to the default brand's file; a name that would leave `images/` is ignored. A mount that brings its own favicon but no icon of its own leaves the Elicit mark in the header (umbrella UC-014 BR-009), and Branding says so (UC-036 BR-003).
