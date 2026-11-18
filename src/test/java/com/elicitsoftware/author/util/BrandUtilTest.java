@@ -17,6 +17,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * same package, so the filesystem-mounted-brand path can be exercised with a real @TempDir
  * instead of the actual /brand mount point used in production.
  *
- * Traceability: UC-030 (Brand the Authoring Interface) — BR-001 fallback order, BR-002 default brand.
+ * Traceability: UC-030 (Brand the Authoring Interface) — BR-001 fallback order, BR-002 default brand,
+ * BR-006 configured logo names.
  */
 class BrandUtilTest {
 
@@ -156,26 +158,100 @@ class BrandUtilTest {
         assertEquals(first.getBrandKey(), second.getBrandKey());
     }
 
-    @Test
-    void getLogoResourcePath_externalBrandUnderMountPath_rewrittenToServedPath(@TempDir Path brandDir) {
-        BrandUtil util = util(brandDir);
-        BrandUtil.BrandInfo external = new BrandUtil.BrandInfo("acme", "Acme", brandDir + "/images/logo.png", "acme");
-
-        assertEquals("/api/brand/images/HorizontalLogo.png", util.getLogoResourcePath(external));
+    private static void image(Path dir, String file) throws IOException {
+        Files.createDirectories(dir.resolve("images"));
+        Files.writeString(dir.resolve("images").resolve(file), "image");
     }
 
+    // UC-030 BR-006: the header icon is the file logos.icon names, served by the brand handler.
     @Test
-    void getLogoResourcePath_defaultBrand_servedUnderApi(@TempDir Path brandDir) {
+    void getIconResourcePath_mountNamingItsIcon_servesThatFile(@TempDir Path brandDir) throws IOException {
+        writeConfig(brandDir, "{\"name\": \"Acme\", \"logos\": {\"icon\": \"mark.svg\"}, \"favicon\": \"tab.svg\"}");
+        image(brandDir, "mark.svg");
+        image(brandDir, "tab.svg");
         BrandUtil util = util(brandDir);
-        BrandUtil.BrandInfo defaultBrand = new BrandUtil.BrandInfo("default-brand", "Elicit", "brand/images/HorizontalLogo.png", "default-brand");
 
-        assertEquals("/api/brand/images/HorizontalLogo.png", util.getLogoResourcePath(defaultBrand));
+        assertEquals("/api/brand/images/mark.svg", util.getIconResourcePath(util.detectCurrentBrand()));
+        assertEquals(new BrandUtil.LogoFile("mark.svg", true), util.getLogoFile(BrandUtil.Logo.ICON));
+        assertEquals("/api/brand/images/tab.svg", util.getLogoUrl(BrandUtil.Logo.FAVICON));
+        assertFalse(util.isIconMissingBesideFavicon());
+        assertEquals(List.of(), util.getMissingLogoFiles());
     }
 
+    // UC-030 BR-006: the lockup is the file logos.horizontal names.
     @Test
-    void getIconResourcePath_alwaysReturnsWhiteIcon(@TempDir Path brandDir) {
-        BrandUtil.BrandInfo info = new BrandUtil.BrandInfo("acme", "Acme", "logo.png", "acme");
-        assertEquals("/api/brand/images/icon-white.png", util(brandDir).getIconResourcePath(info));
+    void getLogoResourcePath_mountNamingItsLockup_servesThatFile(@TempDir Path brandDir) throws IOException {
+        writeConfig(brandDir, "{\"name\": \"Acme\", \"logos\": {\"horizontal\": \"Wide.png\"}}");
+        image(brandDir, "Wide.png");
+        BrandUtil util = util(brandDir);
+
+        assertEquals("/api/brand/images/Wide.png", util.getLogoResourcePath(util.detectCurrentBrand()));
+    }
+
+    // UC-030 BR-006: with nothing mounted every logo is the default brand's file.
+    @Test
+    void logos_noMount_areTheDefaultBrandsFiles(@TempDir Path emptyDir) {
+        BrandUtil util = util(emptyDir);
+
+        assertEquals("/api/brand/images/HorizontalLogo.png", util.getLogoUrl(BrandUtil.Logo.HORIZONTAL));
+        assertEquals(new BrandUtil.LogoFile("icon-white.png", false), util.getLogoFile(BrandUtil.Logo.ICON));
+        assertEquals("/api/brand/images/favicon.ico", util.getLogoUrl(BrandUtil.Logo.FAVICON));
+        assertFalse(util.isIconMissingBesideFavicon());
+    }
+
+    // UC-030 BR-006 (umbrella UC-014 BR-009): a mounted favicon without a mounted icon leaves the default mark, and says so.
+    @Test
+    void isIconMissingBesideFavicon_mountedFaviconWithoutIcon_isTrue(@TempDir Path brandDir) throws IOException {
+        writeConfig(brandDir, "{\"name\": \"Acme\", \"favicon\": \"favicon.svg\"}");
+        image(brandDir, "favicon.svg");
+        BrandUtil util = util(brandDir);
+
+        assertEquals("/api/brand/images/icon-white.png", util.getIconResourcePath(util.detectCurrentBrand()));
+        assertTrue(util.isIconMissingBesideFavicon());
+    }
+
+    // UC-030 A3: a file the mount holds under the default name counts as mounted.
+    @Test
+    void getLogoFile_mountHoldingTheDefaultIconName_isMounted(@TempDir Path brandDir) throws IOException {
+        writeConfig(brandDir, "{\"name\": \"Acme\", \"favicon\": \"favicon.svg\"}");
+        image(brandDir, "favicon.svg");
+        image(brandDir, "icon-white.png");
+        BrandUtil util = util(brandDir);
+
+        assertEquals(new BrandUtil.LogoFile("icon-white.png", true), util.getLogoFile(BrandUtil.Logo.ICON));
+        assertFalse(util.isIconMissingBesideFavicon());
+    }
+
+    // UC-030 BR-006: a named file the mount lacks falls back to the default and is reported.
+    @Test
+    void getLogoFile_namedIconTheMountLacks_fallsBackAndIsReported(@TempDir Path brandDir) throws IOException {
+        writeConfig(brandDir, "{\"name\": \"Acme\", \"logos\": {\"icon\": \"mark.svg\"}}");
+        BrandUtil util = util(brandDir);
+
+        assertEquals(new BrandUtil.LogoFile("icon-white.png", false), util.getLogoFile(BrandUtil.Logo.ICON));
+        assertEquals(List.of("images/mark.svg"), util.getMissingLogoFiles());
+    }
+
+    // UC-030 BR-003, BR-006: a configured name that climbs out of images/ is not a file of the brand.
+    @Test
+    void getIconResourcePath_nameOutsideImages_isIgnored(@TempDir Path brandDir) throws IOException {
+        writeConfig(brandDir, "{\"name\": \"Acme\", \"logos\": {\"icon\": \"../brand-config.json\"}}");
+        BrandUtil util = util(brandDir);
+
+        assertEquals("/api/brand/images/icon-white.png", util.getIconResourcePath(util.detectCurrentBrand()));
+    }
+
+    // UC-036 BR-002: the logos are cached until the brand is cleared.
+    @Test
+    void logos_changedMount_cachedUntilCleared(@TempDir Path brandDir) throws IOException {
+        BrandUtil util = util(brandDir);
+        assertEquals("/api/brand/images/icon-white.png", util.getLogoUrl(BrandUtil.Logo.ICON));
+        writeConfig(brandDir, "{\"name\": \"Acme\", \"logos\": {\"icon\": \"mark.svg\"}}");
+        image(brandDir, "mark.svg");
+
+        assertEquals("/api/brand/images/icon-white.png", util.getLogoUrl(BrandUtil.Logo.ICON));
+        util.clearCache();
+        assertEquals("/api/brand/images/mark.svg", util.getLogoUrl(BrandUtil.Logo.ICON));
     }
 
     @Test

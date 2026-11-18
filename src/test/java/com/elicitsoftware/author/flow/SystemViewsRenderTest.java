@@ -11,7 +11,9 @@ package com.elicitsoftware.author.flow;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.diagnostics.BrandDiagnostics;
 import com.elicitsoftware.author.diagnostics.RequiredConfigCheck;
+import com.elicitsoftware.author.util.BrandUtil;
 import com.elicitsoftware.author.security.ServiceToken;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
@@ -19,6 +21,8 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.ListItem;
 import com.vaadin.flow.component.html.Pre;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusMock;
@@ -150,6 +154,34 @@ class SystemViewsRenderTest extends QuarkusBrowserlessTest {
         view.render();
 
         assertEquals(2, find(Grid.class, view).all().size(), "reload must replace the grids, not duplicate them");
+    }
+
+    /** UC-036 BR-003: a brand without logo problems shows no warnings, and the preview is the default lockup. */
+    @Test
+    void brandingViewShowsNoWarningsForADefaultBrand() {
+        SystemBrandingView view = attach(SystemBrandingView.class);
+
+        assertFalse(containsId(view, SystemBrandingView.WARNINGS_ID));
+        assertEquals("/api/brand/images/HorizontalLogo.png", find(Image.class, view).single().getSrc());
+    }
+
+    /** UC-036 A3, BR-003: each logo warning is listed and the configured lockup is previewed. */
+    @Test
+    void brandingViewListsLogoWarningsAndPreviewsTheConfiguredLockup() {
+        QuarkusMock.installMockForType(new BrandDiagnostics() {
+            @Override
+            public BrandReport report() {
+                return new BrandReport("/brand", "brand", true, false, "brand-config.json", "Acme", null, null,
+                        new BrandUtil.BrandInfo("acme", "Acme", "logo.png", "acme"), List.of(),
+                        "/api/brand/images/Wide.svg", List.of("first warning", "second warning"));
+            }
+        }, BrandDiagnostics.class);
+        SystemBrandingView view = attach(SystemBrandingView.class);
+
+        assertEquals(List.of("first warning", "second warning"),
+                find(ListItem.class, view).all().stream().map(ListItem::getText).toList());
+        assertTrue(containsId(view, SystemBrandingView.WARNINGS_ID));
+        assertEquals("/api/brand/images/Wide.svg", find(Image.class, view).single().getSrc());
     }
 
     /** UC-037: the connections screen lists its targets or says there are none. */
