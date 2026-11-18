@@ -610,6 +610,16 @@ export.
 
 By contributing, you agree that your contributions will be licensed under the same license as the project.
 
+Every source file carries a copyright header between `***LICENSE_START***` and `***LICENSE_END***`.
+The build adds it (license-maven-plugin, `update-file-header`) to any file that has none, naming
+Elicit Software LLC, and never rewrites one that exists. So:
+
+- **A new file:** let the build write the header. Never paste one from another file.
+- **A file copied from Survey, Admin or FHHS:** keep its University of Michigan copyright line. That
+  code is the University's, licensed to Elicit Software LLC. Set the project line to `Elicit Author`,
+  and once you change the file, add a line under the University's:
+  `Copyright (C) <year> Elicit Software LLC`.
+
 ---
 
 **Thank you for contributing to the Elicit Survey Platform!** 🎉
