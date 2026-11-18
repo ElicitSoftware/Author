@@ -322,8 +322,8 @@ class SurveyServiceTest {
     @TestTransaction
     @TestSecurity(user = "author.one", roles = {"elicit_author"})
     void create_refusesAContentLanguageElicitDoesNotCarry() {
-        // publishLanguage was the only checked path until now; a tag typed straight into the
-        // metadata dialog's contentLanguages field went in unexamined.
+        // UC-044 BR-004: a set handed to create() -- the tests' way of seeding one -- passes the
+        // same curated check as publishLanguage.
         Survey d = draft("UC044 metadata refuse");
         d.baseLanguage = "en";
         d.contentLanguages = "fr";
@@ -336,25 +336,57 @@ class SurveyServiceTest {
     @Test
     @TestTransaction
     @TestSecurity(user = "author.one", roles = {"elicit_author"})
-    void updateMetadata_keepsAnAlreadyPublishedUncuratedTag() {
-        // The exemption in validate(): a definition imported before the set was curated may still
-        // publish a tag outside it, and the author has to be able to save the survey -- otherwise
-        // there would be no way to ever remove that tag. Seeded by writing the column directly,
-        // standing in for what an import would have produced; publishLanguage itself would refuse
-        // "fr" outright.
-        Survey s = withLanguages("UC044 legacy import", "en", null);
-        s.contentLanguages = "fr";
+    void updateMetadata_leavesThePublishedSetAsStored() {
+        // UC-004 BR-005: the details form no longer carries the set, so whatever the edited bean
+        // holds -- nothing, or a stale copy -- must not overwrite what the Translations page set.
+        Survey s = withLanguages("UC004 BR-005", "en", "ar");
 
-        // validate()'s exemption keys off the id on the object it is handed, which is this
-        // survey's own id in the real caller (SurveyMetadataDialog binds the persisted entity) --
-        // a fresh, id-less draft would miss the exemption entirely.
-        Survey edit = draft("UC044 legacy import kept");
+        Survey edit = draft("UC004 BR-005 renamed");
         edit.id = s.id;
-        edit.baseLanguage = "en";
-        edit.contentLanguages = "fr";
-        Survey updated = service.updateMetadata(s.id, edit);
+        edit.contentLanguages = null;
+        assertEquals("ar", service.updateMetadata(s.id, edit).contentLanguages);
 
-        assertEquals("fr", updated.contentLanguages, "the already-published tag survives the save");
+        edit.contentLanguages = "fr";
+        assertEquals("ar", service.updateMetadata(s.id, edit).contentLanguages, "not checked, not stored");
+    }
+
+    // ---- UC-044 A2: withdrawing a content language from the Translations page ----
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.two", roles = {"elicit_author"})
+    void withdrawLanguage_removesTheTagAndKeepsTheRest() {
+        Survey s = withLanguages("UC044 withdraw", "en", "ar,es-419");
+
+        Survey updated = service.withdrawLanguage(s.id, "ES_419");
+
+        assertEquals("ar", updated.contentLanguages, "matched in canonical form");
+        assertEquals("author.two", updated.publishedBy, "UC-003 BR-004: last editor recorded");
+        assertNull(service.withdrawLanguage(s.id, "ar").contentLanguages, "an empty set is stored as null");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void withdrawLanguage_takesOutATagElicitDoesNotCarry() {
+        // UC-044 BR-004: the one thing an author may do with an uncurated tag is remove it. Seeded
+        // on the column, standing in for an import; publishLanguage would refuse "fr".
+        Survey s = withLanguages("UC044 withdraw legacy", "en", "ar");
+        s.contentLanguages = "ar,fr";
+
+        assertEquals("ar", service.withdrawLanguage(s.id, "fr").contentLanguages);
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "author.one", roles = {"elicit_author"})
+    void withdrawLanguage_refusesALanguageTheSurveyDoesNotPublish() {
+        Survey s = withLanguages("UC044 withdraw missing", "en", "ar");
+
+        AuthoringException e = assertThrows(AuthoringException.class, () -> service.withdrawLanguage(s.id, "es-419"));
+
+        assertEquals("contentLanguages", e.field());
+        assertEquals("ar", Survey.<Survey>findById(s.id).contentLanguages, "set unchanged");
     }
 
     @Test

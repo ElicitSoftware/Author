@@ -82,9 +82,13 @@ public class SurveyService {
     @Transactional
     public Survey create(Survey draft) {
         validate(draft);
+        validateContentLanguages(draft);
         Survey s = new Survey();
         s.surveyKey = draft.surveyKey != null ? draft.surveyKey : UUID.randomUUID();
         copyMetadata(draft, s);
+        // UC-003 BR-006: the dialog sends none. A set handed in here is the tests' way of seeding
+        // one, and goes through the same curated check as publishLanguage.
+        s.contentLanguages = normalizeLanguages(draft.contentLanguages);
         s.displayOrder = nextDisplayOrder();
         s.publishedBy = currentUser.name();
         s.publishedComment = null;
@@ -99,7 +103,10 @@ public class SurveyService {
         return s;
     }
 
-    /** UC-004: in-place update; key and list position untouched (BR-001, BR-002). */
+    /**
+     * UC-004: in-place update; key and list position untouched (BR-001, BR-002). The published set
+     * is not among the details and is left as stored, whatever {@code edited} carries (BR-005).
+     */
     @Transactional
     public Survey updateMetadata(int id, Survey edited) {
         validate(edited);
@@ -119,7 +126,7 @@ public class SurveyService {
 
     /**
      * UC-044 step 4: adds one language to the survey's published set, from the Translations page
-     * (UC-043 step 2) rather than the metadata dialog. Idempotent in effect -- a tag already
+     * (UC-043 step 2), the one place the set is managed (UC-044 BR-007). Idempotent in effect -- a tag already
      * published is refused rather than silently re-added, so the author is told why nothing
      * happened.
      * <p>
@@ -168,6 +175,51 @@ public class SurveyService {
             throw new AuthoringException(Translations.get("error.survey.languagesFull"), "contentLanguages");
         }
         s.contentLanguages = set;
+        s.publishedBy = currentUser.name();
+        em.flush();
+        return s;
+    }
+
+    /**
+     * UC-044 A2: takes one language out of the survey's published set, from the Translations page.
+     * Its translations stay where they are, closed by nothing: they stop being published, and
+     * publishing the language again brings them back.
+     * <p>
+     * A language Elicit does not carry can be withdrawn like any other -- removing one is the
+     * exception BR-004 makes for them. Stored tags are compared in canonical form, because an
+     * imported set is stored as it arrived.
+     *
+     * @param surveyId the survey
+     * @param tag      the published language, in any form
+     * @return the survey, without the language in its published set
+     * @throws AuthoringException if the survey is gone or does not publish the language
+     */
+    @Transactional
+    public Survey withdrawLanguage(int surveyId, String tag) {
+        Survey s = Survey.findById(surveyId);
+        if (s == null) {
+            throw new AuthoringException(Translations.get("error.survey.gone", String.valueOf(surveyId)));
+        }
+        String canonical = LanguageTags.canonical(tag);
+        List<String> kept = new ArrayList<>();
+        boolean found = false;
+        if (s.contentLanguages != null) {
+            for (String raw : s.contentLanguages.split(",")) {
+                if (raw.isBlank()) {
+                    continue;
+                }
+                if (canonical != null && canonical.equals(LanguageTags.canonical(raw))) {
+                    found = true;
+                } else {
+                    kept.add(raw.trim());
+                }
+            }
+        }
+        if (!found) {
+            throw new AuthoringException(Translations.get("error.survey.languageNotPublished",
+                    canonical != null ? canonical : tag == null ? "" : tag.strip()), "contentLanguages");
+        }
+        s.contentLanguages = normalizeLanguages(String.join(",", kept));
         s.publishedBy = currentUser.name();
         em.flush();
         return s;
@@ -291,10 +343,7 @@ public class SurveyService {
         to.description = blankToNull(from.description);
         to.initialDisplayKey = blankToNull(from.initialDisplayKey);
         to.postSurveyUrl = blankToNull(from.postSurveyUrl);
-        // UC-044. Withdrawing a language leaves its translations in place, closed by nothing:
-        // they simply stop being published, and re-publishing brings them back.
         to.baseLanguage = from.baseLanguage == null || from.baseLanguage.isBlank() ? "en" : from.baseLanguage.trim();
-        to.contentLanguages = normalizeLanguages(from.contentLanguages);
     }
 
     /**
@@ -357,23 +406,23 @@ public class SurveyService {
         if (s.postSurveyUrl != null && s.postSurveyUrl.length() > 255) {
             throw new AuthoringException(Translations.get("error.survey.postSurveyUrlTooLong"), "postSurveyUrl");
         }
-        // UC-044 BR-004. The metadata dialog is the other way into the published set, and until
-        // now the only checked path was publishLanguage -- a tag typed here was stored unexamined.
-        // A tag already on the survey is left alone: it can only have come from an imported
-        // definition, and refusing to save the survey would leave the author unable to remove it.
-        if (s.contentLanguages != null && !s.contentLanguages.isBlank()) {
-            List<String> already = s.id == null ? List.of() : publishedTags(Survey.findById(s.id));
-            for (String raw : s.contentLanguages.split(",")) {
-                if (raw.isBlank()) {
-                    continue;
-                }
-                String canonical = LanguageTags.canonical(raw);
-                if (canonical == null) {
-                    throw new AuthoringException(Translations.get("error.survey.notLanguageTag", raw.strip()), "contentLanguages");
-                }
-                if (!contentLanguages.supports(canonical) && !already.contains(canonical)) {
-                    throw new AuthoringException(unsupported(canonical), "contentLanguages");
-                }
+    }
+
+    /** UC-044 BR-004: a set handed to {@link #create} holds only languages Elicit carries. */
+    private void validateContentLanguages(Survey s) {
+        if (s.contentLanguages == null || s.contentLanguages.isBlank()) {
+            return;
+        }
+        for (String raw : s.contentLanguages.split(",")) {
+            if (raw.isBlank()) {
+                continue;
+            }
+            String canonical = LanguageTags.canonical(raw);
+            if (canonical == null) {
+                throw new AuthoringException(Translations.get("error.survey.notLanguageTag", raw.strip()), "contentLanguages");
+            }
+            if (!contentLanguages.supports(canonical)) {
+                throw new AuthoringException(unsupported(canonical), "contentLanguages");
             }
         }
     }
@@ -384,21 +433,6 @@ public class SurveyService {
      */
     public static boolean singleLine(String value) {
         return value == null || value.chars().noneMatch(Character::isISOControl);
-    }
-
-    /** The survey's published set as canonical tags; empty for a survey that has none. */
-    private static List<String> publishedTags(Survey s) {
-        if (s == null || s.contentLanguages == null || s.contentLanguages.isBlank()) {
-            return List.of();
-        }
-        List<String> tags = new ArrayList<>();
-        for (String raw : s.contentLanguages.split(",")) {
-            String canonical = LanguageTags.canonical(raw);
-            if (canonical != null) {
-                tags.add(canonical);
-            }
-        }
-        return tags;
     }
 
     private static String blankToNull(String v) {

@@ -5,7 +5,7 @@
 **Use Case ID:** UC-004  
 **Use Case Name:** Edit Survey Metadata  
 **Primary Actor:** Survey Author  
-**Goal:** Change a survey's name, title, description, initial display key or post-survey address in place so that its identification stays current without affecting its structure or identity.  
+**Goal:** Change a survey's name, title, description, initial display key, post-survey address or base language in place so that its identification stays current without affecting its structure or identity.  
 **Status:** Draft  
 **Requirements:** [FR-002](../requirements.md)
 
@@ -17,7 +17,7 @@
 ## Main Success Scenario
 
 1. The author selects a survey in the Surveys list, or opens it in the editor, and chooses Edit details.
-2. The system opens the survey details form pre-filled with the current values; the survey key is shown read-only.
+2. The system opens the survey details form pre-filled with the current values, the base language among them; the survey key is shown read-only. The published content languages are not on the form (BR-005).
 3. The author changes one or more fields and chooses Save.
 4. The system validates the entries as in UC-003 step 4.
 5. The system updates the survey in place, keeping its key and list position, and records the author as the last editor.
@@ -50,6 +50,14 @@
 1. The system closes the form and discards the edits.
 2. Use case ends.
 
+### A4: Author changes the base language
+
+**Trigger:** The base language entered differs from the stored one (step 3)  
+**Flow:**
+
+1. The system warns as in UC-044 A3 before anything is stored.
+2. The author confirms, and the use case continues at step 4; or declines, and the form stays open with the author's entries.
+
 ## Postconditions
 
 ### Success Postconditions
@@ -78,3 +86,7 @@ The leading survey component of the initial display key is rewritten by each dep
 ### BR-004: Name and title are single-line
 
 As when the survey is created (UC-003 BR-005), the name and the title may hold no control character. A survey that arrived by import with one keeps it until the author saves the details, and is reported by validation until then (UC-007 BR-015).
+
+### BR-005: The published set is not edited here
+
+The languages a survey is published in are added and withdrawn on the Translations page only (UC-044), where each language's outstanding strings are shown. Saving the details leaves the published set as it is stored.

@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -142,6 +144,44 @@ class TranslationsViewTest extends QuarkusBrowserlessTest {
         assertTrue(view.grid.getGenericDataView().getItems().count() > 0);
         assertEquals(view.getTranslation("translationsView.language.option", "es-419", "Spanish (Latin America)"),
                 suggestionFor(view, "es-419"), "the label drops the 'not published yet' note");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "translations.author", roles = {"elicit_author"})
+    void withdrawingALanguageAsksFirstAndOffersItAgain() {
+        Survey s = survey("ar,es-419");
+        TranslationsView view = open(s);
+        assertEquals("ar", view.language.getValue());
+        assertTrue(view.withdraw.isVisible(), "UC-044 A2: offered for a published language");
+
+        test(view.withdraw).click();
+
+        assertTrue(view.withdrawConfirm.isOpened(), "UC-044 A2 step 1: explained before anything changes");
+        assertEquals("ar,es-419", Survey.<Survey>findById(s.id).contentLanguages, "nothing withdrawn yet");
+
+        ConfirmDialog confirm = view.withdrawConfirm;
+        ComponentUtil.fireEvent(confirm, new ConfirmDialog.ConfirmEvent(confirm, true));
+
+        assertEquals("es-419", Survey.<Survey>findById(s.id).contentLanguages, "UC-044 A2 step 2");
+        assertEquals("es-419", view.language.getValue(), "the first language still published is shown");
+        assertEquals(view.getTranslation("translationsView.language.option.new", "ar", "Arabic"),
+                suggestionFor(view, "ar"), "offered again, as not published yet");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "translations.author", roles = {"elicit_author"})
+    void withdrawingTheLastLanguageLeavesNothingSelected() {
+        Survey s = survey("es-419");
+        TranslationsView view = open(s);
+
+        view.withdraw("es-419");
+
+        assertNull(Survey.<Survey>findById(s.id).contentLanguages);
+        assertNull(view.language.getValue());
+        assertFalse(view.withdraw.isVisible(), "nothing left to withdraw");
+        assertFalse(view.request.isVisible());
     }
 
     /**

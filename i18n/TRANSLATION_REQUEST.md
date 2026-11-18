@@ -927,9 +927,9 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `surveyEditorView.translations` | Translations… | Survey overview · toolbar button opening the translations page | 20 |  |
 | `surveyMetadataDialog.baseLanguage` | Content language | Survey details dialog · field label: the language the content is written in | 25 |  |
 | `surveyMetadataDialog.baseLanguage.helper` | The language this survey's questions are written in. | Survey details dialog · helper text under that field | 80 |  |
-| `surveyMetadataDialog.contentLanguages` | Published translations | Survey details dialog · field label: the languages the survey is published in | 25 |  |
-| `surveyMetadataDialog.contentLanguages.helper` | The languages this survey is published in. Elicit carries these; contact ElicitSoftware for another and it arrives in the next release. | Survey details dialog · helper text under the published-languages picker; "ElicitSoftware" is a company name and stays as it is | 200 |  |
-| `surveyMetadataDialog.contentLanguages.option` | {0} — {1} | Survey details dialog · published-languages picker item: the tag then the language name | 40 | params: {0} = language tag, {1} = language name; identical (punctuation only) |
+| `surveyMetadataDialog.baseLanguageChange.header` | Change the content language? | Survey details dialog · heading of the warning shown before a changed content language is saved | 40 |  |
+| `surveyMetadataDialog.baseLanguageChange.text` | Changing the content language from {0} to {1} does not translate the survey. Any translations it already has were made from its text in {0}. | Survey details dialog · body of that warning | 180 | params: {0} = old language tag, {1} = new language tag |
+| `surveyMetadataDialog.baseLanguageChange.confirm` | Change language | Survey details dialog · confirm button of that warning | 20 |  |
 | `translationsView.pageTitle` | Translations | Translations page · browser tab title | 20 |  |
 | `translationsView.heading` | Translations — {0} | Translations page · heading | 40 | params: {0} = the survey's title, untranslated |
 | `translationsView.backToOverview` | Back to the survey overview | Translations page · tooltip on the back button | 40 |  |
@@ -941,6 +941,10 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `translationsView.language.placeholder` | Choose a language | Translations page · language picker placeholder | 30 |  |
 | `translationsView.language.helper` | Elicit carries these languages. Need another? Contact ElicitSoftware and it arrives in the next release. | Translations page · helper text under the language picker; "ElicitSoftware" is a company name and stays as it is | 120 |  |
 | `translationsView.language.published` | {0} is now one of this survey''s published languages; {1} string(s) still need translating. | Translations page · notification after a language is added to the published set | 110 | params: {0} = language tag, {1} = how many strings are still untranslated |
+| `translationsView.withdraw` | Withdraw | Translations page · button beside the language picker that removes the selected language from the published set; also the confirm button of its dialog | 15 |  |
+| `translationsView.withdraw.header` | Withdraw {0}? | Translations page · heading of the withdraw confirmation | 50 | params: {0} = language tag and name, e.g. es-419 — Spanish (Latin America) |
+| `translationsView.withdraw.text` | The {0} translations are kept, not deleted. After the next export no site serves them until {0} is published again. | Translations page · body of the withdraw confirmation | 160 | params: {0} = language tag |
+| `translationsView.withdrawn` | {0} is no longer one of this survey''s published languages. Its translations are kept. | Translations page · notification after a language is withdrawn from the published set | 110 | params: {0} = language tag |
 | `translationsView.onlyOutstanding` | Only what needs work | Translations page · checkbox filtering to missing and out-of-date rows | 25 |  |
 | `translationsView.counts` | {0} translated, {1} missing, {2} out of date | Translations page · summary line | 60 | params: {0} = translated, {1} = missing, {2} = out of date |
 | `translationsView.request` | Request translation | Translations page · button producing the file for a translator | 25 |  |
@@ -980,6 +984,7 @@ Every row is one key in `translations.properties`. Return a file `translations_<
 | `error.survey.notLanguageTag` | ''{0}'' is not a language tag. Choose one of the languages Elicit carries. | Error message · survey details and Translations page | 160 | params: {0} = what was typed |
 | `error.survey.baseLanguage` | {0} is the language this survey is written in; it needs no translation. | Error message · Translations page, publishing the survey own language | 160 | params: {0} = language tag |
 | `error.survey.languagePublished` | {0} is already one of this survey''s published languages. | Error message · Translations page | 140 | params: {0} = language tag |
+| `error.survey.languageNotPublished` | {0} is not one of this survey''s published languages. | Error message · Translations page | 120 | params: {0} = language tag |
 | `error.survey.languagesFull` | This survey already publishes as many languages as it can hold. | Error message · Translations page | 140 |  |
 | `error.survey.languageUnsupported` | {0} is not one of the languages Elicit carries, so no site could show it. Contact ElicitSoftware to have it translated; it becomes available in the next release. | Error message · survey details and Translations page; ElicitSoftware stays | 320 | params: {0} = language tag |
 | `error.survey.exportNeedsAuthor` | An export must be attributed to a signed-in author | Error message · export dialog | 140 |  |
@@ -2132,9 +2137,9 @@ oidcDiagnosticsView.accessTokenError=Access Token Error: {0}
 surveyEditorView.translations=Translations…
 surveyMetadataDialog.baseLanguage=Content language
 surveyMetadataDialog.baseLanguage.helper=The language this survey's questions are written in.
-surveyMetadataDialog.contentLanguages=Published translations
-surveyMetadataDialog.contentLanguages.helper=The languages this survey is published in. Elicit carries these; contact ElicitSoftware for another and it arrives in the next release.
-surveyMetadataDialog.contentLanguages.option={0} — {1}
+surveyMetadataDialog.baseLanguageChange.header=Change the content language?
+surveyMetadataDialog.baseLanguageChange.text=Changing the content language from {0} to {1} does not translate the survey. Any translations it already has were made from its text in {0}.
+surveyMetadataDialog.baseLanguageChange.confirm=Change language
 translationsView.pageTitle=Translations
 translationsView.heading=Translations — {0}
 translationsView.backToOverview=Back to the survey overview
@@ -2146,6 +2151,10 @@ translationsView.language.option.unsupported={0} — {1} · not carried by Elici
 translationsView.language.placeholder=Choose a language
 translationsView.language.helper=Elicit carries these languages. Need another? Contact ElicitSoftware and it arrives in the next release.
 translationsView.language.published={0} is now one of this survey''s published languages; {1} string(s) still need translating.
+translationsView.withdraw=Withdraw
+translationsView.withdraw.header=Withdraw {0}?
+translationsView.withdraw.text=The {0} translations are kept, not deleted. After the next export no site serves them until {0} is published again.
+translationsView.withdrawn={0} is no longer one of this survey''s published languages. Its translations are kept.
 translationsView.onlyOutstanding=Only what needs work
 translationsView.counts={0} translated, {1} missing, {2} out of date
 translationsView.request=Request translation
@@ -2185,6 +2194,7 @@ error.survey.delete.previewUnauthorized=The survey was not deleted: the preview 
 error.survey.notLanguageTag=''{0}'' is not a language tag. Choose one of the languages Elicit carries.
 error.survey.baseLanguage={0} is the language this survey is written in; it needs no translation.
 error.survey.languagePublished={0} is already one of this survey''s published languages.
+error.survey.languageNotPublished={0} is not one of this survey''s published languages.
 error.survey.languagesFull=This survey already publishes as many languages as it can hold.
 error.survey.languageUnsupported={0} is not one of the languages Elicit carries, so no site could show it. Contact ElicitSoftware to have it translated; it becomes available in the next release.
 error.survey.exportNeedsAuthor=An export must be attributed to a signed-in author

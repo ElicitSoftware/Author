@@ -17,7 +17,7 @@
 ## Main Success Scenario
 
 1. The author chooses New survey.
-2. The system opens the survey details form with fields for name, title, description, initial display key and post-survey address.
+2. The system opens the survey details form with fields for name, title, description, initial display key and post-survey address. It asks nothing about languages (BR-006).
 3. The author enters a name and a title, optionally the other fields, and chooses Save.
 4. The system validates the entries: name and title are present and within length limits; the name is not used by another survey in Author.
 5. The system assigns the survey a permanent survey key, places it last in the survey list order, records the author as the last editor, and stores the survey.
@@ -55,7 +55,7 @@
 
 ### Success Postconditions
 
-- A survey exists with a permanent survey key, the entered metadata, a list position after all existing surveys, and no structural elements.
+- A survey exists with a permanent survey key, the entered metadata, base language `en`, no published content languages, a list position after all existing surveys, and no structural elements.
 - The survey appears in the Surveys list and can be opened in the editor.
 
 ### Failure Postconditions
@@ -83,3 +83,7 @@ Creating or editing a survey records the author's principal name on the survey; 
 ### BR-005: Name and title are single-line
 
 A survey's name and title are one line of text each. A value holding a control character — a line break, a tab or any other — is refused with the field marked (A1), because both are shown in lists and headings and the name is written into the header of the exported file (UC-008 BR-004).
+
+### BR-006: No language is chosen at creation
+
+A new survey is written in `en` and published in no other language. Neither is asked for on the form: a new survey has no translations, so a language published from here would only fall back to the base language, and the base language reads as if it were the language respondents see, which it is not. An author writing in another language changes the base language in the survey details right afterwards (UC-004, UC-044 A3); the published set is managed on the Translations page (UC-044).

@@ -11,10 +11,13 @@ package com.elicitsoftware.author.flow;
  * ***LICENSE_END***
  */
 
+import com.elicitsoftware.author.survey.SurveyService;
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
 import com.vaadin.browserless.quarkus.QuarkusBrowserlessTest;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.textfield.TextField;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -24,8 +27,11 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** UC-003 / UC-004 through the Surveys view. */
@@ -35,6 +41,9 @@ class SurveysViewTest extends QuarkusBrowserlessTest {
 
     @Inject
     EntityManager em;
+
+    @Inject
+    SurveyService surveys;
 
     @Test
     @TestSecurity(user = "view.author", roles = {"elicit_author"})
@@ -52,6 +61,7 @@ class SurveysViewTest extends QuarkusBrowserlessTest {
         SurveysView view = navigate(SurveysView.class);
         test(view.newSurvey).click();
         SurveyMetadataDialog dialog = find(SurveyMetadataDialog.class).single();
+        assertFalse(dialog.baseLanguage.isVisible(), "UC-003 BR-006: no language is asked for");
 
         // Empty submit: binder blocks, dialog stays open.
         test(dialog.save).click();
@@ -65,7 +75,72 @@ class SurveysViewTest extends QuarkusBrowserlessTest {
         assertFalse(dialog.isOpened(), "dialog closes after a successful save");
         Survey created = Survey.find("name", "UC003 via view").firstResult();
         assertEquals("view.author", created.publishedBy);
+        assertEquals("en", created.baseLanguage, "UC-003 BR-006: written in en");
+        assertNull(created.contentLanguages, "UC-003 BR-006: published in nothing else");
         assertTrue(view.grid.getGenericDataView().getItems().anyMatch(s -> s.id.equals(created.id)));
+    }
+
+    private Survey publishing(String name, String published) {
+        Survey bean = new Survey();
+        bean.name = name;
+        bean.title = name;
+        bean.contentLanguages = published;
+        return surveys.create(bean);
+    }
+
+    private SurveyMetadataDialog editDialog(Survey s) {
+        SurveyEditorView editor = navigate(SurveyEditorView.class,
+                Map.of(SurveyEditorView.SURVEY_ID, String.valueOf(s.id)));
+        test(editor.editDetails).click();
+        return find(SurveyMetadataDialog.class).single();
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "view.author", roles = {"elicit_author"})
+    void editShowsTheBaseLanguageAndKeepsThePublishedSet() {
+        Survey s = publishing("UC004 keeps set", "ar");
+        SurveyMetadataDialog dialog = editDialog(s);
+        assertTrue(dialog.baseLanguage.isVisible(), "UC-004 step 2");
+        assertEquals("en", dialog.baseLanguage.getValue());
+
+        test(dialog.title).setValue("Retitled");
+        test(dialog.save).click();
+
+        assertNull(dialog.baseLanguageWarning, "UC-004 A4: the base language was not changed");
+        assertFalse(dialog.isOpened());
+        Survey stored = Survey.findById(s.id);
+        assertEquals("Retitled", stored.title);
+        assertEquals("ar", stored.contentLanguages, "UC-004 BR-005: the published set is left as stored");
+    }
+
+    @Test
+    @TestTransaction
+    @TestSecurity(user = "view.author", roles = {"elicit_author"})
+    void changingTheBaseLanguageWarnsBeforeSaving() {
+        Survey s = publishing("UC004 A4", null);
+        SurveyMetadataDialog dialog = editDialog(s);
+
+        test(dialog.baseLanguage).setValue("es");
+        test(dialog.save).click();
+
+        assertTrue(dialog.baseLanguageWarning.isOpened(), "UC-044 A3: warned first");
+        assertTrue(dialog.isOpened(), "the details stay open behind the warning");
+        assertEquals("en", Survey.<Survey>findById(s.id).baseLanguage, "nothing stored before confirming");
+
+        ConfirmDialog warning = dialog.baseLanguageWarning;
+        ComponentUtil.fireEvent(warning, new ConfirmDialog.ConfirmEvent(warning, true));
+
+        assertFalse(dialog.isOpened());
+        assertEquals("es", Survey.<Survey>findById(s.id).baseLanguage);
+    }
+
+    @Test
+    void retypingTheBaseLanguageIsNotAChange() {
+        assertFalse(SurveyMetadataDialog.baseLanguageChanged("en", "EN"), "compared in canonical form");
+        assertFalse(SurveyMetadataDialog.baseLanguageChanged("en", " "), "blank is stored as en");
+        assertFalse(SurveyMetadataDialog.baseLanguageChanged(null, "en"));
+        assertTrue(SurveyMetadataDialog.baseLanguageChanged("en", "es-419"));
     }
 
     @Test

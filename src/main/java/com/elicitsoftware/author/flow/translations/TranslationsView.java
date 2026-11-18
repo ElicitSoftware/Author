@@ -27,6 +27,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
@@ -85,6 +86,10 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
     final H2 heading = new H2();
     final Button overview = new Button(VaadinIcon.ARROW_LEFT.create());
     final ComboBox<String> language = new ComboBox<>();
+    /** UC-044 A2: takes the selected language out of the published set. */
+    final Button withdraw = new Button();
+    /** Open while the author confirms a withdrawal; for tests. */
+    ConfirmDialog withdrawConfirm;
     final Checkbox onlyOutstanding = new Checkbox();
     final Span counts = new Span();
     final Grid<Row> grid = new Grid<>();
@@ -165,6 +170,9 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
             updating = false;
         }
 
+        withdraw.setText(getTranslation("translationsView.withdraw"));
+        withdraw.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
         onlyOutstanding.setLabel(getTranslation("translationsView.onlyOutstanding"));
 
         request.setText(getTranslation("translationsView.request"));
@@ -183,7 +191,7 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
         wireOnce();
         buildGrid();
 
-        HorizontalLayout controls = new HorizontalLayout(language, onlyOutstanding, request, upload);
+        HorizontalLayout controls = new HorizontalLayout(language, withdraw, onlyOutstanding, request, upload);
         controls.setDefaultVerticalComponentAlignment(Alignment.BASELINE);
         controls.setWidthFull();
 
@@ -226,6 +234,7 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
         });
         onlyOutstanding.addValueChangeListener(e -> load());
         request.addClickListener(e -> downloadRequest());
+        withdraw.addClickListener(e -> confirmWithdraw(language.getValue()));
     }
 
     /**
@@ -283,6 +292,55 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
             n.addThemeVariants(NotificationVariant.LUMO_ERROR);
             select(previous);
         }
+    }
+
+    /**
+     * UC-044 A2: says what withdrawing keeps before anything changes. The page is the one place the
+     * published set is managed (BR-007), so this is the only way a language leaves it.
+     */
+    private void confirmWithdraw(String tag) {
+        if (tag == null || !publishedTags.contains(tag)) {
+            return;
+        }
+        withdrawConfirm = new ConfirmDialog();
+        withdrawConfirm.setHeader(getTranslation("translationsView.withdraw.header", languageName(tag)));
+        withdrawConfirm.setText(getTranslation("translationsView.withdraw.text", tag));
+        withdrawConfirm.setCancelable(true);
+        withdrawConfirm.setCancelText(getTranslation("common.cancel"));
+        withdrawConfirm.setConfirmText(getTranslation("translationsView.withdraw"));
+        withdrawConfirm.addConfirmListener(e -> withdraw(tag));
+        withdrawConfirm.open();
+    }
+
+    /**
+     * Takes the language out of the published set and rebuilds the picker: the withdrawn language
+     * is offered again as not yet published (or not at all, when Elicit does not carry it), and
+     * the first language still published is selected, as when the page opens.
+     */
+    void withdraw(String tag) {
+        try {
+            survey = surveyService.withdrawLanguage(survey.id, tag);
+        } catch (AuthoringException e) {
+            Notification.show(e.getMessage(), 6000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            return;
+        }
+        List<String> published = translations.contentLanguages(survey);
+        publishedTags = new HashSet<>(published);
+        updating = true;
+        try {
+            language.setItems(new ArrayList<>(translations.offerableLanguages(survey)));
+            language.setValue(published.isEmpty() ? null : published.get(0));
+        } finally {
+            updating = false;
+        }
+        load();
+        Notification.show(getTranslation("translationsView.withdrawn", tag), 6000, Notification.Position.BOTTOM_START)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
+
+    private String languageName(String tag) {
+        return getTranslation("translationsView.language.option", tag, LanguageTags.displayName(tag, getLocale()));
     }
 
     /**
@@ -366,10 +424,12 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
             // so it would read as a live control that silently does nothing.
             request.setVisible(false);
             upload.setVisible(false);
+            withdraw.setVisible(false);
             return;
         }
         request.setVisible(true);
         upload.setVisible(true);
+        withdraw.setVisible(publishedTags.contains(tag));
         rows = translations.rows(survey.id, tag);
         TranslationService.Counts c = translations.counts(survey.id, tag);
         counts.setText(getTranslation("translationsView.counts",
