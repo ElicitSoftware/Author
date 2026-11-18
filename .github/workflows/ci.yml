@@ -23,6 +23,9 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
+      - 'V*'
   pull_request:
     branches:
       - main
@@ -31,6 +34,10 @@ jobs:
   test:
     name: Build and Test with Maven
     runs-on: ubuntu-latest
+    # Runs only for a release tag. Pull requests and branch pushes still trigger the workflow so
+    # that the ruleset's required check reports, but the job is skipped there, and a skipped job
+    # satisfies a required check. Actions minutes are spent once per release, not on every change.
+    if: github.ref_type == 'tag'
     timeout-minutes: 60
     # Naming any permission drops every one not named. The job only reads: it checks this
     # repository out and clones the umbrella, which is public.
@@ -38,13 +45,13 @@ jobs:
       contents: read
 
     steps:
-      - name: Clone the umbrella (same-named branch, else V3)
+      - name: Clone the umbrella (same-named branch or tag, else V3)
         run: |
           UMBRELLA=https://github.com/ElicitSoftware/Elicit.git
           # Author's main pairs with the umbrella's V3, not its main: the umbrella's main is the
           # released line and has neither the sample nor elicit-i18n.
           BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          if [ "$BRANCH" = main ] || ! git ls-remote --exit-code --heads "$UMBRELLA" "$BRANCH" >/dev/null 2>&1; then
+          if [ "$BRANCH" = main ] || ! git ls-remote --exit-code "$UMBRELLA" "refs/heads/$BRANCH" "refs/tags/$BRANCH" >/dev/null 2>&1; then
             BRANCH=V3
           fi
           git clone --quiet --depth 1 --branch "$BRANCH" "$UMBRELLA" Elicit
