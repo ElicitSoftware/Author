@@ -36,6 +36,9 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.timepicker.TimePicker;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.safety.Safelist;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -99,7 +102,7 @@ final class PreviewFields {
      *
      * <p>Each of the two places a preview lands mirrors the runtime component it stands for. A
      * display-only question's text goes to {@link #html(String)} and so to {@code innerHTML}, as it
-     * does in Survey's {@code ElicitHtml}, so a sample is escaped there and an {@code &lt;b&gt;}
+     * does in Survey's {@code ElicitHtml} (sanitized first, UC-011 BR-004), so a sample is escaped there and an {@code &lt;b&gt;}
      * renders as the literal {@code <b>} a respondent reads. A field's label and a section's title
      * are plain text, as they are in {@code new TextField(answer.label())}, so a sample goes in as
      * typed and {@code O'Brien} is not shown as {@code O&#39;Brien} (ElicitSoftware/Survey#149).</p>
@@ -250,11 +253,31 @@ final class PreviewFields {
         return Tokens.isDisplayOnly(type);
     }
 
+    /**
+     * The markup a display-only question's preview may render (UC-011 BR-004): the formatting
+     * set, with {@code class} and {@code style} on every element. Scripts, event handlers,
+     * {@code javascript:} addresses, frames and forms are not in it.
+     */
+    private static final Safelist PREVIEW_HTML = Safelist.relaxed().addAttributes(":all", "class", "style");
+
+    /**
+     * UC-011 BR-004: an HTML question's text with everything that could run in the viewer's
+     * session removed. The text is another author's, or came from an imported file or an AI
+     * draft, and the preview renders it in this author's session.
+     *
+     * @param html the question text, tokens already substituted
+     * @return the text reduced to the formatting set
+     */
+    static String sanitize(String html) {
+        // Not pretty-printed: added whitespace around inline elements would change what renders.
+        return Jsoup.clean(html, "", PREVIEW_HTML, new Document.OutputSettings().prettyPrint(false));
+    }
+
     /** An HTML question has no input; the respondent sees its text rendered as HTML. */
     static Component html(String content) {
         String body = content == null || content.isBlank() ? Translations.get("previewFields.htmlPlaceholder") : content;
         try {
-            return new Html("<div class=\"question-preview-html\">" + body + "</div>"); // i18n:ignore markup wrapper
+            return new Html("<div class=\"question-preview-html\">" + sanitize(body) + "</div>"); // i18n:ignore markup wrapper
         } catch (RuntimeException invalid) {
             return new Span(Translations.get("previewFields.invalidHtml"));
         }
