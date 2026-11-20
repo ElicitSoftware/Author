@@ -34,11 +34,11 @@ jobs:
         working-directory: Elicit/Author
 
     steps:
-      - name: Clone the umbrella (V3, the integration branch)
+      - name: Clone the umbrella (main, the integration branch)
         working-directory: .
         run: |
-          git clone --quiet --depth 1 --branch V3 https://github.com/ElicitSoftware/Elicit.git Elicit
-          echo "umbrella: V3 $(git -C Elicit log -1 --format='%h %s')"
+          git clone --quiet --depth 1 --branch main https://github.com/ElicitSoftware/Elicit.git Elicit
+          echo "umbrella: main $(git -C Elicit log -1 --format='%h %s')"
           test -f Elicit/docs/manual/elicit-brand.sty
           test -x Elicit/docs/manual/check-properties.sh
 

@@ -61,10 +61,10 @@ For dev mode, start what Author calls from the umbrella —
 `docker compose up -d db keycloak author-survey` in `..` — and run Author on
 8084. A change to the stack, the realm, the database script or a suite is made
 in the umbrella, on a branch with the same name as the one here (Author's CI
-clones the umbrella's same-named branch, else `V3`).
+clones the umbrella's same-named branch, else `main`).
 
-Author's integration branch is `main`; unlike Survey, Admin and FHHS it has no
-`V3`.
+Author's integration branch is `main`, as it is in every Elicit repository since the
+3.0.0 release (umbrella #188); unlike Survey, Admin and FHHS it never had a `V3`.
 
 ## MCP Servers and Skills
 
