@@ -628,7 +628,7 @@
 
 /* Only what can take the payload lights up, and it lifts above the rule-arrow overlay (z-index 2)
    for the duration: an arrow's hit band is 14px of stroke and its glyphs are themselves drag
-   handles, so an arrow crossing a target would otherwise take the drop. A flex item honours
+   handles, so an arrow crossing a target would otherwise take the drop. A flex item honors
    z-index without being positioned, so no position is needed here.
 
    A rule is the exception that proves the shape: it is dropped on the question it reads from

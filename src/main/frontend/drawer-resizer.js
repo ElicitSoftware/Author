@@ -14,7 +14,7 @@
  * `--vaadin-app-layout-drawer-width` custom property on the app-layout element (supported by Lumo),
  * clamped to a sensible range, and remembers the chosen width per browser in localStorage.
  *
- * Registered as a global initialiser and invoked from MainLayout with the app-layout element, so
+ * Registered as a global initializer and invoked from MainLayout with the app-layout element, so
  * there is exactly one handle regardless of navigation.
  */
 window.__initDrawerResizer = function (appLayout, texts) {
