@@ -90,6 +90,7 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
     List<Assignment> allAssignments = List.of();
     final Map<Integer, Long> usesByTag = new HashMap<>();
 
+    /** Builds the view's controls; the survey is loaded on navigation, in {@code beforeEnter}. */
     public ReportingView() {
         overview.setText(getTranslation("reportingView.surveyOverview"));
         openDesigner.setText(getTranslation("reportingView.openInDesigner"));
@@ -286,7 +287,12 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
         Notification.show(message, 5000, Notification.Position.MIDDLE).addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
 
-    /** For the designer: the nodes an assignment may target. */
+    /**
+     * For the designer: the nodes an assignment may target.
+     *
+     * @param tree the survey's structure
+     * @return every section and question node of the tree, in tree order; steps are left out
+     */
     public static List<StructureNode> targets(SurveyStructureQuery.Tree tree) {
         return TagAssignmentDialog.targets(tree.all());
     }

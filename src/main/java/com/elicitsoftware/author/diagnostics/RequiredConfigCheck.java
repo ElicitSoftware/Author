@@ -50,10 +50,17 @@ public class RequiredConfigCheck {
             new Required("elicit.service.token", "ELICIT_SERVICE_TOKEN",
                     "systemOverviewView.setting.serviceToken"));
 
+    /** Creates the bean; CDI calls this. */
     public RequiredConfigCheck() {
         // CDI managed bean
     }
 
+    /**
+     * Every required setting and whether it is configured; a value that cannot be expanded counts
+     * as absent.
+     *
+     * @return one entry per setting, purpose in the reader's language, in a fixed order
+     */
     public List<RequiredSetting> requiredSettings() {
         Config config = ConfigProvider.getConfig();
         return REQUIRED.stream()

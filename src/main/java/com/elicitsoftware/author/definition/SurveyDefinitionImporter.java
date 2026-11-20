@@ -62,6 +62,17 @@ public class SurveyDefinitionImporter {
     @Inject
     com.elicitsoftware.author.survey.ReportService reports;
 
+    /**
+     * Reads a definition ({@code ELICIT_SURVEY_EXPORT_V1}, or an {@code ELICIT_SURVEY_DRAFT_V1}
+     * draft) and stores it as a new survey in one transaction. A draft with no reports gets the
+     * built-in report service (UC-048 BR-001).
+     *
+     * @param inputStream the file's content, read as UTF-8
+     * @return the new survey and the rows imported and skipped
+     * @throws DefinitionException when the file cannot be read, is not a definition, has no
+     *         {@code surveys} record, names a survey already in Author, or has a bad record; the
+     *         message names the line, and the whole import is rolled back
+     */
     @Transactional
     public ImportResult importFile(InputStream inputStream) {
         Map<String, Integer> counts = new LinkedHashMap<>();

@@ -51,6 +51,9 @@ public class SurveyMetadataDialog extends Dialog {
     ConfirmDialog baseLanguageWarning;
 
     /**
+     * A dialog that creates a survey (UC-003) or edits an existing survey's metadata (UC-004).
+     *
+     * @param service  the service that creates or updates the survey
      * @param existing the survey to edit, or {@code null} to create one
      * @param onSaved receives the persisted survey
      */

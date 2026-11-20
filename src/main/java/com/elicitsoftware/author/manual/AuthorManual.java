@@ -40,11 +40,16 @@ public class AuthorManual {
     @ConfigProperty(name = "author.manual.resource", defaultValue = DEFAULT_RESOURCE)
     String resource;
 
+    /** Creates the bean; CDI injects the resource path. */
     public AuthorManual() {
         // CDI managed bean
     }
 
-    /** Whether this build carries the manual. */
+    /**
+     * Whether this build carries the manual.
+     *
+     * @return whether the manual's resource is on the classpath
+     */
     public boolean isAvailable() {
         return loader().getResource(resource) != null;
     }

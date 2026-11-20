@@ -34,7 +34,13 @@ import java.util.Set;
  */
 public class SectionPreview extends Div {
 
-    /** One question rendered in the preview, so tests and the board can find it by node. */
+    /**
+     * One question rendered in the preview, so tests and the board can find it by node.
+     *
+     * @param node  the question's node on the board
+     * @param box   the clickable container the question is rendered in
+     * @param field the rendered field, or the HTML of a display-only question
+     */
     public record Block(StructureNode node, Div box, Component field) { }
 
     final Span heading = new Span();
@@ -44,6 +50,7 @@ public class SectionPreview extends Div {
     /** The page titles in order (one per section shown). */
     final List<String> titles = new ArrayList<>();
 
+    /** Creates an empty preview; {@code show} fills it for a selection. */
     public SectionPreview() {
         addClassName("designer-preview");
         heading.setText(getTranslation("sectionPreview.heading"));
@@ -173,11 +180,20 @@ public class SectionPreview extends Div {
         return note;
     }
 
-    /** The preview's page titles, in order. */
+    /**
+     * The preview's page titles, in order.
+     *
+     * @return an immutable copy of the section names shown, as written, before tokens are filled
+     */
     public List<String> titles() {
         return List.copyOf(titles);
     }
 
+    /**
+     * The questions the preview currently renders, in order.
+     *
+     * @return an immutable copy of the blocks
+     */
     public List<Block> blocks() {
         return List.copyOf(blocks);
     }

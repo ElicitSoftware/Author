@@ -71,10 +71,16 @@ public class DatabaseDiagnostics {
     @ConfigProperty(name = "quarkus.datasource.username", defaultValue = "")
     String configuredUser;
 
+    /** Creates the bean; CDI calls this. */
     public DatabaseDiagnostics() {
         // CDI managed bean
     }
 
+    /**
+     * Opens a connection and asks the server who and where it is (UC-035 step 2).
+     *
+     * @return the report; a failed probe is reported down with the error message, never thrown
+     */
     public ConnectionReport checkConnection() {
         long start = System.nanoTime();
         try (Connection connection = dataSource.getConnection();
@@ -91,7 +97,11 @@ public class DatabaseDiagnostics {
         }
     }
 
-    /** Whether the {@code survey} schema and its central table exist (UC-035 step 3). */
+    /**
+     * Whether the {@code survey} schema and its central table exist (UC-035 step 3).
+     *
+     * @return up when {@code survey.surveys} exists; down when it does not or the probe failed
+     */
     public CheckResult checkSchema() {
         long start = System.nanoTime();
         try (Connection connection = dataSource.getConnection()) {
@@ -104,7 +114,12 @@ public class DatabaseDiagnostics {
         }
     }
 
-    /** The Survey module's latest migration, from its history table in this database. */
+    /**
+     * The Survey module's latest migration, from its history table in this database.
+     *
+     * @return the latest versioned migration; when the table cannot be read, a report with no
+     *         version whose {@code installedOn} carries the reason
+     */
     public MigrationReport surveyMigration() {
         try (Connection connection = dataSource.getConnection()) {
             if (!tableExists(connection, SURVEY_HISTORY_TABLE)) {
@@ -125,7 +140,13 @@ public class DatabaseDiagnostics {
         }
     }
 
-    /** Whether the Kimball durable-key sequences exist (UC-035 step 4). */
+    /**
+     * Whether the Kimball durable-key sequences exist (UC-035 step 4), probed through
+     * {@link #DURABLE_SEQUENCE}.
+     *
+     * @return up when that sequence exists in the {@code survey} schema; down when it does not or
+     *         the probe failed
+     */
     public CheckResult checkDurableSequences() {
         long start = System.nanoTime();
         try (Connection connection = dataSource.getConnection();
@@ -146,6 +167,11 @@ public class DatabaseDiagnostics {
         }
     }
 
+    /**
+     * How many surveys the database holds.
+     *
+     * @return the number of rows in {@code survey.surveys}
+     */
     @Transactional
     public long surveyCount() {
         return Survey.count();

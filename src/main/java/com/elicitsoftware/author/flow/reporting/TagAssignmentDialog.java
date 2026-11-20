@@ -77,9 +77,15 @@ public class TagAssignmentDialog extends Dialog {
     private final Assignment existing;
 
     /**
-     * @param nodes    the sections and questions an assignment may target (ignored when {@code context} or {@code existing} is given)
+     * Builds the dialog to assign a tag (UC-021) or, given {@code existing}, to edit an assignment (UC-022).
+     *
+     * @param service  saves the assignment and lists the survey's tags
+     * @param survey   the survey whose elements are tagged
+     * @param nodes    the sections and questions an assignment may target; steps and retired nodes are
+     *                 dropped, and a null list offers none (ignored when {@code context} or {@code existing} is given)
      * @param context  the board node the dialog was opened from, or {@code null} to pick one
      * @param existing the assignment to edit, or {@code null} to create one
+     * @param onSaved  called with the saved assignment after a successful save
      */
     public TagAssignmentDialog(ReportingService service, Survey survey, List<StructureNode> nodes, StructureNode context,
                                Assignment existing, Consumer<Metadata> onSaved) {
@@ -297,7 +303,12 @@ public class TagAssignmentDialog extends Dialog {
         }
     }
 
-    /** Every section and question node of a tree, for the element picker. */
+    /**
+     * Every section and question node of a tree, for the element picker.
+     *
+     * @param all the tree's nodes
+     * @return the nodes that are not steps, in their original order, retired ones included
+     */
     public static List<StructureNode> targets(List<StructureNode> all) {
         List<StructureNode> out = new ArrayList<>();
         for (StructureNode n : all) {

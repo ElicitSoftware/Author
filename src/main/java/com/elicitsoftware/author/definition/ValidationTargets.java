@@ -46,16 +46,31 @@ public class ValidationTargets {
     public enum Destination { DESIGNER, REPORTING, TRANSLATIONS }
 
     /**
+     * Where one finding points: the page that corrects it and the path to the element.
+     *
      * @param destination the page to open
      * @param address     the designer's {@code select} value, or null for the other pages
      * @param location    the path to the element, outermost first; empty when the finding has no place
      */
     public record Target(Destination destination, DesignerAddress address, List<String> location) {
 
+        /**
+         * A target on the designer.
+         *
+         * @param address  the designer's {@code select} value
+         * @param location the path to the element, outermost first
+         * @return the target
+         */
         public static Target designer(DesignerAddress address, List<String> location) {
             return new Target(Destination.DESIGNER, address, location);
         }
 
+        /**
+         * A target on a page that takes no address, with no location.
+         *
+         * @param destination the page to open
+         * @return the target
+         */
         public static Target page(Destination destination) {
             return new Target(destination, null, List.of());
         }
@@ -67,7 +82,12 @@ public class ValidationTargets {
     @Inject
     RuleService rules;
 
-    /** Resolves every finding of one survey against one reading of its structure. */
+    /**
+     * Resolves every finding of one survey against one reading of its structure.
+     *
+     * @param surveyId the survey's id
+     * @return a resolver holding the survey's current tree and its unplaced sections and questions
+     */
     public Resolver forSurvey(int surveyId) {
         return new Resolver(surveyId, structure.tree(surveyId, false),
                 durableIds(structure.unplacedSections(surveyId)), durableIds(structure.unplacedQuestions(surveyId)));
@@ -94,6 +114,13 @@ public class ValidationTargets {
             this.unplacedQuestions = unplacedQuestions;
         }
 
+        /**
+         * Resolves one finding to the page that corrects it and the path to its element.
+         *
+         * @param issue the finding
+         * @return the target, or empty when the finding names no kind or id, its element is gone or
+         *         retired, or its kind has nothing to open
+         */
         public Optional<Target> of(ValidationIssue issue) {
             Integer id = issue.durableId();
             if (issue.kind() == null || id == null) {

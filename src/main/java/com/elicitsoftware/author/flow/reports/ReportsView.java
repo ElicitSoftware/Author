@@ -107,6 +107,7 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver, 
     private Report draggedService;
     private Mark draggedMark;
 
+    /** Builds the view's toolbar, grids and preview link; the survey is loaded on navigation. */
     public ReportsView() {
         overview.setText(getTranslation("reportsView.surveyOverview"));
         openDesigner.setText(getTranslation("reportsView.openInDesigner"));

@@ -32,15 +32,34 @@ public final class Translations {
     private Translations() {
     }
 
-    /** Translates for the current UI's locale (or the session's, or English). */
+    /**
+     * Translates for the current UI's locale (or the session's, or English).
+     *
+     * @param key    the translation key
+     * @param params values for the message's placeholders
+     * @return the translated text, as the active provider renders it
+     */
     public static String get(String key, Object... params) {
         return get(currentLocale(), key, params);
     }
 
+    /**
+     * Translates for the given locale.
+     *
+     * @param locale the locale; null means English
+     * @param key    the translation key
+     * @param params values for the message's placeholders
+     * @return the translated text, as the active provider renders it
+     */
     public static String get(Locale locale, String key, Object... params) {
         return provider().getTranslation(key, locale == null ? ElicitI18NProvider.DEFAULT_LOCALE : locale, params);
     }
 
+    /**
+     * Returns the current UI's locale, else the current session's, else English.
+     *
+     * @return the locale translations are looked up for, never null
+     */
     public static Locale currentLocale() {
         UI ui = UI.getCurrent();
         if (ui != null) {

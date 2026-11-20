@@ -69,6 +69,10 @@ public class AiDraftView extends VerticalLayout implements HasDynamicTitle {
     /** The clipboard binding is a click listener; attaching twice would copy twice. */
     private boolean clipboardBound;
 
+    /**
+     * Lays out the steps of the round trip, the copy and download actions, and the link to the
+     * import; the copy action is bound when the view attaches.
+     */
     public AiDraftView() {
         addClassName("ai-draft");
         add(new H2(getTranslation("aiDraftView.title")));

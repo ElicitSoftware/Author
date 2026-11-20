@@ -76,7 +76,11 @@ public class Metadata extends PanacheEntityBase {
         SECTIONS_QUESTION
     }
 
-    /** The element column set on this row, or {@code null} when none or several are set. */
+    /**
+     * The element column set on this row, or {@code null} when none or several are set.
+     *
+     * @return the column in use, or {@code null}
+     */
     public ElementRef elementRef() {
         int set = (stepsSectionsId != null ? 1 : 0) + (questionId != null ? 1 : 0) + (sectionsQuestionId != null ? 1 : 0);
         if (set != 1) {
@@ -85,7 +89,11 @@ public class Metadata extends PanacheEntityBase {
         return stepsSectionsId != null ? ElementRef.STEPS_SECTIONS : questionId != null ? ElementRef.QUESTION : ElementRef.SECTIONS_QUESTION;
     }
 
-    /** The durable id in whichever element column is set, or {@code null}. */
+    /**
+     * The durable id in whichever element column is set, or {@code null}.
+     *
+     * @return the id, or {@code null} when none or several columns are set
+     */
     public Integer elementId() {
         ElementRef ref = elementRef();
         if (ref == null) {

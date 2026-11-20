@@ -47,6 +47,7 @@ public class SurveyModelGuideView extends VerticalLayout implements HasDynamicTi
     final Image diagram = new Image("images/survey-model.png", getTranslation("guideView.diagram.alt"));
     final RouterLink surveysLink = new RouterLink(getTranslation("guideView.surveysLink"), SurveysView.class);
 
+    /** Builds the guide's sections in their fixed order. */
     public SurveyModelGuideView() {
         addClassName("survey-guide");
         add(new H2(getTranslation("guideView.title")));

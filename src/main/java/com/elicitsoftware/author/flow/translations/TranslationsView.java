@@ -111,6 +111,7 @@ public class TranslationsView extends VerticalLayout implements BeforeEnterObser
     /** The listeners are registered once; {@code build()} runs again on every navigation in. */
     private boolean wired;
 
+    /** Creates the page's layout; the content is built when a survey is navigated to. */
     public TranslationsView() {
         setWidthFull();
         setPadding(true);

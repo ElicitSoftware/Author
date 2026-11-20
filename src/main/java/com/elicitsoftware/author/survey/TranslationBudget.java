@@ -68,7 +68,13 @@ public final class TranslationBudget {
         return Math.max(width, (int) Math.ceil(length * factor));
     }
 
-    /** The base column's own width, for the record. */
+    /**
+     * The base column's own width, for the record.
+     *
+     * @param elementType the table the element lives in
+     * @param field       the base column's name
+     * @return the column's width, or 255 for a field not listed
+     */
     public static int columnWidth(String elementType, String field) {
         return WIDTHS.getOrDefault(elementType + "." + field, 255);
     }

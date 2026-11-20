@@ -74,6 +74,7 @@ public class SystemOverviewView extends VerticalLayout implements HasDynamicTitl
     @Inject
     ServiceToken serviceToken;
 
+    /** Sets the layout; the content is built after injection, in {@code init()}. */
     public SystemOverviewView() {
         setWidthFull();
         setPadding(true);

@@ -35,10 +35,16 @@ public class ManualResource {
     @Inject
     AuthorManual manual;
 
+    /** Creates the resource; the container injects the manual. */
     public ManualResource() {
         // CDI managed bean
     }
 
+    /**
+     * The manual as a PDF, to be shown inline.
+     *
+     * @return 200 with the PDF, or 404 when the build carries no manual
+     */
     @GET
     @Produces("application/pdf")
     @RolesAllowed(AuthorRoles.AUTHOR)

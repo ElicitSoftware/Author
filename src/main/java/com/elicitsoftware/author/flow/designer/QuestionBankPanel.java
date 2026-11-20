@@ -91,11 +91,17 @@ public class QuestionBankPanel extends VerticalLayout {
             add(glyph, label, uses, menu);
         }
 
+        /**
+         * Returns the question this row stands for.
+         *
+         * @return the question's node
+         */
         public StructureNode node() {
             return node;
         }
     }
 
+    /** Builds an empty panel with its search field; rows are added by a refresh. */
     public QuestionBankPanel() {
         addClassName("designer-panel");
         setPadding(false);

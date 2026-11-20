@@ -44,6 +44,14 @@ public class StructureNavigationTree extends VerticalLayout {
     private Consumer<StructureNode> selectionHandler;
     private boolean suppressSelection;
 
+    /**
+     * Builds the tree and loads the survey's current structure.
+     *
+     * @param surveyId the survey
+     * @param query    reads the structure
+     * @param onSelect told of every row the author selects, before the selection handler or the
+     *                 navigation runs
+     */
     public StructureNavigationTree(int surveyId, SurveyStructureQuery query, Consumer<StructureNode> onSelect) {
         this.surveyId = surveyId;
         this.query = query;
@@ -90,6 +98,7 @@ public class StructureNavigationTree extends VerticalLayout {
         refresh();
     }
 
+    /** Reloads the structure, with removed elements when "show removed" is checked, and expands every row. */
     public void refresh() {
         data.clear();
         SurveyStructureQuery.Tree tree = query.tree(surveyId, Boolean.TRUE.equals(showRemoved.getValue()));
@@ -106,12 +115,23 @@ public class StructureNavigationTree extends VerticalLayout {
         grid.expand(tree.all());
     }
 
-    /** Called from the layout after navigation so the highlighted row matches the address. */
-    /** Replaces navigation on selection (null restores it); the designer uses it to select on the board. */
+    /**
+     * Replaces navigation on selection (null restores it); the designer uses it to select on the board.
+     *
+     * @param handler called with the selected node instead of navigating, or {@code null}
+     */
     public void setSelectionHandler(Consumer<StructureNode> handler) {
         this.selectionHandler = handler;
     }
 
+    /**
+     * Highlights the element being edited, selecting its row and scrolling to it; called from the
+     * layout after navigation so the highlighted row matches the address. No row is selected when the
+     * element is not in the tree. The selection handler is not called for this selection.
+     *
+     * @param kind      the element's kind, or null
+     * @param durableId the element's durable id, or null
+     */
     public void highlight(StructureNode.Kind kind, Integer durableId) {
         this.currentKind = kind;
         this.currentDurableId = durableId;
@@ -155,6 +175,11 @@ public class StructureNavigationTree extends VerticalLayout {
         return currentKind == n.kind() && Objects.equals(currentDurableId, n.durableId());
     }
 
+    /**
+     * Returns the survey the tree shows.
+     *
+     * @return the survey id
+     */
     public int surveyId() {
         return surveyId;
     }

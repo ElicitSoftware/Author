@@ -39,6 +39,12 @@ public class DesignerPalette extends VerticalLayout {
     private final Consumer<PaletteItem> onDragStart;
     private final Runnable onDragEnd;
 
+    /**
+     * Builds the palette with every glyph draggable.
+     *
+     * @param onDragStart called with the glyph's item when a drag of it starts
+     * @param onDragEnd   called when a drag of any glyph ends
+     */
     public DesignerPalette(Consumer<PaletteItem> onDragStart, Runnable onDragEnd) {
         this.onDragStart = onDragStart;
         this.onDragEnd = onDragEnd;

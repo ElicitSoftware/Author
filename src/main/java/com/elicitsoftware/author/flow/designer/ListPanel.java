@@ -90,11 +90,21 @@ public class ListPanel extends VerticalLayout {
             add(glyph, label, count, menu);
         }
 
+        /**
+         * The list this row shows.
+         *
+         * @return the list
+         */
         public SelectGroup group() {
             return group;
         }
     }
 
+    /**
+     * Builds the empty panel with its search box and New list… button; the rows come from refresh.
+     *
+     * @param view the designer that New list… and the rows report to
+     */
     public ListPanel(SurveyDesignerView view) {
         addClassName("designer-panel");
         setPadding(false);

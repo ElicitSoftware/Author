@@ -42,6 +42,10 @@ public class ReportServiceDialog extends Dialog {
     private final Map<String, HasValidation> fieldsByProperty = Map.of("name", name, "description", description, "url", url);
 
     /**
+     * Creates the dialog for adding a report service or editing one.
+     *
+     * @param service  saves the row
+     * @param survey   the survey the row belongs to
      * @param existing the row to edit, or {@code null} to add one
      * @param onSaved  receives the persisted row
      */

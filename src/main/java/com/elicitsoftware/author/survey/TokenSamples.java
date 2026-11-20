@@ -60,6 +60,12 @@ public final class TokenSamples {
      */
     public record Sample(String value, boolean beatsConstant, String firstItem) {
 
+        /**
+         * A sample for a question that a Repeat rule cannot repeat per item: no first item.
+         *
+         * @param value         the sample answer recorded on the question, may be null or blank
+         * @param beatsConstant whether that answer outranks the rule's own constant
+         */
         public Sample(String value, boolean beatsConstant) {
             this(value, beatsConstant, null);
         }
@@ -68,6 +74,9 @@ public final class TokenSamples {
     /**
      * A place's token values and which of them the author wrote. Mirrors the runtime's
      * {@code QuestionManager.TokenValues}, whose {@code sources().keySet()} is this authored set.
+     *
+     * @param values   each token's value to preview, by token
+     * @param authored the tokens whose value is a constant the author wrote rather than a sample answer
      */
     public record Values(Map<String, String> values, Set<String> authored) {
 
@@ -80,8 +89,13 @@ public final class TokenSamples {
      * and the question it reads has no sample answer, so the preview can only fall back to the
      * placeholder's default.
      *
+     * @param token    the rule's token, trimmed
+     * @param value    what the rule writes into the token, or null when it has nothing to write
      * @param authored whether {@code value} is the constant the author wrote on the rule rather
      *                 than a sample answer standing in for a respondent's
+     * @param stepId   the rule's downstream step id, may be null
+     * @param ssId     the rule's downstream section mount id, may be null
+     * @param sqId     the rule's downstream question assignment id, may be null
      */
     public record Feed(String token, String value, boolean authored, Integer stepId, Integer ssId, Integer sqId) {
 
@@ -110,7 +124,12 @@ public final class TokenSamples {
         this.assignments = List.copyOf(assignments);
     }
 
-    /** The survey's current rules, mounts and assignments, with each question's sample answer. */
+    /**
+     * The survey's current rules, mounts and assignments, with each question's sample answer.
+     *
+     * @param surveyId the survey's id
+     * @return the token samples built from the survey's current rows
+     */
     public static TokenSamples load(int surveyId) {
         Map<Integer, String> firstItems = new HashMap<>();
         SelectItem.<SelectItem>list("surveyId = ?1 and effectiveTo = ?2 order by displayOrder", surveyId, StructuralElement.SENTINEL)
@@ -129,6 +148,9 @@ public final class TokenSamples {
      * would read. Previewing the sample there is what let a rule look as though it worked when it
      * could not (ElicitSoftware/Author#10). A missing entry is therefore the same case as the
      * runtime's {@code question == null || isDisplayOnly(type)} branch.
+     *
+     * @param questions the questions to sample
+     * @return each answer-collecting question's sample by durable question id, with no first item
      */
     public static Map<Integer, Sample> samplesOf(Collection<Question> questions) {
         return samplesOf(questions, Map.of());
@@ -137,6 +159,10 @@ public final class TokenSamples {
     /**
      * {@link #samplesOf(Collection)}, with the first item of each list, by durable select group id,
      * for the questions a Repeat rule can repeat per selected item (UC-019 BR-008).
+     *
+     * @param questions  the questions to sample
+     * @param firstItems the text of each list's first item, by durable select group id
+     * @return each answer-collecting question's sample by durable question id
      */
     public static Map<Integer, Sample> samplesOf(Collection<Question> questions, Map<Integer, String> firstItems) {
         Map<Integer, Sample> samples = new HashMap<>();
@@ -151,6 +177,8 @@ public final class TokenSamples {
     }
 
     /**
+     * Builds the token samples from the given rows: one feed per rule that carries a token.
+     *
      * @param rules       current rules; only the ones carrying a token matter, whatever their action
      *                    (the runtime fills a token from any rule that names it)
      * @param mounts      current step-to-section mounts, for scoping a rule on a step to the
@@ -159,6 +187,7 @@ public final class TokenSamples {
      *                    rule reads ({@code upstreamSqId} names the assignment, not the question)
      * @param samples     what each question offers by durable question id -- see
      *                    {@link #samplesOf(Collection)}
+     * @return the token samples for those rows
      */
     public static TokenSamples of(Collection<Relationship> rules, Collection<StepsSections> mounts,
                                   Collection<SectionsQuestion> assignments, Map<Integer, Sample> samples) {
@@ -213,6 +242,11 @@ public final class TokenSamples {
     /**
      * Token values for a text shown at one place on the board: the step's rules, overridden by the
      * section mount's, overridden by the question assignment's. Any of the ids may be null.
+     *
+     * @param stepId the step's id
+     * @param ssId   the section mount's id
+     * @param sqId   the question assignment's id
+     * @return the tokens with a value to preview there, and which of them the author wrote
      */
     public Values forMount(Integer stepId, Integer ssId, Integer sqId) {
         Map<String, String> values = new HashMap<>();
@@ -246,6 +280,10 @@ public final class TokenSamples {
     /**
      * Token values for a question wherever it is assigned, for the question dialog, which edits the
      * question and not one placement of it: the first placement to fill a token wins.
+     *
+     * @param questionId the question's durable id
+     * @return the tokens with a value to preview, and which of them the author wrote; empty when the
+     *         question is not assigned in a mounted section
      */
     public Values forQuestion(Integer questionId) {
         Map<String, String> values = new HashMap<>();
@@ -272,7 +310,14 @@ public final class TokenSamples {
         return new Values(values, authored);
     }
 
-    /** The tokens the rules landing on that place carry, whether or not they have a value to preview. */
+    /**
+     * The tokens the rules landing on that place carry, whether or not they have a value to preview.
+     *
+     * @param stepId the step's id, may be null
+     * @param ssId   the section mount's id, may be null
+     * @param sqId   the question assignment's id, may be null
+     * @return the tokens as the rules carry them, trimmed
+     */
     public Set<String> tokensAt(Integer stepId, Integer ssId, Integer sqId) {
         Set<String> tokens = new HashSet<>();
         feedsAt(stepId, ssId, sqId).forEach(f -> tokens.add(f.token()));
@@ -291,6 +336,13 @@ public final class TokenSamples {
      *
      * <p>A phrase making no reference at all is not filled either: the runtime has nothing to
      * substitute and falls back the same way.</p>
+     *
+     * @param placeholder the placeholder found in a text
+     * @param stepId      the step's id, may be null
+     * @param ssId        the section mount's id, may be null
+     * @param sqId        the question assignment's id, may be null
+     * @return whether every reference the placeholder makes is carried by a rule reaching that place,
+     *         compared without case; false when it makes none
      */
     public boolean fills(Tokens.Placeholder placeholder, Integer stepId, Integer ssId, Integer sqId) {
         Set<String> used = placeholder.tokens();

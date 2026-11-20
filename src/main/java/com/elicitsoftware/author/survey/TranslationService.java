@@ -91,14 +91,29 @@ public class TranslationService {
     public record Row(String elementType, UUID targetKey, String field, String context,
                       String baseText, String translation, String previousBase, Status status) {
 
-        /** A stable id for the grid and for the hand-off file. */
+        /**
+         * A stable id for the grid and for the hand-off file.
+         *
+         * @return the target key and the field, joined by a colon
+         */
         public String id() {
             return targetKey + ":" + field;
         }
     }
 
-    /** How one language stands. */
+    /**
+     * How one language stands.
+     *
+     * @param translated the strings with a current translation of the current base text
+     * @param missing    the strings with no current translation
+     * @param stale      the strings whose translation was made from base text since edited
+     */
     public record Counts(int translated, int missing, int stale) {
+        /**
+         * The number of translatable strings counted.
+         *
+         * @return the sum of the three counts
+         */
         public int total() {
             return translated + missing + stale;
         }
@@ -163,7 +178,13 @@ public class TranslationService {
         return rows;
     }
 
-    /** How the language stands across the whole survey. */
+    /**
+     * How the language stands across the whole survey, counted over {@link #rows}.
+     *
+     * @param surveyId the survey
+     * @param language the BCP-47 tag
+     * @return the translated, missing and stale counts
+     */
     public Counts counts(int surveyId, String language) {
         int translated = 0;
         int missing = 0;
@@ -233,6 +254,12 @@ public class TranslationService {
     /**
      * Retires one translation, so the string falls back to the base language (UC-043 A2). Closed,
      * never emptied: a site must be able to tell "no translation" from "translated to nothing".
+     * Does nothing when the string has no current translation in that language.
+     *
+     * @param surveyId  the survey
+     * @param targetKey the element's key
+     * @param field     the base column the translation is of
+     * @param language  the BCP-47 tag
      */
     @Transactional
     public void remove(int surveyId, UUID targetKey, String field, String language) {
@@ -266,7 +293,14 @@ public class TranslationService {
         return live.size();
     }
 
-    /** Reopens the translations closed with an element at {@code at} (UC-010). */
+    /**
+     * Reopens the translations closed with an element at {@code at} (UC-010).
+     *
+     * @param surveyId the survey
+     * @param key      the restored element's key
+     * @param at       the instant the element was retired at
+     * @return how many translations were reopened
+     */
     @Transactional
     public int restoreTranslationsOf(int surveyId, UUID key, OffsetDateTime at) {
         List<Translation> closed = Translation.list("surveyId = ?1 and targetKey = ?2 and effectiveTo = ?3",
@@ -277,8 +311,8 @@ public class TranslationService {
     }
 
     /**
-     * The languages a wording change would invalidate: the current translations of one field whose
-     * hash matches the text as it stands <em>before</em> the change (UC-043 A1, FR-060).
+     * The languages a wording change would invalidate: the languages of every current translation
+     * of one field, whether or not it is already stale (UC-043 A1, FR-060).
      *
      * @param surveyId  the survey
      * @param targetKey the element's key
@@ -291,7 +325,13 @@ public class TranslationService {
                 .stream().map(t -> t.language).sorted().toList();
     }
 
-    /** The survey's published set, as a list. */
+    /**
+     * The survey's published set, as a list.
+     *
+     * @param survey the survey, or {@code null}
+     * @return the trimmed tags in natural order; empty when the survey is {@code null} or publishes
+     *         none
+     */
     public List<String> contentLanguages(Survey survey) {
         if (survey == null || survey.contentLanguages == null || survey.contentLanguages.isBlank()) {
             return List.of();
