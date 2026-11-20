@@ -94,11 +94,29 @@ public class QuestionDialog extends Dialog {
     private final Map<String, HasValidation> fieldsByProperty;
     private final com.elicitsoftware.author.survey.ListService lists;
 
+    /**
+     * A dialog with no "New list…" shortcut.
+     *
+     * @param surveyId the survey the question belongs to
+     * @param existing the question to edit, or {@code null} to create one
+     * @param persist  saves the edited question and returns the saved row; an {@link AuthoringException}
+     *                 it throws is shown in the dialog, which stays open
+     * @param onSaved  called with the saved question after the dialog closes
+     */
     public QuestionDialog(int surveyId, Question existing, Function<Question, Question> persist, Consumer<Question> onSaved) {
         this(surveyId, existing, persist, onSaved, null);
     }
 
-    /** @param lists when given, a "New list…" shortcut next to the list picker creates one in place (UC-014). */
+    /**
+     * A dialog to create or edit a question.
+     *
+     * @param surveyId the survey the question belongs to
+     * @param existing the question to edit, or {@code null} to create one, which starts as TEXT (UC-011 BR-006)
+     * @param persist  saves the edited question and returns the saved row; an {@link AuthoringException}
+     *                 it throws is shown in the dialog, which stays open
+     * @param onSaved  called with the saved question after the dialog closes
+     * @param lists    when given, a "New list…" shortcut next to the list picker creates one in place (UC-014)
+     */
     public QuestionDialog(int surveyId, Question existing, Function<Question, Question> persist, Consumer<Question> onSaved,
                           com.elicitsoftware.author.survey.ListService lists) {
         this.lists = lists;

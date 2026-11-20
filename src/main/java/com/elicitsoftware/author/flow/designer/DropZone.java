@@ -24,6 +24,13 @@ public class DropZone extends Div {
 
     final DropSpot spot;
 
+    /**
+     * Creates the bar and registers it with the designer, which decides what it admits and handles
+     * a drop on it.
+     *
+     * @param view the designer the bar belongs to
+     * @param spot where a drop on the bar inserts
+     */
     public DropZone(SurveyDesignerView view, DropSpot spot) {
         this.spot = spot;
         addClassNames("designer-drop-zone", "designer-drop-zone-" + spot.accepts().name().toLowerCase());
@@ -34,6 +41,11 @@ public class DropZone extends Div {
         view.admit(target, spot::takes);
     }
 
+    /**
+     * Where a drop on this bar inserts.
+     *
+     * @return the bar's drop spot
+     */
     public DropSpot spot() {
         return spot;
     }

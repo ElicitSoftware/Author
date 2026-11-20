@@ -42,6 +42,16 @@ public class StepLane extends Div {
     final NodeMenu menu;
     final List<SectionCard> cards = new ArrayList<>();
 
+    /**
+     * Builds the lane and its section cards; a retired step is shown but cannot be dragged or edited.
+     *
+     * @param view         the designer the lane reports its gestures to
+     * @param node         the step
+     * @param order        the step's 1-based number, shown on its glyph
+     * @param sections     the sections mounted in the step, in order
+     * @param indexInBoard the step's 0-based position on the board, which enables Move up
+     * @param boardSize    how many steps the board shows, which enables Move down
+     */
     public StepLane(SurveyDesignerView view, StructureNode node, int order, List<StructureNode> sections, int indexInBoard, int boardSize) {
         this.node = node;
         addClassName("designer-lane");
@@ -139,10 +149,20 @@ public class StepLane extends Div {
         add(header, body);
     }
 
+    /**
+     * The step this lane shows.
+     *
+     * @return the step's node
+     */
     public StructureNode node() {
         return node;
     }
 
+    /**
+     * Whether the lane's body is showing.
+     *
+     * @return true when the section cards are visible
+     */
     public boolean isOpen() {
         return body.isVisible();
     }

@@ -74,11 +74,18 @@ public class ConnectionChecks {
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
+    /** Creates the checks; CDI constructs the bean. */
     public ConnectionChecks() {
         // CDI managed bean
     }
 
-    /** Every target this deployment knows, in display order. */
+    /**
+     * Every target this deployment knows, in display order: the identity provider when
+     * {@code quarkus.oidc.auth-server-url} is set, then the telemetry collector when an OTLP
+     * endpoint is.
+     *
+     * @return the configured targets, empty when neither is configured
+     */
     public List<Target> targets() {
         Config config = ConfigProvider.getConfig();
         List<Target> targets = new ArrayList<>();
@@ -91,7 +98,13 @@ public class ConnectionChecks {
         return targets;
     }
 
-    /** Probes one target within {@link #TIMEOUT}. */
+    /**
+     * Probes one target within {@link #TIMEOUT}. A failure, a timeout or an interruption is
+     * reported as a result rather than thrown.
+     *
+     * @param target the target to probe
+     * @return whether the target answered, with the reason and the time taken
+     */
     public CheckResult check(Target target) {
         long start = System.nanoTime();
         try {

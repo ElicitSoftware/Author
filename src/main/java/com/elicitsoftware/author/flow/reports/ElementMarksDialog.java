@@ -43,6 +43,15 @@ public class ElementMarksDialog extends Dialog {
     private final StructureNode node;
     private final Runnable onChanged;
 
+    /**
+     * Builds the dialog for one node and lists its marks, without opening it. Add is disabled for a
+     * question that cannot be marked (UC-049 A2).
+     *
+     * @param service   reads, adds, relabels and removes the marks
+     * @param survey    the survey the node belongs to
+     * @param node      the board node whose marks are shown
+     * @param onChanged called after a mark is added, relabeled or removed
+     */
     public ElementMarksDialog(ReportMarkService service, Survey survey, StructureNode node, Runnable onChanged) {
         this.service = service;
         this.survey = survey;

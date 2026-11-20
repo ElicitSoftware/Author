@@ -53,15 +53,39 @@ public class RuleService {
     @Inject
     RuleOrdering ordering;
 
+    /**
+     * The current version of a rule.
+     *
+     * @param surveyId       the survey
+     * @param relationshipId the rule's durable key
+     * @return the rule, or empty when it does not exist or is retired
+     */
     public Optional<Relationship> current(int surveyId, int relationshipId) {
         return Relationship.find("surveyId = ?1 and relationshipId = ?2 and effectiveTo = ?3",
                 surveyId, relationshipId, StructuralElement.SENTINEL).firstResultOptional();
     }
 
+    /**
+     * A rule whether current or retired.
+     *
+     * @param surveyId       the survey
+     * @param relationshipId the rule's durable key
+     * @return the first matching row, or empty when the survey has no rule with that key
+     */
     public Optional<Relationship> any(int surveyId, int relationshipId) {
         return Relationship.find("surveyId = ?1 and relationshipId = ?2", surveyId, relationshipId).firstResultOptional();
     }
 
+    /**
+     * Creates a rule from a draft after validating it; the draft itself is not persisted. Validation
+     * completes the downstream path, stores the token in its canonical form and writes a
+     * description from the condition when none is given.
+     *
+     * @param surveyId the survey the rule belongs to
+     * @param draft    the rule's fields as entered
+     * @return the persisted rule, with its durable key assigned
+     * @throws AuthoringException when the rule breaks one of the constraints this service enforces
+     */
     @Transactional
     public Relationship create(int surveyId, Relationship draft) {
         Relationship r = new Relationship();
@@ -71,6 +95,15 @@ public class RuleService {
         return elements.create(r);
     }
 
+    /**
+     * Copies an edited rule onto its current row in place, after validating the edit; a refused
+     * edit leaves the row untouched.
+     *
+     * @param surveyId the survey
+     * @param edited   the rule's fields as edited, carrying its {@code relationshipId}
+     * @return the updated managed rule
+     * @throws AuthoringException when the rule is no longer current or the edit breaks a constraint
+     */
     @Transactional
     public Relationship update(int surveyId, Relationship edited) {
         Relationship r = current(surveyId, edited.relationshipId).orElseThrow(() -> new AuthoringException(Translations.get("error.rule.gone")));
@@ -79,7 +112,17 @@ public class RuleService {
         return flushTranslated(r);
     }
 
-    /** UC-019 A5: move one end to the element named by a board anchor ({@code step-N}, {@code ss-N}, {@code sq-N}). */
+    /**
+     * UC-019 A5: move one end to the element named by a board anchor ({@code step-N}, {@code ss-N}, {@code sq-N}).
+     *
+     * @param surveyId       the survey
+     * @param relationshipId the rule's durable key
+     * @param end            the end to move
+     * @param anchor         the anchor of the element the end was dropped on
+     * @return the updated managed rule
+     * @throws AuthoringException when the rule is gone, the anchor names no element, or the moved
+     *                            rule breaks a constraint
+     */
     @Transactional
     public Relationship repoint(int surveyId, int relationshipId, End end, String anchor) {
         return repoint(surveyId, relationshipId, end, anchor, null);
@@ -89,6 +132,20 @@ public class RuleService {
      * UC-019 A5 with the card the anchor was dropped in ({@code ss-N}, or null when unknown): for a
      * question that is how the rule learns which mount it fires from or targets when the section is
      * mounted in several steps.
+     *
+     * <p>The source must be a question assignment ({@code sq-N}); its step is taken from the mount
+     * when known, otherwise from the section's first current mount. Moving the target clears the
+     * previous downstream step, section and question first. The change is validated on a copy, so a
+     * refused re-point leaves the rule as it was.</p>
+     *
+     * @param surveyId       the survey
+     * @param relationshipId the rule's durable key
+     * @param end            the end to move
+     * @param anchor         the anchor of the element the end was dropped on
+     * @param mountAnchor    the {@code ss-N} anchor of the card it was dropped in, or null
+     * @return the updated managed rule
+     * @throws AuthoringException when the rule is gone, the anchor names no element (or not a
+     *                            question for the source), or the moved rule breaks a constraint
      */
     @Transactional
     public Relationship repoint(int surveyId, int relationshipId, End end, String anchor, String mountAnchor) {
@@ -139,6 +196,13 @@ public class RuleService {
         }
     }
 
+    /**
+     * Retires a rule by closing its current row's validity now.
+     *
+     * @param surveyId       the survey
+     * @param relationshipId the rule's durable key
+     * @throws AuthoringException when the rule is not current
+     */
     @Transactional
     public void retire(int surveyId, int relationshipId) {
         Relationship r = current(surveyId, relationshipId).orElseThrow(() -> new AuthoringException(Translations.get("error.rule.gone")));
@@ -146,6 +210,15 @@ public class RuleService {
         em.flush();
     }
 
+    /**
+     * Makes a retired rule current again after validating it against the survey as it now stands;
+     * a rule that is already current is left alone.
+     *
+     * @param surveyId       the survey
+     * @param relationshipId the rule's durable key
+     * @throws AuthoringException when the survey has no such rule, or the rule no longer holds
+     *                            together (UC-033 A2), in which case it stays retired
+     */
     @Transactional
     public void restore(int surveyId, int relationshipId) {
         Relationship r = any(surveyId, relationshipId).orElseThrow(() -> new AuthoringException(Translations.get("error.rule.gone")));
@@ -157,13 +230,26 @@ public class RuleService {
         em.flush();
     }
 
-    /** The step a section mount sits in. */
+    /**
+     * The step a section mount sits in.
+     *
+     * @param surveyId        the survey
+     * @param stepsSectionsId the mount's durable key
+     * @return the step's durable key, or empty when the mount is not current
+     */
     public Optional<Integer> stepOfMount(int surveyId, int stepsSectionsId) {
         return StepsSections.<StepsSections>find("surveyId = ?1 and stepsSectionsId = ?2 and effectiveTo = ?3",
                 surveyId, stepsSectionsId, StructuralElement.SENTINEL).firstResultOptional().map(ss -> ss.stepId);
     }
 
-    /** The step a question assignment sits in, through its section's first current mount. */
+    /**
+     * The step a question assignment sits in, through its section's first current mount.
+     *
+     * @param surveyId           the survey
+     * @param sectionsQuestionId the assignment's durable key
+     * @return the step's durable key, or empty when the assignment is not current or its section is
+     *         not mounted
+     */
     public Optional<Integer> stepOfQuestionAssignment(int surveyId, int sectionsQuestionId) {
         Optional<SectionsQuestion> sq = SectionsQuestion.<SectionsQuestion>find("surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3",
                 surveyId, sectionsQuestionId, StructuralElement.SENTINEL).firstResultOptional();
@@ -264,6 +350,10 @@ public class RuleService {
      * Whether the question a rule reads collects an answer at all, so a token on that rule can be
      * filled from one (UC-019 BR-006). True when the upstream cannot be resolved: a missing
      * assignment is reported by its own check, and this one should not double up on it.
+     *
+     * @param surveyId     the survey
+     * @param upstreamSqId the question assignment the rule reads, may be null
+     * @return false only when the question's type is known and display-only
      */
     public boolean upstreamCollectsAnswer(int surveyId, Integer upstreamSqId) {
         QuestionType type = upstreamType(surveyId, upstreamSqId);

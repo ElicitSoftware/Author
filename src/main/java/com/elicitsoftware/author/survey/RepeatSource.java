@@ -39,17 +39,33 @@ public final class RepeatSource {
 
     private RepeatSource() { }
 
-    /** Whether a Repeat rule reading a question of this type repeats once per selected item. */
+    /**
+     * Whether a Repeat rule reading a question of this type repeats once per selected item.
+     *
+     * @param type the question's type, or {@code null}
+     * @return {@code true} for a multi-select or checkbox group; {@code false} otherwise
+     */
     public static boolean perItem(QuestionType type) {
         return type != null && SELECTION_TYPES.contains(type.name);
     }
 
-    /** {@link #perItem(QuestionType)} by type name, for the places that hold only the name. */
+    /**
+     * {@link #perItem(QuestionType)} by type name, for the places that hold only the name.
+     *
+     * @param typeName the question type's name, or {@code null}
+     * @return {@code true} for {@code MULTI_SELECT} or {@code CHECKBOX_GROUP}; {@code false} otherwise
+     */
     public static boolean perItem(String typeName) {
         return typeName != null && SELECTION_TYPES.contains(typeName);
     }
 
-    /** Whether a rule reading a selection with this operator could never fire (UC-019 BR-007). */
+    /**
+     * Whether a rule reading a selection with this operator could never fire (UC-019 BR-007).
+     *
+     * @param operator the rule's operator, or {@code null}
+     * @return {@code true} for {@code BOOLEAN}, {@code GREATER THAN} or {@code LESS THAN};
+     *         {@code false} otherwise
+     */
     public static boolean neverHoldsForASelection(OperatorType operator) {
         return operator != null && NEVER_HOLD_FOR_A_SELECTION.contains(operator.name);
     }
@@ -61,6 +77,8 @@ public final class RepeatSource {
      *
      * @param rule  the rule carrying the token
      * @param rules the survey's current rules
+     * @return {@code true} when a Repeat rule reading the same question repeats the rule's
+     *         downstream question, or the section it targets
      */
     public static boolean reachesRepeatedInstance(Relationship rule, Collection<Relationship> rules) {
         for (Relationship repeat : rules) {

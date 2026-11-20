@@ -41,6 +41,9 @@ public final class RulePath {
      * rule names no upstream step: it fires from every mount. (The runtime's login-time query hides
      * every question of a section or step a rule names downstream, so a same-section rule stored
      * with a path would blank the section for a fresh respondent.)
+     *
+     * @param r     the rule, changed in place
+     * @param board the survey's current structure
      */
     public static void complete(Relationship r, RuleOrdering.Board board) {
         if (r.downstreamSqId != null) {
@@ -68,6 +71,11 @@ public final class RulePath {
      * validation finding, "The rule" in the dialog (UC-007 BR-013): no target at all, a section
      * outside the named step, a question outside the named section, or a question in another section
      * that names no mount. Missing elements are not reported here; the referential checks do that.
+     *
+     * @param r       the rule
+     * @param board   the survey's current structure
+     * @param subject how the sentence names the rule
+     * @return the translated reason, or empty when the path holds together
      */
     public static Optional<String> problem(Relationship r, RuleOrdering.Board board, String subject) {
         if (r.downstreamStepId == null && r.downstreamSsId == null && r.downstreamSqId == null) {

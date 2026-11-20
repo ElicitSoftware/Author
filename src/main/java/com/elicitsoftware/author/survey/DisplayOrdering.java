@@ -42,31 +42,69 @@ public class DisplayOrdering {
     @Inject
     EntityManager em;
 
+    /**
+     * Formats a section assignment's display key ({@link #DISPLAY_KEY_FORMAT}).
+     *
+     * @param surveyId     the survey id
+     * @param stepOrder    the step's position, from 1
+     * @param sectionOrder the section's position within the step, from 1
+     * @return the display key
+     */
     public static String displayKey(int surveyId, int stepOrder, int sectionOrder) {
         return String.format(DISPLAY_KEY_FORMAT, surveyId, stepOrder, sectionOrder);
     }
 
-    /** A 34-character key no real assignment can carry, unique per row, used while renumbering. */
+    /**
+     * A 34-character key no real assignment can carry, unique per row, used while renumbering.
+     *
+     * @param ss the assignment to park
+     * @return {@code TMP-} followed by the assignment's id zero-padded to 30 digits
+     */
     public static String parkedKey(StepsSections ss) {
         return String.format("TMP-%030d", ss.stepsSectionsId);
     }
 
-    /** A step order no real step can carry, unique per row, used while renumbering. */
+    /**
+     * A step order no real step can carry, unique per row, used while renumbering.
+     *
+     * @param step the step to park
+     * @return the negated durable id of the step
+     */
     public static BigDecimal parkedOrder(Step step) {
         return BigDecimal.valueOf(-step.stepId);
     }
 
     // ---- reads -----------------------------------------------------------------------------
 
+    /**
+     * Returns the survey's current steps in display order.
+     *
+     * @param surveyId the survey
+     * @return the current steps, ordered by display order and then durable id
+     */
     public List<Step> currentSteps(int surveyId) {
         return Step.list("surveyId = ?1 and effectiveTo = ?2 order by displayOrder, stepId", surveyId, StructuralElement.SENTINEL);
     }
 
+    /**
+     * Returns a step's current section assignments in display order.
+     *
+     * @param surveyId the survey
+     * @param stepId   the step's durable id
+     * @return the current assignments, ordered by section display order and then id
+     */
     public List<StepsSections> currentLane(int surveyId, int stepId) {
         return StepsSections.list("surveyId = ?1 and stepId = ?2 and effectiveTo = ?3 order by sectionDisplayOrder, stepsSectionsId",
                 surveyId, stepId, StructuralElement.SENTINEL);
     }
 
+    /**
+     * Returns a section's current question assignments in display order.
+     *
+     * @param surveyId  the survey
+     * @param sectionId the section's durable id
+     * @return the current assignments, ordered by display order and then id
+     */
     public List<SectionsQuestion> currentQuestions(int surveyId, int sectionId) {
         return SectionsQuestion.list("surveyId = ?1 and sectionId = ?2 and effectiveTo = ?3 order by displayOrder, sectionsQuestionId",
                 surveyId, sectionId, StructuralElement.SENTINEL);
@@ -74,12 +112,22 @@ public class DisplayOrdering {
 
     // ---- writes ----------------------------------------------------------------------------
 
-    /** Renumber the steps in their current order and recompute every lane. */
+    /**
+     * Renumber the steps in their current order and recompute every lane.
+     *
+     * @param surveyId the survey
+     */
     public void renumberSurvey(int surveyId) {
         renumberSurvey(surveyId, currentSteps(surveyId));
     }
 
-    /** Renumber the steps to {@code orderedSteps} (1..n) and recompute every lane's keys. */
+    /**
+     * Renumber the steps to {@code orderedSteps} (1..n) and recompute every lane's keys, then
+     * {@linkplain #syncInitialDisplayKey sync the entry point}.
+     *
+     * @param surveyId     the survey
+     * @param orderedSteps the survey's current steps in their new order
+     */
     public void renumberSurvey(int surveyId, List<Step> orderedSteps) {
         Map<Integer, List<StepsSections>> lanes = new LinkedHashMap<>();
         for (Step s : orderedSteps) {
@@ -99,7 +147,14 @@ public class DisplayOrdering {
         syncInitialDisplayKey(surveyId);
     }
 
-    /** Renumber one lane to {@code ordered} (1..n), keeping the step where it is. */
+    /**
+     * Renumber one lane to {@code ordered} (1..n), keeping the step where it is, then
+     * {@linkplain #syncInitialDisplayKey sync the entry point}.
+     *
+     * @param surveyId the survey
+     * @param step     the step whose lane it is; its display order is used as is
+     * @param ordered  the step's current assignments in their new order
+     */
     public void renumberLane(int surveyId, Step step, List<StepsSections> ordered) {
         ordered.forEach(ss -> ss.displayKey = parkedKey(ss));
         em.flush();
@@ -108,7 +163,11 @@ public class DisplayOrdering {
         syncInitialDisplayKey(surveyId);
     }
 
-    /** Renumber one section's question assignments to {@code ordered} (1..n). */
+    /**
+     * Renumber one section's question assignments to {@code ordered} (1..n).
+     *
+     * @param ordered the section's current question assignments in their new order
+     */
     public void renumberSection(List<SectionsQuestion> ordered) {
         int order = 0;
         for (SectionsQuestion sq : ordered) {
@@ -120,7 +179,10 @@ public class DisplayOrdering {
 
     /**
      * UC-016 BR-002: the survey's entry point must name a current assignment; when it does not
-     * (or is unset) it follows the lowest current key.
+     * (or is unset) it follows the lowest current key. Nothing changes when the survey does not
+     * exist or has no current assignment.
+     *
+     * @param surveyId the survey
      */
     public void syncInitialDisplayKey(int surveyId) {
         Survey survey = Survey.findById(surveyId);

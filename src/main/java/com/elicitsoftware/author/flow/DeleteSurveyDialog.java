@@ -49,7 +49,14 @@ public class DeleteSurveyDialog extends Dialog {
     final Button delete = new Button();
     final Button cancel = new Button();
 
-    /** @param onDeleted called once the survey is gone */
+    /**
+     * Builds the dialog for one survey.
+     *
+     * @param surveyService counts the preview respondents and deletes the survey
+     * @param exporter      writes the backup file offered before the delete (BR-006)
+     * @param survey        the survey to delete
+     * @param onDeleted     called once the survey is gone
+     */
     public DeleteSurveyDialog(SurveyService surveyService, SurveyDefinitionExporter exporter, Survey survey, Runnable onDeleted) {
         setHeaderTitle(getTranslation("deleteSurveyDialog.title", survey.name));
         setModality(ModalityMode.STRICT);

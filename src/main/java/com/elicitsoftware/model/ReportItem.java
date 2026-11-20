@@ -77,7 +77,11 @@ public class ReportItem extends PanacheEntityBase {
     @Column(name = "display_order", nullable = false)
     public Integer displayOrder;
 
-    /** The element column set on this row, or {@code null} when none or several are set. */
+    /**
+     * The element column set on this row, or {@code null} when none or several are set.
+     *
+     * @return the scope of the marked element, or {@code null}
+     */
     public ElementRef elementRef() {
         int set = (stepsSectionsId != null ? 1 : 0) + (questionId != null ? 1 : 0) + (sectionsQuestionId != null ? 1 : 0);
         if (set != 1) {
@@ -86,7 +90,11 @@ public class ReportItem extends PanacheEntityBase {
         return stepsSectionsId != null ? ElementRef.STEPS_SECTIONS : questionId != null ? ElementRef.QUESTION : ElementRef.SECTIONS_QUESTION;
     }
 
-    /** The durable id in whichever element column is set, or {@code null}. */
+    /**
+     * The durable id in whichever element column is set, or {@code null}.
+     *
+     * @return the id, or {@code null} when {@link #elementRef()} is {@code null}
+     */
     public Integer elementId() {
         ElementRef ref = elementRef();
         if (ref == null) {

@@ -11,5 +11,10 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
-/** Drag payload of a list in the drawer's Lists panel: dropped on a choice question it becomes its options (UC-014). */
+/**
+ * Drag payload of a list in the drawer's Lists panel: dropped on a choice question it becomes its options (UC-014).
+ *
+ * @param selectGroupId the list's select group id
+ * @param name          the list's name
+ */
 public record PaletteList(int selectGroupId, String name) { }

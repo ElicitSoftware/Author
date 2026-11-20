@@ -44,8 +44,21 @@ import java.util.UUID;
 @ApplicationScoped
 public class ElementService {
 
-    /** What a removal would take along, so the UI can confirm it (UC-009 step 3). */
+    /**
+     * What a removal would take along, so the UI can confirm it (UC-009 step 3).
+     *
+     * @param kind       the kind of element to remove
+     * @param durableId  the element's durable id
+     * @param label      the element as named to the author
+     * @param dependents the assignments and rules retired with it, named for the author
+     * @param blockers   reasons the removal is refused; {@link ElementService#planRemoval} never adds one
+     */
     public record RemovalPlan(StructureNode.Kind kind, Integer durableId, String label, List<String> dependents, List<String> blockers) {
+        /**
+         * Whether anything stops the removal.
+         *
+         * @return {@code true} when {@code blockers} is not empty
+         */
         public boolean blocked() {
             return !blockers.isEmpty();
         }
@@ -54,8 +67,19 @@ public class ElementService {
     /**
      * What a restore would bring back with the element (UC-010 step 3) and what stops it: a parent
      * that is itself still removed (UC-010 step 2 / BR-002).
+     *
+     * @param kind       the kind of element to restore
+     * @param durableId  the element's durable id
+     * @param label      the element as named to the author
+     * @param dependents the assignments and rules reopened with it, named for the author
+     * @param blockers   the removed parents that stop the restore, named for the author
      */
     public record RestorePlan(StructureNode.Kind kind, Integer durableId, String label, List<String> dependents, List<String> blockers) {
+        /**
+         * Whether anything stops the restore.
+         *
+         * @return {@code true} when {@code blockers} is not empty
+         */
         public boolean blocked() {
             return !blockers.isEmpty();
         }
@@ -76,6 +100,16 @@ public class ElementService {
 
     // ---- create / update -------------------------------------------------------------------
 
+    /**
+     * Inserts a new working-copy element: draws its durable id from the element's sequence, mints an
+     * element key when it has none, and opens it as version 0, current from the epoch.
+     *
+     * @param <E>     the element type
+     * @param element the new element; its survey id must be set
+     * @return the same element, persisted and flushed
+     * @throws AuthoringException when the element has no survey id, or when the insert breaks a
+     *                            recognized constraint
+     */
     @Transactional
     public <E extends StructuralElement> E create(E element) {
         if (element.surveyId == null) {
@@ -98,7 +132,14 @@ public class ElementService {
         return element;
     }
 
-    /** Flushes in-place edits of a managed working copy; the SCD columns and keys are not touched. */
+    /**
+     * Flushes in-place edits of a managed working copy; the SCD columns and keys are not touched.
+     *
+     * @param <E>     the element type
+     * @param element the edited element, managed or detached
+     * @return the managed instance carrying the edits
+     * @throws AuthoringException when the update breaks a recognized constraint
+     */
     @Transactional
     public <E extends StructuralElement> E update(E element) {
         try {
@@ -112,29 +153,72 @@ public class ElementService {
 
     // ---- lookups --------------------------------------------------------------------------
 
+    /**
+     * Finds a step by durable id, current or removed.
+     *
+     * @param surveyId  the survey
+     * @param durableId the step's durable id
+     * @return the step, or empty when the survey has none with that id
+     */
     public Optional<Step> step(int surveyId, int durableId) {
         return Step.find("surveyId = ?1 and stepId = ?2", surveyId, durableId).firstResultOptional();
     }
 
+    /**
+     * Finds a section by durable id, current or removed.
+     *
+     * @param surveyId  the survey
+     * @param durableId the section's durable id
+     * @return the section, or empty when the survey has none with that id
+     */
     public Optional<Section> section(int surveyId, int durableId) {
         return Section.find("surveyId = ?1 and sectionId = ?2", surveyId, durableId).firstResultOptional();
     }
 
+    /**
+     * Finds a question by durable id, current or removed.
+     *
+     * @param surveyId  the survey
+     * @param durableId the question's durable id
+     * @return the question, or empty when the survey has none with that id
+     */
     public Optional<Question> question(int surveyId, int durableId) {
         return Question.find("surveyId = ?1 and questionId = ?2", surveyId, durableId).firstResultOptional();
     }
 
+    /**
+     * Finds a list of options (select group) by durable id, current or removed.
+     *
+     * @param surveyId  the survey
+     * @param durableId the select group's durable id
+     * @return the select group, or empty when the survey has none with that id
+     */
     public Optional<SelectGroup> selectGroup(int surveyId, int durableId) {
         return SelectGroup.find("surveyId = ?1 and selectGroupId = ?2", surveyId, durableId).firstResultOptional();
     }
 
+    /**
+     * Finds an option (select item) by durable id, current or removed.
+     *
+     * @param surveyId  the survey
+     * @param durableId the select item's durable id
+     * @return the select item, or empty when the survey has none with that id
+     */
     public Optional<SelectItem> selectItem(int surveyId, int durableId) {
         return SelectItem.find("surveyId = ?1 and selectItemId = ?2", surveyId, durableId).firstResultOptional();
     }
 
     // ---- remove (retire) ------------------------------------------------------------------
 
-    /** Computes dependents and blockers without changing anything. */
+    /**
+     * Computes dependents and blockers without changing anything.
+     *
+     * @param surveyId  the survey
+     * @param kind      the kind of element: a step, section or question
+     * @param durableId the element's durable id
+     * @return the plan; it currently never carries a blocker
+     * @throws AuthoringException when the element does not exist or the kind is not supported
+     */
     public RemovalPlan planRemoval(int surveyId, StructureNode.Kind kind, int durableId) {
         List<String> dependents = new ArrayList<>();
         List<String> blockers = new ArrayList<>();
@@ -172,7 +256,17 @@ public class ElementService {
         return new RemovalPlan(kind, durableId, label, dependents, blockers);
     }
 
-    /** UC-009: retire the element and its dependents at one instant. */
+    /**
+     * UC-009: retire the element and its dependents at one instant, together with the translations
+     * of the element itself.
+     *
+     * @param surveyId  the survey
+     * @param kind      the kind of element: a step, section or question
+     * @param durableId the element's durable id
+     * @return the plan that was carried out
+     * @throws AuthoringException when the element does not exist, the kind is not supported, or the
+     *                            plan is blocked
+     */
     @Transactional
     public RemovalPlan remove(int surveyId, StructureNode.Kind kind, int durableId) {
         RemovalPlan plan = planRemoval(surveyId, kind, durableId);
@@ -217,7 +311,14 @@ public class ElementService {
         return plan;
     }
 
-    /** Retire a select group (refused while a current question uses it) and its items. */
+    /**
+     * Retire a select group (refused while a current question uses it) and its items, with the
+     * items' translations. A group that does not exist retires nothing.
+     *
+     * @param surveyId  the survey
+     * @param durableId the select group's durable id
+     * @throws AuthoringException when a current question uses the group
+     */
     @Transactional
     public void removeSelectGroup(int surveyId, int durableId) {
         long users = Question.count("surveyId = ?1 and selectGroupId = ?2 and effectiveTo = ?3", surveyId, durableId, StructuralElement.SENTINEL);
@@ -235,6 +336,13 @@ public class ElementService {
         em.flush();
     }
 
+    /**
+     * Retires one option (select item) and its translations; the item need not be current.
+     *
+     * @param surveyId  the survey
+     * @param durableId the select item's durable id
+     * @throws AuthoringException when the survey has no item with that id
+     */
     @Transactional
     public void removeSelectItem(int surveyId, int durableId) {
         OffsetDateTime now = OffsetDateTime.now();
@@ -246,7 +354,16 @@ public class ElementService {
 
     // ---- restore --------------------------------------------------------------------------
 
-    /** Computes what a restore brings back and what blocks it, without changing anything. */
+    /**
+     * Computes what a restore brings back and what blocks it, without changing anything. For an
+     * element that is already current the plan is empty.
+     *
+     * @param surveyId  the survey
+     * @param kind      the kind of element: a step, section or question
+     * @param durableId the element's durable id
+     * @return the plan
+     * @throws AuthoringException when the element does not exist or the kind is not supported
+     */
     public RestorePlan planRestore(int surveyId, StructureNode.Kind kind, int durableId) {
         StructuralElement element = find(surveyId, kind, durableId).orElseThrow(() -> new AuthoringException(Translations.get("error.element.notFound")));
         String label = labelOf(kind, element);
@@ -297,7 +414,16 @@ public class ElementService {
 
     /**
      * UC-010: reopen the element and the dependents retired with it (same closing instant).
-     * Parents must be current (BR-002); {@link #planRestore} says which are not.
+     * Parents must be current (BR-002); {@link #planRestore} says which are not. A restored step or
+     * section is renumbered into the next free position (UC-016 BR-001); an element that is already
+     * current is left as it is.
+     *
+     * @param surveyId  the survey
+     * @param kind      the kind of element: a step, section or question
+     * @param durableId the element's durable id
+     * @return the plan that was carried out
+     * @throws AuthoringException when the element does not exist, the kind is not supported, or the
+     *                            plan is blocked
      */
     @Transactional
     public RestorePlan restore(int surveyId, StructureNode.Kind kind, int durableId) {
@@ -355,7 +481,13 @@ public class ElementService {
 
     // ---- purge ---------------------------------------------------------------------------
 
-    /** UC-009 A3: physically delete every retired row of a survey that has never been exported. */
+    /**
+     * UC-009 A3: physically delete every retired row of a survey that has never been exported.
+     *
+     * @param surveyId the survey
+     * @return the number of rows deleted
+     * @throws AuthoringException when the survey does not exist or has been exported
+     */
     @Transactional
     public int purgeRemoved(int surveyId) {
         Survey s = Survey.findById(surveyId);

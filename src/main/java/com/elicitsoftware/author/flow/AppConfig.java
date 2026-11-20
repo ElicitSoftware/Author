@@ -45,7 +45,7 @@ import java.nio.file.Paths;
  * Brand Directory Precedence:
  * 1. External brand mount (/brand) - Docker volume mounts for runtime branding
  * 2. Local brand directory (brand/) - Development or embedded default brand
- * 3. Application defaults (icons/) - Fallback when no brand is available
+ * 3. The embedded default brand (META-INF/brand/) - Fallback for a file neither directory has
  */
 // Load the Lumo theme (and its utility classes) via @StyleSheet before the
 // application stylesheet. Theme stylesheets must come first so application
@@ -239,14 +239,6 @@ public class AppConfig implements AppShellConfigurator {
     }
 
     /**
-     * Detects and reads brand information from various sources for debugging and identification.
-     * Implements the brand directory precedence: external mount (/brand) → local directory (brand/).
-     * Attempts to read metadata from brand-info.json first, then brand-config.json as fallback.
-     *
-     * @return A formatted string containing brand information, or a fallback message if no brand is detected.
-     *         Format: "{External|Default} Brand: {name} (v{version}) - {organization} [from {filename}]"
-     */
-    /**
      * Reads the {@code localized} block of a brand JSON file (top level or under {@code brand})
      * for the given locale: exact tag first, then language only. Returns an empty map when the
      * brand has no variants or the JSON cannot be parsed.
@@ -298,6 +290,16 @@ public class AppConfig implements AppShellConfigurator {
         return result;
     }
 
+    /**
+     * Describes the brand in use, for the {@code brand-info} meta tag: the mounted brand directory when it
+     * exists, else the local one, from its {@code brand-info.json} or else {@code brand-config.json}, with
+     * the name, organization and description in the locale's variant where the brand has one (UC-040 BR-006).
+     *
+     * @param locale the locale whose brand variant is wanted
+     * @return "{External|Default} Brand: {name} (v{version}) - {organization}[ - {description}] [from {file}]";
+     *         without a metadata file, the brand files found; without a brand directory,
+     *         "Default Theme (no brand directory found)"
+     */
     private String detectBrandInfo(java.util.Locale locale) {
         // Check for external brand directory first, then local brand
         String brandPath = null;

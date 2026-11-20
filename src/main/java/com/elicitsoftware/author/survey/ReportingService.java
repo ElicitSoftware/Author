@@ -53,13 +53,33 @@ public class ReportingService {
     public static final String KIND_TAG = "ontology";
     public static final String KIND_ASSIGNMENT = "metadata";
 
-    /** One metadata row resolved against the structure: the element it tags and where that element sits. */
+    /**
+     * One metadata row resolved against the structure: the element it tags and where that element sits.
+     *
+     * @param metadata     the assignment row
+     * @param ref          the scope the row tags, or {@code null} when its element columns are broken
+     * @param elementLabel the tagged element's label; empty when it cannot be found
+     * @param where        where the element sits; empty when it cannot be found
+     * @param dangling     true when the element is gone or retired, or the scope is broken
+     * @param node         the tagged element in the structure tree, or {@code null} when it cannot be found
+     */
     public record Assignment(Metadata metadata, ElementRef ref, String elementLabel, String where, boolean dangling, StructureNode node) {
 
+        /**
+         * The translated name of this assignment's scope.
+         *
+         * @return the label for {@link #ref()}
+         */
         public String scopeLabel() {
             return scopeLabel(ref);
         }
 
+        /**
+         * The translated name of a scope.
+         *
+         * @param ref the scope, or {@code null}
+         * @return the scope's label, or the "invalid scope" label for {@code null}
+         */
         public static String scopeLabel(ElementRef ref) {
             if (ref == null) {
                 return Translations.get("reporting.scope.invalid");
@@ -71,24 +91,53 @@ public class ReportingService {
             };
         }
 
+        /**
+         * The assigned value for display.
+         *
+         * @return the fixed value, or the translated "the answer" label when the answer is the value
+         */
         public String valueLabel() {
             return metadata.value == null ? Translations.get("reporting.value.theAnswer") : metadata.value;
         }
     }
 
-    /** One dimension table the site's ETL will create. */
+    /**
+     * One dimension table the site's ETL will create.
+     *
+     * @param name            the table name
+     * @param source          the dimension's name, or the tag's when the tag has a table of its own
+     * @param sharedDimension true when the table belongs to a named dimension rather than one tag
+     * @param tags            the tags that feed the table
+     * @param assignments     how many assignments those tags have in total
+     */
     public record DimTable(String name, String source, boolean sharedDimension, List<String> tags, int assignments) { }
 
-    /** One {@code fact_sections} column the site's ETL will add; {@code tag} is null for a fixed column. */
+    /**
+     * One {@code fact_sections} column the site's ETL will add; {@code tag} is null for a fixed column.
+     *
+     * @param column   the column name
+     * @param dimTable the dimension table the column refers to
+     * @param tag      the tag the column comes from, or {@code null} for a fixed column
+     */
     public record FactColumn(String column, String dimTable, String tag) { }
 
     /**
      * UC-024: everything the survey's reporting schema gains from this survey, plus what would
      * break it. {@code perItemColumns} are the fixed {@code question_key}/{@code item_key} the
      * site fills when the survey repeats a section per selected item (Survey UC-008 BR-012).
+     *
+     * @param tables         the dimension tables, ordered by name
+     * @param columns        one column per tag, ordered by column name
+     * @param perItemColumns the per-item columns, or empty when no Repeat rule reads a multi-select
+     * @param problems       the errors and warnings found in the tags and assignments
      */
     public record Impact(List<DimTable> tables, List<FactColumn> columns, List<FactColumn> perItemColumns, List<ValidationIssue> problems) {
 
+        /**
+         * Whether any problem is an error rather than a warning.
+         *
+         * @return true when at least one problem is an error
+         */
         public boolean hasErrors() {
             return problems.stream().anyMatch(ValidationIssue::isError);
         }
@@ -105,24 +154,58 @@ public class ReportingService {
 
     // ---- dimensions and tags (UC-023) --------------------------------------------------------
 
+    /**
+     * Every dimension, across all surveys.
+     *
+     * @return the dimensions ordered by name
+     */
     public List<Dimension> dimensions() {
         return Dimension.listAll(Sort.by("name"));
     }
 
+    /**
+     * The survey's reporting tags.
+     *
+     * @param surveyId the survey
+     * @return the tags ordered by tag
+     */
     public List<Ontology> tags(int surveyId) {
         return Ontology.list("surveyId", Sort.by("tag"), surveyId);
     }
 
+    /**
+     * One tag of the survey.
+     *
+     * @param surveyId   the survey
+     * @param ontologyId the tag's id
+     * @return the tag, or empty when it does not exist or belongs to another survey
+     */
     public Optional<Ontology> tag(int surveyId, int ontologyId) {
         Ontology o = Ontology.findById(ontologyId);
         return o != null && Objects.equals(o.surveyId, surveyId) ? Optional.of(o) : Optional.empty();
     }
 
+    /**
+     * How many assignments use a tag.
+     *
+     * @param ontologyId the tag's id
+     * @return the number of metadata rows that reference it
+     */
     public long assignmentCount(int ontologyId) {
         return Metadata.count("ontology.id", ontologyId);
     }
 
-    /** UC-023 step 3: a new tag; {@code dimensionName} null or blank gives the tag its own table. */
+    /**
+     * UC-023 step 3: a new tag; {@code dimensionName} null or blank gives the tag its own table.
+     * A named dimension that does not exist yet is created.
+     *
+     * @param surveyId      the survey
+     * @param tag           the tag; trimmed before it is stored
+     * @param dimensionName the dimension to share, or {@code null} or blank for a table of its own
+     * @return the persisted tag
+     * @throws AuthoringException when the survey is gone, the tag or dimension name is invalid, or a
+     *                            database constraint refuses the row
+     */
     @Transactional
     public Ontology createTag(int surveyId, String tag, String dimensionName) {
         Survey survey = survey(surveyId);
@@ -141,7 +224,18 @@ public class ReportingService {
         return o;
     }
 
-    /** UC-023 A4: in-place edit; a changed tag or dimension on an assigned tag is retroactive. */
+    /**
+     * UC-023 A4: in-place edit; a changed tag or dimension on an assigned tag is retroactive, so
+     * each of its assignments is recorded in the ledger.
+     *
+     * @param surveyId      the survey
+     * @param ontologyId    the tag's id
+     * @param tag           the new tag; trimmed before it is stored
+     * @param dimensionName the dimension to share, or {@code null} or blank for a table of its own
+     * @return the updated tag
+     * @throws AuthoringException when the tag is gone, the tag or dimension name is invalid, or a
+     *                            database constraint refuses the change
+     */
     @Transactional
     public Ontology updateTag(int surveyId, int ontologyId, String tag, String dimensionName) {
         Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException(Translations.get("error.tag.gone")));
@@ -165,7 +259,13 @@ public class ReportingService {
         return o;
     }
 
-    /** UC-023 A2: a tag in use cannot be removed. */
+    /**
+     * UC-023 A2: deletes a tag; a tag in use cannot be removed.
+     *
+     * @param surveyId   the survey
+     * @param ontologyId the tag's id
+     * @throws AuthoringException when the tag is gone or has assignments
+     */
     @Transactional
     public void removeTag(int surveyId, int ontologyId) {
         Ontology o = tag(surveyId, ontologyId).orElseThrow(() -> new AuthoringException(Translations.get("error.tag.gone")));
@@ -178,7 +278,13 @@ public class ReportingService {
         em.flush();
     }
 
-    /** Finds the dimension by name (case-insensitively, as the ETL lowercases) or creates it. */
+    /**
+     * Finds the dimension by name (case-insensitively, as the ETL lowercases) or creates it.
+     *
+     * @param name the dimension's name, or {@code null} or blank for none
+     * @return the existing or new dimension, or {@code null} when no name was given
+     * @throws AuthoringException when the name is invalid or a database constraint refuses the row
+     */
     @Transactional
     public Dimension ensureDimension(String name) {
         if (name == null || name.isBlank()) {
@@ -203,6 +309,12 @@ public class ReportingService {
 
     // ---- assignments (UC-021, UC-022) --------------------------------------------------------
 
+    /**
+     * Every assignment of the survey, resolved against its structure, retired elements included.
+     *
+     * @param surveyId the survey
+     * @return the assignments ordered by id
+     */
     public List<Assignment> assignments(int surveyId) {
         Locator labels = labels(surveyId);
         List<Assignment> out = new ArrayList<>();
@@ -212,19 +324,44 @@ public class ReportingService {
         return out;
     }
 
-    /** The assignments that concern one board node: both scopes for a question, the mount for a section. */
+    /**
+     * The assignments that concern one board node: both scopes for a question, the mount for a section.
+     *
+     * @param surveyId the survey
+     * @param node     the board node, or {@code null}
+     * @return the matching assignments; empty for a step or a {@code null} node
+     */
     public List<Assignment> assignmentsFor(int surveyId, StructureNode node) {
         return assignments(surveyId).stream().filter(a -> concerns(a.metadata(), node)).toList();
     }
 
-    /** The assignments that concern one element by kind and durable id (the element detail page). */
+    /**
+     * The assignments that concern one element by kind and durable id (the element detail page).
+     *
+     * @param surveyId  the survey
+     * @param kind      the kind of the tagged element
+     * @param durableId the durable id of the tagged element's node
+     * @return the assignments whose resolved node has that kind and durable id
+     */
     public List<Assignment> assignmentsFor(int surveyId, StructureNode.Kind kind, int durableId) {
         return assignments(surveyId).stream()
                 .filter(a -> a.node() != null && a.node().kind() == kind && Objects.equals(a.node().durableId(), durableId))
                 .toList();
     }
 
-    /** UC-021 steps 2-5: one new assignment; {@code value} null or blank means the answer is the value. */
+    /**
+     * UC-021 steps 2-5: one new assignment; {@code value} null or blank means the answer is the value.
+     *
+     * @param surveyId   the survey
+     * @param ref        the scope being tagged
+     * @param durableId  the id of the element in that scope
+     * @param ontologyId the tag's id
+     * @param value      the fixed value, or {@code null} or blank for the answer; trimmed before it is stored
+     * @return the persisted assignment
+     * @throws AuthoringException when the scope is missing, the tag or element is gone, the tag is
+     *                            already assigned to that element, the value is too long, or a
+     *                            database constraint refuses the row
+     */
     @Transactional
     public Metadata assign(int surveyId, ElementRef ref, int durableId, int ontologyId, String value) {
         if (ref == null) {
@@ -259,7 +396,18 @@ public class ReportingService {
         return m;
     }
 
-    /** UC-022 steps 3-6: change the tag or value in place; the ledger carries the export warning. */
+    /**
+     * UC-022 steps 3-6: change the tag or value in place; the ledger carries the export warning.
+     * Nothing is written or recorded when neither changes.
+     *
+     * @param surveyId   the survey
+     * @param metadataId the assignment's id
+     * @param ontologyId the new tag's id
+     * @param value      the new fixed value, or {@code null} or blank for the answer
+     * @return the assignment
+     * @throws AuthoringException when the assignment or tag is gone, the value is too long, or a
+     *                            database constraint refuses the change
+     */
     @Transactional
     public Metadata reassign(int surveyId, int metadataId, int ontologyId, String value) {
         Metadata m = assignment(surveyId, metadataId);
@@ -282,7 +430,14 @@ public class ReportingService {
         return m;
     }
 
-    /** UC-022 A2: removing an assignment stops classifying answers at deployed sites, so it is warned about too. */
+    /**
+     * UC-022 A2: deletes an assignment; removing one stops classifying answers at deployed sites, so
+     * it is recorded in the ledger and warned about too.
+     *
+     * @param surveyId   the survey
+     * @param metadataId the assignment's id
+     * @throws AuthoringException when the assignment is gone
+     */
     @Transactional
     public void unassign(int surveyId, int metadataId) {
         Metadata m = assignment(surveyId, metadataId);
@@ -295,6 +450,13 @@ public class ReportingService {
 
     // ---- impact (UC-024) -----------------------------------------------------------------------
 
+    /**
+     * UC-024: the tables and columns the survey's tags give its reporting schema, and the problems
+     * that would break it or that deserve a warning.
+     *
+     * @param surveyId the survey
+     * @return the impact of the survey's current tags and assignments
+     */
     public Impact impact(int surveyId) {
         List<Ontology> tags = tags(surveyId);
         List<Assignment> assignments = assignments(surveyId);
@@ -424,7 +586,14 @@ public class ReportingService {
         }
     }
 
-    /** One element resolved by durable id: its label, where it sits, and whether it is gone or retired. */
+    /**
+     * One element resolved by durable id: its label, where it sits, and whether it is gone or retired.
+     *
+     * @param label    the element's label; empty when it cannot be found
+     * @param where    where the element sits; empty when it cannot be found
+     * @param dangling true when the element is gone or retired
+     * @param node     the element in the structure tree, or {@code null} when it cannot be found
+     */
     public record Located(String label, String where, boolean dangling, StructureNode node) {
     }
 
@@ -452,6 +621,13 @@ public class ReportingService {
             }
         }
 
+        /**
+         * Whether an element exists in a scope, current or retired.
+         *
+         * @param ref       the scope; must not be {@code null}
+         * @param durableId the id of the element in that scope
+         * @return true when the structure holds that element
+         */
         public boolean exists(ElementRef ref, int durableId) {
             return switch (ref) {
                 case QUESTION -> questionsByDurable.containsKey(durableId);
@@ -460,7 +636,14 @@ public class ReportingService {
             };
         }
 
-        /** The element behind one scope and durable id; dangling when gone or retired. */
+        /**
+         * The element behind one scope and durable id; dangling when gone or retired.
+         *
+         * @param ref       the scope, or {@code null}
+         * @param durableId the id of the element in that scope, or {@code null}
+         * @return the located element; an empty, dangling result when either argument is
+         *         {@code null} or the element cannot be found
+         */
         public Located locate(ElementRef ref, Integer durableId) {
             if (ref == null || durableId == null) {
                 return new Located("", "", true, null);
@@ -487,6 +670,12 @@ public class ReportingService {
         }
     }
 
+    /**
+     * A locator over the survey's structure, retired elements included.
+     *
+     * @param surveyId the survey
+     * @return a new locator built from the survey's current structure tree
+     */
     public Locator locator(int surveyId) {
         return new Locator(surveyId);
     }
@@ -495,6 +684,12 @@ public class ReportingService {
         return new Locator(surveyId);
     }
 
+    /**
+     * The labels from the root down to a node, joined by {@code " › "}.
+     *
+     * @param node the node, or {@code null}
+     * @return the node's path; empty for {@code null}
+     */
     public static String path(StructureNode node) {
         if (node == null) {
             return "";

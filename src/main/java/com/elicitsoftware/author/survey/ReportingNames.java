@@ -51,27 +51,53 @@ public final class ReportingNames {
     private ReportingNames() {
     }
 
-    /** {@code dim_<lower(name)>}. */
+    /**
+     * {@code dim_<lower(name)>}.
+     *
+     * @param dimensionName the dimension's name; {@code null} counts as empty
+     * @return the dimension's table name
+     */
     public static String dimTableForDimension(String dimensionName) {
         return "dim_" + lower(dimensionName);
     }
 
-    /** {@code lower('dim_' || replace(tag, ' ', '_'))} — the hyphen is kept, as the ETL keeps it. */
+    /**
+     * {@code lower('dim_' || replace(tag, ' ', '_'))} — the hyphen is kept, as the ETL keeps it.
+     *
+     * @param tag the tag; trimmed, and {@code null} counts as empty
+     * @return the tag's own dimension table name
+     */
     public static String dimTableForTag(String tag) {
         return lower("dim_" + safe(tag).replace(' ', '_'));
     }
 
-    /** {@code lower(replace(replace(tag, ' ', '_'), '-', '')) || '_key'}. */
+    /**
+     * {@code lower(replace(replace(tag, ' ', '_'), '-', '')) || '_key'}.
+     *
+     * @param tag the tag; trimmed, and {@code null} counts as empty
+     * @return the tag's {@code fact_sections} column name
+     */
     public static String factColumn(String tag) {
         return lower(safe(tag).replace(' ', '_').replace("-", "")) + "_key";
     }
 
-    /** The dimension table this tag's values land in. */
+    /**
+     * The dimension table this tag's values land in.
+     *
+     * @param o the tag
+     * @return its dimension's table when it has a named dimension, else the tag's own table
+     */
     public static String dimTable(Ontology o) {
         return o.dimension != null && o.dimension.name != null ? dimTableForDimension(o.dimension.name) : dimTableForTag(o.tag);
     }
 
-    /** The dimension table for a tag given a dimension name that may be null or blank. */
+    /**
+     * The dimension table for a tag given a dimension name that may be null or blank.
+     *
+     * @param tag the tag
+     * @param dimensionName the dimension's name, or {@code null} or blank for none
+     * @return the dimension's table, or the tag's own table when no dimension is named
+     */
     public static String dimTable(String tag, String dimensionName) {
         return dimensionName == null || dimensionName.isBlank() ? dimTableForTag(tag) : dimTableForDimension(dimensionName);
     }
@@ -86,7 +112,11 @@ public final class ReportingNames {
             this.keySuffix = keySuffix;
         }
 
-        /** The last segment of the {@code validation.tag.table.*} / {@code validation.tag.column.*} key. */
+        /**
+         * The last segment of the {@code validation.tag.table.*} / {@code validation.tag.column.*} key.
+         *
+         * @return the key suffix
+         */
         public String keySuffix() {
             return keySuffix;
         }
@@ -95,6 +125,9 @@ public final class ReportingNames {
     /**
      * Why the ETL would reject {@code identifier}, or empty when it is usable as a table or column
      * name at a deployed site.
+     *
+     * @param identifier the table or column name to check
+     * @return the first defect found (empty, characters, then length), or empty when there is none
      */
     public static Optional<IdentifierDefect> identifierDefect(String identifier) {
         if (identifier == null || identifier.isBlank()) {
@@ -109,7 +142,12 @@ public final class ReportingNames {
         return Optional.empty();
     }
 
-    /** Whether a tag's column is one of the fixed columns of {@code fact_sections}. */
+    /**
+     * Whether a tag's column is one of the fixed columns of {@code fact_sections}.
+     *
+     * @param column the column name
+     * @return {@code true} when it is reserved; {@code false} for {@code null}
+     */
     public static boolean reservedColumn(String column) {
         return column != null && RESERVED_COLUMNS.contains(column);
     }

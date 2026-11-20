@@ -46,7 +46,13 @@ public class RuleOrdering {
 
     private static final BigDecimal WHOLE = BigDecimal.ZERO;
 
-    /** A board position; {@link #WHOLE} in a component means "the whole container". */
+    /**
+     * A board position; {@link #WHOLE} in a component means "the whole container".
+     *
+     * @param step the step's display order
+     * @param section the section's display order within the step, or {@code WHOLE}
+     * @param question the question's display order within the section, or {@code WHOLE}
+     */
     public record Position(BigDecimal step, BigDecimal section, BigDecimal question) implements Comparable<Position> {
 
         @Override
@@ -61,6 +67,12 @@ public class RuleOrdering {
             return c;
         }
 
+        /**
+         * Whether this position comes strictly after another, step first.
+         *
+         * @param o the position to compare with
+         * @return {@code true} when this position is later; {@code false} when it is equal or earlier
+         */
         public boolean after(Position o) {
             return compareTo(o) > 0;
         }
@@ -76,6 +88,15 @@ public class RuleOrdering {
         private final Map<Integer, String> sectionName;
         private final Map<Integer, String> questionName;
 
+        /**
+         * Builds the board from a survey's current rows.
+         *
+         * @param steps        the current steps
+         * @param mounts       the current section mounts
+         * @param assignments  the current question assignments
+         * @param sectionName  section names by section id
+         * @param questionName question labels by question id
+         */
         public Board(Collection<Step> steps, Collection<StepsSections> mounts, Collection<SectionsQuestion> assignments,
                      Map<Integer, String> sectionName, Map<Integer, String> questionName) {
             steps.forEach(s -> this.steps.put(s.stepId, s));
@@ -88,32 +109,72 @@ public class RuleOrdering {
             this.questionName = questionName;
         }
 
+        /**
+         * Looks up a current mount.
+         *
+         * @param stepsSectionsId the mount's id, or {@code null}
+         * @return the mount, or empty when the id is {@code null} or not on the board
+         */
         public Optional<StepsSections> mount(Integer stepsSectionsId) {
             return Optional.ofNullable(stepsSectionsId == null ? null : mounts.get(stepsSectionsId));
         }
 
+        /**
+         * Looks up a current question assignment.
+         *
+         * @param sectionsQuestionId the assignment's id, or {@code null}
+         * @return the assignment, or empty when the id is {@code null} or not on the board
+         */
         public Optional<SectionsQuestion> assignment(Integer sectionsQuestionId) {
             return Optional.ofNullable(sectionsQuestionId == null ? null : assignments.get(sectionsQuestionId));
         }
 
+        /**
+         * Looks up a current step.
+         *
+         * @param stepId the step's id, or {@code null}
+         * @return the step, or empty when the id is {@code null} or not on the board
+         */
         public Optional<Step> step(Integer stepId) {
             return Optional.ofNullable(stepId == null ? null : steps.get(stepId));
         }
 
-        /** The current mounts of a section, in no particular order. */
+        /**
+         * The current mounts of a section, in no particular order.
+         *
+         * @param sectionId the section's id
+         * @return the section's mounts, empty when it has none
+         */
         public List<StepsSections> mountsOf(Integer sectionId) {
             return mountsBySection.getOrDefault(sectionId, List.of());
         }
 
-        /** The section's name as a finding prints it; the language file supplies the quotes. */
+        /**
+         * The section's name as a finding prints it; the language file supplies the quotes.
+         *
+         * @param sectionId the section's id
+         * @return the section's name, or {@code "?"} when it is unknown or blank
+         */
         public String sectionLabel(Integer sectionId) {
             return nameOrUnknown(sectionName.get(sectionId));
         }
 
+        /**
+         * The question's label as a finding prints it.
+         *
+         * @param questionId the question's id
+         * @return the question's label, or {@code "?"} when it is unknown or blank
+         */
         public String questionLabel(Integer questionId) {
             return nameOrUnknown(questionName.get(questionId));
         }
 
+        /**
+         * The step's name as a finding prints it.
+         *
+         * @param stepId the step's id
+         * @return the step's name, or {@code "?"} when the step is unknown or its name blank
+         */
         public String stepLabel(Integer stepId) {
             Step step = steps.get(stepId);
             return nameOrUnknown(step == null ? null : step.name);
@@ -124,6 +185,10 @@ public class RuleOrdering {
          * the reader's language (UC-007 BR-013), such as {@code "downstream question 'Consent' in
          * step 'Intro' › 'About you' must come after upstream question 'How many' in step 'Intro' ›
          * 'Family'"}, naming the first backward pairing found.
+         *
+         * @param r the rule to check
+         * @return the reason the rule points backward, or empty when it does not or its upstream
+         *         question is not on the board
          */
         public Optional<String> problem(Relationship r) {
             SectionsQuestion origin = r.upstreamSqId == null ? null : assignments.get(r.upstreamSqId);
@@ -210,7 +275,12 @@ public class RuleOrdering {
         }
     }
 
-    /** The current board of a survey: one query per table. */
+    /**
+     * The current board of a survey: one query per table.
+     *
+     * @param surveyId the survey's id
+     * @return the survey's current steps, mounts, assignments and names
+     */
     public Board load(int surveyId) {
         Map<Integer, String> sectionName = new HashMap<>();
         for (Section s : Section.<Section>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL)) {
@@ -227,7 +297,12 @@ public class RuleOrdering {
                 sectionName, questionName);
     }
 
-    /** How a question is named in a reason: its short text, else its text without markup. */
+    /**
+     * How a question is named in a reason: its short text, else its text without markup.
+     *
+     * @param q the question
+     * @return the question's label
+     */
     public static String questionLabel(Question q) {
         return q.shortText != null && !q.shortText.isBlank() ? q.shortText : SurveyStructureQuery.plain(q.text);
     }

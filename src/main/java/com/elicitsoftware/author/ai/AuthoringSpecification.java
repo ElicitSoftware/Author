@@ -44,11 +44,16 @@ public class AuthoringSpecification {
     @ConfigProperty(name = "author.ai.specification.resource", defaultValue = DEFAULT_RESOURCE)
     String resource;
 
+    /** Creates the bean; CDI injects the resource path. */
     public AuthoringSpecification() {
         // CDI managed bean
     }
 
-    /** Whether this build carries the specification. */
+    /**
+     * Whether this build carries the specification.
+     *
+     * @return {@code true} when the resource is on the classpath
+     */
     public boolean isAvailable() {
         return loader().getResource(resource) != null;
     }

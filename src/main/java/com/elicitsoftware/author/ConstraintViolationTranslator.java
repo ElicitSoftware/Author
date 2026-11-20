@@ -45,8 +45,13 @@ public final class ConstraintViolationTranslator {
     }
 
     /**
-     * @return an {@link AuthoringException} when {@code e} wraps a recognized constraint violation,
-     *         otherwise {@code e} itself so the caller can rethrow it unchanged.
+     * Translates a failed write into the exception the caller should throw.
+     *
+     * @param e the exception the write raised
+     * @return an {@link AuthoringException} when {@code e} wraps a constraint violation whose name is
+     *         recognized or whose SQL state is 23503 (foreign key) or 23505 (unique); {@code e} itself
+     *         when it wraps no constraint violation; otherwise {@code e} as a {@link PersistenceException},
+     *         wrapped in one when it is not already
      */
     public static RuntimeException translate(RuntimeException e) {
         Throwable t = e;

@@ -62,6 +62,10 @@ public class TagDialog extends Dialog {
     private final boolean assigned;
 
     /**
+     * Creates the dialog for creating a reporting tag or editing one.
+     *
+     * @param service  supplies the dimensions and assignment count, and saves the tag
+     * @param survey   the survey the tag belongs to; its name is a new tag's namespace
      * @param existing the tag to edit, or {@code null} to create one
      * @param onSaved  receives the persisted tag
      */

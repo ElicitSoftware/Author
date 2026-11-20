@@ -32,7 +32,13 @@ public final class FieldHelp {
     private FieldHelp() {
     }
 
-    /** Explain a control: set its tooltip and, for plain text fields, show an info icon suffix. */
+    /**
+     * Explain a control: set its tooltip and, for plain text fields, show an info icon suffix.
+     * The icon replaces any suffix component the field already had.
+     *
+     * @param field the control; a tooltip is set only when it supports one
+     * @param text  the explanation
+     */
     public static void help(Component field, String text) {
         if (field instanceof HasTooltip tooltip) {
             tooltip.setTooltipText(text);

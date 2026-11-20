@@ -11,5 +11,10 @@ package com.elicitsoftware.author.flow.designer;
  * ***LICENSE_END***
  */
 
-/** Drag payload of a section in the drawer's Sections panel: dropped into a lane it is mounted there (UC-015 A6). */
+/**
+ * Drag payload of a section in the drawer's Sections panel: dropped into a lane it is mounted there (UC-015 A6).
+ *
+ * @param sectionId the section's durable id
+ * @param label     the section as the panel names it
+ */
 public record BankSection(int sectionId, String label) { }

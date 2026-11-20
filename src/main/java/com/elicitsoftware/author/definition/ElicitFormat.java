@@ -114,6 +114,14 @@ public final class ElicitFormat {
     private ElicitFormat() {
     }
 
+    /**
+     * Reads the revision instant from a {@code # survey_revision:} header line.
+     *
+     * @param line a line of the file
+     * @return the instant, or {@code null} when the line is not a revision header
+     * @throws IllegalArgumentException when the header carries no value or one that is not an
+     *                                  ISO-8601 offset date-time
+     */
     public static OffsetDateTime parseRevisionHeader(String line) {
         if (!line.startsWith(REVISION_HEADER)) {
             return null;
@@ -129,6 +137,13 @@ public final class ElicitFormat {
         }
     }
 
+    /**
+     * Splits a record's data on unescaped pipes and unescapes each field. An unknown escape is kept
+     * as written, backslash included; a trailing lone backslash is dropped.
+     *
+     * @param data the part of the line after {@code table: }
+     * @return the fields in order; an empty field is an empty string, not {@code null}
+     */
     public static String[] parseFields(String data) {
         List<String> fieldList = new ArrayList<>();
         StringBuilder current = new StringBuilder();
@@ -160,6 +175,12 @@ public final class ElicitFormat {
         return fieldList.toArray(new String[0]);
     }
 
+    /**
+     * Escapes a value for one field: pipe, backslash, newline and carriage return.
+     *
+     * @param value the value; its {@code toString()} is written
+     * @return the escaped text, or an empty string for {@code null}
+     */
     public static String escapeField(Object value) {
         if (value == null) {
             return "";
@@ -179,6 +200,12 @@ public final class ElicitFormat {
         return out.toString();
     }
 
+    /**
+     * Escapes each value and joins them with pipes into a record's data.
+     *
+     * @param values the field values in order; a {@code null} becomes an empty field
+     * @return the joined record data
+     */
     public static String joinFields(Object... values) {
         StringBuilder out = new StringBuilder();
         for (int i = 0; i < values.length; i++) {
@@ -190,6 +217,12 @@ public final class ElicitFormat {
         return out.toString();
     }
 
+    /**
+     * Reads an empty field as {@code null}.
+     *
+     * @param value the field value
+     * @return {@code null} when the value is {@code null} or empty, otherwise the value unchanged
+     */
     public static String nullIfEmpty(String value) {
         return (value == null || value.isEmpty()) ? null : value;
     }
@@ -197,6 +230,11 @@ public final class ElicitFormat {
     /**
      * Rewrites the leading survey component of a display key (or initial display key) onto the
      * given survey id; non-structured values are returned unchanged.
+     *
+     * @param displayKey the display key; an empty one counts as {@code null}
+     * @param surveyId   the survey id to rebase onto, written as four zero-padded digits
+     * @return the rebased key; {@code null} for a null or empty key, and the key unchanged when the
+     *         survey id is {@code null} or the key has no {@code -}
      */
     public static String rebaseDisplayKey(String displayKey, Number surveyId) {
         String value = nullIfEmpty(displayKey);
@@ -210,6 +248,12 @@ public final class ElicitFormat {
         return String.format("%04d", surveyId.longValue()) + value.substring(firstSeparator);
     }
 
+    /**
+     * Parses an integer field leniently.
+     *
+     * @param value the field value, trimmed before parsing
+     * @return the integer, or {@code null} when the value is null, empty or not an integer
+     */
     public static Integer parseIntOrNull(String value) {
         if (value == null || value.isEmpty()) {
             return null;
@@ -221,6 +265,12 @@ public final class ElicitFormat {
         }
     }
 
+    /**
+     * Parses a decimal field leniently.
+     *
+     * @param value the field value, trimmed before parsing
+     * @return the decimal, or {@code null} when the value is null, empty or not a number
+     */
     public static java.math.BigDecimal parseDecimalOrNull(String value) {
         if (value == null || value.isEmpty()) {
             return null;
@@ -232,6 +282,12 @@ public final class ElicitFormat {
         }
     }
 
+    /**
+     * Parses a long field leniently.
+     *
+     * @param value the field value, trimmed before parsing
+     * @return the long, or {@code null} when the value is null, empty or not an integer
+     */
     public static Long parseLongOrNull(String value) {
         if (value == null || value.isEmpty()) {
             return null;
@@ -243,6 +299,12 @@ public final class ElicitFormat {
         }
     }
 
+    /**
+     * Parses a boolean field; {@code true} and {@code t} in any case are true.
+     *
+     * @param value the field value
+     * @return {@code true} for {@code true} or {@code t}, otherwise {@code false}, also for null or empty
+     */
     public static boolean parseBooleanOrFalse(String value) {
         if (value == null || value.isEmpty()) {
             return false;
@@ -250,7 +312,14 @@ public final class ElicitFormat {
         return Boolean.parseBoolean(value) || "t".equalsIgnoreCase(value);
     }
 
-    /** The file's own value if present, otherwise a fresh key; malformed values are rejected. */
+    /**
+     * The file's own value if present, otherwise a fresh key; malformed values are rejected.
+     *
+     * @param raw  the field value
+     * @param what what the key belongs to, named in the error message
+     * @return the parsed key, or a random one when the field is null or empty
+     * @throws IllegalArgumentException when the value is not a UUID
+     */
     public static UUID parseKeyOrMint(String raw, String what) {
         String value = nullIfEmpty(raw);
         if (value == null) {
@@ -263,7 +332,15 @@ public final class ElicitFormat {
         }
     }
 
-    /** True when a versioned record's {@code effective_to} field says the row was retired. */
+    /**
+     * True when a versioned record's {@code effective_to} field says the row was retired.
+     *
+     * @param table  the record type
+     * @param fields the record's fields
+     * @return {@code true} when the field holds an instant before the sentinel, or a value that does
+     *         not parse and does not start with {@code 9999}; {@code false} for an unversioned table,
+     *         a record too short to carry the field, or an empty field
+     */
     public static boolean isRetired(String table, String[] fields) {
         Integer idx = EFFECTIVE_TO_INDEX.get(table);
         if (idx == null || fields.length <= idx) {
@@ -280,6 +357,15 @@ public final class ElicitFormat {
         }
     }
 
+    /**
+     * Maps an id from the file onto the id its row was given on import.
+     *
+     * @param oldId      the id in the file
+     * @param map        the file's ids mapped to the new ones
+     * @param entityDesc what the id refers to, named in the error message
+     * @return the new id
+     * @throws IllegalStateException when the id is {@code null} or has no mapping
+     */
     public static Long resolveRequired(Long oldId, Map<Long, Long> map, String entityDesc) {
         if (oldId == null) {
             throw new IllegalStateException(Translations.get("error.import.noSourceId", entityDesc));
@@ -291,10 +377,26 @@ public final class ElicitFormat {
         return newId;
     }
 
+    /**
+     * Maps an optional id from the file onto the id its row was given on import.
+     *
+     * @param oldId      the id in the file, or {@code null}
+     * @param map        the file's ids mapped to the new ones
+     * @param entityDesc what the id refers to, named in the error message
+     * @return the new id, or {@code null} when {@code oldId} is {@code null}
+     * @throws IllegalStateException when a non-null id has no mapping
+     */
     public static Long resolveNullable(Long oldId, Map<Long, Long> map, String entityDesc) {
         return oldId == null ? null : resolveRequired(oldId, map, entityDesc);
     }
 
+    /**
+     * Checks that a record carries at least the fields its type requires ({@link #REQUIRED_FIELDS}).
+     *
+     * @param table  the record type; an unknown type requires none
+     * @param fields the record's fields
+     * @throws IllegalArgumentException when the record has too few fields
+     */
     public static void requireFields(String table, String[] fields) {
         int required = REQUIRED_FIELDS.getOrDefault(table, 0);
         if (fields.length < required) {

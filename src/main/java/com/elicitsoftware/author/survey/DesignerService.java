@@ -63,7 +63,15 @@ public class DesignerService {
 
     // ---- create ----------------------------------------------------------------------------
 
-    /** UC-016 / UC-015 A4 for steps: a new step placed at {@code position} among the current steps. */
+    /**
+     * UC-016 / UC-015 A4 for steps: a new step placed at {@code position} among the current steps.
+     *
+     * @param surveyId the survey the step belongs to
+     * @param draft    carries the name, dimension name (the name when blank) and description
+     * @param position the 0-based index among the current steps, clamped to the end
+     * @return the created step, renumbered with its siblings
+     * @throws AuthoringException when the draft's name is blank or longer than 255 characters
+     */
     @Transactional
     public Step createStep(int surveyId, Step draft, int position) {
         validate(draft);
@@ -78,7 +86,16 @@ public class DesignerService {
         return step;
     }
 
-    /** UC-015 A4: a new section mounted in {@code stepId} at {@code position}. */
+    /**
+     * UC-015 A4: a new section mounted in {@code stepId} at {@code position}.
+     *
+     * @param surveyId the survey the section belongs to
+     * @param stepId   the durable id of the current step to mount it in
+     * @param draft    carries the name, dimension name (the name when blank) and description
+     * @param position the 0-based index in the step's lane, clamped to the end
+     * @return the created section
+     * @throws AuthoringException when the draft's name is invalid or the step is gone or retired
+     */
     @Transactional
     public Section createSectionIn(int surveyId, int stepId, Section draft, int position) {
         validate(draft);
@@ -92,7 +109,17 @@ public class DesignerService {
         return section;
     }
 
-    /** UC-011: a new question assigned to {@code sectionId} at {@code position}. */
+    /**
+     * UC-011: a new question assigned to {@code sectionId} at {@code position}.
+     *
+     * @param surveyId  the survey the question belongs to
+     * @param sectionId the durable id of the current section to assign it to
+     * @param draft     the question's type, wording, validation and list
+     * @param position  the 0-based index among the section's questions, clamped to the end
+     * @return the created question
+     * @throws AuthoringException when the draft fails validation (no type, no text, a choice type
+     *                            without a list, minimum over maximum) or the section is gone or retired
+     */
     @Transactional
     public Question createQuestionIn(int surveyId, int sectionId, Question draft, int position) {
         validate(draft);
@@ -110,6 +137,13 @@ public class DesignerService {
     /**
      * UC-015 main flow (BR-001, BR-002): a brand-new section in {@code targetStepId} carrying
      * the source's name, dimension name and description and the same questions, no rules.
+     *
+     * @param surveyId        the survey both sections belong to
+     * @param sourceSectionId the durable id of the current section to copy
+     * @param targetStepId    the durable id of the current step to mount the copy in
+     * @param position        the 0-based index in the target step's lane, clamped to the end
+     * @return the new section
+     * @throws AuthoringException when the source section or the target step is gone or retired
      */
     @Transactional
     public Section duplicateSectionInto(int surveyId, int sourceSectionId, int targetStepId, int position) {
@@ -131,7 +165,17 @@ public class DesignerService {
         return created;
     }
 
-    /** UC-015 A1 (BR-003): mount an existing section in another step; once per step (A2). */
+    /**
+     * UC-015 A1 (BR-003): mount an existing section in another step; once per step (A2).
+     *
+     * @param surveyId     the survey the section and step belong to
+     * @param sectionId    the durable id of the current section to mount
+     * @param targetStepId the durable id of the current step to mount it in
+     * @param position     the 0-based index in the step's lane, clamped to the end
+     * @return the new step-section assignment
+     * @throws AuthoringException when the section or step is gone or retired, or the section is
+     *                            already mounted in that step
+     */
     @Transactional
     public StepsSections mountSection(int surveyId, int sectionId, int targetStepId, int position) {
         currentSection(surveyId, sectionId);
@@ -142,7 +186,17 @@ public class DesignerService {
         return mount(surveyId, step, sectionId, position);
     }
 
-    /** UC-011 A4 (BR-001): a second assignment of the same question in another section. */
+    /**
+     * UC-011 A4 (BR-001): a second assignment of the same question in another section.
+     *
+     * @param surveyId        the survey the question and section belong to
+     * @param questionId      the durable id of the current question to assign
+     * @param targetSectionId the durable id of the current section to assign it to
+     * @param position        the 0-based index among the section's questions, clamped to the end
+     * @return the new section-question assignment
+     * @throws AuthoringException when the question or section is gone or retired, or the question
+     *                            is already in that section
+     */
     @Transactional
     public SectionsQuestion assignQuestionInto(int surveyId, int questionId, int targetSectionId, int position) {
         currentQuestion(surveyId, questionId);
@@ -153,7 +207,15 @@ public class DesignerService {
         return assign(surveyId, targetSectionId, questionId, position);
     }
 
-    /** UC-015 A3: take a section out of one step; its last mount retires the section too. */
+    /**
+     * UC-015 A3: take a section out of one step; its last mount retires the section too. The rules
+     * touching that mount are retired with it, and the step's lane is renumbered.
+     *
+     * @param surveyId        the survey the assignment belongs to
+     * @param stepsSectionsId the id of the current step-section assignment
+     * @throws AuthoringException when the assignment is no longer current, or (on the last mount)
+     *                            the section's removal is blocked
+     */
     @Transactional
     public void retireSectionAssignment(int surveyId, int stepsSectionsId) {
         StepsSections ss = StepsSections.<StepsSections>find("surveyId = ?1 and stepsSectionsId = ?2 and effectiveTo = ?3",
@@ -173,7 +235,15 @@ public class DesignerService {
         ordering.renumberLane(surveyId, step, ordering.currentLane(surveyId, step.stepId));
     }
 
-    /** UC-011 A5: take a question out of one section; its last assignment retires the question too. */
+    /**
+     * UC-011 A5: take a question out of one section; its last assignment retires the question too.
+     * The rules touching that assignment are retired with it, and the section is renumbered.
+     *
+     * @param surveyId           the survey the assignment belongs to
+     * @param sectionsQuestionId the id of the current section-question assignment
+     * @throws AuthoringException when the assignment is no longer current, or (on the last
+     *                            assignment) the question's removal is blocked
+     */
     @Transactional
     public void retireQuestionAssignment(int surveyId, int sectionsQuestionId) {
         SectionsQuestion sq = SectionsQuestion.<SectionsQuestion>find("surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3",
@@ -192,7 +262,14 @@ public class DesignerService {
         ordering.renumberSection(ordering.currentQuestions(surveyId, sq.sectionId));
     }
 
-    /** Remove a step (UC-009 cascade) and renumber the survey; the board's Remove step. */
+    /**
+     * Remove a step (UC-009 cascade) and renumber the survey; the board's Remove step.
+     *
+     * @param surveyId the survey the step belongs to
+     * @param stepId   the step's durable id
+     * @return the removal plan that was carried out
+     * @throws AuthoringException when the step is not found or its removal is blocked
+     */
     @Transactional
     public ElementService.RemovalPlan removeStep(int surveyId, int stepId) {
         ElementService.RemovalPlan plan = elements.remove(surveyId, StructureNode.Kind.STEP, stepId);
@@ -200,7 +277,14 @@ public class DesignerService {
         return plan;
     }
 
-    /** Remove a section everywhere it is mounted (UC-009 cascade) and renumber; also the Undo of a copy. */
+    /**
+     * Remove a section everywhere it is mounted (UC-009 cascade) and renumber; also the Undo of a copy.
+     *
+     * @param surveyId  the survey the section belongs to
+     * @param sectionId the section's durable id
+     * @return the removal plan that was carried out
+     * @throws AuthoringException when the section is not found or its removal is blocked
+     */
     @Transactional
     public ElementService.RemovalPlan removeSection(int surveyId, int sectionId) {
         ElementService.RemovalPlan plan = elements.remove(surveyId, StructureNode.Kind.SECTION, sectionId);
@@ -210,6 +294,15 @@ public class DesignerService {
 
     // ---- reorder (UC-016) ------------------------------------------------------------------
 
+    /**
+     * UC-016: moves a current step to {@code newIndex} among the current steps and renumbers the
+     * survey; does nothing when the step is already there (A2).
+     *
+     * @param surveyId the survey the step belongs to
+     * @param stepId   the step's durable id
+     * @param newIndex the 0-based target index, clamped to the list
+     * @throws AuthoringException when the step is not among the current steps
+     */
     @Transactional
     public void moveStep(int surveyId, int stepId, int newIndex) {
         List<Step> steps = ordering.currentSteps(surveyId);
@@ -221,6 +314,15 @@ public class DesignerService {
         ordering.renumberSurvey(surveyId, steps);
     }
 
+    /**
+     * UC-016: moves a section to {@code newIndex} within the step it is mounted in and renumbers
+     * that lane; does nothing when it is already there (A2).
+     *
+     * @param surveyId        the survey the assignment belongs to
+     * @param stepsSectionsId the id of the current step-section assignment to move
+     * @param newIndex        the 0-based target index, clamped to the lane
+     * @throws AuthoringException when the assignment is no longer current or its step is gone or retired
+     */
     @Transactional
     public void moveSectionWithinStep(int surveyId, int stepsSectionsId, int newIndex) {
         StepsSections ss = StepsSections.<StepsSections>find("surveyId = ?1 and stepsSectionsId = ?2 and effectiveTo = ?3",
@@ -235,6 +337,15 @@ public class DesignerService {
         ordering.renumberLane(surveyId, step, lane);
     }
 
+    /**
+     * UC-016: moves a question to {@code newIndex} within its section and renumbers the section;
+     * does nothing when it is already there (A2).
+     *
+     * @param surveyId           the survey the assignment belongs to
+     * @param sectionsQuestionId the id of the current section-question assignment to move
+     * @param newIndex           the 0-based target index, clamped to the section
+     * @throws AuthoringException when the assignment is no longer current
+     */
     @Transactional
     public void moveQuestionWithinSection(int surveyId, int sectionsQuestionId, int newIndex) {
         SectionsQuestion sq = SectionsQuestion.<SectionsQuestion>find("surveyId = ?1 and sectionsQuestionId = ?2 and effectiveTo = ?3",
@@ -250,7 +361,15 @@ public class DesignerService {
 
     // ---- edit ------------------------------------------------------------------------------
 
-    /** UC-018: name, dimension name and description; a changed name is recorded for the export warning. */
+    /**
+     * UC-018: name, dimension name and description; a changed name is recorded for the export warning.
+     *
+     * @param surveyId the survey the step belongs to
+     * @param edited   the step's durable id and its new name, dimension name and description
+     * @return the updated step
+     * @throws AuthoringException when the name is invalid, the step is gone or retired, or the
+     *                            flush violates a recognized constraint
+     */
     @Transactional
     public Step rename(int surveyId, Step edited) {
         validate(edited);
@@ -263,6 +382,16 @@ public class DesignerService {
         return flushTranslated(step);
     }
 
+    /**
+     * UC-018: name, dimension name and description of a section; a changed name is recorded for
+     * the export warning.
+     *
+     * @param surveyId the survey the section belongs to
+     * @param edited   the section's durable id and its new name, dimension name and description
+     * @return the updated section
+     * @throws AuthoringException when the name is invalid, the section is gone or retired, or the
+     *                            flush violates a recognized constraint
+     */
     @Transactional
     public Section rename(int surveyId, Section edited) {
         validate(edited);
@@ -302,7 +431,16 @@ public class DesignerService {
         staleTranslations.record(surveyId, what, translations.languagesAboutToGoStale(surveyId, key, field));
     }
 
-    /** UC-014 steps 6-7 / BR-001: give a choice question its list of options. */
+    /**
+     * UC-014 steps 6-7 / BR-001: give a choice question its list of options.
+     *
+     * @param surveyId      the survey the question and list belong to
+     * @param questionId    the durable id of the current question
+     * @param selectGroupId the durable id of the current list to assign
+     * @return the updated question
+     * @throws AuthoringException when the question is gone or retired, its type takes no list, or
+     *                            the list is gone or retired
+     */
     @Transactional
     public Question assignList(int surveyId, int questionId, int selectGroupId) {
         Question question = currentQuestion(surveyId, questionId);
@@ -316,7 +454,16 @@ public class DesignerService {
         return flushTranslated(question);
     }
 
-    /** UC-011 A2: edit a question in place (same key, same durable id). */
+    /**
+     * UC-011 A2: edit a question in place (same key, same durable id). Translations made from
+     * wording that changes are recorded as stale (FR-060).
+     *
+     * @param surveyId the survey the question belongs to
+     * @param edited   the question's durable id and its new values
+     * @return the updated question
+     * @throws AuthoringException when the edit fails validation, the question is gone or retired,
+     *                            or the flush violates a recognized constraint
+     */
     @Transactional
     public Question update(int surveyId, Question edited) {
         validate(edited);
@@ -330,22 +477,54 @@ public class DesignerService {
 
     // ---- lookups ---------------------------------------------------------------------------
 
+    /**
+     * Returns the current step with the given durable id.
+     *
+     * @param surveyId the survey the step belongs to
+     * @param stepId   the step's durable id
+     * @return the step
+     * @throws AuthoringException when the step does not exist or is retired
+     */
     public Step currentStep(int surveyId, int stepId) {
         return elements.step(surveyId, stepId).filter(StructuralElement::isCurrent)
                 .orElseThrow(() -> new AuthoringException(Translations.get("error.step.goneOrRemoved")));
     }
 
+    /**
+     * Returns the current section with the given durable id.
+     *
+     * @param surveyId  the survey the section belongs to
+     * @param sectionId the section's durable id
+     * @return the section
+     * @throws AuthoringException when the section does not exist or is retired
+     */
     public Section currentSection(int surveyId, int sectionId) {
         return elements.section(surveyId, sectionId).filter(StructuralElement::isCurrent)
                 .orElseThrow(() -> new AuthoringException(Translations.get("error.section.goneOrRemoved")));
     }
 
+    /**
+     * Returns the current question with the given durable id.
+     *
+     * @param surveyId   the survey the question belongs to
+     * @param questionId the question's durable id
+     * @return the question
+     * @throws AuthoringException when the question does not exist or is retired
+     */
     public Question currentQuestion(int surveyId, int questionId) {
         return elements.question(surveyId, questionId).filter(StructuralElement::isCurrent)
                 .orElseThrow(() -> new AuthoringException(Translations.get("error.question.goneOrRemoved")));
     }
 
-    /** Current rules that read from or target the given assignments or step, for badges and menus. */
+    /**
+     * Current rules that read from or target the given assignments or step, for badges and menus.
+     *
+     * @param surveyId the survey the rules belong to
+     * @param sqIds    section-question assignment ids matched as a rule's upstream or downstream; may be null
+     * @param ssIds    step-section assignment ids matched as a rule's downstream; may be null
+     * @param stepId   a step's durable id matched as a rule's upstream or downstream; may be null
+     * @return the matching current rules, empty when none
+     */
     public List<Relationship> rulesTouching(int surveyId, List<Integer> sqIds, List<Integer> ssIds, Integer stepId) {
         return elements.relationshipsTouching(surveyId, sqIds, ssIds, stepId);
     }

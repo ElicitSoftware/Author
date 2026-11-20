@@ -63,9 +63,14 @@ public class ReportMarkDialog extends Dialog {
     private final Mark existing;
 
     /**
+     * A dialog that marks an element for a report (UC-049), or relabels an existing mark.
+     *
+     * @param service  the service that saves the mark
+     * @param survey   the survey the mark belongs to
      * @param nodes    the sections and questions a mark may target (ignored when {@code context} or {@code existing} is given)
      * @param context  the board node the dialog was opened from, or {@code null} to pick one
      * @param existing the mark whose label is edited, or {@code null} to create one
+     * @param onSaved  called with the saved mark after the dialog closes
      */
     public ReportMarkDialog(ReportMarkService service, Survey survey, List<StructureNode> nodes, StructureNode context,
                             Mark existing, Consumer<ReportItem> onSaved) {

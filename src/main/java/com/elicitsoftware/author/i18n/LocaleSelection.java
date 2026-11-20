@@ -22,8 +22,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * The language a respondent has chosen for this browser session (UC-040 BR-003, BR-007).
- * The choice lives only in the Vaadin session; nothing about it is stored with the respondent.
+ * The language an author has chosen for this browser session (UC-040 BR-003, BR-007).
+ * The choice lives only in the Vaadin session; nothing about it is stored with the author.
  */
 @ApplicationScoped
 public class LocaleSelection {
@@ -37,7 +37,13 @@ public class LocaleSelection {
     @Inject
     LocaleLayout layout;
 
-    /** Resolves a language tag to a provided locale: exact match first, then same language. */
+    /**
+     * Resolves a language tag to a provided locale: exact match first, then same language.
+     *
+     * @param languageTag the BCP 47 tag, or {@code null}
+     * @return the provided locale, or empty when the tag is {@code null}, blank, names no language,
+     *         or matches no provided locale
+     */
     public Optional<Locale> resolve(String languageTag) {
         if (languageTag == null || languageTag.isBlank()) {
             return Optional.empty();
@@ -53,7 +59,13 @@ public class LocaleSelection {
         return provided.stream().filter(l -> l.getLanguage().equals(wanted.getLanguage())).findFirst();
     }
 
-    /** Remembers the locale for the session and applies it (texts and layout) to the UI. */
+    /**
+     * Remembers the locale for the session and applies it (texts and layout) to the UI. Nothing is
+     * remembered when the UI has no session.
+     *
+     * @param ui the UI to apply the locale to
+     * @param locale the chosen locale
+     */
     public void apply(UI ui, Locale locale) {
         VaadinSession session = ui.getSession();
         if (session != null) {
@@ -63,7 +75,12 @@ public class LocaleSelection {
         layout.apply(ui, locale);
     }
 
-    /** The locale remembered for the session, if the respondent chose one. */
+    /**
+     * The locale remembered for the session, if the author chose one.
+     *
+     * @param session the Vaadin session, or {@code null}
+     * @return the remembered locale, or empty when the session is {@code null} or holds none
+     */
     public Optional<Locale> stored(VaadinSession session) {
         if (session == null) {
             return Optional.empty();

@@ -31,8 +31,21 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @ApplicationScoped
 public class ReportingChangeLedger {
 
+    /**
+     * One recorded reporting-tag change.
+     *
+     * @param kind       the table the changed row belongs to, such as {@code metadata}
+     * @param durableId  the changed row's id in that table
+     * @param messageKey the {@code validation.tag.*} key the warning is worded from
+     * @param params     what the key is filled with
+     */
     public record ReportingChange(String kind, Integer durableId, String messageKey, List<Object> params) {
 
+        /**
+         * The warning, worded in the current reader's language.
+         *
+         * @return the translated message
+         */
         public String message() {
             return Translations.get(messageKey, params.toArray());
         }
@@ -40,15 +53,35 @@ public class ReportingChangeLedger {
 
     private final Map<Integer, List<ReportingChange>> bySurvey = new ConcurrentHashMap<>();
 
+    /**
+     * Records a change for a survey.
+     *
+     * @param surveyId   the survey's id
+     * @param kind       the table the changed row belongs to, such as {@code metadata}
+     * @param durableId  the changed row's id in that table
+     * @param messageKey the {@code validation.tag.*} key the warning is worded from
+     * @param params     what the key is filled with; none may be {@code null}
+     */
     public void record(int surveyId, String kind, Integer durableId, String messageKey, Object... params) {
         bySurvey.computeIfAbsent(surveyId, k -> new CopyOnWriteArrayList<>())
                 .add(new ReportingChange(kind, durableId, messageKey, List.of(params)));
     }
 
+    /**
+     * The changes recorded for a survey since its last export.
+     *
+     * @param surveyId the survey's id
+     * @return an immutable copy of the changes, in the order recorded; empty when there are none
+     */
     public List<ReportingChange> since(int surveyId) {
         return List.copyOf(bySurvey.getOrDefault(surveyId, List.of()));
     }
 
+    /**
+     * Forgets a survey's changes, once its export is stamped.
+     *
+     * @param surveyId the survey's id
+     */
     public void clear(int surveyId) {
         bySurvey.remove(surveyId);
     }

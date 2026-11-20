@@ -35,10 +35,16 @@ public class AuthoringSpecificationResource {
     @Inject
     AuthoringSpecification specification;
 
+    /** Creates the resource; CDI injects the specification. */
     public AuthoringSpecificationResource() {
         // CDI managed bean
     }
 
+    /**
+     * Returns the specification as a Markdown attachment named {@value AuthoringSpecification#FILE_NAME}.
+     *
+     * @return 200 with the document, or 404 when this build carries none
+     */
     @GET
     @Produces("text/markdown; charset=UTF-8")
     @RolesAllowed(AuthorRoles.AUTHOR)

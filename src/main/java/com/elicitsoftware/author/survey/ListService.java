@@ -42,7 +42,13 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class ListService {
 
-    /** One option as the dialog edits it; {@code selectItemId} is null for a new option. */
+    /**
+     * One option as the dialog edits it; {@code selectItemId} is null for a new option.
+     *
+     * @param selectItemId the option's durable id, or {@code null} for a new option
+     * @param displayText  the text the respondent sees
+     * @param codedValue   the value recorded for the answer; blank means the display text
+     */
     public record OptionDraft(Integer selectItemId, String displayText, String codedValue) { }
 
     @Inject
@@ -51,38 +57,86 @@ public class ListService {
     @Inject
     ElementService elements;
 
+    /**
+     * Returns the survey's current lists, ordered by name.
+     *
+     * @param surveyId the survey
+     * @return the current select groups
+     */
     public List<SelectGroup> lists(int surveyId) {
         return SelectGroup.list("surveyId = ?1 and effectiveTo = ?2 order by name", surveyId, StructuralElement.SENTINEL);
     }
 
+    /**
+     * Returns one current list.
+     *
+     * @param surveyId      the survey
+     * @param selectGroupId the list's durable id
+     * @return the select group
+     * @throws AuthoringException when the list does not exist or has been removed
+     */
     public SelectGroup list(int surveyId, int selectGroupId) {
         return elements.selectGroup(surveyId, selectGroupId).filter(StructuralElement::isCurrent)
                 .orElseThrow(() -> new AuthoringException(Translations.get("error.list.gone")));
     }
 
+    /**
+     * Returns a list's current options in display order.
+     *
+     * @param surveyId      the survey
+     * @param selectGroupId the list's durable id
+     * @return the current select items, empty when there are none
+     */
     public List<SelectItem> options(int surveyId, int selectGroupId) {
         return SelectItem.list("surveyId = ?1 and selectGroupId = ?2 and effectiveTo = ?3 order by displayOrder",
                 surveyId, selectGroupId, StructuralElement.SENTINEL);
     }
 
-    /** Current questions using the list. */
+    /**
+     * Current questions using the list.
+     *
+     * @param surveyId      the survey
+     * @param selectGroupId the list's durable id
+     * @return the number of current questions that use it
+     */
     public long usedBy(int surveyId, int selectGroupId) {
         return Question.count("surveyId = ?1 and selectGroupId = ?2 and effectiveTo = ?3", surveyId, selectGroupId, StructuralElement.SENTINEL);
     }
 
-    /** Option display texts per list, for the panel's search. */
+    /**
+     * Option display texts per list, for the panel's search.
+     *
+     * @param surveyId the survey
+     * @return each list's current option texts in display order, keyed by its durable id; a null text
+     *         is given as an empty string, and a list without options has no entry
+     */
     public Map<Integer, List<String>> optionTexts(int surveyId) {
         return SelectItem.<SelectItem>list("surveyId = ?1 and effectiveTo = ?2 order by displayOrder", surveyId, StructuralElement.SENTINEL).stream()
                 .collect(Collectors.groupingBy(i -> i.selectGroupId, Collectors.mapping(i -> i.displayText == null ? "" : i.displayText, Collectors.toList())));
     }
 
-    /** Option counts per list, for the panel. */
+    /**
+     * Option counts per list, for the panel.
+     *
+     * @param surveyId the survey
+     * @return the number of current options of each list, keyed by its durable id; a list without
+     *         options has no entry
+     */
     public Map<Integer, Long> optionCounts(int surveyId) {
         return SelectItem.<SelectItem>list("surveyId = ?1 and effectiveTo = ?2", surveyId, StructuralElement.SENTINEL).stream()
                 .collect(Collectors.groupingBy(i -> i.selectGroupId, Collectors.counting()));
     }
 
-    /** UC-014 step 5: a new list with its options in the given order. */
+    /**
+     * UC-014 step 5: a new list with its options in the given order.
+     *
+     * @param surveyId the survey
+     * @param draft    the list's name, description and data type
+     * @param options  the options in display order; {@code null} creates a list without options
+     * @return the new select group
+     * @throws AuthoringException when a field or an option is invalid, or the insert breaks a
+     *                            recognized constraint
+     */
     @Transactional
     public SelectGroup create(int surveyId, SelectGroup draft, List<OptionDraft> options) {
         validate(draft);
@@ -98,7 +152,16 @@ public class ListService {
         return group;
     }
 
-    /** UC-014 A1: fields and existing options in place, removed options retired, new ones created, order renumbered. */
+    /**
+     * UC-014 A1: fields and existing options in place, removed options retired, new ones created, order renumbered.
+     *
+     * @param surveyId the survey
+     * @param edited   the list as edited; its {@code selectGroupId} names the list to update
+     * @param options  the options in their new order; an existing option left out is retired
+     * @return the updated select group
+     * @throws AuthoringException when a field or an option is invalid, the list is not current, or the
+     *                            update breaks a recognized constraint
+     */
     @Transactional
     public SelectGroup update(int surveyId, SelectGroup edited, List<OptionDraft> options) {
         validate(edited);
@@ -135,7 +198,13 @@ public class ListService {
         return group;
     }
 
-    /** UC-014 A2: refused while a current question uses the list (ElementService rule). */
+    /**
+     * UC-014 A2: refused while a current question uses the list (ElementService rule).
+     *
+     * @param surveyId      the survey
+     * @param selectGroupId the list's durable id
+     * @throws AuthoringException when a current question uses the list
+     */
     @Transactional
     public void remove(int surveyId, int selectGroupId) {
         elements.removeSelectGroup(surveyId, selectGroupId);

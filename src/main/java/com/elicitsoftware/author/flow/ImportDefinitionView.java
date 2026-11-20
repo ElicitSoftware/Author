@@ -71,6 +71,11 @@ public class ImportDefinitionView extends VerticalLayout implements HasDynamicTi
     /** The other end of the round trip: where the draft being uploaded here comes from (UC-042). */
     final Div draftOrigin = new Div(new RouterLink(getTranslation("importDefinitionView.aiDraftLink"), AiDraftView.class));
 
+    /**
+     * Builds the page: the introduction, the upload for one {@value ElicitFormat#FILE_EXTENSION}
+     * file of at most {@link ElicitFormat#MAX_FILE_BYTES} bytes, and the result area. The link to
+     * the AI draft page stays hidden until attach.
+     */
     public ImportDefinitionView() {
         add(new H2(getTranslation("importDefinitionView.title")));
         add(new Paragraph(getTranslation("importDefinitionView.intro")));

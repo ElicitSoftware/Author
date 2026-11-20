@@ -22,6 +22,10 @@ import java.util.Optional;
  * ({@code ss}, {@code sq}); one names a rule, which selects the element the rule targets and opens
  * the rule's editor over it (UC-007 BR-009). The vocabulary lives here because both ends need it:
  * the designer parses it, and the validation panel writes it.</p>
+ *
+ * @param kind what the id names: {@code step}, {@code section}, {@code question}, {@code ss},
+ *             {@code sq} or {@code rule}
+ * @param id   the durable id of the element, assignment or rule
  */
 public record DesignerAddress(String kind, int id) {
 
@@ -34,23 +38,54 @@ public record DesignerAddress(String kind, int id) {
     public static final String ASSIGNMENT = "sq";
     public static final String RULE = "rule";
 
+    /**
+     * The address of a structure tree node's element, by its durable id.
+     *
+     * @param node the node
+     * @return the node's address
+     */
     public static DesignerAddress of(StructureNode node) {
         return new DesignerAddress(node.routeKind(), node.durableId());
     }
 
+    /**
+     * The address of a section's mount in a step.
+     *
+     * @param stepsSectionsId the mount's durable id
+     * @return the mount's address
+     */
     public static DesignerAddress mount(int stepsSectionsId) {
         return new DesignerAddress(MOUNT, stepsSectionsId);
     }
 
+    /**
+     * The address of a question's assignment to a section.
+     *
+     * @param sectionsQuestionId the assignment's durable id
+     * @return the assignment's address
+     */
     public static DesignerAddress assignment(int sectionsQuestionId) {
         return new DesignerAddress(ASSIGNMENT, sectionsQuestionId);
     }
 
+    /**
+     * The address of a rule.
+     *
+     * @param relationshipId the rule's durable id
+     * @return the rule's address
+     */
     public static DesignerAddress rule(int relationshipId) {
         return new DesignerAddress(RULE, relationshipId);
     }
 
-    /** Parses {@code kind:id}; anything else names nothing, which selects nothing (UC-006 A2). */
+    /**
+     * Parses {@code kind:id}; anything else names nothing, which selects nothing (UC-006 A2). The
+     * kind is lowercased but not checked against the known kinds.
+     *
+     * @param value the parameter's value, or {@code null}
+     * @return the address, or empty when the value is {@code null}, has no colon, or its id is not
+     *         an integer
+     */
     public static Optional<DesignerAddress> parse(String value) {
         if (value == null) {
             return Optional.empty();

@@ -72,6 +72,7 @@ public class SurveyEditorView extends VerticalLayout implements BeforeEnterObser
     List<ValidationIssue> issues = List.of();
     ValidationFindings findings;
 
+    /** Builds the heading, summary, toolbar and validation panel; the survey is loaded on navigation. */
     public SurveyEditorView() {
         HorizontalLayout toolbar = new HorizontalLayout(design, reporting, reports, postSurveyActions, translations, editDetails, exportButton);
         reports.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(com.elicitsoftware.author.flow.reports.ReportsView.class,
