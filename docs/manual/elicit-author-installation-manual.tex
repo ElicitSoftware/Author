@@ -417,10 +417,13 @@ same tag. Author listens on \val{8080} inside its container unless \opt{QUARKUS_
 otherwise.
 
 Author trusts the forwarded host, prefix and protocol headers, so that behind a reverse proxy
-the OIDC redirect is built from the address the browser used. That trust is safe only when
-nothing but the proxy reaches Author: publish its port to the proxy alone, and have the proxy
-replace any forwarded headers a client sends. The same goes for \val{/q/metrics}, which answers
-without a sign-in for a scraper on the private network; have the proxy refuse \val{/q}.
+the OIDC redirect is built from the address the browser used. It honors them only from the
+addresses in \opt{ELICIT_TRUSTED_PROXIES}, which by default are loopback and the private ranges
+(Table~\ref{tab:cfg-ops}). Set it to your reverse proxy's address or network, so that no other
+machine on the private network can choose the address Author builds its sign-in redirect with.
+Publish Author's port to the proxy alone, and have the proxy replace any forwarded headers a
+client sends. The same goes for \val{/q/metrics}, which answers without a sign-in for a scraper
+on the private network; have the proxy refuse \val{/q}.
 
 %% ================================================================== 8
 \section{Configuration}
@@ -501,6 +504,11 @@ and traces. The umbrella's compose file sets \val{author}. \\
 shown on the System overview. \\
 \opt{quarkus.http.limits.max-body-size} & \val{10M} & \chgmay & The largest request Author
 accepts, which bounds a definition file an author can import. \\
+\opt{quarkus.http.proxy.trusted-proxies} & loopback and the private ranges & \chgset & The
+addresses whose forwarded headers Author honors; from any other address they are ignored. The
+default is \val{127.0.0.1}, \val{::1}, \val{10.0.0.0/8}, \val{172.16.0.0/12},
+\val{192.168.0.0/16} and \val{fc00::/7}. Narrow it to your reverse proxy's address or network,
+comma-separated. Environment variable \opt{ELICIT_TRUSTED_PROXIES}. \\
 \opt{quarkus.datasource.db-version} & \val{17} & \chgkeep & The PostgreSQL version Author is
 built against. \\
 \opt{build.timestamp} & build & \chgkeep & Stamped by the build and shown on the System
