@@ -6,9 +6,7 @@ This project follows the **AI Unified Process (AIUP)**
 code under `src/` is the implementation that AIUP regenerates and refactors
 around them.
 
-> **Status:** The Quarkus/Vaadin scaffold exists and boots; milestone 1
-> (brand, OIDC shell, entities, survey list, `.elicit` import/export, editor
-> navigation) is in progress on `feature/foundation`. The planning docs in the
+> **Status:** Author ships with the platform from 3.0.0. The planning docs in the
 > repo root (`survey-authoring-development-plan.md`,
 > `survey-requirements-collection-system.md`, `creating-fhhs-style-surveys.md`)
 > remain useful input for *what* authors need; `docs/` is authoritative for
@@ -87,15 +85,15 @@ re-run it after adding or removing an extension. The full workflow
 (extension-first rule, error recovery) is in [AGENTS.md](AGENTS.md).
 
 **Vaadin (`vaadin-skills` plugin)** — before writing Flow code, call
-`get_vaadin_primer` and `get_new_apis` for version `25.2`; API added after
+`get_vaadin_primer` and `get_new_apis` for version `25.3`; API added after
 the model's training data is API it cannot know it is missing. Call
 `get_java_symbol` before concluding a method or enum constant does not exist
 (it lists inherited members too). Use `search_vaadin_docs` (ui_language
-`java`, vaadin_version `25.2`), `get_component_java_api`,
+`java`, vaadin_version `25.3`), `get_component_java_api`,
 `get_component_styling`, and `get_theme_css_properties` for component and
 theme questions. Skills: `/vaadin-form-layout` for forms and entity editors,
 `/vaadin-frontend-design` for view polish, `/aura-theme` for theme CSS. Do
-not target 25.3; it is unreleased.
+not target 25.4; it is unreleased.
 
 **IntelliJ IDEA (`idea` MCP server)** — `.run/Author.run.xml` is the
 Quarkus dev-mode run configuration; launch it with
