@@ -401,7 +401,7 @@ One field of one element in one language: the ninth Type 2 table and the first t
 | survey_id         | Survey this translation belongs to                                                            | Integer   | 10                | Not Null, Foreign Key (surveys.id)                  |
 | element_type      | Table the translated element lives in: `surveys`, `steps`, `sections`, `questions`, `select_items`, `relationships`, `reports`, `report_items` | String | 32 | Not Null, Check constraint |
 | element_key       | Element key of the translated element; never a surrogate or durable id                        | UUID      | 36                | Not Null                                            |
-| field             | Base column this row translates, from the translatable-field whitelist (C-015)                | String    | 32                | Not Null                                            |
+| field             | Base column this row translates, from the translatable-field allowlist (C-015)                | String    | 32                | Not Null                                            |
 | language          | BCP-47 tag, as the mounted chrome bundles write it (`es-419`, `ar`)                           | String    | 35                | Not Null                                            |
 | value             | The translated text; a removal is a closed `effective_to`, never an empty value               | String    | Unlimited (text)  | Not Null                                            |
 | source_hash       | Lower-case hex SHA-256 of the UTF-8 bytes of the base text this was translated from           | String    | 64                | Not Null                                            |
