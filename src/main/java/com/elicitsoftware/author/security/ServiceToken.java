@@ -55,6 +55,11 @@ public class ServiceToken {
 
     private final String token;
 
+    /**
+     * Reads the configured token, trimmed; a blank value counts as no token.
+     *
+     * @param configured the {@code elicit.service.token} property
+     */
     @Inject
     public ServiceToken(@ConfigProperty(name = "elicit.service.token") Optional<String> configured) {
         this.token = configured.map(String::trim).filter(v -> !v.isEmpty()).orElse(null);
@@ -86,12 +91,20 @@ public class ServiceToken {
         }
     }
 
-    /** Whether a token is configured. */
+    /**
+     * Whether a token is configured.
+     *
+     * @return {@code true} when a non-blank token is set
+     */
     public boolean isConfigured() {
         return token != null;
     }
 
-    /** Whether the configured token is the development value. */
+    /**
+     * Whether the configured token is the development value.
+     *
+     * @return {@code true} when the token equals {@link #DEVELOPMENT_VALUE}
+     */
     public boolean isDevelopmentValue() {
         return DEVELOPMENT_VALUE.equals(token);
     }
@@ -100,6 +113,8 @@ public class ServiceToken {
      * The {@code Authorization} header value for a call to another module, or empty when no
      * token is configured, in which case the call must not be made. Only for a request to an
      * address the deployment's own configuration names.
+     *
+     * @return {@code Bearer} followed by the token, or empty when none is configured
      */
     public Optional<String> authorization() {
         return Optional.ofNullable(token).map(t -> "Bearer " + t);

@@ -78,6 +78,12 @@ public class ExportValidation {
 
     public static final Set<String> CHOICE_TYPES = Set.of("RADIO", "COMBOBOX", "MULTI_SELECT", "CHECKBOX_GROUP");
 
+    /**
+     * Runs every export check on the survey's current elements, changing nothing (UC-007 BR-004).
+     *
+     * @param survey the survey to check
+     * @return the findings, errors and warnings together; empty when the survey is clean
+     */
     public List<ValidationIssue> validate(Survey survey) {
         int sid = survey.id;
         List<ValidationIssue> issues = new ArrayList<>();

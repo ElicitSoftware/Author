@@ -330,7 +330,6 @@ class ElicitRuleArrows extends LitElement {
   }
 
   _emit(name, detail) {
-    console.debug('[elicit-rule-arrows]', name, detail);
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
   }
 

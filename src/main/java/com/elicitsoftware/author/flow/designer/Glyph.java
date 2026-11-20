@@ -26,6 +26,7 @@ import java.util.Map;
  */
 public class Glyph extends Span {
 
+    /** The kinds of element a glyph can stand for, each with its own CSS class suffix. */
     public enum Kind {
         STEP("step"), SECTION("section"), QUESTION("question"),
         RULE_SHOW("rule-show"), RULE_REPEAT("rule-repeat"), RULE_TEXT("rule-text");
@@ -66,7 +67,12 @@ public class Glyph extends Span {
         getElement().setAttribute("title", accessibleName);
     }
 
-    /** A step tile showing its display order, or a layout icon when the order is not known yet. */
+    /**
+     * A step tile showing its display order, or a layout icon when the order is not known yet.
+     *
+     * @param order the step's display order, may be null
+     * @return a new step glyph
+     */
     public static Glyph step(Integer order) {
         Glyph g = new Glyph(Kind.STEP, order == null ? Translations.get("glyph.step") : Translations.get("glyph.stepOrder", order));
         if (order == null) {
@@ -77,13 +83,23 @@ public class Glyph extends Span {
         return g;
     }
 
+    /**
+     * A section tile with a folder icon.
+     *
+     * @return a new section glyph
+     */
     public static Glyph section() {
         Glyph g = new Glyph(Kind.SECTION, Translations.get("glyph.section"));
         g.add(VaadinIcon.FOLDER.create());
         return g;
     }
 
-    /** A question tile keyed by its type name ({@code survey.question_types.name}). */
+    /**
+     * A question tile keyed by its type name ({@code survey.question_types.name}).
+     *
+     * @param questionTypeName the type name, matched without case; null or unknown shows a question mark
+     * @return a new question glyph
+     */
     public static Glyph question(String questionTypeName) {
         String type = questionTypeName == null ? "" : questionTypeName.toUpperCase(Locale.ROOT);
         Glyph g = new Glyph(Kind.QUESTION, type.isEmpty() ? Translations.get("glyph.question")
@@ -92,7 +108,12 @@ public class Glyph extends Span {
         return g;
     }
 
-    /** A rule tile for an action name ({@code survey.action_types.name}: SHOW, REPEAT or TEXT). */
+    /**
+     * A rule tile for an action name ({@code survey.action_types.name}: SHOW, REPEAT or TEXT).
+     *
+     * @param actionName the action name, matched without case; null or any other name gives a generic rule tile
+     * @return a new rule glyph
+     */
     public static Glyph rule(String actionName) {
         String action = actionName == null ? "" : actionName.toUpperCase(Locale.ROOT);
         return switch (action) {
@@ -113,10 +134,20 @@ public class Glyph extends Span {
         return g;
     }
 
+    /**
+     * Returns the kind of element this glyph stands for.
+     *
+     * @return the glyph's kind
+     */
     public Kind kind() {
         return kind;
     }
 
+    /**
+     * Returns the name assistive technology reads for this glyph, its {@code aria-label}.
+     *
+     * @return the glyph's accessible name
+     */
     public String accessibleName() {
         return getElement().getAttribute("aria-label");
     }
@@ -125,6 +156,8 @@ public class Glyph extends Span {
      * Shows the glyph as a tool that cannot be dragged yet (UC-006 BR-008): dimmed, with
      * {@code reason} as its tooltip, which assistive technology reads as its description. Null makes
      * it available again, with its name back as the tooltip. Making it undraggable is the caller's.
+     *
+     * @param reason why the tool is unavailable, or null to make it available
      */
     public void setUnavailable(String reason) {
         setClassName("unavailable", reason != null);

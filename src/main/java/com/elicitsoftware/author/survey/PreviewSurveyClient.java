@@ -60,6 +60,7 @@ public class PreviewSurveyClient {
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
+    /** Creates the bean; CDI calls this. */
     public PreviewSurveyClient() {
         // CDI managed bean
     }

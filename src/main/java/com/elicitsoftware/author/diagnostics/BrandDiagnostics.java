@@ -86,7 +86,12 @@ public class BrandDiagnostics {
                               BrandUtil.BrandInfo inUse, List<AssetReport> assets, String logoUrl,
                               List<String> warnings) {
 
-        /** A one-line summary for the overview (UC-034 step 3). */
+        /**
+         * A one-line summary for the overview (UC-034 step 3).
+         *
+         * @return which directory is in use, mounted (named when the metadata gives a name), local
+         *         or embedded, translated
+         */
         public String summary() {
             if (externalExists) {
                 return brandName != null
@@ -152,10 +157,18 @@ public class BrandDiagnostics {
     @Inject
     BrandUtil brandUtil;
 
+    /** Creates the bean; CDI injects the configuration and the brand utility. */
     public BrandDiagnostics() {
         // CDI managed bean
     }
 
+    /**
+     * Probes the brand directories and every expected asset. The metadata comes from the first of
+     * {@code brand-info.json} and {@code brand-config.json} in the resolved directory; when it
+     * cannot be read, its name, organization and version stay null.
+     *
+     * @return the brand report
+     */
     public BrandReport report() {
         Path external = Paths.get(brandFileSystemPath);
         Path local = Paths.get(brandLocalPath);

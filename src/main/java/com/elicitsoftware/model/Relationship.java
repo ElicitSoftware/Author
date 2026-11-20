@@ -108,13 +108,19 @@ public class Relationship extends StructuralElement {
      * The downstream path must name at least one element. The Survey runtime reads the path from the
      * outside in — step, then the section mounted in it, then the question assigned to it — and acts on
      * the innermost; the table's {@code downstream_ck} only rules out an empty path.
+     *
+     * @return true when at least one downstream column is set
      */
     @AssertTrue(message = "A relationship must target a step, a section assignment or a question assignment")
     public boolean hasDownstreamTarget() {
         return downstreamStepId != null || downstreamSsId != null || downstreamSqId != null;
     }
 
-    /** The innermost element of the downstream path, or null when the path is empty. */
+    /**
+     * The innermost element of the downstream path, or null when the path is empty.
+     *
+     * @return the target, or {@code null}
+     */
     public Target target() {
         if (downstreamSqId != null) {
             return Target.QUESTION;

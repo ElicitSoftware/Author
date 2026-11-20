@@ -46,15 +46,40 @@ public class PostSurveyActionService {
     @Inject
     EntityManager em;
 
+    /**
+     * Returns the survey's post-survey actions in the order Survey calls them.
+     *
+     * @param surveyId the survey
+     * @return the actions by execution order, then id; empty when the survey has none
+     */
     public List<PostSurveyAction> actions(int surveyId) {
         return PostSurveyAction.list("surveyId", Sort.by("executionOrder").and("id"), surveyId);
     }
 
+    /**
+     * Finds one of the survey's post-survey actions.
+     *
+     * @param surveyId the survey
+     * @param actionId the action's id
+     * @return the action, or empty when the survey has no action with that id
+     */
     public Optional<PostSurveyAction> find(int surveyId, int actionId) {
         return PostSurveyAction.<PostSurveyAction>find("surveyId = ?1 and id = ?2", surveyId, actionId).firstResultOptional();
     }
 
-    /** UC-052 steps 3-4: a new action at the end of the order. */
+    /**
+     * UC-052 steps 3-4: a new action at the end of the order. Name, description and address are
+     * stripped; a blank method means POST.
+     *
+     * @param surveyId        the survey the action belongs to
+     * @param name            the action's name, unique within the survey (BR-002)
+     * @param description     what the action does (BR-003)
+     * @param method          POST, GET or PUT, in any case (BR-009)
+     * @param url             the absolute http(s) address Survey calls (BR-004, BR-010, BR-011)
+     * @param sendsExternalId whether the call carries the respondent's External ID
+     * @return the saved action
+     * @throws AuthoringException when a value is invalid or the save violates a recognized constraint
+     */
     @Transactional
     public PostSurveyAction add(int surveyId, String name, String description, String method, String url, boolean sendsExternalId) {
         PostSurveyAction a = new PostSurveyAction();
@@ -74,7 +99,21 @@ public class PostSurveyActionService {
         return a;
     }
 
-    /** UC-052 step 6, BR-007: in place, under the same key. */
+    /**
+     * UC-052 step 6, BR-007: in place, under the same key. Values are validated as in
+     * {@link #add(int, String, String, String, String, boolean)}.
+     *
+     * @param surveyId        the survey the action belongs to
+     * @param actionId        the action's id
+     * @param name            the new name, unique within the survey (BR-002)
+     * @param description     the new description (BR-003)
+     * @param method          POST, GET or PUT, in any case; blank means POST (BR-009)
+     * @param url             the new absolute http(s) address (BR-004, BR-010, BR-011)
+     * @param sendsExternalId whether the call carries the respondent's External ID
+     * @return the updated action
+     * @throws AuthoringException when the action is gone, a value is invalid, or the save violates
+     *                            a recognized constraint
+     */
     @Transactional
     public PostSurveyAction update(int surveyId, int actionId, String name, String description, String method, String url,
                                    boolean sendsExternalId) {
@@ -95,6 +134,10 @@ public class PostSurveyActionService {
     /**
      * UC-052 step 7, BR-006: delete and renumber. A preview respondent who finished in the preview
      * Survey has a delivery record for the action, which references it, so those go first.
+     *
+     * @param surveyId the survey the action belongs to
+     * @param actionId the action's id
+     * @throws AuthoringException when the survey has no action with that id
      */
     @Transactional
     public void remove(int surveyId, int actionId) {
@@ -106,7 +149,12 @@ public class PostSurveyActionService {
         renumber(surveyId);
     }
 
-    /** UC-052 step 5, BR-005: the given ids take positions 1..n; actions not named keep their relative order after them. */
+    /**
+     * UC-052 step 5, BR-005: the given ids take positions 1..n; actions not named keep their relative order after them.
+     *
+     * @param surveyId   the survey whose actions are reordered
+     * @param idsInOrder action ids in their new order; an id the survey does not have is ignored
+     */
     @Transactional
     public void reorder(int surveyId, List<Integer> idsInOrder) {
         List<PostSurveyAction> all = actions(surveyId);

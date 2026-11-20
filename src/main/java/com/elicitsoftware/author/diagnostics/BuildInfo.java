@@ -47,6 +47,7 @@ public class BuildInfo {
 
     private Instant startedAt;
 
+    /** Creates the bean; CDI calls this. */
     public BuildInfo() {
         // CDI managed bean
     }
@@ -56,28 +57,56 @@ public class BuildInfo {
         startedAt = Instant.now();
     }
 
+    /**
+     * The application's name.
+     *
+     * @return {@code quarkus.application.name}, {@code elicit-author} by default
+     */
     public String applicationName() {
         return applicationName;
     }
 
-    /** The Maven project version, or "unknown" when the build did not record it. */
+    /**
+     * The Maven project version, or "unknown" when the build did not record it.
+     *
+     * @return the version, or the translated "unknown" when it is unset, blank or unfiltered
+     */
     public String version() {
         return version.filter(v -> !v.isBlank() && !v.startsWith("@")).orElse(Translations.get("system.build.unknown"));
     }
 
-    /** The Maven build timestamp, or "unknown" when the build did not record it. */
+    /**
+     * The Maven build timestamp, or "unknown" when the build did not record it.
+     *
+     * @return the timestamp, or the translated "unknown" when it is unset, blank or unfiltered
+     */
     public String buildTimestamp() {
         return buildTimestamp.filter(v -> !v.isBlank() && !v.startsWith("@")).orElse(Translations.get("system.build.unknown"));
     }
 
+    /**
+     * The active configuration profiles.
+     *
+     * @return the profile names
+     */
     public List<String> profiles() {
         return ConfigUtils.getProfiles();
     }
 
+    /**
+     * When this bean was created, which {@code @Startup} makes the application's start.
+     *
+     * @return the start instant
+     */
     public Instant startedAt() {
         return startedAt;
     }
 
+    /**
+     * How long the application has been running.
+     *
+     * @return the time since {@link #startedAt()}
+     */
     public Duration uptime() {
         return Duration.between(startedAt, Instant.now());
     }

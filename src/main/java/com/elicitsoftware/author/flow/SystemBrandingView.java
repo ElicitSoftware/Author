@@ -55,6 +55,7 @@ public class SystemBrandingView extends VerticalLayout implements HasDynamicTitl
 
     private final VerticalLayout body = new VerticalLayout();
 
+    /** Sets up the layout; the content is added once the brand diagnostics are injected. */
     public SystemBrandingView() {
         setWidthFull();
         setPadding(true);

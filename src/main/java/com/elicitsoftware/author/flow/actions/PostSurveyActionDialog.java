@@ -47,6 +47,10 @@ public class PostSurveyActionDialog extends Dialog {
     private final Map<String, HasValidation> fieldsByProperty = Map.of("name", name, "description", description, "method", method, "url", url);
 
     /**
+     * Creates the dialog for adding a post-survey action or editing one.
+     *
+     * @param service  saves the action
+     * @param survey   the survey the action belongs to
      * @param existing the action to edit, or {@code null} to add one
      * @param onSaved  receives the persisted action
      */

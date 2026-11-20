@@ -87,6 +87,9 @@ public final class Tokens {
      * a token holds (UC-002 BR-010), and a display-only type added later is covered in both modules
      * without editing either. A null type is not display-only -- it is a question whose type the
      * author has not chosen yet.
+     *
+     * @param type the question's type, or null when none is chosen
+     * @return true when the type has no {@code data_type}; false for a null type
      */
     public static boolean isDisplayOnly(QuestionType type) {
         return type != null && (type.dataType == null || type.dataType.isBlank());
@@ -96,6 +99,9 @@ public final class Tokens {
      * Whether a rule reading this question can fill a token with the respondent's answer (UC-019
      * BR-006). A display-only question cannot: the only thing a rule on one can put in a slot is the
      * constant the author wrote on the rule itself.
+     *
+     * @param type the question's type, or null when none is chosen
+     * @return true when the type is set and not display-only
      */
     public static boolean collectsAnswer(QuestionType type) {
         return type != null && !isDisplayOnly(type);
@@ -118,7 +124,10 @@ public final class Tokens {
      * the preview shows the case where they have -- a blank sample is the case where they have
      * not, and falls back to the constant on its own.</p>
      *
+     * @param type          the question's type, or null when none is chosen
      * @param selectGroupId the question's select group, null when it has none
+     * @return true for a date or time type, or a {@code Text} type with no select group; false
+     *         for a type that collects no answer
      */
     public static boolean answerBeatsConstant(QuestionType type, Integer selectGroupId) {
         if (!collectsAnswer(type)) {
@@ -130,10 +139,20 @@ public final class Tokens {
         return "Text".equalsIgnoreCase(type.dataType) && selectGroupId == null;
     }
 
-    /** One placeholder as written: its phrase and its default, null when it has none. */
+    /**
+     * One placeholder as written: its phrase and its default, null when it has none.
+     *
+     * @param phrase      the text before the {@code |}, trimmed
+     * @param defaultText the text after the {@code |}, or null when the placeholder has none
+     */
     public record Placeholder(String phrase, String defaultText) {
 
-        /** Whether a rule carrying this token fills the placeholder: the phrase refers to it. */
+        /**
+         * Whether a rule carrying this token fills the placeholder: the phrase refers to it.
+         *
+         * @param token the token, with or without its angle brackets
+         * @return true when the phrase names the token, ignoring case; false for a null or blank token
+         */
         public boolean uses(String token) {
             if (token == null || token.isBlank()) {
                 return false;
@@ -142,7 +161,11 @@ public final class Tokens {
             return tokens().stream().anyMatch(t -> t.equalsIgnoreCase(wanted));
         }
 
-        /** Every token this phrase refers to, in the order written. */
+        /**
+         * Every token this phrase refers to, in the order written.
+         *
+         * @return the names between angle brackets, without the brackets
+         */
         public Set<String> tokens() {
             Set<String> used = new LinkedHashSet<>();
             Matcher m = TOKEN_REF.matcher(phrase);
@@ -152,13 +175,22 @@ public final class Tokens {
             return used;
         }
 
-        /** The placeholder as written, for messages. */
+        /**
+         * The placeholder as written, for messages.
+         *
+         * @return the phrase and default rebuilt between braces
+         */
         public String text() {
             return "{" + phrase + (defaultText == null ? "" : "|" + defaultText) + "}";
         }
     }
 
-    /** The placeholders a text carries, in order, without the built-in counters. */
+    /**
+     * The placeholders a text carries, in order, without the built-in counters.
+     *
+     * @param text the text to read, may be null
+     * @return the placeholders found; empty for a null or empty text
+     */
     public static List<Placeholder> placeholders(String text) {
         List<Placeholder> found = new ArrayList<>();
         if (text == null || text.isEmpty()) {
@@ -174,12 +206,24 @@ public final class Tokens {
         return found;
     }
 
-    /** Whether any placeholder in the text is filled by a rule carrying this token. */
+    /**
+     * Whether any placeholder in the text is filled by a rule carrying this token.
+     *
+     * @param text  the text to read, may be null
+     * @param token the token, with or without its angle brackets
+     * @return true when some placeholder's phrase names the token
+     */
     public static boolean uses(String text, String token) {
         return placeholders(text).stream().anyMatch(ph -> ph.uses(token));
     }
 
-    /** True when every placeholder the token fills carries a default. */
+    /**
+     * True when every placeholder the token fills carries a default.
+     *
+     * @param text  the text to read, may be null
+     * @param token the token, with or without its angle brackets
+     * @return true when no placeholder naming the token lacks a default, including when none names it
+     */
     public static boolean alwaysDefaulted(String text, String token) {
         return placeholders(text).stream().filter(ph -> ph.uses(token)).allMatch(ph -> ph.defaultText() != null);
     }
@@ -190,6 +234,9 @@ public final class Tokens {
      * <p>Every use declares its token now, which the old bare-word rule could not do: it saw
      * {@code {NAME|friend}} but not {@code {NAME's|your}}, so a token only ever written inside a
      * phrase was invisible to the designer and to the hand-off document.</p>
+     *
+     * @param text the text to read, may be null
+     * @return the token names, without brackets; empty when the text has none
      */
     public static Set<String> names(String text) {
         Set<String> names = new LinkedHashSet<>();
@@ -206,6 +253,10 @@ public final class Tokens {
      * {@code {<b><NAME></b>|<b>name</b>}}. Inside the braces every {@code <...>} is a token, so a
      * plain {@code contains("<")} answers "has a token" rather than "has markup" and flags every
      * personalized string in the survey.</p>
+     *
+     * @param text the text to read, may be null
+     * @return true when an angle-bracketed tag lies outside every placeholder; false for a null or
+     *         empty text
      */
     public static boolean hasMarkup(String text) {
         if (text == null || text.isEmpty()) {
@@ -219,14 +270,24 @@ public final class Tokens {
         return PLACEHOLDER.matcher(text).replaceAll(" ");
     }
 
-    /** {@code <NAME>} or {@code NAME}, either way: the name itself. */
+    /**
+     * {@code <NAME>} or {@code NAME}, either way: the name itself.
+     *
+     * @param token the token, with or without its angle brackets, may be null
+     * @return the trimmed name without brackets; empty for null
+     */
     public static String bare(String token) {
         String trimmed = token == null ? "" : token.trim();
         Matcher m = TOKEN_REF.matcher(trimmed);
         return m.matches() ? m.group(1) : trimmed;
     }
 
-    /** A token as it is written in a phrase. */
+    /**
+     * A token as it is written in a phrase.
+     *
+     * @param token the token, with or without its angle brackets
+     * @return the bare name between angle brackets
+     */
     public static String reference(String token) {
         return "<" + bare(token) + ">";
     }
@@ -239,6 +300,9 @@ public final class Tokens {
      * asks for the name it parsed out of a reference, so a token stored {@code <S1>} is asked for
      * under a name it does not have and fills nothing. Case is free -- every match ignores it -- but
      * one spelling per slot keeps the survey's token list one entry per slot.</p>
+     *
+     * @param token the token, with or without its angle brackets, may be null
+     * @return the bare name in upper case; empty for null
      */
     public static String canonical(String token) {
         return bare(token).toUpperCase(Locale.ROOT);
@@ -252,6 +316,9 @@ public final class Tokens {
      * which characters that is, so the question is asked by writing the brackets on and seeing
      * whether the result is a reference: {@code S1} yes, {@code S 1} no, and {@code <S1>} no, because
      * a phrase naming it would have to read {@code <<S1>>}.</p>
+     *
+     * @param token the token as stored, may be null
+     * @return true when the trimmed token in brackets is a {@link #TOKEN_REF}; false for null
      */
     public static boolean nameable(String token) {
         return token != null && TOKEN_REF.matcher("<" + token.trim() + ">").matches();
@@ -269,6 +336,7 @@ public final class Tokens {
      *
      * @param text  the string to inspect
      * @param known the token names the survey uses -- see {@link #known(int)}
+     * @return the bare names found; empty when the text or {@code known} is null or empty
      */
     public static Set<String> bareTokenNames(String text, Collection<String> known) {
         Set<String> bare = new LinkedHashSet<>();
@@ -292,7 +360,12 @@ public final class Tokens {
         return bare;
     }
 
-    /** Token references whose name is not upper case, for validation (FR-012). */
+    /**
+     * Token references whose name is not upper case, for validation (FR-012).
+     *
+     * @param text the text to read, may be null
+     * @return the names that do not match {@link #TOKEN_NAME}; empty when there are none
+     */
     public static Set<String> malformed(String text) {
         Set<String> bad = new LinkedHashSet<>();
         for (Placeholder ph : placeholders(text)) {
@@ -312,6 +385,9 @@ public final class Tokens {
      *
      * <p>A rule's token is offered as its {@link #canonical} name, so a rule an import saved with the
      * brackets on does not add a second entry for a slot the survey already has.</p>
+     *
+     * @param surveyId the survey
+     * @return the token names, sorted and de-duplicated ignoring case
      */
     public static Set<String> known(int surveyId) {
         Set<String> names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);

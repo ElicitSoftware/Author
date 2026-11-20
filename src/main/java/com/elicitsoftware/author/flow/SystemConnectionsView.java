@@ -60,6 +60,7 @@ public class SystemConnectionsView extends VerticalLayout implements HasDynamicT
     private final Grid<TargetRow> grid = new Grid<>();
     private final List<TargetRow> rows = new ArrayList<>();
 
+    /** Sets the layout; the targets and their grid are built once the services are injected. */
     public SystemConnectionsView() {
         setWidthFull();
         setPadding(true);

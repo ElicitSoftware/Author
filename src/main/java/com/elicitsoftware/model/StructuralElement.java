@@ -62,26 +62,62 @@ public abstract class StructuralElement extends PanacheEntityBase {
     @Column(name = "published_comment")
     public String publishedComment;
 
-    /** Surrogate primary key of this physical row. */
+    /**
+     * Surrogate primary key of this physical row.
+     *
+     * @return the row's id, null before it is persisted
+     */
     public abstract Integer getId();
 
-    /** Durable key ({@code question_id}, {@code step_id}, ...): stable across versions within one database. */
+    /**
+     * Durable key ({@code question_id}, {@code step_id}, ...): stable across versions within one database.
+     *
+     * @return the durable id, null until one is minted
+     */
     public abstract Integer getDurableId();
 
+    /**
+     * Sets the durable key; {@code ElementService.create} assigns one minted from {@link #durableSequence()}.
+     *
+     * @param durableId the durable id
+     */
     public abstract void setDurableId(Integer durableId);
 
-    /** Element key: cross-deployment identity, minted once and never regenerated. */
+    /**
+     * Element key: cross-deployment identity, minted once and never regenerated.
+     *
+     * @return the element key, null until one is set or minted on persist
+     */
     public abstract UUID getElementKey();
 
+    /**
+     * Sets the element key; an import carries the file's key, and a new element gets a random one.
+     *
+     * @param elementKey the element key
+     */
     public abstract void setElementKey(UUID elementKey);
 
-    /** Fully qualified name of the sequence that mints durable keys for this table. */
+    /**
+     * Fully qualified name of the sequence that mints durable keys for this table.
+     *
+     * @return the sequence name, such as {@code survey.questions_durable_seq}
+     */
     public abstract String durableSequence();
 
+    /**
+     * Whether the row is current: its {@code effective_to} is the {@link #SENTINEL}.
+     *
+     * @return true when the element is current
+     */
     public boolean isCurrent() {
         return SENTINEL.equals(effectiveTo);
     }
 
+    /**
+     * Whether the row is retired: its {@code effective_to} is set and is not the {@link #SENTINEL}.
+     *
+     * @return true when the element is retired; false when current or when {@code effective_to} is null
+     */
     public boolean isRetired() {
         return effectiveTo != null && !isCurrent();
     }

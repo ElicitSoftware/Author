@@ -53,6 +53,7 @@ public class OidcDiagnosticsView extends VerticalLayout implements HasDynamicTit
     @ConfigProperty(name = "elicit.debug.reveal-tokens", defaultValue = "false")
     boolean revealTokens;
 
+    /** Creates the page's layout; its content is added once the injected identity is available. */
     public OidcDiagnosticsView() {
         setWidthFull();
         setPadding(true);

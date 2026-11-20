@@ -22,6 +22,12 @@ import java.util.Locale;
 public enum DragPayload {
     STEP, SECTION, QUESTION, RULE, LIST;
 
+    /**
+     * The payload of an element of one kind.
+     *
+     * @param kind the element's kind
+     * @return the matching step, section or question payload
+     */
     public static DragPayload of(StructureNode.Kind kind) {
         return switch (kind) {
             case STEP -> STEP;
@@ -30,7 +36,12 @@ public enum DragPayload {
         };
     }
 
-    /** The payload of a drop's drag data; null for anything the board does not know. */
+    /**
+     * The payload of a drop's drag data; null for anything the board does not know.
+     *
+     * @param dragData the drag data, or {@code null}
+     * @return the payload, or {@code null} for unknown or missing data
+     */
     public static DragPayload ofData(Object dragData) {
         return switch (dragData) {
             case PaletteItem item -> item.isRule() ? RULE : of(item.kind());

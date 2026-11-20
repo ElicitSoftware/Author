@@ -36,6 +36,15 @@ public class QuestionRow extends Div {
     final Span tagBadge = new Span();
     final Span reportBadge = new Span();
 
+    /**
+     * Builds the row for one question placement; a retired row is shown but cannot be dragged or
+     * edited, and refuses every drop.
+     *
+     * @param view           the designer the row reports its gestures to
+     * @param node           the question as placed in its section
+     * @param indexInSection the row's 0-based position in its section, which enables Move up
+     * @param sectionSize    how many questions the section shows, which enables Move down
+     */
     public QuestionRow(SurveyDesignerView view, StructureNode node, int indexInSection, int sectionSize) {
         this.node = node;
         addClassName("designer-row");
@@ -121,6 +130,11 @@ public class QuestionRow extends Div {
         getElement().addEventListener("keydown", e -> view.select(node)).setFilter("event.key === 'Enter' || event.key === ' '"); // i18n:ignore
     }
 
+    /**
+     * The question placement this row shows.
+     *
+     * @return the question's node
+     */
     public StructureNode node() {
         return node;
     }

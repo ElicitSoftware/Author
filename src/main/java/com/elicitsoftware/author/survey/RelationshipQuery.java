@@ -41,11 +41,37 @@ import java.util.UUID;
 @ApplicationScoped
 public class RelationshipQuery {
 
+    /**
+     * One rule arrow on the board.
+     *
+     * @param relationshipId  the rule's id
+     * @param key             the rule's element key
+     * @param source          DOM id of the origin question row ({@code sq-N})
+     * @param sourceFallbacks DOM ids of the section cards and steps holding the origin, in that order
+     * @param target          DOM id of the innermost downstream element ({@code step-N}, {@code ss-N} or {@code sq-N})
+     * @param targetFallbacks DOM ids to anchor on when the target is hidden
+     * @param action          the rule's action type name, empty when it has none
+     * @param operator        the rule's operator type name, empty when it has none
+     * @param label           what the rule does, as {@link #label} words it
+     * @param condition       the rule's condition, as {@link #condition} words it
+     * @param description     the rule's description
+     * @param retired         whether the rule is no longer current
+     * @param invalid         whether a current rule's target is not after its origin (UC-033 BR-003)
+     * @param problem         why the rule is invalid, for the author, or {@code null} when it is not
+     */
     public record RuleEdge(int relationshipId, UUID key, String source, List<String> sourceFallbacks,
                            String target, List<String> targetFallbacks, String action, String operator,
                            String label, String condition, String description, boolean retired,
                            boolean invalid, String problem) { }
 
+    /**
+     * Builds one edge per rule of the survey, ordered by rule id. Element names and fallbacks come
+     * from current elements only, so a retired rule may get a generic label and no fallbacks.
+     *
+     * @param surveyId       the survey
+     * @param includeRetired whether retired rules are included
+     * @return the edges
+     */
     public List<RuleEdge> edges(int surveyId, boolean includeRetired) {
         // Names, so the arrow can read "Show <section>", "Repeat <question>", "Replace <TOKEN>".
         Map<Integer, String> stepName = new HashMap<>();
@@ -142,7 +168,13 @@ public class RelationshipQuery {
         return new ArrayList<>(fallbacks);
     }
 
-    /** The arrow label reads what the rule does: {@code "Show <target>"}, {@code "Repeat <target>"}, {@code "Replace <TOKEN>"}. */
+    /**
+     * The arrow label reads what the rule does: {@code "Show <target>"}, {@code "Repeat <target>"}, {@code "Replace <TOKEN>"}.
+     *
+     * @param r          the rule
+     * @param targetName the downstream element's name; null or blank uses a generic word
+     * @return the translated label; a replace rule without a token names the target instead
+     */
     public static String label(Relationship r, String targetName) {
         String name = targetName == null || targetName.isBlank() ? Translations.get("ruleLabel.target") : targetName;
         String action = r.actionType == null ? "" : r.actionType.name;
@@ -154,7 +186,13 @@ public class RelationshipQuery {
         };
     }
 
-    /** UC-019 BR-003: the condition "(operator) value" and the token the rule carries, if any — shown in the tooltip. */
+    /**
+     * UC-019 BR-003: the condition "(operator) value" and the token the rule carries, if any — shown in the tooltip.
+     *
+     * @param r the rule
+     * @return the operator as a symbol or word ({@code ?} when the rule has none), then the reference
+     *         value unless the operator is unary, then the token reference
+     */
     public static String condition(Relationship r) {
         String operator = r.operatorType == null ? "" : r.operatorType.name;
         boolean unary = Set.of("BOOLEAN", "FIELD_EXIST", "FIELD EXIST").contains(operator);

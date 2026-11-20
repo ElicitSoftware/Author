@@ -43,6 +43,16 @@ public class SectionCard extends Div {
     final NodeMenu menu;
     final List<QuestionRow> rows;
 
+    /**
+     * Builds the card, open when the board has it open.
+     *
+     * @param view           the designer board, which handles the card's drags, drops and menu
+     * @param node           the section assignment the card stands for
+     * @param questions      the section's question nodes, in order
+     * @param indexInLane    the card's 0-based position in its step lane
+     * @param laneSize       the number of cards in the lane
+     * @param mountedInSteps how many steps mount the section; the mount badge shows when it is more than one
+     */
     public SectionCard(SurveyDesignerView view, StructureNode node, List<StructureNode> questions,
                        int indexInLane, int laneSize, int mountedInSteps) {
         this.node = node;
@@ -148,10 +158,20 @@ public class SectionCard extends Div {
         add(header, body);
     }
 
+    /**
+     * Returns the section assignment this card stands for.
+     *
+     * @return the card's node
+     */
     public StructureNode node() {
         return node;
     }
 
+    /**
+     * Whether the card is open, showing its question rows.
+     *
+     * @return true when the card's body is visible
+     */
     public boolean isOpen() {
         return body.isVisible();
     }

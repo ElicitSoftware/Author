@@ -46,6 +46,7 @@ public class SystemDatabaseView extends VerticalLayout implements HasDynamicTitl
     @Inject
     DatabaseDiagnostics database;
 
+    /** Creates the page's layout; its content is added once the injected diagnostics are available. */
     public SystemDatabaseView() {
         setWidthFull();
         setPadding(true);

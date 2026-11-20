@@ -40,13 +40,29 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class SurveyStructureQuery {
 
-    /** Tree as an ordered map: root nodes to their children (children to grandchildren). */
+    /**
+     * Tree as an ordered map: root nodes to their children (children to grandchildren).
+     *
+     * @param roots    the step nodes in display order
+     * @param children each step and section node's children in display order
+     */
     public record Tree(List<StructureNode> roots, Map<StructureNode, List<StructureNode>> children) {
 
+        /**
+         * Returns a node's children in display order.
+         *
+         * @param node the parent node
+         * @return its children; empty for a question or a node this tree does not hold
+         */
         public List<StructureNode> childrenOf(StructureNode node) {
             return children.getOrDefault(node, List.of());
         }
 
+        /**
+         * Returns every node of the tree, each step followed by its sections, each section by its questions.
+         *
+         * @return a new list of all nodes in board order
+         */
         public List<StructureNode> all() {
             List<StructureNode> out = new ArrayList<>();
             for (StructureNode r : roots) {
@@ -63,6 +79,11 @@ public class SurveyStructureQuery {
          * The node for an element, preferring the container the assignment names. A section mounted in
          * two steps, or a question assigned to two sections, is two nodes; with no assignment named —
          * or one this tree does not hold — the element's first place is returned.
+         *
+         * @param kind         the element's kind
+         * @param durableId    the element's durable id
+         * @param assignmentId the mount or assignment to prefer, may be null
+         * @return the node, or null when the tree holds no node of that kind and durable id
          */
         public StructureNode find(StructureNode.Kind kind, Integer durableId, Integer assignmentId) {
             return all().stream()
@@ -72,7 +93,13 @@ public class SurveyStructureQuery {
                     .orElseGet(() -> assignmentId == null ? null : find(kind, durableId, null));
         }
 
-        /** The node an assignment created: the section in that step, or the question in that section. */
+        /**
+         * The node an assignment created: the section in that step, or the question in that section.
+         *
+         * @param kind         {@link StructureNode.Kind#SECTION} for a mount, {@link StructureNode.Kind#QUESTION} for an assignment
+         * @param assignmentId the mount or assignment id, may be null
+         * @return the node, or null when the id is null or the tree holds no such node
+         */
         public StructureNode findByAssignment(StructureNode.Kind kind, Integer assignmentId) {
             return assignmentId == null ? null : all().stream()
                     .filter(n -> n.kind() == kind && Objects.equals(n.assignmentId(), assignmentId))
@@ -82,6 +109,9 @@ public class SurveyStructureQuery {
         /**
          * The element a rule points at — the innermost of its downstream path, in the mount the path
          * names (UC-019 BR-001). A rule whose path no longer resolves has no node.
+         *
+         * @param r the rule, may be null
+         * @return the node the rule targets, or null when the rule is null or its path does not resolve
          */
         public StructureNode target(Relationship r) {
             if (r == null) {
@@ -103,6 +133,15 @@ public class SurveyStructureQuery {
         }
     }
 
+    /**
+     * Builds a survey's structure tree: steps, the sections mounted in them, and the questions
+     * assigned to those sections, each level in display order. Mounts and assignments whose
+     * element is missing are left out.
+     *
+     * @param surveyId       the survey's id
+     * @param includeRetired whether retired rows are included, marked retired on their nodes
+     * @return the tree; with no roots when the survey has no steps
+     */
     public Tree tree(int surveyId, boolean includeRetired) {
         Map<Integer, Step> steps = byDurable(Step.list("surveyId", surveyId), s -> s.stepId, includeRetired);
         Map<Integer, Section> sections = byDurable(Section.list("surveyId", surveyId), s -> s.sectionId, includeRetired);
@@ -157,6 +196,9 @@ public class SurveyStructureQuery {
      * Current sections no step mounts (UC-015 A7). They are part of the survey and they export, but
      * the board draws only what a lane holds, so the Sections panel is where they are reachable
      * (UC-006 BR-003a). The nodes have no parent and no assignment, which is exactly what they lack.
+     *
+     * @param surveyId the survey's id
+     * @return the unmounted sections in display order; empty when every section is mounted
      */
     public List<StructureNode> unplacedSections(int surveyId) {
         Set<Integer> mounted = StepsSections.<StepsSections>list("surveyId", surveyId).stream()
@@ -170,7 +212,12 @@ public class SurveyStructureQuery {
                 .toList();
     }
 
-    /** Current questions no section assigns (UC-011 A7); the Questions panel is where they are reachable. */
+    /**
+     * Current questions no section assigns (UC-011 A7); the Questions panel is where they are reachable.
+     *
+     * @param surveyId the survey's id
+     * @return the unassigned questions as nodes with no parent, assignment or order; empty when there are none
+     */
     public List<StructureNode> unplacedQuestions(int surveyId) {
         Set<Integer> assigned = SectionsQuestion.<SectionsQuestion>list("surveyId", surveyId).stream()
                 .filter(StructuralElement::isCurrent).map(sq -> sq.questionId).collect(Collectors.toSet());
@@ -235,6 +282,12 @@ public class SurveyStructureQuery {
         return html.replaceAll("<[^>]+>", " ");
     }
 
+    /**
+     * Returns a node's display order for sorting.
+     *
+     * @param n the node
+     * @return its order, or zero when it has none
+     */
     public static BigDecimal order(StructureNode n) {
         return n.order() == null ? BigDecimal.ZERO : n.order();
     }

@@ -78,10 +78,15 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     private StructureNavigationTree structureTree;
     private com.elicitsoftware.author.flow.designer.DesignerToolbox drawerPalette;
 
+    /**
+     * Creates the layout; the header and drawer are built in {@link #init()}, once the injected
+     * services are available.
+     */
     public MainLayout() {
         // Default constructor for Vaadin
     }
 
+    /** Builds the branded header and shows the application navigation in the drawer. */
     @PostConstruct
     public void init() {
         createHeader();
@@ -196,7 +201,12 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         return systemSection;
     }
 
-    /** Replaces the drawer content (used by the survey editor to show the structure tree). */
+    /**
+     * Replaces the drawer content, wrapped in a scroller: the application navigation, or a survey's
+     * structure tree outside the designer.
+     *
+     * @param content the new drawer content
+     */
     public void setDrawerContent(Component content) {
         Scroller scroller = new Scroller(content);
         scroller.addClassName("drawer-scroller");
@@ -247,14 +257,20 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
     }
 
     /**
-     * Inside a survey the drawer shows that survey's structure tree with the current element
-     * highlighted (UC-006); everywhere else the application navigation.
+     * The designer calls this whenever its selection changes (UC-006 BR-003 keeps the tree in step).
+     *
+     * @param designer the designer whose survey and selection the drawer follows
      */
-    /** The designer calls this whenever its selection changes (UC-006 BR-003 keeps the tree in step). */
     public void syncWith(SurveyDesignerView designer) {
         syncDrawer(designer);
     }
 
+    /**
+     * Inside a survey the drawer shows that survey's structure tree with the current element
+     * highlighted (UC-006); everywhere else the application navigation.
+     *
+     * @param activeView the view now shown, or null
+     */
     void syncDrawer(Object activeView) {
         Integer surveyId = null;
         StructureNode.Kind kind = null;
@@ -321,6 +337,7 @@ public class MainLayout extends AppLayout implements AfterNavigationListener {
         return nav;
     }
 
+    /** Reloads the structure tree from the database; does nothing while no tree is shown. */
     public void refreshStructureTree() {
         if (structureTree != null) {
             structureTree.refresh();

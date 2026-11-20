@@ -156,7 +156,16 @@ public class ElementDialog<T> extends Dialog {
         }
     }
 
-    /** A step dialog; {@code existing} null creates. */
+    /**
+     * A step dialog; {@code existing} null creates. The dialog edits a detached copy, so
+     * {@code existing} itself is never changed.
+     *
+     * @param existing the step to edit, or null to create one
+     * @param persist  saves the edited copy and returns the saved step; an {@link AuthoringException}
+     *                 it throws is shown on the dialog, which stays open
+     * @param onSaved  called with the saved step after the dialog closes
+     * @return the dialog, not yet opened
+     */
     public static ElementDialog<Step> step(Step existing, Function<Step, Step> persist, Consumer<Step> onSaved) {
         Step bean = new Step();
         if (existing != null) {
@@ -173,7 +182,16 @@ public class ElementDialog<T> extends Dialog {
                 persist, onSaved);
     }
 
-    /** A section dialog; {@code existing} null creates. */
+    /**
+     * A section dialog; {@code existing} null creates. The dialog edits a detached copy, so
+     * {@code existing} itself is never changed.
+     *
+     * @param existing the section to edit, or null to create one
+     * @param persist  saves the edited copy and returns the saved section; an
+     *                 {@link AuthoringException} it throws is shown on the dialog, which stays open
+     * @param onSaved  called with the saved section after the dialog closes
+     * @return the dialog, not yet opened
+     */
     public static ElementDialog<Section> section(Section existing, Function<Section, Section> persist, Consumer<Section> onSaved) {
         Section bean = new Section();
         if (existing != null) {

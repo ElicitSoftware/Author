@@ -58,7 +58,7 @@ public class Translation extends StructuralElement {
     @Column(name = "element_key", nullable = false)
     public UUID targetKey;
 
-    /** Column name of the base text this row translates, from the translatable-field whitelist. */
+    /** Column name of the base text this row translates, from the translatable-field allowlist. */
     @Column(name = "field", nullable = false, length = 32)
     public String field;
 

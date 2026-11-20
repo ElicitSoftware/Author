@@ -78,8 +78,16 @@ public class RelationshipDialog extends Dialog {
     private final List<StructureNode> stepNodes = new ArrayList<>();
 
     /**
-     * @param existing the rule to edit, or null to create
-     * @param preset   values to start from when creating (upstream/downstream/action), may be null
+     * Builds the dialog for one rule, without opening it. Only current steps, mounts and question
+     * assignments of the tree are offered as the rule's ends.
+     *
+     * @param surveyId  the survey the rule belongs to
+     * @param tree      the survey's structure, supplying the upstream questions and the targets
+     * @param rules     saves and retires the rule
+     * @param existing  the rule to edit, or null to create
+     * @param preset    values to start from when creating (upstream/downstream/action), may be null
+     * @param onSaved   called with the saved rule after the dialog closes
+     * @param onRemoved called after Remove has retired the rule and the dialog has closed
      */
     public RelationshipDialog(int surveyId, SurveyStructureQuery.Tree tree, RuleService rules, Relationship existing, Relationship preset,
                               Consumer<Relationship> onSaved, Runnable onRemoved) {

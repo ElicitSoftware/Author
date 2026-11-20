@@ -30,8 +30,21 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @ApplicationScoped
 public class RenameLedger {
 
+    /**
+     * One rename.
+     *
+     * @param table     the renamed element's table, {@code steps} or {@code sections}
+     * @param durableId the renamed element's durable id
+     * @param oldName   the name before the rename
+     * @param newName   the name after it
+     */
     public record RenamedElement(String table, int durableId, String oldName, String newName) {
 
+        /**
+         * The retroactivity warning for this rename, in the reader's language.
+         *
+         * @return the step wording for {@code steps}, the section wording for any other table
+         */
         public String message() {
             String key = "steps".equals(table) ? "validation.rename.step" : "validation.rename.section";
             return Translations.get(key, oldName, newName);
@@ -40,15 +53,35 @@ public class RenameLedger {
 
     private final Map<Integer, List<RenamedElement>> bySurvey = new ConcurrentHashMap<>();
 
+    /**
+     * Records one rename.
+     *
+     * @param surveyId  the survey
+     * @param table     the renamed element's table, {@code steps} or {@code sections}
+     * @param durableId the renamed element's durable id
+     * @param oldName   the name before the rename
+     * @param newName   the name after it
+     */
     public void record(int surveyId, String table, int durableId, String oldName, String newName) {
         bySurvey.computeIfAbsent(surveyId, k -> new CopyOnWriteArrayList<>())
                 .add(new RenamedElement(table, durableId, oldName, newName));
     }
 
+    /**
+     * The survey's renames since its last export or since the application started.
+     *
+     * @param surveyId the survey
+     * @return an unmodifiable copy, in the order recorded; empty when there are none
+     */
     public List<RenamedElement> since(int surveyId) {
         return List.copyOf(bySurvey.getOrDefault(surveyId, List.of()));
     }
 
+    /**
+     * Forgets the survey's renames, as an export does.
+     *
+     * @param surveyId the survey
+     */
     public void clear(int surveyId) {
         bySurvey.remove(surveyId);
     }

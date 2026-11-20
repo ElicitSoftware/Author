@@ -46,6 +46,14 @@ public class ElementTagsDialog extends Dialog {
     private final StructureNode node;
     private final Runnable onChanged;
 
+    /**
+     * Builds the dialog and lists the node's tag assignments; it is not opened here.
+     *
+     * @param service   reads and changes the assignments
+     * @param survey    the survey the node belongs to
+     * @param node      the board node whose tags are shown
+     * @param onChanged run after every add, edit or removal
+     */
     public ElementTagsDialog(ReportingService service, Survey survey, StructureNode node, Runnable onChanged) {
         this.service = service;
         this.survey = survey;

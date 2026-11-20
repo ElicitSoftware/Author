@@ -92,11 +92,17 @@ public class SectionBankPanel extends VerticalLayout {
             add(glyph, label, uses, menu);
         }
 
+        /**
+         * Returns the section this row stands for.
+         *
+         * @return the section's structure node
+         */
         public StructureNode node() {
             return node;
         }
     }
 
+    /** Builds the empty panel with its search field; rows arrive with the first refresh. */
     public SectionBankPanel() {
         addClassName("designer-panel");
         setPadding(false);

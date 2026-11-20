@@ -47,6 +47,13 @@ public class SurveyDefinitionExporter {
     @Inject
     ExportValidation validation;
 
+    /**
+     * Validates a survey and, when it has no errors, writes it as a definition file (UC-008).
+     *
+     * @param survey the survey to export
+     * @return the file, carrying the validation warnings
+     * @throws DefinitionException when validation finds errors, listing their messages
+     */
     @Transactional
     public ExportResult export(Survey survey) {
         List<ValidationIssue> issues = validation.validate(survey);
@@ -61,6 +68,9 @@ public class SurveyDefinitionExporter {
      * UC-047 BR-006: the backup taken before a survey is deleted. Every record, as it stands and
      * unvalidated, under the draft marker, so Admin refuses it and only Author can import it back
      * (C-022). Records no export: the survey is not stamped.
+     *
+     * @param survey the survey to back up
+     * @return the backup file, its name ending in {@code _backup}, with no warnings
      */
     @Transactional
     public ExportResult backup(Survey survey) {

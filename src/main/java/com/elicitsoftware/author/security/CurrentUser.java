@@ -26,11 +26,20 @@ public class CurrentUser {
     @Inject
     SecurityIdentity identity;
 
-    /** @return the principal name, or {@code null} when no one is signed in. */
+    /**
+     * The signed-in author's principal name.
+     *
+     * @return the principal name, or {@code null} when no one is signed in.
+     */
     public String name() {
         return identity == null || identity.isAnonymous() ? null : identity.getPrincipal().getName();
     }
 
+    /**
+     * Whether the signed-in user holds the authoring role ({@code elicit_author}).
+     *
+     * @return {@code true} when the user holds the role; {@code false} otherwise
+     */
     public boolean isAuthor() {
         return identity != null && identity.hasRole(AuthorRoles.AUTHOR);
     }

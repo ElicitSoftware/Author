@@ -150,6 +150,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
     private record Admission(DropTarget<?> target, Predicate<DragPayload> takes) {
     }
 
+    /** Builds the board, the preview pane, the view toggles and the rule-arrow overlay's listeners. */
     public SurveyDesignerView() {
         addClassName("designer");
         breadcrumb.addClassName("designer-breadcrumb");
@@ -234,20 +235,38 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
 
     // ---- state -----------------------------------------------------------------------------
 
+    /**
+     * The survey on the board.
+     *
+     * @return the survey, or {@code null} before the view is entered
+     */
     public Survey survey() {
         return survey;
     }
 
+    /**
+     * The selected node.
+     *
+     * @return the selected node, or {@code null} when nothing is selected
+     */
     public StructureNode selected() {
         return selected;
     }
 
-    /** The tools palette, placed in the drawer by {@link MainLayout} (built in {@code beforeEnter}). */
+    /**
+     * The tools palette, placed in the drawer by {@link MainLayout} (built in {@code beforeEnter}).
+     *
+     * @return the palette, or {@code null} before the view is first entered
+     */
     public DesignerPalette palette() {
         return palette;
     }
 
-    /** The drawer toolbox: palette, lists and questions panels above the tree. */
+    /**
+     * The drawer toolbox: palette, lists and questions panels above the tree.
+     *
+     * @return the toolbox, or {@code null} before the view is first entered
+     */
     public DesignerToolbox toolbox() {
         return toolbox;
     }
@@ -445,20 +464,44 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
 
     // ---- queries used by the components ------------------------------------------------------
 
+    /**
+     * The children of a node on the board, in board order.
+     *
+     * @param node a step or section
+     * @return its sections or questions, empty when it has none
+     */
     public List<StructureNode> childrenOf(StructureNode node) {
         return tree.childrenOf(node);
     }
 
+    /**
+     * How many steps the section is mounted in, not counting removed mounts.
+     *
+     * @param section a section node
+     * @return the number of current mounts of the section on the board
+     */
     public int mountCount(StructureNode section) {
         return (int) tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.SECTION && !n.retired()
                 && Objects.equals(n.durableId(), section.durableId())).count();
     }
 
+    /**
+     * Whether a step or section is expanded on the board.
+     *
+     * @param node the node
+     * @return {@code true} when it is expanded; always {@code false} for a question
+     */
     public boolean isOpen(StructureNode node) {
         String key = openKey(node);
         return key != null && openNodes.contains(key);
     }
 
+    /**
+     * Whether a node is the selected one: same kind, durable id and assignment.
+     *
+     * @param node the node
+     * @return {@code true} when it is selected
+     */
     public boolean isSelected(StructureNode node) {
         return selected != null && selected.kind() == node.kind() && Objects.equals(selected.durableId(), node.durableId())
                 && Objects.equals(selected.assignmentId(), node.assignmentId());
@@ -466,6 +509,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
 
     // ---- interaction -------------------------------------------------------------------------
 
+    /**
+     * Selects a node, expands what holds it and redraws the board.
+     *
+     * @param node the node to select, or {@code null} to select nothing
+     */
     public void select(StructureNode node) {
         selected = node;
         openAncestors(node);
@@ -473,7 +521,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
     }
 
 
-    /** From the drawer tree: the tree's nodes are equal by value to the board's. */
+    /**
+     * From the drawer tree: the tree's nodes are equal by value to the board's. Selects the board's
+     * node and scrolls it into view.
+     *
+     * @param node the node picked in the tree
+     */
     public void selectFromTree(StructureNode node) {
         select(find(node.kind(), node.durableId(), node.assignmentId()));
         scrollToSelected();
@@ -493,6 +546,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
                 anchorOf(selected));
     }
 
+    /**
+     * Expands or collapses a step or section, selects it and redraws the board.
+     *
+     * @param node the node; a question is only selected
+     */
     public void toggleAndSelect(StructureNode node) {
         String key = openKey(node);
         if (key != null && !openNodes.remove(key)) {
@@ -511,6 +569,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
     /**
      * A drag of an element: only the targets that take this kind light up and lift.
      *
+     * @param kind the kind of element dragged, or {@code null} to mark only that a drag is on
      * @see #markDrag(DragPayload)
      */
     public void dragStarted(StructureNode.Kind kind) {
@@ -552,6 +611,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }
     }
 
+    /** Clears the drag marks from the board and gives every refusing target its drop effect back. */
     public void dragEnded() {
         board.removeClassName("dragging");
         for (DragPayload payload : DragPayload.values()) {
@@ -574,7 +634,14 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         admissions.add(new Admission(target, takes));
     }
 
-    /** Central drop dispatcher: palette items create, nodes reorder within or copy across containers. */
+    /**
+     * Central drop dispatcher: palette items create, nodes reorder within or copy across containers.
+     * A payload the spot does not take is refused with a warning; a removed node is ignored; a
+     * failure is shown as an error notification.
+     *
+     * @param data the drag payload: a palette item, a section or question from the drawer panels, or a board node
+     * @param spot where the drop landed
+     */
     public void onDrop(Object data, DropSpot spot) {
         // A target that refuses the payload stops taking drops when the drag starts, but a drop can
         // land before the browser hears of it; it is answered, never ignored (UC-006 BR-007).
@@ -669,6 +736,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         });
     }
 
+    /**
+     * Opens the editor for a node's element: the name dialog for a step or section, the question
+     * dialog for a question. A failure is shown as an error notification.
+     *
+     * @param node the node to edit
+     */
     public void edit(StructureNode node) {
         try {
             switch (node.kind()) {
@@ -684,6 +757,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }
     }
 
+    /**
+     * Opens the dialog for a new section at the end of a step, or a new question at the end of a
+     * section; does nothing for a question.
+     *
+     * @param node the step or section to add to
+     */
     public void addChild(StructureNode node) {
         switch (node.kind()) {
             case STEP -> createSectionAt(node, childrenOf(node).size());
@@ -692,6 +771,13 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }
     }
 
+    /**
+     * Moves a node among its siblings (the keyboard route for reordering). A failure is shown as an
+     * error notification.
+     *
+     * @param node  the node to move
+     * @param delta how many places to move it: negative earlier, positive later
+     */
     public void move(StructureNode node, int delta) {
         try {
             Set<Integer> backwardBefore = backwardRules();
@@ -710,7 +796,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }
     }
 
-    /** UC-015 A1: a real copy of a section from the card's menu — a drag across lanes mounts instead. */
+    /**
+     * UC-015 A1: a real copy of a section from the card's menu — a drag across lanes mounts instead.
+     * Opens a picker for the step to copy into.
+     *
+     * @param node the section to copy; any other kind is ignored
+     */
     public void copyTo(StructureNode node) {
         if (node.kind() != StructureNode.Kind.SECTION) {
             return;
@@ -725,7 +816,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }).open();
     }
 
-    /** UC-015 A5 keyboard route: the same section in another step. */
+    /**
+     * UC-015 A5 keyboard route: the same section in another step, chosen from a picker.
+     *
+     * @param section the section to mount
+     */
     public void mountIn(StructureNode section) {
         new PickerDialog<>(getTranslation("surveyDesignerView.mountSection.title", section.label()), getTranslation("surveyDesignerView.mountSection.label"), tree.roots(), StructureNode::label, step -> {
             try {
@@ -810,7 +905,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
 
     // ---- lists (UC-014) ------------------------------------------------------------------------
 
-    /** UC-014 step 6: a list dropped on a question row becomes its options. */
+    /**
+     * UC-014 step 6: a list dropped on a question row becomes its options.
+     *
+     * @param question the question row; a removed question or any other kind is ignored
+     * @param list     the list dropped on it
+     */
     public void useList(StructureNode question, PaletteList list) {
         if (question.kind() != StructureNode.Kind.QUESTION || question.retired()) {
             return;
@@ -825,10 +925,16 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }
     }
 
+    /** Opens the dialog for a new list. */
     public void newList() {
         new SelectGroupDialog(listService, survey.id, null, saved -> load()).open();
     }
 
+    /**
+     * Opens the dialog for editing a list. A failure is shown as an error notification.
+     *
+     * @param group the list to edit
+     */
     public void editList(SelectGroup group) {
         try {
             new SelectGroupDialog(listService, survey.id, listService.list(survey.id, group.selectGroupId), saved -> load()).open();
@@ -837,7 +943,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }
     }
 
-    /** UC-014 A2. */
+    /**
+     * UC-014 A2: removes a list after the author confirms.
+     *
+     * @param group the list to remove
+     */
     public void removeList(SelectGroup group) {
         new ConfirmDialog(getTranslation("surveyDesignerView.removeList.title"), getTranslation("surveyDesignerView.removeList.text", group.name), getTranslation("common.remove"), e -> {
             try {
@@ -850,7 +960,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }, getTranslation("common.cancel"), e -> { }).open();
     }
 
-    /** UC-011 A4/A6, keyboard route: the same question in a section chosen from a picker (row menu and Questions panel). */
+    /**
+     * UC-011 A4/A6, keyboard route: the same question in a section chosen from a picker (row menu and Questions panel).
+     *
+     * @param question the question to place
+     */
     public void addBankQuestionTo(StructureNode question) {
         new PickerDialog<>(getTranslation("surveyDesignerView.addQuestion.title", question.label()), getTranslation("surveyDesignerView.addQuestion.label"), sectionsDistinct(), this::sectionPath, section -> {
             try {
@@ -864,7 +978,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }).open();
     }
 
-    /** The reporting tags shown as a badge on a row or card: "Tag" or "Tag = value". */
+    /**
+     * The reporting tags shown as a badge on a row or card: "Tag" or "Tag = value".
+     *
+     * @param node a section or question node
+     * @return the labels, empty when it carries none
+     */
     public List<String> tagsOf(StructureNode node) {
         return tagLabels.getOrDefault(badgeKey(node), List.of());
     }
@@ -899,7 +1018,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }
     }
 
-    /** The reports a row or card is marked for, as a badge (UC-049). */
+    /**
+     * The reports a row or card is marked for, as a badge (UC-049).
+     *
+     * @param node a section or question node
+     * @return the report labels, each once, empty when it is marked for none
+     */
     public List<String> marksOf(StructureNode node) {
         return markLabels.getOrDefault(badgeKey(node), List.of());
     }
@@ -934,7 +1058,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }
     }
 
-    /** UC-049 step 1: the report marks a question or section carries, editable in place. */
+    /**
+     * UC-049 step 1: the report marks a question or section carries, editable in place.
+     *
+     * @param node the question or section; a step is ignored
+     */
     public void reportMarks(StructureNode node) {
         if (node.kind() == StructureNode.Kind.STEP) {
             return;
@@ -942,7 +1070,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         new com.elicitsoftware.author.flow.reports.ElementMarksDialog(reportMarks, survey, node, this::load).open();
     }
 
-    /** UC-021 step 1: the reporting tags a question or section carries, editable in place. */
+    /**
+     * UC-021 step 1: the reporting tags a question or section carries, editable in place.
+     *
+     * @param node the question or section; a step is ignored
+     */
     public void reportingTags(StructureNode node) {
         if (node.kind() == StructureNode.Kind.STEP) {
             return;
@@ -950,6 +1082,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         new ElementTagsDialog(reporting, survey, node, this::load).open();
     }
 
+    /**
+     * Navigates to the element's detail page.
+     *
+     * @param node the node whose element to show
+     */
     public void openDetails(StructureNode node) {
         getUI().ifPresent(ui -> ui.navigate(ElementView.class, new RouteParameters(Map.of(
                 SurveyEditorView.SURVEY_ID, String.valueOf(survey.id),
@@ -957,7 +1094,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
                 ElementView.DURABLE_ID, String.valueOf(node.durableId())))));
     }
 
-    /** UC-015 A3 / UC-011 A5: remove one assignment; the last one retires the element. */
+    /**
+     * UC-015 A3 / UC-011 A5: remove one assignment; the last one retires the element. Asks the
+     * author to confirm, then selects the container.
+     *
+     * @param node the section or question node whose assignment to remove
+     */
     public void removeAssignment(StructureNode node) {
         boolean last = node.kind() == StructureNode.Kind.SECTION ? mountCount(node) <= 1
                 : tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION && !n.retired()
@@ -989,6 +1131,8 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
      * UC-015 A7 / UC-011 A7: remove an element that is placed nowhere. Everywhere else on the board
      * removal takes an assignment away and retires the element with the last one; an element with no
      * assignment has no such path, so this retires the element itself.
+     *
+     * @param node the section or question to remove
      */
     public void removeUnplaced(StructureNode node) {
         ElementService.RemovalPlan plan = elements.planRemoval(survey.id, node.kind(), node.durableId());
@@ -1006,6 +1150,12 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }, getTranslation("common.cancel"), e -> { }).open();
     }
 
+    /**
+     * Removes a step after the author confirms; the confirmation names what else the removal
+     * affects. Clears the selection.
+     *
+     * @param step the step to remove
+     */
     public void removeStep(StructureNode step) {
         ElementService.RemovalPlan plan = elements.planRemoval(survey.id, StructureNode.Kind.STEP, step.durableId());
         String text = getTranslation("surveyDesignerView.removeStep.text", step.label(), plan.dependents().isEmpty() ? ""
@@ -1035,7 +1185,13 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
     /** The row a pending rule hangs from, so the rule learns the mount it fires from (UC-019 BR-001). */
     private StructureNode pendingSource;
 
-    /** UC-019 step 1-2: a rule glyph landed on a question row; the overlay now follows the pointer. */
+    /**
+     * UC-019 step 1-2: a rule glyph landed on a question row; the overlay now follows the pointer.
+     * Turns the rules on and selects the question.
+     *
+     * @param action   the rule's action type name
+     * @param question the question row the rule reads from
+     */
     public void startRule(String action, StructureNode question) {
         showRules.setValue(true);
         selected = question;
@@ -1045,7 +1201,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         overlay.setPending("sq-" + question.assignmentId(), action);
     }
 
-    /** UC-019 A1: the keyboard path — upstream fixed, target chosen in the dialog. */
+    /**
+     * UC-019 A1: the keyboard path — upstream fixed, target chosen in the dialog.
+     *
+     * @param question the question row the rule reads from
+     */
     public void addRule(StructureNode question) {
         Relationship preset = new Relationship();
         preset.upstreamSqId = question.assignmentId();
@@ -1143,7 +1303,11 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         }).open();
     }
 
-    /** NFR-012 keyboard path: add a step immediately after the given one. */
+    /**
+     * NFR-012 keyboard path: add a step immediately after the given one.
+     *
+     * @param step the step to add after; one not on the board adds at the end
+     */
     public void addStepAfter(StructureNode step) {
         int i = indexIn(tree.roots(), step);
         createStepAt(i < 0 ? tree.roots().size() : i + 1);

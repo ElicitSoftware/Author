@@ -34,6 +34,12 @@ public class DesignerToolbox extends VerticalLayout {
     final Details sectionsPanel;
     final Details questionsPanel;
 
+    /**
+     * Builds the toolbox with the Controls panel open and the other three closed.
+     *
+     * @param view    the designer the Lists panel works for
+     * @param palette the palette shown in the Controls panel
+     */
     public DesignerToolbox(SurveyDesignerView view, DesignerPalette palette) {
         this.palette = palette;
         this.lists = new ListPanel(view);
@@ -59,13 +65,22 @@ public class DesignerToolbox extends VerticalLayout {
         add(guide, controlsPanel, listsPanel, sectionsPanel, questionsPanel);
     }
 
+    /**
+     * Returns the palette in the Controls panel.
+     *
+     * @return the palette
+     */
     public DesignerPalette palette() {
         return palette;
     }
 
     /**
      * Opens the Sections panel on one section and marks it (UC-007 BR-009). This is how a finding
-     * about a section no step mounts is followed: the board has nothing to select.
+     * about a section no step mounts is followed: the board has nothing to select. For a section the
+     * panel does not hold, the panel stays open or closed as it was.
+     *
+     * @param durableId the section's durable id
+     * @return {@code true} when the panel holds the section
      */
     public boolean revealSection(int durableId) {
         boolean found = sections.reveal(durableId);
@@ -73,7 +88,13 @@ public class DesignerToolbox extends VerticalLayout {
         return found;
     }
 
-    /** Opens the Questions panel on one question and marks it (UC-007 BR-009). */
+    /**
+     * Opens the Questions panel on one question and marks it (UC-007 BR-009). For a question the
+     * panel does not hold, the panel stays open or closed as it was.
+     *
+     * @param durableId the question's durable id
+     * @return {@code true} when the panel holds the question
+     */
     public boolean revealQuestion(int durableId) {
         boolean found = questions.reveal(durableId);
         questionsPanel.setOpened(found || questionsPanel.isOpened());

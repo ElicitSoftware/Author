@@ -67,6 +67,7 @@ public class PostSurveyActionsView extends VerticalLayout implements BeforeEnter
     public Survey survey;
     private PostSurveyAction dragged;
 
+    /** Builds the view's controls; the survey is loaded on navigation, in {@code beforeEnter}. */
     public PostSurveyActionsView() {
         overview.setText(getTranslation("postSurveyActionsView.surveyOverview"));
         addAction.setText(getTranslation("postSurveyActionsView.addAction"));

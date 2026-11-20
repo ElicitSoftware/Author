@@ -59,6 +59,7 @@ public class SurveysView extends VerticalLayout implements HasDynamicTitle {
     @Inject
     AuthoringSpecification authoringSpecification;
 
+    /** Builds the toolbar and the survey grid; the rows are loaded once the services are injected. */
     public SurveysView() {
         setSizeFull();
         HorizontalLayout toolbar = new HorizontalLayout(new H2(getTranslation("surveysView.title")), newSurvey, aiDraft);

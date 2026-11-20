@@ -59,10 +59,24 @@ public class TranslationHandoff {
     @Inject
     TranslationService translations;
 
-    /** What an import did, per item and in total. */
+    /**
+     * What an import did, per item and in total.
+     *
+     * @param imported   the accepted items whose translation differs from the one already stored
+     * @param unchanged  the accepted items whose translation equals the one already stored
+     * @param skipped    the items left with a blank translation
+     * @param stale      the accepted items whose {@code source_hash} no longer matches the base text
+     * @param rejections one message per rejected item
+     * @param warnings   one message per accepted item that deserves a second look
+     */
     public record ImportResult(int imported, int unchanged, int skipped, int stale,
                                List<String> rejections, List<String> warnings) {
 
+        /**
+         * The number of rejected items.
+         *
+         * @return the size of {@link #rejections()}
+         */
         public int rejected() {
             return rejections.size();
         }
@@ -125,7 +139,14 @@ public class TranslationHandoff {
         }
     }
 
-    /** The name the file is offered under. */
+    /**
+     * The name the file is offered under: the survey's name with unsafe characters replaced by
+     * underscores, then the language.
+     *
+     * @param survey   the survey
+     * @param language the target language
+     * @return {@code <name>_<language>.translation.json}, with "survey" for a survey with no name
+     */
     public String fileName(Survey survey, String language) {
         String name = survey.name == null ? "survey" : survey.name.replaceAll("[^A-Za-z0-9._-]+", "_");
         return name + "_" + language + ".translation.json";

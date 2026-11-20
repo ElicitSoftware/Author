@@ -101,6 +101,11 @@ public class SelectGroupDialog extends Dialog {
     }
 
     /**
+     * Builds the dialog, filled from {@code existing} and its options when editing. Nothing is
+     * saved until Save, which creates or updates the list with its options as one whole.
+     *
+     * @param service  saves the list and reads its current options
+     * @param surveyId the survey the list belongs to
      * @param existing the list to edit, or {@code null} to create one
      * @param onSaved  receives the persisted list
      */

@@ -23,9 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**
- * JAX-RS resource handler for serving brand files with intelligent three-tier fallback logic.
- * This handler serves CSS, fonts, images, and other brand assets as static files with
- * the same fallback behavior as BrandStaticFileFilter.
+ * JAX-RS resource handler for serving brand files with three-tier fallback logic.
+ * This handler serves CSS, fonts, images, and other brand assets as static files, in the
+ * same order {@link AppConfig} reads the brand stylesheets.
  * <p>
  * Three-tier brand resource resolution system:
  * 1. External brand mount (brandFileSystemPath) - Docker volume mounts for runtime branding
@@ -45,7 +45,7 @@ public class BrandResourceHandler {
     String brandFileSystemPath;
 
     /**
-     * Serves brand files with three-tier fallback logic matching BrandStaticFileFilter:
+     * Serves brand files with three-tier fallback logic:
      * 1. External brand mount (brandFileSystemPath)
      * 2. Local brand directory (brand/)
      * 3. Embedded resources (META-INF/brand/)
@@ -70,7 +70,7 @@ public class BrandResourceHandler {
             if (Files.exists(externalBrandFile) && Files.isRegularFile(externalBrandFile)) {
                 content = Files.readAllBytes(externalBrandFile);
             } 
-            // 2. Try local brand directory (brand/) - NEW: matches BrandStaticFileFilter
+            // 2. Try local brand directory (brand/)
             else {
                 java.nio.file.Path localBrandFile = Paths.get("brand", filePath);
                 if (Files.exists(localBrandFile) && Files.isRegularFile(localBrandFile)) {
@@ -101,7 +101,7 @@ public class BrandResourceHandler {
     }
     
     /**
-     * Attempts to read a resource from the embedded META-INF/resources/ directory.
+     * Attempts to read a resource from the embedded META-INF/brand/ directory.
      * 
      * @param filePath The relative path to the resource
      * @return The file content as byte array, or null if not found

@@ -66,19 +66,44 @@ public class SurveyService {
         return contentLanguages.tags();
     }
 
+    /**
+     * Returns every survey in Author's database, in list order.
+     *
+     * @return the surveys by display order; empty when there are none
+     */
     public List<Survey> list() {
         return Survey.listAll(Sort.by("displayOrder"));
     }
 
+    /**
+     * Finds a survey by its id.
+     *
+     * @param id the survey's id
+     * @return the survey, or empty when there is none with that id
+     */
     public Optional<Survey> find(int id) {
         return Optional.ofNullable(Survey.findById(id));
     }
 
+    /**
+     * Finds a survey by its survey key.
+     *
+     * @param surveyKey the survey key
+     * @return the survey, or empty when no survey carries that key
+     */
     public Optional<Survey> findByKey(UUID surveyKey) {
         return Survey.find("surveyKey", surveyKey).firstResultOptional();
     }
 
-    /** UC-003: mint the key, append to the list order, record the author. */
+    /**
+     * UC-003: mint the key, append to the list order, record the author. The new survey also gets
+     * the built-in respondent report (UC-048 BR-001).
+     *
+     * @param draft the survey's details; a survey key or content languages it carries are kept
+     * @return the created survey
+     * @throws AuthoringException when the details are invalid, a content language is not one Elicit
+     *                            carries, or the save violates a recognized constraint
+     */
     @Transactional
     public Survey create(Survey draft) {
         validate(draft);
@@ -106,6 +131,12 @@ public class SurveyService {
     /**
      * UC-004: in-place update; key and list position untouched (BR-001, BR-002). The published set
      * is not among the details and is left as stored, whatever {@code edited} carries (BR-005).
+     *
+     * @param id     the survey's id
+     * @param edited the new details
+     * @return the updated survey
+     * @throws AuthoringException when the details are invalid, the survey is gone, or the save
+     *                            violates a recognized constraint
      */
     @Transactional
     public Survey updateMetadata(int id, Survey edited) {
@@ -225,7 +256,15 @@ public class SurveyService {
         return s;
     }
 
-    /** UC-008 step 4: record who exported and the release note. */
+    /**
+     * UC-008 step 4: record who exported and the release note, and clear the survey's rename and
+     * reporting-change ledgers.
+     *
+     * @param id          the survey's id
+     * @param releaseNote the release note; trimmed, and stored as null when blank
+     * @return the stamped survey
+     * @throws AuthoringException when the survey is gone or the current user has no name
+     */
     @Transactional
     public Survey stampExport(int id, String releaseNote) {
         Survey s = Survey.findById(id);
@@ -247,6 +286,9 @@ public class SurveyService {
     /**
      * Whether the survey has ever been exported. A stored release note is the mark (UC-008 step 3
      * makes it mandatory), the same test the purge guard applies (UC-009 A3).
+     *
+     * @param s the survey
+     * @return true when both the exporting author and a release note are stored
      */
     public static boolean isExported(Survey s) {
         return s.publishedBy != null && s.publishedComment != null;
@@ -274,6 +316,9 @@ public class SurveyService {
     /**
      * UC-047 A4: how many respondents previewing the survey has recorded in Author's database.
      * The confirmation states it, because they are deleted with the survey (BR-004).
+     *
+     * @param id the survey's id
+     * @return the number of respondents recorded for the survey, 0 when none
      */
     public long previewRespondents(int id) {
         return ((Number) em.createNativeQuery("SELECT count(*) FROM survey.respondents WHERE survey_id = ?1")
@@ -430,6 +475,9 @@ public class SurveyService {
     /**
      * Whether a name or title is one line of text: no line break, tab or other control character
      * (UC-003 BR-005). Export validation asks the same of a stored value (UC-007 BR-015).
+     *
+     * @param value the text to check
+     * @return true when {@code value} is null or holds no ISO control character
      */
     public static boolean singleLine(String value) {
         return value == null || value.chars().noneMatch(Character::isISOControl);

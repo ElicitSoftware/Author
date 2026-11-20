@@ -89,6 +89,7 @@ public class ElementView extends VerticalLayout implements BeforeEnterObserver, 
     int durableId;
     StructuralElement element;
 
+    /** Builds the view's heading, facts and buttons; the element itself is loaded on entry. */
     public ElementView() {
         remove.setText(getTranslation("common.remove"));
         restore.setText(getTranslation("common.restore"));
