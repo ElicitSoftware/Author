@@ -1,5 +1,5 @@
 
-Lists of 14 third-party dependencies.
+Lists of 15 third-party dependencies.
      (Apache License Version 2.0) Vaadin Quarkus Extension (com.vaadin:vaadin-quarkus-extension:25.3.5 - https://vaadin.com/vaadin-quarkus-extension-parent/vaadin-quarkus-extension)
      (The Apache Software License, Version 2.0) Quarkus - ArC - Runtime (io.quarkus:quarkus-arc:3.40.1.2 - https://github.com/quarkusio/quarkus)
      (The Apache Software License, Version 2.0) Quarkus - Container Image - Docker (io.quarkus:quarkus-container-image-docker:3.40.1.2 - https://github.com/quarkusio/quarkus)
@@ -14,3 +14,4 @@ Lists of 14 third-party dependencies.
      (The Apache Software License, Version 2.0) Quarkus - OpenTelemetry - Runtime (io.quarkus:quarkus-opentelemetry:3.40.1.2 - https://github.com/quarkusio/quarkus)
      (The Apache Software License, Version 2.0) Quarkus - REST - Runtime (io.quarkus:quarkus-rest:3.40.1.2 - https://github.com/quarkusio/quarkus)
      (The Apache Software License, Version 2.0) Quarkus - SmallRye Health - Runtime (io.quarkus:quarkus-smallrye-health:3.40.1.2 - https://github.com/quarkusio/quarkus)
+     (The MIT License) jsoup Java HTML Parser (org.jsoup:jsoup:1.23.2 - https://jsoup.org/)
