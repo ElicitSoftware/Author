@@ -541,9 +541,7 @@ builds, what a token is filled with, how a record is parsed.
 | <https://github.com/ElicitSoftware/Author> | The authoring tool that reads a draft. | `src/main/java/com/elicitsoftware/author/definition/ExportValidation.java` (the checks of section 5, as run), `SurveyDefinitionImporter.java` and `ElicitFormat.java` beside it (how a draft and an export are read) |
 | <https://github.com/ElicitSoftware/Elicit> | The project that assembles the applications. | `samples/census-household-survey.elicit`: a small survey that uses every question type, operator and action, and `samples/generate-census-household-survey.py`, the script that writes it |
 
-Current work lands on each repository's `V3` branch; read that branch where it
-exists, since `main` may be a release behind it. Author has no `V3`; read its
-`main`.
+Current work lands on each repository's `main` branch; read that branch.
 
 Two cautions. Those definitions are **exports** (`ELICIT_SURVEY_EXPORT_V1`): they
 carry element keys, versions and effective dates that a draft leaves blank

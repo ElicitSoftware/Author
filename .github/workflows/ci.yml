@@ -10,7 +10,7 @@
 # directory), and SchemaMirrorFreshnessTest compares the schema mirror with ../Survey when that
 # sibling is present. The job reproduces that layout: it clones the umbrella -- preferring a
 # branch with the same name as this one, so a cross-repo translation change can be tested
-# before merge, otherwise V3, the integration branch, where the sample lives -- and checks
+# before merge, otherwise main, the integration branch, where the sample lives -- and checks
 # Author out inside it, then runs Maven from there. Survey is not cloned, so the mirror check
 # skips here as it is written to; it runs on a developer's machine.
 #
@@ -41,14 +41,12 @@ jobs:
       contents: read
 
     steps:
-      - name: Clone the umbrella (same-named branch or tag, else V3)
+      - name: Clone the umbrella (same-named branch or tag, else main)
         run: |
           UMBRELLA=https://github.com/ElicitSoftware/Elicit.git
-          # Author's main pairs with the umbrella's V3, not its main: the umbrella's main is the
-          # released line and has neither the sample nor elicit-i18n.
           BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          if [ "$BRANCH" = main ] || ! git ls-remote --exit-code "$UMBRELLA" "refs/heads/$BRANCH" "refs/tags/$BRANCH" >/dev/null 2>&1; then
-            BRANCH=V3
+          if ! git ls-remote --exit-code "$UMBRELLA" "refs/heads/$BRANCH" "refs/tags/$BRANCH" >/dev/null 2>&1; then
+            BRANCH=main
           fi
           git clone --quiet --depth 1 --branch "$BRANCH" "$UMBRELLA" Elicit
           echo "umbrella: $BRANCH $(git -C Elicit log -1 --format='%h %s')"
