@@ -539,7 +539,7 @@ builds, what a token is filled with, how a record is parsed.
 | <https://github.com/ElicitSoftware/Admin> | The application that installs a definition at a site. | `src/main/java/com/elicitsoftware/service/SurveyDefinitionExportService.java` (the file format of section 2, as written), `SurveyDefinitionImportService.java` and `SurveyDefinitionFileFields.java` beside it (as read) |
 | <https://github.com/ElicitSoftware/FHHS> | The Family History Survey, a deployed survey. | `family-history-survey.elicit`: a complete definition, with tokens filled across steps and one step shown per repeated name |
 | <https://github.com/ElicitSoftware/Author> | The authoring tool that reads a draft. | `src/main/java/com/elicitsoftware/author/definition/ExportValidation.java` (the checks of section 5, as run), `SurveyDefinitionImporter.java` and `ElicitFormat.java` beside it (how a draft and an export are read) |
-| <https://github.com/ElicitSoftware/Elicit> | The project that assembles the applications. | `samples/census-household-survey.elicit`: a small survey that uses every question type, operator and action, and `samples/generate-census-household-survey.py`, the script that writes it |
+| <https://github.com/ElicitSoftware/Elicit> | The project that assembles the applications. | `samples/census-household-survey.template.elicit`: a small survey that uses every question type, operator and action, as a draft with no keys, and `samples/generate-census-household-survey.py`, the script that writes its keyed form |
 
 Current work lands on each repository's `main` branch; read that branch.
 
