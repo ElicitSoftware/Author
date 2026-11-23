@@ -4,8 +4,8 @@
 # tag-push time, so without this workflow nothing ever builds Author in CI.
 #
 # Author is developed inside a checkout of the umbrella repository (ElicitSoftware/Elicit) at
-# Elicit/Author, and some tests reach up into it: RepeatPerItemSampleTest imports the golden
-# census sample from ../samples (UC-019 A6), the language tests read the curated translations
+# Elicit/Author, and some tests reach up into it: RepeatPerItemSampleTest and
+# SampleTemplateImportTest import the keyless templates from ../samples (UC-019 A6, UC-005), the language tests read the curated translations
 # from ../elicit-i18n (the image carries English only; the dev and test profiles read the same
 # directory), and SchemaMirrorFreshnessTest compares the schema mirror with ../Survey when that
 # sibling is present. The job reproduces that layout: it clones the umbrella -- preferring a
@@ -50,7 +50,8 @@ jobs:
           fi
           git clone --quiet --depth 1 --branch "$BRANCH" "$UMBRELLA" Elicit
           echo "umbrella: $BRANCH $(git -C Elicit log -1 --format='%h %s')"
-          test -f Elicit/samples/census-household-survey.elicit
+          test -f Elicit/samples/census-household-survey.template.elicit
+          test -f Elicit/samples/family-history-survey.template.elicit
           test -d Elicit/elicit-i18n/author
 
       - name: Check out Author inside it
