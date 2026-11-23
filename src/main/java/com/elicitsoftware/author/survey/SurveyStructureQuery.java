@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +74,20 @@ public class SurveyStructureQuery {
                 }
             }
             return out;
+        }
+
+        /**
+         * Every node, a question once per assignment. A section mounted in several steps shows its
+         * questions under each mount, so {@link #all()} repeats them; a list that counts or offers
+         * assignments reads this one, where a repeated question keeps its first mount.
+         *
+         * @return a new list of all nodes in board order, without the repeats of a shared section's questions
+         */
+        public List<StructureNode> placements() {
+            Set<Integer> seen = new HashSet<>();
+            return all().stream()
+                    .filter(n -> n.kind() != StructureNode.Kind.QUESTION || seen.add(n.assignmentId()))
+                    .toList();
         }
 
         /**
@@ -135,7 +150,8 @@ public class SurveyStructureQuery {
 
     /**
      * Builds a survey's structure tree: steps, the sections mounted in them, and the questions
-     * assigned to those sections, each level in display order. Mounts and assignments whose
+     * assigned to those sections, each level in display order. A section mounted in several steps
+     * carries its questions under every mount. Mounts and assignments whose
      * element is missing are left out.
      *
      * @param surveyId       the survey's id
@@ -154,7 +170,8 @@ public class SurveyStructureQuery {
         List<StructureNode> roots = new ArrayList<>();
         Map<StructureNode, List<StructureNode>> children = new LinkedHashMap<>();
         Map<Integer, StructureNode> stepNodes = new HashMap<>();
-        Map<Integer, StructureNode> sectionNodesByAssignment = new HashMap<>();
+        // A section mounted in several steps is one node per mount, and its questions belong under each.
+        Map<Integer, List<StructureNode>> sectionNodes = new HashMap<>();
 
         steps.values().stream().sorted(Comparator.comparing((Step s) -> s.displayOrder)).forEach(s -> {
             StructureNode n = new StructureNode(StructureNode.Kind.STEP, s.stepId, null, s.name,
@@ -175,19 +192,20 @@ public class SurveyStructureQuery {
                             ss.isRetired() || section.isRetired(), stepNode);
                     children.get(stepNode).add(n);
                     children.put(n, new ArrayList<>());
-                    sectionNodesByAssignment.put(ss.sectionId, n);
+                    sectionNodes.computeIfAbsent(ss.sectionId, k -> new ArrayList<>()).add(n);
                 });
         sectionsQuestions.stream().sorted(Comparator.comparing((SectionsQuestion sq) -> sq.displayOrder)).forEach(sq -> {
-            StructureNode sectionNode = sectionNodesByAssignment.get(sq.sectionId);
+            List<StructureNode> mounts = sectionNodes.get(sq.sectionId);
             Question q = questions.get(sq.questionId);
-            if (sectionNode == null || q == null) {
+            if (mounts == null || q == null) {
                 return;
             }
             String label = questionLabel(q);
             String detail = q.questionType == null ? "" : q.questionType.name;
-            StructureNode n = new StructureNode(StructureNode.Kind.QUESTION, q.questionId, sq.sectionsQuestionId,
-                    label, detail, sq.displayOrder, q.questionKey, sq.isRetired() || q.isRetired(), sectionNode);
-            children.get(sectionNode).add(n);
+            for (StructureNode sectionNode : mounts) {
+                children.get(sectionNode).add(new StructureNode(StructureNode.Kind.QUESTION, q.questionId, sq.sectionsQuestionId,
+                        label, detail, sq.displayOrder, q.questionKey, sq.isRetired() || q.isRetired(), sectionNode));
+            }
         });
         return new Tree(roots, children);
     }
