@@ -876,7 +876,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
         // UC-006 BR-003a: the panels are the survey's contents, so they hold the elements the board
         // cannot draw -- a section in no step, a question in no section.
         toolbox.sections.refresh(this, tree.all(), structureQuery.unplacedSections(survey.id), descriptions, needsStep);
-        toolbox.questions.refresh(this, tree.all(), structureQuery.unplacedQuestions(survey.id), texts, needsSection);
+        toolbox.questions.refresh(this, tree.placements(), structureQuery.unplacedQuestions(survey.id), texts, needsSection);
     }
 
     /** Neither the node nor anything it is placed in has been removed. */
@@ -1012,7 +1012,10 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
                     case STEPS_SECTIONS -> n.kind() == StructureNode.Kind.SECTION && Objects.equals(n.assignmentId(), m.stepsSectionsId);
                 };
                 if (hit) {
-                    tagLabels.computeIfAbsent(badgeKey(n), k -> new ArrayList<>()).add(label);
+                    List<String> labels = tagLabels.computeIfAbsent(badgeKey(n), k -> new ArrayList<>());
+                    if (!labels.contains(label)) {
+                        labels.add(label);
+                    }
                 }
             }
         }
@@ -1102,7 +1105,7 @@ public class SurveyDesignerView extends Div implements BeforeEnterObserver, HasD
      */
     public void removeAssignment(StructureNode node) {
         boolean last = node.kind() == StructureNode.Kind.SECTION ? mountCount(node) <= 1
-                : tree.all().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION && !n.retired()
+                : tree.placements().stream().filter(n -> n.kind() == StructureNode.Kind.QUESTION && !n.retired()
                 && Objects.equals(n.durableId(), node.durableId())).count() <= 1;
         String what = node.kind() == StructureNode.Kind.SECTION
                 ? getTranslation("surveyDesignerView.kind.section") : getTranslation("surveyDesignerView.kind.question");

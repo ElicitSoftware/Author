@@ -106,7 +106,7 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
         newTag.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         newTag.addClickListener(e -> new TagDialog(reporting, survey, null, saved -> load()).open());
         assign.addClickListener(e -> new TagAssignmentDialog(reporting, survey,
-                TagAssignmentDialog.targets(structureQuery.tree(survey.id, false).all()), null, null, saved -> load()).open());
+                TagAssignmentDialog.targets(structureQuery.tree(survey.id, false).placements()), null, null, saved -> load()).open());
 
         Paragraph intro = new Paragraph(getTranslation("reportingView.intro"));
         Paragraph retro = new Paragraph(getTranslation("reportingView.retro"));
@@ -294,6 +294,6 @@ public class ReportingView extends VerticalLayout implements BeforeEnterObserver
      * @return every section and question node of the tree, in tree order; steps are left out
      */
     public static List<StructureNode> targets(SurveyStructureQuery.Tree tree) {
-        return TagAssignmentDialog.targets(tree.all());
+        return TagAssignmentDialog.targets(tree.placements());
     }
 }

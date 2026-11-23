@@ -132,7 +132,7 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver, 
         addService.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         addService.addClickListener(e -> new ReportServiceDialog(reports, survey, null, saved -> load()).open());
         markElement.addClickListener(e -> new ReportMarkDialog(marks, survey,
-                structureQuery.tree(survey.id, false).all(), null, null, saved -> load()).open());
+                structureQuery.tree(survey.id, false).placements(), null, null, saved -> load()).open());
 
         Paragraph intro = new Paragraph(getTranslation("reportsView.intro"));
         Paragraph dragHint = new Paragraph(getTranslation("reportsView.dragHint"));

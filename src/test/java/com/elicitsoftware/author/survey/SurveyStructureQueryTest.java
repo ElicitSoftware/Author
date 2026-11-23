@@ -13,6 +13,7 @@ package com.elicitsoftware.author.survey;
 
 import com.elicitsoftware.model.Survey;
 import com.elicitsoftware.test.PostgresTestResource;
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -31,6 +32,9 @@ class SurveyStructureQueryTest {
     @Inject
     SurveyStructureQuery query;
 
+    @Inject
+    DesignerService designer;
+
     @Test
     void fixtureTreeIsStepsSectionsQuestionsInDisplayOrder() {
         Survey s = Survey.find("name", "AuthorFixture").firstResult();
@@ -45,6 +49,33 @@ class SurveyStructureQueryTest {
         assertEquals("HTML", tree.childrenOf(sectionA).get(0).detail());
         assertEquals(2 + 3 + 5, tree.all().size());
         assertTrue(tree.all().stream().allMatch(n -> n.elementKey() != null));
+    }
+
+    /**
+     * UC-006 / UC-015 BR-003: a section mounted in two steps is two nodes, and each shows the section's
+     * questions. Only the last mount used to, so the Family History Survey's Cancers section, mounted in
+     * eleven steps, read "0 questions" in ten of them and could not be opened or edited there.
+     */
+    @Test
+    @TestTransaction
+    void sectionMountedInTwoStepsCarriesItsQuestionsUnderEachMount() {
+        Survey s = Survey.find("name", "AuthorFixture").firstResult();
+        SurveyStructureQuery.Tree before = query.tree(s.id, false);
+        StructureNode sectionA = before.childrenOf(before.roots().get(0)).get(0);
+        designer.mountSection(s.id, sectionA.durableId(), before.roots().get(1).durableId(), 99);
+
+        SurveyStructureQuery.Tree tree = query.tree(s.id, false);
+        List<StructureNode> mounts = tree.all().stream()
+                .filter(n -> n.kind() == StructureNode.Kind.SECTION && n.durableId().equals(sectionA.durableId())).toList();
+        assertEquals(2, mounts.size());
+        for (StructureNode mount : mounts) {
+            List<StructureNode> questions = tree.childrenOf(mount);
+            assertEquals(List.of("FixtureQ1", "FixtureQ2"), questions.stream().map(StructureNode::label).toList(),
+                    "under " + mount.parent().label());
+            assertTrue(questions.stream().allMatch(q -> q.parent().equals(mount)), "each row knows its own mount");
+        }
+        assertEquals(before.all().size() + 3, tree.all().size(), "one mount and its two questions more");
+        assertEquals(before.all().size() + 1, tree.placements().size(), "a question is listed once per assignment");
     }
 
     @Test
