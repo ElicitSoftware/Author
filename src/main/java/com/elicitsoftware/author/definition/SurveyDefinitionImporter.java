@@ -4,7 +4,7 @@ package com.elicitsoftware.author.definition;
  * ***LICENSE_START***
  * Elicit Author
  * %%
- * Copyright (C) 2026 Elicit Software LLC
+ * Copyright (C) 2025 - 2026 Elicit Software LLC
  * %%
  * PolyForm Noncommercial License 1.0.0
  * <https://polyformproject.org/licenses/noncommercial/1.0.0>
