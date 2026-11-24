@@ -156,10 +156,8 @@ relevant only once implementation code exists.
 - The `docs/` folder is institutional memory. Commit it to version control.
 - Do not mix in jOOQ-specific patterns; data access is Hibernate/Panache.
 - Do not regenerate code that bypasses Vaadin component APIs (accessibility).
-- **Copyright headers record where a file came from** (CONTRIBUTING.md, License). A new file gets
-  the header the build generates (Elicit Software LLC); never copy a neighbor's. A class copied
-  from Survey, Admin or FHHS keeps its University of Michigan line and gains
-  `Copyright (C) <year> Elicit Software LLC` beneath it once changed.
+- **Every copyright header names Elicit Software LLC** (CONTRIBUTING.md, License). A new file gets
+  the header the build generates; never copy a neighbor's.
 
 ## Reference
 

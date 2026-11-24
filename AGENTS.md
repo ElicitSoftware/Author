@@ -32,7 +32,7 @@ Skipping any of these steps is a violation. NEVER implement a feature by hand-co
 - ALWAYS keep README.md updated with app description, features, endpoints, and Quarkus guide links.
 - ALWAYS summarize after completing work -- when you finish building an app, adding a feature, or completing a task, provide a clear summary of what was done (files created/modified, endpoints added, extensions used, etc.) and suggest logical next steps the user might want to take (e.g. adding security, observability, persistence, testing improvements, deployment).
 - Use `@QuarkusTest` for integration tests -- Dev Services auto-starts backing services (databases, messaging, etc.).
-- NEVER copy a copyright header into a new file -- the build generates it; a class copied from Survey, Admin or FHHS keeps its University of Michigan line (see CONTRIBUTING.md, License).
+- NEVER copy a copyright header into a new file -- the build generates it, naming Elicit Software LLC (see CONTRIBUTING.md, License).
 - Use `%dev.` and `%test.` profile prefixes for dev/test configuration -- never hardcode connection URLs without a profile prefix.
 
 ## Testing

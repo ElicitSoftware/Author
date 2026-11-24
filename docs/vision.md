@@ -119,7 +119,7 @@ survey updates the same rows at every site instead of installing a second copy.
 
 ## Constraints
 
-- **License:** PolyForm Noncommercial 1.0.0.
+- **License:** PolyForm Noncommercial 1.0.0, copyright Elicit Software LLC.
 - **Stack (do not deviate without explicit approval):**
   - Java 25
   - Quarkus 3.40.1.2 LTS
