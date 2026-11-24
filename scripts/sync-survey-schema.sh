@@ -14,7 +14,9 @@ if [ ! -d "$SRC" ]; then
   exit 1
 fi
 mkdir -p "$DST"
-rsync -a --delete --exclude 'SOURCE.txt' "$SRC/" "$DST/"
+# --checksum: without it rsync skips a file whose size and modification time match, and a
+# one-word change made to both trees in the same second (a header's project line) is such a file.
+rsync -a --checksum --delete --exclude 'SOURCE.txt' "$SRC/" "$DST/"
 {
   echo "Mirror of $(cd "$SRC" && pwd)"
   echo "Survey commit: $(git -C "$SRC" rev-parse HEAD 2>/dev/null || echo unknown)"
