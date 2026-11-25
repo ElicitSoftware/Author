@@ -2,7 +2,7 @@ package com.elicitsoftware.author.flow;
 
 /*-
  * ***LICENSE_START***
- * Elicit Survey
+ * Elicit Author
  * %%
  * Copyright (C) 2025 - 2026 Elicit Software LLC
  * %%
